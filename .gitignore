@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.idea/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+*.local
+.env
+.env.*
+!.env.example
+pnpm-debug.log*
+*.tgz
