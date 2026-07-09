@@ -2,7 +2,7 @@ import { OKLCH, convert, findCuspOKLCH, isRGBInGamut } from "@texel/color";
 
 import { GAMUT_DEFINITIONS } from "./convert";
 import type { GamutId } from "../model/color";
-import type { GamutBoundaryOptions, GamutBoundaryTable } from "../model/gamut";
+import { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "../model/gamut";
 
 const DEFAULT_HUE_STEPS = 180;
 const DEFAULT_LIGHTNESS_STEPS = 51;
@@ -38,14 +38,9 @@ function resolveOptions(options: GamutBoundaryOptions = {}): ResolvedBoundaryOpt
   return resolved;
 }
 
-function isCandidateInGamut(
-  candidate: number[],
-  rgb: number[],
-  gamut: GamutId,
-  epsilon = 1e-9,
-): boolean {
+function isCandidateInGamut(candidate: number[], rgb: number[], gamut: GamutId): boolean {
   convert(candidate, OKLCH, GAMUT_DEFINITIONS[gamut].linear, rgb);
-  return isRGBInGamut(rgb, epsilon);
+  return isRGBInGamut(rgb, GAMUT_EPSILON);
 }
 
 /** Exact per-point search used during table precomputation and fallback verification. */

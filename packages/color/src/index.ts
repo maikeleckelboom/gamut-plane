@@ -1,5 +1,6 @@
 export * from "./export/canonical";
 export * from "./export/cssVars";
+export * from "./export/hashInput";
 export * from "./export/json";
 export * from "./export/outputHash";
 export * from "./export/policy";

@@ -19,6 +19,7 @@ import {
   type ChromavertColor,
   type GamutId,
 } from "../model/color";
+import { GAMUT_EPSILON } from "../model/gamut";
 
 export const GAMUT_DEFINITIONS = {
   srgb: { encoded: sRGB, linear: sRGBLinear, gamut: sRGBGamut },
@@ -60,6 +61,10 @@ export function convertFromOklch(
   );
 }
 
-export function isColorInGamut(color: ChromavertColor, gamut: GamutId, epsilon = 1e-7): boolean {
+export function isColorInGamut(
+  color: ChromavertColor,
+  gamut: GamutId,
+  epsilon = GAMUT_EPSILON,
+): boolean {
   return isRGBInGamut(convertFromOklch(color, gamut, true), epsilon);
 }

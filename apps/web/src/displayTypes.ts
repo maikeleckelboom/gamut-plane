@@ -22,4 +22,5 @@ export interface ExportPayloads {
   json: string;
   issues: string[];
   hash: string;
+  policy: "srgb-safe" | "p3-expressive" | "dual";
 }

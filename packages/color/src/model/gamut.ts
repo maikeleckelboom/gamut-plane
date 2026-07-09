@@ -1,5 +1,12 @@
 import type { ChromavertColor, GamutId } from "./color";
 
+/**
+ * Default product-wide linear RGB boundary tolerance. Product membership,
+ * fallback, serialization guards, and exact Cmax search use this same value;
+ * explicit overrides are reserved for controlled diagnostics.
+ */
+export const GAMUT_EPSILON = 1e-9;
+
 export interface GamutBoundaryTable {
   gamut: GamutId;
   hueSteps: number;
