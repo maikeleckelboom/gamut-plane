@@ -3,10 +3,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import GamutWarningGlyph from "@/components/chromavert/GamutWarningGlyph.vue";
 import {
-  PICKER_BRACKET_CAP_LENGTH,
-  PICKER_BRACKET_CORE_WIDTH,
-  PICKER_BRACKET_KEYLINE_WIDTH,
-  PICKER_BRACKET_LANE_INSET,
   PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
   PICKER_SLIDER_EDGE_CLEARANCE,
@@ -18,8 +14,6 @@ import {
   PICKER_SLIDER_THUMB_WIDTH,
   PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
-  PICKER_SRGB_DASH_GAP,
-  PICKER_SRGB_DASH_LENGTH,
   PICKER_WARNING_GLYPH_SIZE,
 } from "@/components/chromavert/pickerInstrumentStyle";
 import {
@@ -40,6 +34,23 @@ export interface LinearControlInterval {
   end: number;
   tone: "srgb" | "display-p3";
 }
+
+type GamutTone = LinearControlInterval["tone"];
+
+interface GamutSection {
+  start: number;
+  end: number;
+  tone: GamutTone;
+}
+
+interface GamutThreshold {
+  position: number;
+  tone: GamutTone;
+  insideSide: "left" | "right";
+  label: string;
+}
+
+const GAMUT_TONES = ["display-p3", "srgb"] as const satisfies readonly GamutTone[];
 
 const props = withDefaults(
   defineProps<{
@@ -91,15 +102,12 @@ const isOutsideInstrument = computed(
 const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
 const trackElement = ref<HTMLElement>();
 const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
+const trackLeft = ref(0);
+const hoverPosition = ref<number | null>(null);
+const isRangeFocused = ref(false);
 let trackResizeObserver: ResizeObserver | undefined;
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
-  "--picker-bracket-cap-length": `${PICKER_BRACKET_CAP_LENGTH}px`,
-  "--picker-bracket-lane-inset": `${PICKER_BRACKET_LANE_INSET}px`,
-  "--picker-bracket-core-width": `${PICKER_BRACKET_CORE_WIDTH}px`,
-  "--picker-bracket-keyline-width": `${PICKER_BRACKET_KEYLINE_WIDTH}px`,
-  "--picker-srgb-dash-length": `${PICKER_SRGB_DASH_LENGTH}px`,
-  "--picker-srgb-dash-gap": `${PICKER_SRGB_DASH_GAP}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
   "--picker-slider-track-height": `${PICKER_SLIDER_TRACK_HEIGHT}px`,
   "--picker-slider-thumb-top": `${PICKER_SLIDER_THUMB_TOP}px`,
@@ -115,6 +123,84 @@ const renderedIntervals = computed(() =>
     })
     .filter((interval) => interval.end - interval.start > Number.EPSILON * 16),
 );
+const normalizedModelPosition = computed(() => {
+  const span = props.max - props.min;
+  return span > 0 ? (boundedModelValue.value - props.min) / span : 0;
+});
+const mergedIntervals = computed<Record<GamutTone, GamutSection[]>>(() => {
+  const result: Record<GamutTone, GamutSection[]> = { "display-p3": [], srgb: [] };
+  for (const tone of GAMUT_TONES) {
+    const sorted = renderedIntervals.value
+      .filter((interval) => interval.tone === tone)
+      .sort((a, b) => a.start - b.start);
+    for (const interval of sorted) {
+      const previous = result[tone].at(-1);
+      if (previous && interval.start <= previous.end + Number.EPSILON * 16) {
+        previous.end = Math.max(previous.end, interval.end);
+      } else {
+        result[tone].push({ start: interval.start, end: interval.end, tone });
+      }
+    }
+  }
+  return result;
+});
+const outOfGamutSections = computed<GamutSection[]>(() =>
+  GAMUT_TONES.flatMap((tone) => {
+    if (mergedIntervals.value[tone].length === 0) return [];
+    const sections: GamutSection[] = [];
+    let cursor = 0;
+    for (const interval of mergedIntervals.value[tone]) {
+      if (interval.start > cursor) sections.push({ start: cursor, end: interval.start, tone });
+      cursor = Math.max(cursor, interval.end);
+    }
+    if (cursor < 1) sections.push({ start: cursor, end: 1, tone });
+    return sections;
+  }),
+);
+const gamutThresholds = computed<GamutThreshold[]>(() =>
+  GAMUT_TONES.flatMap((tone) => {
+    const positions = mergedIntervals.value[tone].flatMap(({ start, end }) => [start, end]);
+    const crossings = [...new Set(positions)].filter((position) => position > 0 && position < 1);
+    return crossings.map((position) => {
+      const insideAfterCrossing = mergedIntervals.value[tone].some(
+        (interval) => Math.abs(interval.start - position) <= Number.EPSILON * 16,
+      );
+      const gamutName = tone === "display-p3" ? "Display P3" : "sRGB";
+      return {
+        position,
+        tone,
+        insideSide: insideAfterCrossing ? "right" : "left",
+        label: insideAfterCrossing ? `Inside ${gamutName} gamut →` : `← Inside ${gamutName} gamut`,
+      };
+    });
+  }),
+);
+const contextualThreshold = computed<GamutThreshold | null>(() => {
+  const position =
+    hoverPosition.value ?? (isRangeFocused.value ? normalizedModelPosition.value : null);
+  if (position === null) return null;
+  const nearest = gamutThresholds.value.reduce<GamutThreshold | null>((candidate, threshold) => {
+    if (!candidate) return threshold;
+    return Math.abs(threshold.position - position) < Math.abs(candidate.position - position)
+      ? threshold
+      : candidate;
+  }, null);
+  if (!nearest || Math.abs(nearest.position - position) * trackWidth.value > 14) return null;
+  return nearest;
+});
+const warningPreferredSide = computed<"left" | "right">(() => {
+  const position = Number.isFinite(props.warningPosition) ? props.warningPosition : 0;
+  const nearest = gamutThresholds.value
+    .filter((threshold) => threshold.tone === "display-p3")
+    .reduce<GamutThreshold | null>((candidate, threshold) => {
+      if (!candidate) return threshold;
+      return Math.abs(threshold.position - position) < Math.abs(candidate.position - position)
+        ? threshold
+        : candidate;
+    }, null);
+  if (!nearest) return "right";
+  return nearest.insideSide === "right" ? "left" : "right";
+});
 const warningObstacles = computed<SliderWarningObstacle[]>(() => {
   const width = trackWidth.value;
   const fieldWidth = Math.max(0, width - PICKER_SLIDER_FIELD_INSET * 2);
@@ -125,13 +211,11 @@ const warningObstacles = computed<SliderWarningObstacle[]>(() => {
         ? PICKER_SLIDER_FALLBACK_COLLISION_WIDTH
         : PICKER_SLIDER_TICK_COLLISION_WIDTH,
   }));
-  const caps = renderedIntervals.value.flatMap((interval) =>
-    [interval.start, interval.end].map((position) => ({
-      center: PICKER_SLIDER_FIELD_INSET + position * fieldWidth,
-      width: PICKER_BRACKET_KEYLINE_WIDTH,
-    })),
-  );
-  return [...markers, ...caps];
+  const thresholds = gamutThresholds.value.map(({ position }) => ({
+    center: PICKER_SLIDER_FIELD_INSET + position * fieldWidth,
+    width: PICKER_SLIDER_TICK_COLLISION_WIDTH,
+  }));
+  return [...markers, ...thresholds];
 });
 const warningPlacement = computed(() =>
   getSliderWarningPosition({
@@ -143,6 +227,7 @@ const warningPlacement = computed(() =>
     markerGap: PICKER_SLIDER_WARNING_SIDE_GAP,
     obstacleClearance: PICKER_SLIDER_ANNOTATION_CLEARANCE,
     obstacles: warningObstacles.value,
+    preferredSide: warningPreferredSide.value,
   }),
 );
 const warningStyle = computed<Record<string, string>>(() => {
@@ -159,10 +244,17 @@ function updateTrackWidth(width: number): void {
   if (width > 0 && Math.abs(width - trackWidth.value) > 0.25) trackWidth.value = width;
 }
 
+function updateTrackBounds(): void {
+  const bounds = trackElement.value?.getBoundingClientRect();
+  if (!bounds) return;
+  updateTrackWidth(bounds.width);
+  trackLeft.value = bounds.left;
+}
+
 onMounted(() => {
   const element = trackElement.value;
   if (!element) return;
-  updateTrackWidth(element.getBoundingClientRect().width);
+  updateTrackBounds();
   if (typeof ResizeObserver === "undefined") return;
   trackResizeObserver = new ResizeObserver(([entry]) => {
     if (entry) updateTrackWidth(entry.contentRect.width);
@@ -200,6 +292,13 @@ function commitFromRange(event: Event): void {
   emit("commit", clamp(value));
 }
 
+function updateThresholdContext(event: PointerEvent): void {
+  hoverPosition.value = Math.min(
+    1,
+    Math.max(0, (event.clientX - trackLeft.value) / trackWidth.value),
+  );
+}
+
 function positionStyle(position: number): Record<string, string> {
   return { left: `${Math.min(1, Math.max(0, position)) * 100}%` };
 }
@@ -210,20 +309,8 @@ function tickStyle(marker: LinearControlMarker): Record<string, string> {
   return style;
 }
 
-function intervalStyle(interval: LinearControlInterval): Record<string, string> {
-  const start = Math.min(1, Math.max(0, interval.start));
-  const end = Math.min(1, Math.max(start, interval.end));
-  return { left: `${start * 100}%`, width: `${(end - start) * 100}%` };
-}
-
-function bracketLineY(tone: LinearControlInterval["tone"]): number {
-  return tone === "display-p3" ? 0.5 : PICKER_BRACKET_CAP_LENGTH - 0.5;
-}
-
-function bracketCapsPath(tone: LinearControlInterval["tone"]): string {
-  const lineY = bracketLineY(tone);
-  const capEnd = tone === "display-p3" ? PICKER_BRACKET_CAP_LENGTH : 0;
-  return `M 0 ${lineY} V ${capEnd} M 1000 ${lineY} V ${capEnd}`;
+function sectionStyle(section: GamutSection): Record<string, string> {
+  return { left: `${section.start * 100}%`, width: `${(section.end - section.start) * 100}%` };
 }
 </script>
 
@@ -240,6 +327,13 @@ function bracketCapsPath(tone: LinearControlInterval["tone"]): string {
         <span>{{ channel }}</span>
         {{ label }}
       </label>
+      <span
+        v-if="contextualThreshold"
+        class="oklch-linear-control__threshold-context"
+        :data-contextual-gamut-label="contextualThreshold.label"
+      >
+        {{ contextualThreshold.label }}
+      </span>
       <input
         class="oklch-linear-control__number"
         type="number"
@@ -253,65 +347,34 @@ function bracketCapsPath(tone: LinearControlInterval["tone"]): string {
       />
     </header>
 
-    <div ref="trackElement" class="oklch-linear-control__track">
+    <div
+      ref="trackElement"
+      class="oklch-linear-control__track"
+      @pointerenter="updateTrackBounds"
+      @pointermove="updateThresholdContext"
+      @pointerleave="hoverPosition = null"
+    >
       <span class="oklch-linear-control__field" :style="{ backgroundImage: gradient }" />
-      <span class="oklch-linear-control__brackets" aria-hidden="true">
+      <span class="oklch-linear-control__gamut-material" aria-hidden="true">
         <span
-          v-for="interval in renderedIntervals"
-          :key="`${interval.tone}-${interval.index}`"
-          class="oklch-linear-control__interval"
-          :class="`oklch-linear-control__interval--${interval.tone}`"
-          :style="intervalStyle(interval)"
-          :data-gamut-interval="interval.tone"
-          :data-gamut-bracket="interval.tone"
-          :data-bracket-start="interval.start"
-          :data-bracket-end="interval.end"
-        >
-          <svg
-            class="oklch-linear-control__bracket"
-            :viewBox="`0 0 1000 ${PICKER_BRACKET_CAP_LENGTH}`"
-            preserveAspectRatio="none"
-          >
-            <line
-              class="oklch-linear-control__bracket-keyline"
-              :class="
-                interval.tone === 'srgb'
-                  ? 'oklch-linear-control__bracket-horizontal--srgb'
-                  : undefined
-              "
-              x1="0"
-              x2="1000"
-              :y1="bracketLineY(interval.tone)"
-              :y2="bracketLineY(interval.tone)"
-              vector-effect="non-scaling-stroke"
-            />
-            <line
-              class="oklch-linear-control__bracket-core"
-              :class="
-                interval.tone === 'srgb'
-                  ? 'oklch-linear-control__bracket-horizontal--srgb'
-                  : undefined
-              "
-              x1="0"
-              x2="1000"
-              :y1="bracketLineY(interval.tone)"
-              :y2="bracketLineY(interval.tone)"
-              :data-bracket-line="interval.tone === 'srgb' ? 'dashed' : 'solid'"
-              vector-effect="non-scaling-stroke"
-            />
-            <path
-              class="oklch-linear-control__bracket-keyline"
-              :d="bracketCapsPath(interval.tone)"
-              vector-effect="non-scaling-stroke"
-            />
-            <path
-              class="oklch-linear-control__bracket-core"
-              :d="bracketCapsPath(interval.tone)"
-              data-bracket-caps="start-end"
-              vector-effect="non-scaling-stroke"
-            />
-          </svg>
-        </span>
+          v-for="(section, index) in outOfGamutSections"
+          :key="`${section.tone}-veil-${index}`"
+          class="oklch-linear-control__veil"
+          :class="`oklch-linear-control__veil--${section.tone}`"
+          :style="sectionStyle(section)"
+          :data-gamut-veil="section.tone"
+          :data-veil-start="section.start"
+          :data-veil-end="section.end"
+        />
+        <span
+          v-for="threshold in gamutThresholds"
+          :key="`${threshold.tone}-threshold-${threshold.position}`"
+          class="oklch-linear-control__threshold"
+          :class="`oklch-linear-control__threshold--${threshold.tone}`"
+          :style="positionStyle(threshold.position)"
+          :data-gamut-threshold="threshold.tone"
+          :data-threshold-position="threshold.position"
+        />
       </span>
       <span
         v-for="marker in markers"
@@ -349,6 +412,8 @@ function bracketCapsPath(tone: LinearControlInterval["tone"]): string {
         :step="step"
         @input="updateFromRange"
         @change="commitFromRange"
+        @focus="isRangeFocused = true"
+        @blur="isRangeFocused = false"
       />
     </div>
 

@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import OklchLinearControl, {
   type LinearControlInterval,
@@ -143,7 +144,7 @@ describe("OklchLinearControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("flips only when a gamut marker or bracket cap occupies the preferred side", async () => {
+  it("flips only when a gamut marker or threshold occupies the preferred side", async () => {
     const wrapper = mountControl({
       warningVisible: true,
       warningLabel: WARNING_LABEL,
@@ -180,6 +181,30 @@ describe("OklchLinearControl gamut annotations", () => {
     });
     expect(warning.attributes("data-warning-side")).toBe("left");
     expect(warning.attributes("data-warning-obstacle-count")).toBe("2");
+
+    wrapper.unmount();
+  });
+
+  it("keeps the warning on the out-of-gamut side through small slider movements", async () => {
+    const wrapper = mountControl({
+      modelValue: 0.349,
+      min: 0,
+      max: 1,
+      step: 0.001,
+      warningVisible: true,
+      warningLabel: WARNING_LABEL,
+      warningPosition: 0.349,
+      intervals: [{ start: 0.38, end: 0.66, tone: "display-p3" }],
+    });
+    const warning = wrapper.get('[data-gamut-warning="linear"]');
+
+    expect(warning.attributes("data-warning-side")).toBe("left");
+
+    await wrapper.setProps({ modelValue: 0.341, warningPosition: 0.341 });
+    expect(warning.attributes("data-warning-side")).toBe("left");
+
+    await wrapper.setProps({ modelValue: 0.7, warningPosition: 0.7 });
+    expect(warning.attributes("data-warning-side")).toBe("right");
 
     wrapper.unmount();
   });
@@ -249,7 +274,7 @@ describe("OklchLinearControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("renders solid P3 and dashed sRGB brackets with wrapped intervals as edge segments", () => {
+  it("renders out-of-gamut veils and reveals only the nearby crossing label", async () => {
     const intervals: LinearControlInterval[] = [
       { start: 0, end: 0.12, tone: "display-p3" },
       { start: 0.78, end: 1, tone: "display-p3" },
@@ -257,19 +282,47 @@ describe("OklchLinearControl gamut annotations", () => {
       { start: 0.4, end: 0.4, tone: "srgb" },
     ];
     const wrapper = mountControl({ intervals });
-    const p3Brackets = wrapper.findAll('[data-gamut-bracket="display-p3"]');
-    const srgbBrackets = wrapper.findAll('[data-gamut-bracket="srgb"]');
+    const p3Veils = wrapper.findAll('[data-gamut-veil="display-p3"]');
+    const srgbVeils = wrapper.findAll('[data-gamut-veil="srgb"]');
+    const p3Thresholds = wrapper.findAll('[data-gamut-threshold="display-p3"]');
+    const srgbThresholds = wrapper.findAll('[data-gamut-threshold="srgb"]');
 
-    expect(p3Brackets).toHaveLength(2);
-    expect(p3Brackets[0]?.attributes("data-bracket-start")).toBe("0");
-    expect(p3Brackets[1]?.attributes("data-bracket-end")).toBe("1");
-    expect(p3Brackets[0]?.get('[data-bracket-line="solid"]').exists()).toBe(true);
-    for (const bracket of [...p3Brackets, ...srgbBrackets]) {
-      const caps = bracket.get("[data-bracket-caps]");
-      expect(caps.attributes("d")).toMatch(/^M 0 .+ M 1000 /);
-    }
-    expect(srgbBrackets).toHaveLength(1);
-    expect(srgbBrackets[0]?.get('[data-bracket-line="dashed"]').exists()).toBe(true);
+    expect(p3Veils).toHaveLength(1);
+    expect(p3Veils[0]?.attributes("data-veil-start")).toBe("0.12");
+    expect(p3Veils[0]?.attributes("data-veil-end")).toBe("0.78");
+    expect(srgbVeils).toHaveLength(2);
+    expect(srgbVeils[0]?.attributes("data-veil-start")).toBe("0");
+    expect(srgbVeils[0]?.attributes("data-veil-end")).toBe("0.05");
+    expect(srgbVeils[1]?.attributes("data-veil-start")).toBe("0.62");
+    expect(srgbVeils[1]?.attributes("data-veil-end")).toBe("1");
+    expect(
+      p3Thresholds.map((threshold) => threshold.attributes("data-threshold-position")),
+    ).toEqual(["0.12", "0.78"]);
+    expect(
+      srgbThresholds.map((threshold) => threshold.attributes("data-threshold-position")),
+    ).toEqual(["0.05", "0.62"]);
+    expect(wrapper.find(".oklch-linear-control__bracket").exists()).toBe(false);
+    expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
+
+    const track = wrapper.get(".oklch-linear-control__track");
+    track.element.dispatchEvent(
+      new MouseEvent("pointermove", { bubbles: true, clientX: 0.12 * 320 }),
+    );
+    await nextTick();
+    expect(wrapper.get('[data-contextual-gamut-label="← Inside Display P3 gamut"]').text()).toBe(
+      "← Inside Display P3 gamut",
+    );
+
+    track.element.dispatchEvent(
+      new MouseEvent("pointermove", { bubbles: true, clientX: 0.05 * 320 }),
+    );
+    await nextTick();
+    expect(wrapper.get('[data-contextual-gamut-label="Inside sRGB gamut →"]').text()).toBe(
+      "Inside sRGB gamut →",
+    );
+
+    await track.trigger("pointerleave");
+    expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
 
     wrapper.unmount();
   });

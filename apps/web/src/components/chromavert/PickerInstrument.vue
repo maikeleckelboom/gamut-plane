@@ -168,7 +168,7 @@ const fallbackGuideChroma = computed(() => chromaMarkers.value.srgbFallbackGuide
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
     ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 instrument domain. The slider thumb pins at 0.4; the numeric field preserves canonical C.`
-    : "P3 and sRGB brackets show table-interpolated Chroma ranges. Gamut output is never silently clamped.",
+    : "Quiet P3 and sRGB thresholds mark table-interpolated Chroma limits. Gamut output is never silently clamped.",
 );
 const oklabDomainHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
@@ -314,7 +314,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="hueWarningPosition"
-            help="P3 and sRGB brackets show table-interpolated Hue intervals at current L/C."
+            help="Quiet P3 and sRGB thresholds mark table-interpolated Hue limits at current L/C."
             @update:model-value="updateChannel('h', $event)"
             @commit="commitChannel('h', $event)"
           />
@@ -333,7 +333,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="modelValue.l"
-            help="P3 and sRGB brackets show table-interpolated Lightness intervals at current C/H."
+            help="Quiet P3 and sRGB thresholds mark table-interpolated Lightness limits at current C/H."
             @update:model-value="updateChannel('l', $event)"
             @commit="commitChannel('l', $event)"
           />
