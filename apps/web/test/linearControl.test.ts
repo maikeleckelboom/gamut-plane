@@ -5,8 +5,9 @@ import OklchLinearControl, {
   type LinearControlInterval,
 } from "@/components/chromavert/OklchLinearControl.vue";
 import {
+  PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
-  PICKER_SLIDER_WARNING_GAP,
+  PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
 } from "@/components/chromavert/pickerInstrumentStyle";
@@ -47,6 +48,7 @@ describe("OklchLinearControl gamut annotations", () => {
 
     expect(warning.attributes("aria-hidden")).toBe("true");
     expect(warning.attributes("data-warning-channel")).toBe("h");
+    expect(warning.attributes("data-warning-side")).toBe("right");
     expect(warning.attributes("data-visible")).toBe("true");
     expect(
       (warning.element as HTMLElement).style.getPropertyValue("--picker-slider-warning-position"),
@@ -59,11 +61,20 @@ describe("OklchLinearControl gamut annotations", () => {
     expect(
       (warning.element as HTMLElement).style.getPropertyValue("--picker-slider-warning-edge"),
     ).toBe("9px");
-    expect(controlStyle.getPropertyValue("--picker-slider-warning-top")).toBe("-13px");
-    expect(controlStyle.getPropertyValue("--picker-slider-thumb-top")).toBe("2px");
-    expect(PICKER_SLIDER_WARNING_TOP + PICKER_WARNING_GLYPH_SIZE).toBe(
-      PICKER_SLIDER_THUMB_TOP - PICKER_SLIDER_WARNING_GAP,
+    expect(
+      (warning.element as HTMLElement).style.getPropertyValue(
+        "--picker-slider-warning-side-offset",
+      ),
+    ).toBe("14px");
+    expect(controlStyle.getPropertyValue("--picker-slider-warning-top")).toBe("9px");
+    expect(controlStyle.getPropertyValue("--picker-slider-track-height")).toBe("32px");
+    expect(controlStyle.getPropertyValue("--picker-slider-thumb-top")).toBe(
+      `${PICKER_SLIDER_THUMB_TOP}px`,
     );
+    expect(PICKER_SLIDER_WARNING_TOP).toBe(
+      (PICKER_SLIDER_TRACK_HEIGHT - PICKER_WARNING_GLYPH_SIZE) / 2,
+    );
+    expect(PICKER_SLIDER_WARNING_SIDE_GAP).toBe(2);
     expect(wrapper.get("#test-control-gamut-warning").text()).toBe(WARNING_LABEL);
     expect(wrapper.get('input[type="range"]').attributes("aria-describedby")).toBe(
       "test-control-help test-control-gamut-warning",
@@ -81,6 +92,12 @@ describe("OklchLinearControl gamut annotations", () => {
         "--picker-slider-warning-thumb-offset",
       ),
     ).toBe("-5.0000px");
+    expect(warning.attributes("data-warning-side")).toBe("left");
+    expect(
+      (warning.element as HTMLElement).style.getPropertyValue(
+        "--picker-slider-warning-side-offset",
+      ),
+    ).toBe("-14px");
 
     wrapper.unmount();
   });
@@ -100,6 +117,47 @@ describe("OklchLinearControl gamut annotations", () => {
     expect(wrapper.get('input[type="range"]').attributes("aria-describedby")).toBe(
       "test-control-help",
     );
+
+    wrapper.unmount();
+  });
+
+  it("flips only when a gamut marker or bracket cap occupies the preferred side", async () => {
+    const wrapper = mountControl({
+      warningVisible: true,
+      warningLabel: WARNING_LABEL,
+      warningPosition: 0.5,
+      markers: [
+        {
+          id: "nearby-boundary",
+          label: "Nearby gamut boundary",
+          position: 174 / 320,
+          tone: "display-p3",
+        },
+      ],
+    });
+    const warning = wrapper.get('[data-gamut-warning="linear"]');
+
+    expect(warning.attributes("data-warning-side")).toBe("left");
+    expect(warning.attributes("data-warning-obstacle-count")).toBe("1");
+
+    await wrapper.setProps({
+      markers: [
+        {
+          id: "opposite-boundary",
+          label: "Opposite gamut boundary",
+          position: 146 / 320,
+          tone: "display-p3",
+        },
+      ],
+    });
+    expect(warning.attributes("data-warning-side")).toBe("right");
+
+    await wrapper.setProps({
+      markers: [],
+      intervals: [{ start: 169 / 310, end: 0.9, tone: "display-p3" }],
+    });
+    expect(warning.attributes("data-warning-side")).toBe("left");
+    expect(warning.attributes("data-warning-obstacle-count")).toBe("2");
 
     wrapper.unmount();
   });

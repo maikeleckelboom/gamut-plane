@@ -31,16 +31,36 @@ export interface PlanarWarningPlacement {
 
 export interface SliderWarningPositionInput {
   position: number;
+  trackWidth: number;
   thumbWidth: number;
   warningWidth: number;
   edgeClearance: number;
+  markerGap: number;
+  obstacleClearance: number;
+  obstacles?: readonly SliderWarningObstacle[];
+  preferredSide?: "left" | "right";
+}
+
+export interface SliderWarningObstacle {
+  center: number;
+  width: number;
 }
 
 export interface SliderWarningPosition {
   normalizedPosition: number;
   positionPercent: number;
   thumbOffset: number;
+  side: "left" | "right";
+  sideOffset: number;
   edge: number;
+}
+
+interface SliderWarningCandidate {
+  side: "left" | "right";
+  center: number;
+  sideOffset: number;
+  collisionCount: number;
+  collisionOverlap: number;
 }
 
 interface PlacementBounds {
@@ -192,15 +212,55 @@ export function placePlanarWarning(input: PlanarWarningPlacementInput): PlanarWa
 
 export function getSliderWarningPosition(input: SliderWarningPositionInput): SliderWarningPosition {
   assertFinite("slider position", input.position);
+  assertNonNegative("slider track width", input.trackWidth);
   assertNonNegative("slider thumb width", input.thumbWidth);
   assertNonNegative("slider warning width", input.warningWidth);
   assertNonNegative("slider edge clearance", input.edgeClearance);
+  assertNonNegative("slider marker gap", input.markerGap);
+  assertNonNegative("slider obstacle clearance", input.obstacleClearance);
+  for (const obstacle of input.obstacles ?? []) {
+    assertFinite("slider obstacle center", obstacle.center);
+    assertNonNegative("slider obstacle width", obstacle.width);
+  }
 
   const normalizedPosition = clamp(input.position, 0, 1);
+  const thumbOffset = input.thumbWidth * (0.5 - normalizedPosition);
+  const thumbCenter = normalizedPosition * input.trackWidth + thumbOffset;
+  const sideDistance = input.thumbWidth / 2 + input.warningWidth / 2 + input.markerGap;
+  const preferredSide = input.preferredSide ?? "right";
+  const sides = [preferredSide, preferredSide === "right" ? "left" : "right"] as const;
+  const edge = input.warningWidth / 2 + input.edgeClearance;
+  const candidates = sides.map((side): SliderWarningCandidate => {
+    const sideOffset = side === "right" ? sideDistance : -sideDistance;
+    const center = thumbCenter + sideOffset;
+    const warningStart = center - input.warningWidth / 2 - input.obstacleClearance;
+    const warningEnd = center + input.warningWidth / 2 + input.obstacleClearance;
+    let collisionCount = center < edge || center > input.trackWidth - edge ? 1 : 0;
+    let collisionOverlap =
+      Math.max(0, edge - center) + Math.max(0, center - (input.trackWidth - edge));
+    for (const obstacle of input.obstacles ?? []) {
+      const obstacleStart = obstacle.center - obstacle.width / 2;
+      const obstacleEnd = obstacle.center + obstacle.width / 2;
+      const overlap = Math.min(warningEnd, obstacleEnd) - Math.max(warningStart, obstacleStart);
+      if (overlap < 0) continue;
+      collisionCount += 1;
+      collisionOverlap += overlap;
+    }
+    return { side, center, sideOffset, collisionCount, collisionOverlap };
+  });
+  const candidate = [...candidates].sort(
+    (left, right) =>
+      left.collisionCount - right.collisionCount ||
+      left.collisionOverlap - right.collisionOverlap ||
+      sides.indexOf(left.side) - sides.indexOf(right.side),
+  )[0]!;
+
   return {
     normalizedPosition,
     positionPercent: normalizedPosition * 100,
-    thumbOffset: input.thumbWidth * (0.5 - normalizedPosition),
-    edge: input.warningWidth / 2 + input.edgeClearance,
+    thumbOffset,
+    side: candidate.side,
+    sideOffset: candidate.sideOffset,
+    edge,
   };
 }

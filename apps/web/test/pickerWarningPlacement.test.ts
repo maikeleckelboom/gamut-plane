@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
   PICKER_FALLBACK_MARKER_RADIUS,
+  PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_EDGE_CLEARANCE,
   PICKER_SLIDER_THUMB_WIDTH,
+  PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
@@ -117,9 +119,12 @@ describe("placePlanarWarning", () => {
 
 describe("getSliderWarningPosition", () => {
   const dimensions = {
+    trackWidth: 100,
     thumbWidth: PICKER_SLIDER_THUMB_WIDTH,
     warningWidth: PICKER_WARNING_GLYPH_SIZE,
     edgeClearance: PICKER_SLIDER_EDGE_CLEARANCE,
+    markerGap: PICKER_SLIDER_WARNING_SIDE_GAP,
+    obstacleClearance: PICKER_SLIDER_ANNOTATION_CLEARANCE,
   } as const;
 
   it("clamps minimum, maximum, and out-of-range positions within the warning edges", () => {
@@ -127,6 +132,8 @@ describe("getSliderWarningPosition", () => {
       normalizedPosition: 0,
       positionPercent: 0,
       thumbOffset: 5,
+      side: "right",
+      sideOffset: 14,
       edge: 9,
     });
     expect(getSliderWarningPosition({ ...dimensions, position: -1 })).toEqual(
@@ -136,6 +143,8 @@ describe("getSliderWarningPosition", () => {
       normalizedPosition: 1,
       positionPercent: 100,
       thumbOffset: -5,
+      side: "left",
+      sideOffset: -14,
       edge: 9,
     });
     expect(getSliderWarningPosition({ ...dimensions, position: 2 })).toEqual(
@@ -146,13 +155,39 @@ describe("getSliderWarningPosition", () => {
   it("maps through native thumb travel before applying warning-width clamping", () => {
     const position = getSliderWarningPosition({
       position: 0.25,
+      trackWidth: 100,
       thumbWidth: 20,
       warningWidth: 4,
       edgeClearance: 0,
+      markerGap: 3,
+      obstacleClearance: 1,
     });
     const trackWidth = 100;
-    const unclampedCenter = (position.positionPercent / 100) * trackWidth + position.thumbOffset;
-    expect(unclampedCenter).toBe(30);
+    const unclampedCenter =
+      (position.positionPercent / 100) * trackWidth + position.thumbOffset + position.sideOffset;
+    expect(unclampedCenter).toBe(45);
+    expect(position.side).toBe("right");
     expect(position.edge).toBe(2);
+  });
+
+  it("keeps the preferred side past the midpoint when it is clear", () => {
+    expect(getSliderWarningPosition({ ...dimensions, position: 0.75 }).side).toBe("right");
+  });
+
+  it("flips only when the preferred candidate touches an obstacle", () => {
+    expect(
+      getSliderWarningPosition({
+        ...dimensions,
+        position: 0.75,
+        obstacles: [{ center: 86.5, width: 3 }],
+      }).side,
+    ).toBe("left");
+    expect(
+      getSliderWarningPosition({
+        ...dimensions,
+        position: 0.75,
+        obstacles: [{ center: 58.5, width: 3 }],
+      }).side,
+    ).toBe("right");
   });
 });
