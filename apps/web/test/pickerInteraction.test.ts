@@ -9,6 +9,14 @@ import {
   type PickerGamutBoundaryTables,
 } from "@chromavert/color";
 import OklchPlanarPicker from "@/components/chromavert/OklchPlanarPicker.vue";
+import {
+  PICKER_ACTIVE_MARKER_RADIUS,
+  PICKER_WARNING_GLYPH_SIZE,
+  PICKER_WARNING_MARKER_CLEARANCE,
+  PICKER_WARNING_PREFERRED_OFFSET,
+  PICKER_WARNING_SURFACE_INSET,
+} from "@/components/chromavert/pickerInstrumentStyle";
+import { placePlanarWarning } from "@/components/chromavert/pickerWarningPlacement";
 
 const TABLE_OPTIONS = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
 const tables: PickerGamutBoundaryTables = {
@@ -80,7 +88,8 @@ describe("OklchPlanarPicker pointer interaction", () => {
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
         srgbFallbackColor: null,
-        activeOutsideDisplayP3: false,
+        warningVisible: true,
+        warningLabel: "Outside primary Display P3. Canonical OKLCH is preserved.",
       },
     });
     await flushPromises();
@@ -88,6 +97,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
 
     const surface = wrapper.get("[data-picker-plane] > div").element as HTMLElement;
     const marker = wrapper.get("[data-active-marker]").element as HTMLElement;
+    const warning = wrapper.get('[data-gamut-warning="planar"]').element as HTMLElement;
     vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
       x: 10,
       y: 20,
@@ -111,10 +121,27 @@ describe("OklchPlanarPicker pointer interaction", () => {
     });
 
     dispatchPointer(surface, "pointerdown", { pointerId: 7, clientX: 70, clientY: 60 });
+    const warningAtCanonical = { left: warning.style.left, top: warning.style.top };
+    expect(warning.style.visibility).toBe("visible");
+    expect(warning.style.display).not.toBe("none");
     dispatchPointer(surface, "pointermove", { pointerId: 7, clientX: -100, clientY: 300 });
     dispatchPointer(surface, "pointermove", { pointerId: 7, clientX: 500, clientY: -100 });
 
     expect(emittedColors(wrapper)).toHaveLength(0);
+    expect(marker.style.left).toBe("100%");
+    expect(marker.style.top).toBe("0%");
+    const edgePlacement = placePlanarWarning({
+      activeCenter: { x: 200, y: 0 },
+      surfaceSize: { width: 200, height: 100 },
+      activeRadius: PICKER_ACTIVE_MARKER_RADIUS,
+      warningSize: { width: PICKER_WARNING_GLYPH_SIZE, height: PICKER_WARNING_GLYPH_SIZE },
+      preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
+      surfaceInset: PICKER_WARNING_SURFACE_INSET,
+      markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
+    });
+    expect(warning.style.left).toBe(`${edgePlacement.left}px`);
+    expect(warning.style.top).toBe(`${edgePlacement.top}px`);
+    expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
     animationFrames.flush();
 
     const [latestDrag] = emittedColors(wrapper);
@@ -138,12 +165,22 @@ describe("OklchPlanarPicker pointer interaction", () => {
     dispatchPointer(surface, "pointermove", { pointerId: 8, clientX: 210, clientY: 120 });
     expect(marker.style.left).toBe("100%");
     expect(marker.style.top).toBe("100%");
+    expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
 
     dispatchPointer(surface, "pointercancel", { pointerId: 8 });
     expect(marker.style.left).toBe("30%");
     expect(marker.style.top).toBe("40%");
+    expect({ left: warning.style.left, top: warning.style.top }).toEqual(warningAtCanonical);
     animationFrames.flush();
     expect(emittedColors(wrapper)).toHaveLength(2);
+
+    await wrapper.get("[data-render-color-space]").trigger("keydown", { key: "ArrowRight" });
+    const keyboardColor = emittedColors(wrapper).at(-1)!;
+    expect(keyboardColor.c).toBeCloseTo(0.125, 12);
+    await wrapper.setProps({ modelValue: keyboardColor });
+    expect(marker.style.left).toBe("31.25%");
+    expect(marker.style.top).toBe("40%");
+    expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
 
     wrapper.unmount();
   });

@@ -12,12 +12,24 @@ import {
 } from "@chromavert/color";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
+import GamutWarningGlyph from "@/components/chromavert/GamutWarningGlyph.vue";
+import {
+  PICKER_ACTIVE_MARKER_RADIUS,
+  PICKER_FALLBACK_MARKER_RADIUS,
+  PICKER_WARNING_GLYPH_SIZE,
+  PICKER_WARNING_MARKER_CLEARANCE,
+  PICKER_WARNING_PREFERRED_OFFSET,
+  PICKER_WARNING_SURFACE_INSET,
+} from "@/components/chromavert/pickerInstrumentStyle";
+import { placePlanarWarning } from "@/components/chromavert/pickerWarningPlacement";
+
 const props = defineProps<{
   modelValue: ChromavertColor;
   srgbTable: GamutBoundaryTable;
   displayP3Table: GamutBoundaryTable;
   srgbFallbackColor: ChromavertColor | null;
-  activeOutsideDisplayP3: boolean;
+  warningVisible: boolean;
+  warningLabel: string;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +44,7 @@ const KEYBOARD_COARSE_STEP = 0.02;
 const surface = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
 const marker = ref<HTMLSpanElement | null>(null);
+const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<"pending" | "display-p3" | "srgb" | "unavailable">("pending");
 
 let context: CanvasRenderingContext2D | null = null;
@@ -41,6 +54,8 @@ let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
 let activePointerId: number | null = null;
 let lastFieldKey = "";
+let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
+let surfaceLocalSize = { width: 0, height: 0 };
 
 const activePoint = computed(() => oklchToPlanePoint(props.modelValue));
 const boundedActivePoint = computed(() => clampPlanePointToInstrumentBounds(activePoint.value));
@@ -78,10 +93,15 @@ const displayP3Path = computed(() =>
   geometryToSvgPath(buildLightnessChromaBoundaryPath(props.displayP3Table, props.modelValue.h)),
 );
 const activeCss = computed(() => serializeColor(props.modelValue));
-const planeLabel = computed(
-  () =>
-    `OKLCH plane. Horizontal chroma ${props.modelValue.c.toFixed(3)}. Vertical lightness ${props.modelValue.l.toFixed(3)}. Arrow keys adjust the selected point.`,
-);
+const planeLabel = computed(() => {
+  const label = `OKLCH plane. Horizontal chroma ${props.modelValue.c.toFixed(3)}. Vertical lightness ${props.modelValue.l.toFixed(3)}. Arrow keys adjust the selected point.`;
+  return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
+});
+const instrumentStyle = {
+  "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
+  "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
+  "--picker-fallback-marker-size": `${PICKER_FALLBACK_MARKER_RADIUS * 2}px`,
+};
 
 function pointStyle(point: PlanePoint): Record<string, string> {
   return { left: `${point.x * 100}%`, top: `${point.y * 100}%` };
@@ -186,31 +206,85 @@ function scheduleFieldDraw(): void {
 }
 
 function pointFromPointer(event: PointerEvent): PlanePoint | null {
-  const element = surface.value;
-  if (!element) return null;
-  const bounds = element.getBoundingClientRect();
+  if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0) return null;
   return clampPlanePointToInstrumentBounds({
-    x: (event.clientX - bounds.left) / Math.max(1, bounds.width),
-    y: (event.clientY - bounds.top) / Math.max(1, bounds.height),
+    x: (event.clientX - surfaceBounds.left) / surfaceBounds.width,
+    y: (event.clientY - surfaceBounds.top) / surfaceBounds.height,
   });
 }
 
-function positionMarker(point: PlanePoint): void {
-  const element = marker.value;
+function measureSurface(): void {
+  const element = surface.value;
   if (!element) return;
-  element.style.left = `${point.x * 100}%`;
-  element.style.top = `${point.y * 100}%`;
+  const bounds = element.getBoundingClientRect();
+  if (bounds.width <= 0 || bounds.height <= 0) return;
+  surfaceBounds = {
+    left: bounds.left,
+    top: bounds.top,
+    width: bounds.width,
+    height: bounds.height,
+  };
+  surfaceLocalSize = {
+    width: element.clientWidth || bounds.width,
+    height: element.clientHeight || bounds.height,
+  };
+}
+
+function positionActiveAnnotations(point: PlanePoint): void {
+  const activeMarker = marker.value;
+  if (activeMarker) {
+    activeMarker.style.left = `${point.x * 100}%`;
+    activeMarker.style.top = `${point.y * 100}%`;
+  }
+
+  const warning = warningMarker.value;
+  if (
+    !warning ||
+    surfaceLocalSize.width < PICKER_WARNING_GLYPH_SIZE ||
+    surfaceLocalSize.height < PICKER_WARNING_GLYPH_SIZE
+  ) {
+    return;
+  }
+
+  const fallback = fallbackPoint.value;
+  const placement = placePlanarWarning({
+    activeCenter: {
+      x: point.x * surfaceLocalSize.width,
+      y: point.y * surfaceLocalSize.height,
+    },
+    surfaceSize: surfaceLocalSize,
+    activeRadius: PICKER_ACTIVE_MARKER_RADIUS,
+    warningSize: {
+      width: PICKER_WARNING_GLYPH_SIZE,
+      height: PICKER_WARNING_GLYPH_SIZE,
+    },
+    preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
+    surfaceInset: PICKER_WARNING_SURFACE_INSET,
+    markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
+    fallbackMarker: fallback
+      ? {
+          center: {
+            x: fallback.x * surfaceLocalSize.width,
+            y: fallback.y * surfaceLocalSize.height,
+          },
+          radius: PICKER_FALLBACK_MARKER_RADIUS,
+        }
+      : undefined,
+  });
+  warning.style.left = `${placement.left}px`;
+  warning.style.top = `${placement.top}px`;
+  warning.style.visibility = "visible";
 }
 
 function commitPoint(point: PlanePoint): void {
   pendingPoint = null;
-  positionMarker(point);
+  positionActiveAnnotations(point);
   emit("update:modelValue", planePointToOklch(point, props.modelValue));
 }
 
 function schedulePoint(point: PlanePoint): void {
   pendingPoint = point;
-  positionMarker(point);
+  positionActiveAnnotations(point);
   if (pointerRaf !== null) return;
   pointerRaf = window.requestAnimationFrame(() => {
     pointerRaf = null;
@@ -226,6 +300,7 @@ function cancelPendingPoint(): void {
 
 function onPointerDown(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
+  measureSurface();
   const point = pointFromPointer(event);
   if (!point || !surface.value) return;
   event.preventDefault();
@@ -256,7 +331,7 @@ function onPointerCancel(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
   cancelPendingPoint();
   activePointerId = null;
-  positionMarker(boundedActivePoint.value);
+  positionActiveAnnotations(boundedActivePoint.value);
 }
 
 function onLostPointerCapture(event: PointerEvent): void {
@@ -293,13 +368,24 @@ watch(
   () => props.modelValue.h,
   () => scheduleFieldDraw(),
 );
-watch(boundedActivePoint, (point) => positionMarker(point));
+watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
+watch(fallbackPoint, () => positionActiveAnnotations(boundedActivePoint.value));
 
 onMounted(() => {
   resizeObserver =
-    typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => scheduleFieldDraw());
-  if (canvas.value) resizeObserver?.observe(canvas.value);
-  void nextTick(drawField);
+    typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => {
+          measureSurface();
+          positionActiveAnnotations(boundedActivePoint.value);
+          scheduleFieldDraw();
+        });
+  if (surface.value) resizeObserver?.observe(surface.value);
+  void nextTick(() => {
+    measureSurface();
+    positionActiveAnnotations(boundedActivePoint.value);
+    drawField();
+  });
 });
 
 onBeforeUnmount(() => {
@@ -310,7 +396,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="oklch-planar-picker" data-picker-plane>
+  <div class="oklch-planar-picker" data-picker-plane :style="instrumentStyle">
     <div
       ref="surface"
       class="oklch-planar-picker__surface"
@@ -350,6 +436,7 @@ onBeforeUnmount(() => {
         v-if="fallbackPoint"
         class="oklch-planar-picker__fallback-connector"
         :style="fallbackConnectorStyle"
+        data-fallback-connector
         aria-hidden="true"
       />
       <span
@@ -360,25 +447,36 @@ onBeforeUnmount(() => {
         aria-hidden="true"
       />
       <span
+        ref="warningMarker"
+        v-show="warningVisible"
+        class="oklch-planar-picker__warning"
+        data-gamut-warning="planar"
+        :data-visible="warningVisible ? 'true' : 'false'"
+        style="visibility: hidden"
+        aria-hidden="true"
+      >
+        <GamutWarningGlyph />
+      </span>
+      <span
         ref="marker"
         class="oklch-planar-picker__marker oklch-planar-picker__marker--active"
         :style="{ ...markerStyle, '--marker-color': activeCss }"
-        :data-outside-display-p3="activeOutsideDisplayP3 ? 'true' : 'false'"
+        :data-outside-display-p3="warningVisible ? 'true' : 'false'"
         data-active-marker
         aria-hidden="true"
       />
-      <span class="oklch-planar-picker__render-mode">
-        {{
-          canvasColorSpace === "display-p3"
-            ? "P3 canvas"
-            : canvasColorSpace === "srgb"
-              ? "sRGB canvas"
-              : canvasColorSpace === "unavailable"
-                ? "canvas unavailable"
-                : "canvas pending"
-        }}
-      </span>
     </div>
+    <span class="oklch-planar-picker__render-mode">
+      {{
+        canvasColorSpace === "display-p3"
+          ? "P3 canvas"
+          : canvasColorSpace === "srgb"
+            ? "sRGB canvas"
+            : canvasColorSpace === "unavailable"
+              ? "canvas unavailable"
+              : "canvas pending"
+      }}
+    </span>
     <span class="oklch-planar-picker__axis oklch-planar-picker__axis--lightness">
       L · lightness
     </span>

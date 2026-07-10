@@ -4,6 +4,7 @@ import {
   deriveFallback,
   getCachedGamutBoundaryTable,
   getChromaSliderMarkers,
+  getHueGamutIntervals,
   getLightnessGamutIntervals,
   getPickerGamutStatus,
   normalizeHue,
@@ -44,6 +45,17 @@ const chromaMarkers = computed(() =>
   getChromaSliderMarkers(props.modelValue, tables, status.value),
 );
 
+const hueIntervals = computed<LinearControlInterval[]>(() => [
+  ...getHueGamutIntervals(tables.displayP3, props.modelValue).map((interval) => ({
+    ...interval,
+    tone: "display-p3" as const,
+  })),
+  ...getHueGamutIntervals(tables.srgb, props.modelValue).map((interval) => ({
+    ...interval,
+    tone: "srgb" as const,
+  })),
+]);
+
 const lightnessIntervals = computed<LinearControlInterval[]>(() => [
   ...getLightnessGamutIntervals(tables.displayP3, props.modelValue).map((interval) => ({
     ...interval,
@@ -83,6 +95,19 @@ const chromaControlMarkers = computed<LinearControlMarker[]>(() => {
   return markers;
 });
 
+const chromaIntervals = computed<LinearControlInterval[]>(() => [
+  {
+    start: 0,
+    end: chromaMarkers.value.displayP3BoundaryGuide.position,
+    tone: "display-p3",
+  },
+  {
+    start: 0,
+    end: chromaMarkers.value.srgbBoundaryGuide.position,
+    tone: "srgb",
+  },
+]);
+
 const hueGradient = computed(() =>
   colorGradient(72, (position) => ({
     l: 0.8,
@@ -110,6 +135,9 @@ const chromaGradient = computed(() =>
 
 const activeCss = computed(() => serializeColor(props.modelValue));
 const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
+const primaryGamutWarning = "Outside primary Display P3. Canonical OKLCH is preserved.";
+const hueWarningPosition = computed(() => normalizeHue(props.modelValue.h) / 360);
+const chromaWarningPosition = computed(() => chromaMarkers.value.active.position);
 const srgbFallback = computed(() =>
   status.value.srgb.inGamut ? null : deriveFallback(props.modelValue, "srgb").fallback,
 );
@@ -123,7 +151,7 @@ const fallbackGuideChroma = computed(() => chromaMarkers.value.srgbFallbackGuide
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
     ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 instrument domain. The slider thumb pins at 0.4; the numeric field preserves canonical C.`
-    : "The slider thumb may cross table boundary guides. Gamut output is never silently clamped.",
+    : "P3 and sRGB brackets show table-interpolated Chroma ranges. Gamut output is never silently clamped.",
 );
 
 function colorGradient(segments: number, colorAt: (position: number) => ChromavertColor): string {
@@ -172,7 +200,8 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
         :srgb-table="tables.srgb"
         :display-p3-table="tables.displayP3"
         :srgb-fallback-color="srgbFallback"
-        :active-outside-display-p3="isOutsideDisplayP3"
+        :warning-visible="isOutsideDisplayP3"
+        :warning-label="primaryGamutWarning"
         @update:model-value="updatePlane"
       />
 
@@ -199,7 +228,11 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :step="0.1"
           :precision="1"
           :gradient="hueGradient"
-          help="Changes hue; the planar field and both gamut boundaries redraw."
+          :intervals="hueIntervals"
+          :warning-visible="isOutsideDisplayP3"
+          :warning-label="primaryGamutWarning"
+          :warning-position="hueWarningPosition"
+          help="P3 and sRGB brackets show table-interpolated Hue intervals at current L/C."
           @update:model-value="updateChannel('h', $event)"
         />
 
@@ -214,7 +247,10 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :precision="4"
           :gradient="lightnessGradient"
           :intervals="lightnessIntervals"
-          help="P3 and sRGB guide rails show table-interpolated lightness intervals at current C/H."
+          :warning-visible="isOutsideDisplayP3"
+          :warning-label="primaryGamutWarning"
+          :warning-position="modelValue.l"
+          help="P3 and sRGB brackets show table-interpolated Lightness intervals at current C/H."
           @update:model-value="updateChannel('l', $event)"
         />
 
@@ -229,7 +265,11 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :precision="4"
           :gradient="chromaGradient"
           :markers="chromaControlMarkers"
+          :intervals="chromaIntervals"
           :overflow-max="true"
+          :warning-visible="isOutsideDisplayP3"
+          :warning-label="primaryGamutWarning"
+          :warning-position="chromaWarningPosition"
           :help="chromaHelp"
           @update:model-value="updateChannel('c', $event)"
         />
@@ -275,6 +315,9 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           Inside/outside membership uses exact gamut conversion. Boundary paths, ticks, intervals,
           and the fallback guide are table-interpolated visualization; export fallback remains the
           exact engine path.
+          <span v-if="isOutsideDisplayP3" data-primary-gamut-warning-status>
+            {{ primaryGamutWarning }}
+          </span>
         </p>
       </div>
     </div>

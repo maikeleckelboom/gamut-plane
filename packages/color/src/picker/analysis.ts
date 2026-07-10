@@ -56,7 +56,15 @@ export interface LightnessGamutInterval {
   end: number;
 }
 
+export interface HueGamutInterval {
+  /** Inclusive normalized Hue slider position at the start of the interval. */
+  start: number;
+  /** Inclusive normalized Hue slider position at the end of the interval. */
+  end: number;
+}
+
 type LightnessAnalysisColor = Pick<ChromavertColor, "c" | "h">;
+type HueAnalysisColor = Pick<ChromavertColor, "l" | "c">;
 
 function assertPickerTables(tables: PickerGamutBoundaryTables): void {
   if (tables.srgb.gamut !== "srgb") {
@@ -139,7 +147,23 @@ function assertLightnessAnalysisColor(color: LightnessAnalysisColor): void {
   if (!Number.isFinite(color.h)) throw new TypeError("Lightness interval hue must be finite");
 }
 
-function appendInterval(intervals: LightnessGamutInterval[], start: number, end: number): void {
+function assertHueAnalysisColor(color: HueAnalysisColor): void {
+  if (!Number.isFinite(color.l)) {
+    throw new TypeError("Hue interval lightness must be finite");
+  }
+  if (color.l < 0 || color.l > 1) {
+    throw new RangeError("Hue interval lightness must be between 0 and 1");
+  }
+  if (!Number.isFinite(color.c) || color.c < 0) {
+    throw new RangeError("Hue interval chroma must be finite and non-negative");
+  }
+}
+
+function appendInterval(
+  intervals: Array<{ start: number; end: number }>,
+  start: number,
+  end: number,
+): void {
   const previous = intervals.at(-1);
   if (previous && start <= previous.end + Number.EPSILON * 16) {
     previous.end = Math.max(previous.end, end);
@@ -183,6 +207,52 @@ export function getLightnessGamutIntervals(
     }
 
     previousLightness = lightness;
+    previousMaximum = maximum;
+    previousValid = valid;
+  }
+
+  return intervals;
+}
+
+/**
+ * Finds normalized Hue intervals valid at the supplied L/C by solving crossings
+ * in the table's periodic piecewise-linear Hue interpolation. No gamut search runs.
+ * An interval crossing the 0/360 seam remains split across the slider edges.
+ */
+export function getHueGamutIntervals(
+  table: GamutBoundaryTable,
+  color: HueAnalysisColor,
+): HueGamutInterval[] {
+  assertHueAnalysisColor(color);
+  if (!Number.isInteger(table.hueSteps) || table.hueSteps < 3) {
+    throw new RangeError("Boundary table must contain at least three hue steps");
+  }
+  if (!Number.isInteger(table.lightnessSteps) || table.lightnessSteps < 2) {
+    throw new RangeError("Boundary table must contain at least two lightness steps");
+  }
+
+  const intervals: HueGamutInterval[] = [];
+  const denominator = table.hueSteps;
+  let previousPosition = 0;
+  let previousMaximum = readMaximumChroma(table, color.l, 0);
+  let previousValid = color.c <= previousMaximum;
+
+  for (let index = 1; index <= table.hueSteps; index += 1) {
+    const position = index / denominator;
+    const maximum = readMaximumChroma(table, color.l, position * 360);
+    const valid = color.c <= maximum;
+
+    if (previousValid && valid) {
+      appendInterval(intervals, previousPosition, position);
+    } else if (previousValid !== valid) {
+      const maximumDelta = maximum - previousMaximum;
+      const ratio = maximumDelta === 0 ? 0 : (color.c - previousMaximum) / maximumDelta;
+      const crossing = previousPosition + Math.min(1, Math.max(0, ratio)) / denominator;
+      if (previousValid) appendInterval(intervals, previousPosition, crossing);
+      else appendInterval(intervals, crossing, position);
+    }
+
+    previousPosition = position;
     previousMaximum = maximum;
     previousValid = valid;
   }
