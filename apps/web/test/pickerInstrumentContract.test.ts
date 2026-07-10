@@ -36,6 +36,52 @@ describe("PickerInstrument edit contract", () => {
     wrapper.unmount();
   });
 
+  it("switches coordinate view without a color edit and separates fixed-L live and commit", async () => {
+    const canonical = parseUserColor("oklch(62% 0.2 210 / 0.7)");
+    const canonicalSnapshot = structuredClone(canonical);
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: canonical, plane: "oklch" },
+    });
+    await flushPromises();
+
+    await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+    expect(wrapper.emitted("update:plane")).toEqual([["oklab"]]);
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    expect(wrapper.emitted("commit")).toBeUndefined();
+    expect(canonical).toEqual(canonicalSnapshot);
+
+    await wrapper.setProps({ plane: "oklab" });
+    await flushPromises();
+    const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
+    expect(plane.get('[data-instrument-domain="disc"]').exists()).toBe(true);
+    expect(plane.get("[data-neutral-center]").exists()).toBe(true);
+    expect(plane.attributes("data-field-resolution")).toBe("80x24");
+    for (const boundary of plane.findAll("[data-gamut-boundary]")) {
+      expect(boundary.attributes("d")).toMatch(/ Z$/);
+    }
+
+    const fixedLightness = wrapper.get('[data-picker-control="l"] input[type="range"]');
+    (fixedLightness.element as HTMLInputElement).value = "0.72";
+    await fixedLightness.trigger("input");
+
+    const live = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as ChromavertColor;
+    expect(live.l).toBeCloseTo(0.72, 11);
+    expect(live.c).toBeCloseTo(canonical.c, 10);
+    expect(live.h).toBeCloseTo(canonical.h, 8);
+    expect(live.alpha).toBe(canonical.alpha);
+    expect(wrapper.emitted("commit")).toBeUndefined();
+
+    await fixedLightness.trigger("change");
+    const committed = wrapper.emitted("commit")?.at(-1)?.[0] as ChromavertColor;
+    expect(committed.l).toBeCloseTo(live.l, 12);
+    expect(committed.c).toBeCloseTo(live.c, 10);
+    expect(committed.h).toBeCloseTo(live.h, 8);
+    expect(committed.alpha).toBe(live.alpha);
+
+    wrapper.unmount();
+  });
+
   it.each([
     [292.7, "right"],
     [359, "left"],

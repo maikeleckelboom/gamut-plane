@@ -1,11 +1,18 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  OKLAB_AB_PLANE,
+  OKLAB_FIELD_COLUMN_SAMPLES,
+  OKLAB_FIELD_ROW_COUNT,
+  OKLAB_NEUTRAL_RADIUS_EPSILON,
+  OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   buildLightnessChromaBoundaryPath,
+  buildOklabGamutContour,
   clampPlanePointToInstrumentBounds,
   clearGamutBoundaryTableCache,
+  constrainOklabPlanePoint,
   getCachedGamutBoundaryTable,
   getChromaSliderMarkers,
   getHueGamutIntervals,
@@ -13,6 +20,8 @@ import {
   getMaximumChromaFromTable,
   getPickerGamutStatus,
   isColorInGamut,
+  isPointInOklabInstrumentDomain,
+  oklabPlanePointToOklch,
   oklchToPlanePoint,
   planePointToOklch,
   type ChromavertColor,
@@ -395,6 +404,134 @@ describe("OKLCH picker geometry and analysis", () => {
           { l: 0.5, c: 0.1 },
         ),
       ).toThrow(/at least three hue steps/);
+    });
+  });
+
+  describe("OKLab a/b picker geometry", () => {
+    it("roundtrips canonical OKLCH through the projection within explicit tolerances", () => {
+      for (const color of [
+        { l: 0.63, c: 0.17, h: 28, alpha: 0.4 },
+        { l: 0.42, c: 0.31, h: 217.5, alpha: 1 },
+        { l: 0.81, c: 0.04, h: 335, alpha: 0.72 },
+      ] satisfies ChromavertColor[]) {
+        const snapshot = structuredClone(color);
+        const projection = OKLAB_AB_PLANE.project(color);
+        const roundtrip = OKLAB_AB_PLANE.unproject(projection.point, projection.fixed, color);
+
+        expect(roundtrip.l).toBeCloseTo(color.l, 11);
+        expect(roundtrip.c).toBeCloseTo(color.c, 11);
+        expect(roundtrip.h).toBeCloseTo(color.h, 9);
+        expect(roundtrip.alpha).toBe(color.alpha);
+        expect(roundtrip.source).toBeUndefined();
+        expect(color).toEqual(snapshot);
+      }
+    });
+
+    it.each([12, 143.75, 298])(
+      "preserves reference hue %s at the exact and near-neutral center",
+      (referenceHue) => {
+        const reference = { h: referenceHue, alpha: 0.65 };
+        const exact = oklabPlanePointToOklch({ x: 0.5, y: 0.5 }, 0.37, reference);
+        const nearA = OKLAB_NEUTRAL_RADIUS_EPSILON * 0.4;
+        const nearB = -OKLAB_NEUTRAL_RADIUS_EPSILON * 0.3;
+        const near = oklabPlanePointToOklch(
+          {
+            x: 0.5 + nearA / (OKLAB_PICKER_AXIS_LIMIT * 2),
+            y: 0.5 - nearB / (OKLAB_PICKER_AXIS_LIMIT * 2),
+          },
+          0.72,
+          reference,
+        );
+
+        expect(exact).toEqual({ l: 0.37, c: 0, h: referenceHue, alpha: 0.65 });
+        expect(near.l).toBeCloseTo(0.72, 12);
+        expect(near.c).toBeCloseTo(Math.hypot(nearA, nearB), 12);
+        expect(near.h).toBe(referenceHue);
+        expect(near.alpha).toBe(reference.alpha);
+      },
+    );
+
+    it("locks the viewport to a,b ±0.4 and projects pointer overflow to the radial edge", () => {
+      expect(OKLAB_PICKER_AXIS_LIMIT).toBe(0.4);
+      expect(OKLAB_AB_PLANE.xAxis).toMatchObject({ min: -0.4, max: 0.4 });
+      expect(OKLAB_AB_PLANE.yAxis).toMatchObject({ min: -0.4, max: 0.4 });
+      expect(isPointInOklabInstrumentDomain({ x: 1, y: 1 })).toBe(false);
+
+      const bounded = constrainOklabPlanePoint({ x: 1.5, y: -0.5 });
+      expect(Math.hypot(bounded.x - 0.5, bounded.y - 0.5)).toBeCloseTo(0.5, 12);
+      const color = oklabPlanePointToOklch(bounded, 0.6, { h: 245, alpha: 0.8 });
+      expect(color.c).toBeCloseTo(0.4, 11);
+      expect(color.alpha).toBe(0.8);
+    });
+
+    it("samples the genuine OKLab disc deterministically through canonical OKLCH", () => {
+      expect(OKLAB_FIELD_ROW_COUNT).toBe(80);
+      expect(OKLAB_FIELD_COLUMN_SAMPLES).toBe(24);
+      const points = [
+        { x: 0.5, y: 0.5 },
+        { x: 0.75, y: 0.32 },
+        { x: 0.12, y: 0.56 },
+      ];
+      const sample = () =>
+        points.map((point) => {
+          const output: ChromavertColor = { l: 0, c: 0, h: 0, alpha: 1 };
+          OKLAB_AB_PLANE.sampleField(point, 0.64, output, {
+            input: [0, 0, 0],
+            converted: [0, 0, 0],
+          });
+          return { ...output };
+        });
+
+      expect(sample()).toEqual(sample());
+      expect(sample().every((color) => color.l === 0.64 && color.alpha === 1)).toBe(true);
+
+      const corner: ChromavertColor = { l: 0, c: 0, h: 0, alpha: 1 };
+      OKLAB_AB_PLANE.sampleField({ x: 0, y: 0 }, 0.64, corner);
+      const editedCorner = OKLAB_AB_PLANE.unproject({ x: 0, y: 0 }, 0.64, { h: 20, alpha: 1 });
+      expect(corner.c).toBeCloseTo(Math.hypot(0.4, 0.4), 11);
+      expect(editedCorner.c).toBeCloseTo(0.4, 11);
+    });
+
+    it("keeps an outside-gamut coordinate visible and editable without RGB clamping", () => {
+      const point = { x: 1, y: 0.5 };
+      const color = OKLAB_AB_PLANE.unproject(point, 0.6, { h: 210, alpha: 1 });
+
+      expect(color.c).toBeCloseTo(0.4, 11);
+      expect(isColorInGamut(color, "srgb")).toBe(false);
+      expect(isColorInGamut(color, "display-p3")).toBe(false);
+      expect(OKLAB_AB_PLANE.project(color).point.x).toBeCloseTo(1, 11);
+      expect(OKLAB_AB_PLANE.positionActivePoint(color).x).toBeCloseTo(1, 11);
+    });
+
+    it("builds deterministic finite closed contours and retains gamut association", () => {
+      const sampleCount = 49;
+      const srgbOutput = new Float32Array(sampleCount * 2);
+      const srgb = buildOklabGamutContour(tables.srgb, 0.62, sampleCount, srgbOutput);
+      const srgbRepeated = buildOklabGamutContour(tables.srgb, 0.62, sampleCount);
+      const displayP3 = buildOklabGamutContour(tables.displayP3, 0.62, sampleCount);
+
+      expect(srgb).toBe(srgbOutput);
+      expect([...srgb]).toEqual([...srgbRepeated]);
+      expect([...srgb].every(Number.isFinite)).toBe(true);
+      expect([...displayP3].every(Number.isFinite)).toBe(true);
+      expect(srgb.at(-2)).toBe(srgb[0]);
+      expect(srgb.at(-1)).toBe(srgb[1]);
+      expect(displayP3.at(-2)).toBe(displayP3[0]);
+      expect(displayP3.at(-1)).toBe(displayP3[1]);
+      expect(tables.srgb.gamut).toBe("srgb");
+      expect(tables.displayP3.gamut).toBe("display-p3");
+      expect(srgb[0]).toBeCloseTo(
+        0.5 + getMaximumChromaFromTable(tables.srgb, 0.62, 0) / (OKLAB_PICKER_AXIS_LIMIT * 2),
+        6,
+      );
+      expect(displayP3[0]).toBeCloseTo(
+        0.5 + getMaximumChromaFromTable(tables.displayP3, 0.62, 0) / (OKLAB_PICKER_AXIS_LIMIT * 2),
+        6,
+      );
+      expect(
+        [...displayP3].some((value, index) => Math.abs(value - (srgb[index] ?? 0)) > 1e-5),
+      ).toBe(true);
+      expect(OKLAB_AB_PLANE.gamutContourClosed).toBe(true);
     });
   });
 });

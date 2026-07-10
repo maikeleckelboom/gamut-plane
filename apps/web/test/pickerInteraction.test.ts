@@ -2,6 +2,7 @@ import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   getCachedGamutBoundaryTable,
@@ -199,6 +200,87 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(marker.style.left).toBe("31.25%");
     expect(marker.style.top).toBe("40%");
     expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
+
+    wrapper.unmount();
+  });
+
+  it("keeps OKLab pointer live/commit scheduling, radial bounds, and keyboard commits distinct", async () => {
+    const animationFrames = installAnimationFrameController();
+    const canonical: ChromavertColor = { l: 0.6, c: 0.1, h: 0, alpha: 0.7 };
+    const wrapper = mount(OklchPlanarPicker, {
+      attachTo: document.body,
+      props: {
+        modelValue: canonical,
+        plane: OKLAB_AB_PLANE,
+        srgbTable: tables.srgb,
+        displayP3Table: tables.displayP3,
+        srgbFallbackColor: null,
+        warningVisible: false,
+        warningLabel: "",
+      },
+    });
+    await flushPromises();
+    animationFrames.flush();
+
+    const surface = wrapper.get("[data-picker-plane] > div").element as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
+      x: 10,
+      y: 20,
+      left: 10,
+      top: 20,
+      right: 210,
+      bottom: 220,
+      width: 200,
+      height: 200,
+      toJSON: () => ({}),
+    });
+    const capturedPointers = new Set<number>();
+    Object.defineProperties(surface, {
+      setPointerCapture: {
+        configurable: true,
+        value: vi.fn((pointerId: number) => capturedPointers.add(pointerId)),
+      },
+      hasPointerCapture: {
+        configurable: true,
+        value: vi.fn((pointerId: number) => capturedPointers.has(pointerId)),
+      },
+      releasePointerCapture: {
+        configurable: true,
+        value: vi.fn((pointerId: number) => capturedPointers.delete(pointerId)),
+      },
+    });
+
+    dispatchPointer(surface, "pointerdown", { pointerId: 31, clientX: 110, clientY: 120 });
+    dispatchPointer(surface, "pointermove", { pointerId: 31, clientX: 410, clientY: 120 });
+    expect(emittedColors(wrapper)).toHaveLength(0);
+    animationFrames.flush();
+
+    const radialLive = emittedColors(wrapper).at(-1)!;
+    expect(radialLive.l).toBeCloseTo(0.6, 11);
+    expect(radialLive.c).toBeCloseTo(0.4, 11);
+    expect(radialLive.h).toBeCloseTo(0, 9);
+    expect(radialLive.alpha).toBe(0.7);
+    expect(committedColors(wrapper)).toHaveLength(0);
+
+    dispatchPointer(surface, "pointerup", { pointerId: 31, clientX: 410, clientY: 120 });
+    expect(committedColors(wrapper)).toHaveLength(1);
+    expect(committedColors(wrapper)[0]).toEqual(emittedColors(wrapper).at(-1));
+
+    dispatchPointer(surface, "pointerdown", { pointerId: 32, clientX: 110, clientY: 120 });
+    dispatchPointer(surface, "pointermove", { pointerId: 32, clientX: 110, clientY: 20 });
+    animationFrames.flush();
+    const commitsBeforeCaptureLoss = committedColors(wrapper).length;
+    dispatchPointer(surface, "lostpointercapture", { pointerId: 32 });
+    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss + 1);
+    dispatchPointer(surface, "lostpointercapture", { pointerId: 32 });
+    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss + 1);
+
+    const updatesBeforeKeyboard = emittedColors(wrapper).length;
+    const commitsBeforeKeyboard = committedColors(wrapper).length;
+    await wrapper.get("[data-render-color-space]").trigger("keydown", { key: "ArrowRight" });
+    expect(emittedColors(wrapper)).toHaveLength(updatesBeforeKeyboard + 1);
+    expect(committedColors(wrapper)).toHaveLength(commitsBeforeKeyboard + 1);
+    expect(committedColors(wrapper).at(-1)).toEqual(emittedColors(wrapper).at(-1));
 
     wrapper.unmount();
   });

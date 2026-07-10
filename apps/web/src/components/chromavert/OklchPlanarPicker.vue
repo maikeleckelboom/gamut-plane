@@ -5,6 +5,7 @@ import {
   type GamutBoundaryTable,
   type PickerPlaneContract,
   type PickerPlaneKeyboardAction,
+  type PickerPlaneSampleScratch,
   type PlanePoint,
 } from "@chromavert/color";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -44,6 +45,8 @@ const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<"pending" | "display-p3" | "srgb" | "unavailable">("pending");
 
 let context: CanvasRenderingContext2D | null = null;
+let discFieldBuffer: HTMLCanvasElement | null = null;
+let discFieldContext: CanvasRenderingContext2D | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
@@ -54,6 +57,7 @@ let latestInteractionColor: ChromavertColor | null = null;
 let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
+const fieldScratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] };
 
 const activeProjection = computed(() => props.plane.project(props.modelValue));
 const activePoint = computed(() => activeProjection.value.point);
@@ -74,6 +78,17 @@ const fallbackConnectorStyle = computed(() => {
   const fallback = fallbackPoint.value;
   if (!fallback) return undefined;
   const active = boundedActivePoint.value;
+  if (props.plane.id === "oklab") {
+    const deltaX = fallback.x - active.x;
+    const deltaY = fallback.y - active.y;
+    return {
+      left: `${active.x * 100}%`,
+      top: `${active.y * 100}%`,
+      width: `${Math.hypot(deltaX, deltaY) * 100}%`,
+      transform: `translateY(-50%) rotate(${Math.atan2(deltaY, deltaX)}rad)`,
+      transformOrigin: "left center",
+    };
+  }
   const left = Math.min(active.x, fallback.x);
   return {
     left: `${left * 100}%`,
@@ -83,11 +98,15 @@ const fallbackConnectorStyle = computed(() => {
 });
 
 const srgbPath = computed(() =>
-  geometryToSvgPath(props.plane.buildGamutContour(props.srgbTable, activeProjection.value.fixed)),
+  geometryToSvgPath(
+    props.plane.buildGamutContour(props.srgbTable, activeProjection.value.fixed),
+    props.plane.gamutContourClosed,
+  ),
 );
 const displayP3Path = computed(() =>
   geometryToSvgPath(
     props.plane.buildGamutContour(props.displayP3Table, activeProjection.value.fixed),
+    props.plane.gamutContourClosed,
   ),
 );
 const activeCss = computed(() => serializeColor(props.modelValue));
@@ -106,14 +125,14 @@ function pointStyle(point: PlanePoint): Record<string, string> {
   return { left: `${point.x * 100}%`, top: `${point.y * 100}%` };
 }
 
-function geometryToSvgPath(geometry: Float32Array): string {
+function geometryToSvgPath(geometry: Float32Array, closed: boolean): string {
   let path = "";
   for (let index = 0; index < geometry.length; index += 2) {
     const x = (geometry[index] ?? 0) * VIEWBOX_SIZE;
     const y = (geometry[index + 1] ?? 0) * VIEWBOX_SIZE;
     path += `${index === 0 ? "M" : " L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }
-  return path;
+  return closed ? `${path} Z` : path;
 }
 
 function getCanvasContext(element: HTMLCanvasElement): CanvasRenderingContext2D | null {
@@ -140,6 +159,16 @@ function getCanvasContext(element: HTMLCanvasElement): CanvasRenderingContext2D 
     canvasColorSpace.value = "unavailable";
     return null;
   }
+}
+
+function getDiscFieldContext(size: number): CanvasRenderingContext2D | null {
+  discFieldBuffer ??= document.createElement("canvas");
+  if (discFieldBuffer.width !== size || discFieldBuffer.height !== size) {
+    discFieldBuffer.width = size;
+    discFieldBuffer.height = size;
+  }
+  discFieldContext ??= getCanvasContext(discFieldBuffer);
+  return discFieldContext;
 }
 
 function resizeCanvas(element: HTMLCanvasElement): {
@@ -188,7 +217,7 @@ function drawField(): void {
 
       for (let index = 0; index < rowCount; index += 1) {
         const row = Math.min(index * sampling.rowStep, height);
-        props.plane.sampleField({ x, y: row / height }, fixed, color);
+        props.plane.sampleField({ x, y: row / height }, fixed, color, fieldScratch);
         gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
       }
 
@@ -198,22 +227,29 @@ function drawField(): void {
       context.fillRect(start, 0, Math.max(1, end - start), backingHeight);
     }
   } else {
-    const resolution = sampling.resolution;
-    context.fillStyle = "oklch(0.12 0 0)";
-    context.fillRect(0, 0, backingWidth, backingHeight);
-    for (let row = 0; row < resolution; row += 1) {
-      for (let column = 0; column < resolution; column += 1) {
-        const point = { x: (column + 0.5) / resolution, y: (row + 0.5) / resolution };
-        if (!props.plane.isPointInInstrumentDomain(point)) continue;
-        props.plane.sampleField(point, fixed, color);
-        context.fillStyle = serializeColor(color);
-        const left = Math.floor((column / resolution) * backingWidth);
-        const top = Math.floor((row / resolution) * backingHeight);
-        const right = Math.ceil(((column + 1) / resolution) * backingWidth);
-        const bottom = Math.ceil(((row + 1) / resolution) * backingHeight);
-        context.fillRect(left, top, right - left, bottom - top);
+    const { rowCount, columnSamples } = sampling;
+    const bufferContext = getDiscFieldContext(rowCount);
+    if (!bufferContext || !discFieldBuffer) return;
+    bufferContext.setTransform(1, 0, 0, 1, 0, 0);
+    bufferContext.clearRect(0, 0, rowCount, rowCount);
+
+    for (let row = 0; row < rowCount; row += 1) {
+      const y = (row + 0.5) / rowCount;
+      const gradient = bufferContext.createLinearGradient(0, 0, rowCount, 0);
+
+      for (let column = 0; column < columnSamples; column += 1) {
+        const position = column / (columnSamples - 1);
+        props.plane.sampleField({ x: position, y }, fixed, color, fieldScratch);
+        gradient.addColorStop(position, serializeColor(color));
       }
+
+      bufferContext.fillStyle = gradient;
+      bufferContext.fillRect(0, row, rowCount, 1);
     }
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(discFieldBuffer, 0, 0, backingWidth, backingHeight);
   }
 
   lastFieldKey = fieldKey;
@@ -427,7 +463,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="oklch-planar-picker" data-picker-plane :style="instrumentStyle">
+  <div
+    class="oklch-planar-picker"
+    data-picker-plane
+    :data-plane-id="plane.id"
+    :data-field-resolution="
+      plane.fieldSampling.kind === 'disc-gradient'
+        ? `${plane.fieldSampling.rowCount}x${plane.fieldSampling.columnSamples}`
+        : undefined
+    "
+    :style="instrumentStyle"
+  >
     <div
       ref="surface"
       class="oklch-planar-picker__surface"
@@ -446,6 +492,12 @@ onBeforeUnmount(() => {
       @keydown="onKeydown"
     >
       <canvas ref="canvas" aria-hidden="true" />
+      <span
+        v-if="plane.id === 'oklab'"
+        class="oklch-planar-picker__domain-boundary"
+        data-instrument-domain="disc"
+        aria-hidden="true"
+      />
       <svg
         class="oklch-planar-picker__gamut"
         :viewBox="`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`"
@@ -465,6 +517,12 @@ onBeforeUnmount(() => {
           vector-effect="non-scaling-stroke"
         />
       </svg>
+      <span
+        v-if="plane.id === 'oklab'"
+        class="oklch-planar-picker__neutral-center"
+        data-neutral-center
+        aria-hidden="true"
+      />
       <span
         v-if="fallbackPoint"
         class="oklch-planar-picker__fallback-connector"

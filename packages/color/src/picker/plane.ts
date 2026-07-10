@@ -1,8 +1,13 @@
 import { getMaximumChromaFromTable } from "../math/gamutBoundary";
+import { convertOklabToOklch, convertOklchToOklab } from "../math/convert";
 import { assertChromavertColor, normalizeHue, type ChromavertColor } from "../model/color";
 import type { GamutBoundaryTable } from "../model/gamut";
 
 export const OKLCH_PICKER_MAX_CHROMA = 0.4;
+export const OKLAB_PICKER_AXIS_LIMIT = OKLCH_PICKER_MAX_CHROMA;
+export const OKLAB_NEUTRAL_RADIUS_EPSILON = 1e-7;
+export const OKLAB_FIELD_ROW_COUNT = 80;
+export const OKLAB_FIELD_COLUMN_SAMPLES = 24;
 
 export type PickerPlaneId = "oklch" | "oklab";
 
@@ -32,6 +37,11 @@ export interface PickerPlaneProjection {
   fixed: number;
 }
 
+export interface PickerPlaneSampleScratch {
+  input: number[];
+  converted: number[];
+}
+
 export type PickerPlaneKeyboardAction =
   | "decrease-x"
   | "increase-x"
@@ -42,7 +52,7 @@ export type PickerPlaneKeyboardAction =
 
 export type PickerPlaneFieldSampling =
   | { kind: "column-gradient"; rowStep: number }
-  | { kind: "square-grid"; resolution: number };
+  | { kind: "disc-gradient"; rowCount: number; columnSamples: number };
 
 /**
  * The deliberately small contract shared by Chromavert's approved editable
@@ -55,9 +65,15 @@ export interface PickerPlaneContract {
   yAxis: PickerPlaneAxis;
   fixedAxis: PickerPlaneAxis;
   fieldSampling: PickerPlaneFieldSampling;
+  gamutContourClosed: boolean;
   project(color: ChromavertColor): PickerPlaneProjection;
   unproject(point: PlanePoint, fixed: number, reference: PlaneColorReference): ChromavertColor;
-  sampleField(point: PlanePoint, fixed: number, output: ChromavertColor): ChromavertColor;
+  sampleField(
+    point: PlanePoint,
+    fixed: number,
+    output: ChromavertColor,
+    scratch?: PickerPlaneSampleScratch,
+  ): ChromavertColor;
   positionActivePoint(color: ChromavertColor): PlanePoint;
   buildGamutContour(
     table: GamutBoundaryTable,
@@ -165,6 +181,7 @@ function sampleOklchField(
   point: PlanePoint,
   fixed: number,
   output: ChromavertColor,
+  _scratch?: PickerPlaneSampleScratch,
 ): ChromavertColor {
   const bounded = clampPlanePointToInstrumentBounds(point);
   output.l = 1 - bounded.y;
@@ -218,6 +235,7 @@ export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
   yAxis: { id: "lightness", symbol: "L", label: "lightness", min: 0, max: 1 },
   fixedAxis: { id: "hue", symbol: "H", label: "hue", min: 0, max: 360 },
   fieldSampling: { kind: "column-gradient", rowStep: 10 },
+  gamutContourClosed: false,
   project: projectOklch,
   unproject: (point, _fixed, reference) => planePointToOklch(point, reference),
   sampleField: sampleOklchField,
@@ -226,4 +244,186 @@ export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
   constrainPoint: clampPlanePointToInstrumentBounds,
   isPointInInstrumentDomain: isPointInRectangularInstrument,
   editFromKeyboard: editOklchFromKeyboard,
+};
+
+function oklabPointFromCartesian(a: number, b: number): PlanePoint {
+  return {
+    x: (a + OKLAB_PICKER_AXIS_LIMIT) / (OKLAB_PICKER_AXIS_LIMIT * 2),
+    y: (OKLAB_PICKER_AXIS_LIMIT - b) / (OKLAB_PICKER_AXIS_LIMIT * 2),
+  };
+}
+
+function cartesianFromOklabPoint(point: PlanePoint): { a: number; b: number } {
+  assertFinitePoint(point);
+  return {
+    a: (point.x * 2 - 1) * OKLAB_PICKER_AXIS_LIMIT,
+    b: (1 - point.y * 2) * OKLAB_PICKER_AXIS_LIMIT,
+  };
+}
+
+export function constrainOklabPlanePoint(point: PlanePoint): PlanePoint {
+  assertFinitePoint(point);
+  const x = point.x - 0.5;
+  const y = point.y - 0.5;
+  const radius = Math.hypot(x, y);
+  if (radius <= 0.5) return { x: point.x, y: point.y };
+  const scale = 0.5 / radius;
+  return { x: 0.5 + x * scale, y: 0.5 + y * scale };
+}
+
+export function isPointInOklabInstrumentDomain(point: PlanePoint): boolean {
+  assertFinitePoint(point);
+  return Math.hypot(point.x - 0.5, point.y - 0.5) <= 0.5 + Number.EPSILON * 16;
+}
+
+export function oklchToOklabPlanePoint(color: ChromavertColor): PlanePoint {
+  const coordinates = convertOklchToOklab(color);
+  return oklabPointFromCartesian(coordinates[1]!, coordinates[2]!);
+}
+
+function writeOklabPointToCanonical(
+  point: PlanePoint,
+  fixed: number,
+  reference: PlaneColorReference,
+  output: ChromavertColor,
+  scratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] },
+  constrainToInstrument = true,
+): ChromavertColor {
+  const sampledPoint = constrainToInstrument ? constrainOklabPlanePoint(point) : point;
+  const { a, b } = cartesianFromOklabPoint(sampledPoint);
+  const radius = Math.hypot(a, b);
+  scratch.input[0] = clampUnit(fixed);
+  scratch.input[1] = a;
+  scratch.input[2] = b;
+  convertOklabToOklch(scratch.input, scratch.converted, scratch.input);
+
+  output.l = clampUnit(scratch.converted[0] ?? Number.NaN);
+  output.c = radius;
+  output.h =
+    radius <= OKLAB_NEUTRAL_RADIUS_EPSILON
+      ? normalizeHue(reference.h)
+      : normalizeHue(scratch.converted[2] ?? Number.NaN);
+  output.alpha = reference.alpha;
+  assertChromavertColor(output);
+  return output;
+}
+
+export function oklabPlanePointToOklch(
+  point: PlanePoint,
+  fixed: number,
+  reference: PlaneColorReference,
+): ChromavertColor {
+  return writeOklabPointToCanonical(point, fixed, reference, {
+    l: 0,
+    c: 0,
+    h: 0,
+    alpha: reference.alpha,
+  });
+}
+
+function projectOklab(color: ChromavertColor): PickerPlaneProjection {
+  const coordinates = convertOklchToOklab(color);
+  return {
+    point: oklabPointFromCartesian(coordinates[1]!, coordinates[2]!),
+    x: coordinates[1]!,
+    y: coordinates[2]!,
+    fixed: coordinates[0]!,
+  };
+}
+
+function sampleOklabField(
+  point: PlanePoint,
+  fixed: number,
+  output: ChromavertColor,
+  scratch?: PickerPlaneSampleScratch,
+): ChromavertColor {
+  return writeOklabPointToCanonical(point, fixed, { h: 0, alpha: 1 }, output, scratch, false);
+}
+
+export function buildOklabGamutContour(
+  table: GamutBoundaryTable,
+  lightness: number,
+  sampleCount = table.hueSteps + 1,
+  output?: Float32Array,
+): Float32Array {
+  if (!Number.isFinite(lightness)) throw new TypeError("Contour lightness must be finite");
+  const boundedLightness = clampUnit(lightness);
+  if (!Number.isInteger(sampleCount) || sampleCount < 4) {
+    throw new RangeError("Closed contour sampleCount must be an integer of at least 4");
+  }
+  const requiredLength = sampleCount * 2;
+  if (output !== undefined && output.length !== requiredLength) {
+    throw new RangeError(`Contour output must contain exactly ${requiredLength} values`);
+  }
+  const contour = output ?? new Float32Array(requiredLength);
+
+  for (let index = 0; index < sampleCount - 1; index += 1) {
+    const hue = (index / (sampleCount - 1)) * 360;
+    const chroma = getMaximumChromaFromTable(table, boundedLightness, hue);
+    if (!Number.isFinite(chroma) || chroma < 0) {
+      throw new RangeError("Boundary table returned an invalid maximum chroma");
+    }
+    const radians = (hue * Math.PI) / 180;
+    const point = oklabPointFromCartesian(chroma * Math.cos(radians), chroma * Math.sin(radians));
+    contour[index * 2] = point.x;
+    contour[index * 2 + 1] = point.y;
+  }
+
+  contour[requiredLength - 2] = contour[0]!;
+  contour[requiredLength - 1] = contour[1]!;
+  return contour;
+}
+
+function editOklabFromKeyboard(
+  color: ChromavertColor,
+  action: PickerPlaneKeyboardAction,
+  coarse: boolean,
+): ChromavertColor {
+  const projection = projectOklab(color);
+  const step = coarse ? 0.02 : 0.005;
+  let a = projection.x;
+  let b = projection.y;
+
+  if (action === "decrease-x") a -= step;
+  else if (action === "increase-x") a += step;
+  else if (action === "increase-y") b += step;
+  else if (action === "decrease-y") b -= step;
+  else if (action === "minimum-x") a = -OKLAB_PICKER_AXIS_LIMIT;
+  else a = OKLAB_PICKER_AXIS_LIMIT;
+
+  return oklabPlanePointToOklch(oklabPointFromCartesian(a, b), projection.fixed, color);
+}
+
+export const OKLAB_AB_PLANE: PickerPlaneContract = {
+  id: "oklab",
+  label: "OKLab a/b",
+  xAxis: {
+    id: "oklab-a",
+    symbol: "a",
+    label: "OKLab a",
+    min: -OKLAB_PICKER_AXIS_LIMIT,
+    max: OKLAB_PICKER_AXIS_LIMIT,
+  },
+  yAxis: {
+    id: "oklab-b",
+    symbol: "b",
+    label: "OKLab b",
+    min: -OKLAB_PICKER_AXIS_LIMIT,
+    max: OKLAB_PICKER_AXIS_LIMIT,
+  },
+  fixedAxis: { id: "lightness", symbol: "L", label: "OKLab lightness", min: 0, max: 1 },
+  fieldSampling: {
+    kind: "disc-gradient",
+    rowCount: OKLAB_FIELD_ROW_COUNT,
+    columnSamples: OKLAB_FIELD_COLUMN_SAMPLES,
+  },
+  gamutContourClosed: true,
+  project: projectOklab,
+  unproject: oklabPlanePointToOklch,
+  sampleField: sampleOklabField,
+  positionActivePoint: (color) => constrainOklabPlanePoint(oklchToOklabPlanePoint(color)),
+  buildGamutContour: buildOklabGamutContour,
+  constrainPoint: constrainOklabPlanePoint,
+  isPointInInstrumentDomain: isPointInOklabInstrumentDomain,
+  editFromKeyboard: editOklabFromKeyboard,
 };

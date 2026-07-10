@@ -2,6 +2,7 @@ import {
   DisplayP3,
   DisplayP3Gamut,
   DisplayP3Linear,
+  OKLab,
   OKLCH,
   Rec2020,
   Rec2020Gamut,
@@ -59,6 +60,43 @@ export function convertFromOklch(
     OKLCH,
     linear ? definition.linear : definition.encoded,
   );
+}
+
+function assertOklabVector(vector: readonly number[]): void {
+  if (
+    vector.length < 3 ||
+    !Number.isFinite(vector[0]) ||
+    !Number.isFinite(vector[1]) ||
+    !Number.isFinite(vector[2])
+  ) {
+    throw new TypeError("OKLab coordinates must contain finite L, a, and b values");
+  }
+}
+
+/** Converts canonical OKLCH to transient OKLab coordinates behind the engine adapter. */
+export function convertOklchToOklab(
+  color: ChromavertColor,
+  output: number[] = [0, 0, 0],
+  input: number[] = [0, 0, 0],
+): number[] {
+  assertChromavertColor(color);
+  input[0] = color.l;
+  input[1] = color.c;
+  input[2] = color.h;
+  return convert(input, OKLCH, OKLab, output);
+}
+
+/** Converts transient OKLab coordinates to an OKLCH vector without creating canonical state. */
+export function convertOklabToOklch(
+  oklab: readonly number[],
+  output: number[] = [0, 0, 0],
+  input: number[] = [0, 0, 0],
+): number[] {
+  assertOklabVector(oklab);
+  input[0] = oklab[0]!;
+  input[1] = oklab[1]!;
+  input[2] = oklab[2]!;
+  return convert(input, OKLab, OKLCH, output);
 }
 
 export function isColorInGamut(

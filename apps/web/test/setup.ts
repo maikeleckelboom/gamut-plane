@@ -46,6 +46,8 @@ const canvasContext = {
   fillStyle: "",
   getContextAttributes: vi.fn(() => ({ colorSpace: "srgb" })),
   getImageData: vi.fn(() => ({ data: new Uint8ClampedArray() })),
+  imageSmoothingEnabled: true,
+  imageSmoothingQuality: "high",
   setTransform: vi.fn(),
 };
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   deriveFallback,
@@ -12,6 +13,7 @@ import {
   serializeColor,
   type ChromavertColor,
   type PickerGamutBoundaryTables,
+  type PickerPlaneId,
 } from "@chromavert/color";
 import { computed } from "vue";
 
@@ -21,16 +23,22 @@ import OklchLinearControl, {
 } from "@/components/chromavert/OklchLinearControl.vue";
 import OklchPlanarPicker from "@/components/chromavert/OklchPlanarPicker.vue";
 
-const props = defineProps<{
-  modelValue: ChromavertColor;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: ChromavertColor;
+    plane?: PickerPlaneId;
+  }>(),
+  { plane: "oklch" },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [color: ChromavertColor];
+  "update:plane": [plane: PickerPlaneId];
   commit: [color: ChromavertColor];
 }>();
 
 const TABLE_OPTIONS = { hueSteps: 120, lightnessSteps: 65, searchIterations: 14 } as const;
+const PLANE_OPTIONS: readonly PickerPlaneId[] = ["oklch", "oklab"];
 let sharedTables: PickerGamutBoundaryTables | undefined;
 
 function getSharedPickerTables(): PickerGamutBoundaryTables {
@@ -42,6 +50,10 @@ function getSharedPickerTables(): PickerGamutBoundaryTables {
 }
 
 const tables = getSharedPickerTables();
+const activePlaneContract = computed(() =>
+  props.plane === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
+);
+const planeProjection = computed(() => activePlaneContract.value.project(props.modelValue));
 const status = computed(() => getPickerGamutStatus(props.modelValue, tables));
 const chromaMarkers = computed(() =>
   getChromaSliderMarkers(props.modelValue, tables, status.value),
@@ -134,6 +146,15 @@ const chromaGradient = computed(() =>
     alpha: 1,
   })),
 );
+const oklabLightnessGradient = computed(() =>
+  colorGradient(12, (position) =>
+    OKLAB_AB_PLANE.unproject(
+      OKLAB_AB_PLANE.positionActivePoint(props.modelValue),
+      position,
+      props.modelValue,
+    ),
+  ),
+);
 
 const activeCss = computed(() => serializeColor(props.modelValue));
 const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
@@ -155,6 +176,11 @@ const chromaHelp = computed(() =>
     ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 instrument domain. The slider thumb pins at 0.4; the numeric field preserves canonical C.`
     : "P3 and sRGB brackets show table-interpolated Chroma ranges. Gamut output is never silently clamped.",
 );
+const oklabDomainHelp = computed(() =>
+  props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
+    ? `Active radius ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 OKLab a/b instrument disc. The marker projects to the radial edge; canonical OKLCH remains unchanged until an edit.`
+    : "The fixed L control unprojects the current OKLab a/b coordinate. The radial instrument disc is independent of RGB gamut contours.",
+);
 
 function colorGradient(segments: number, colorAt: (position: number) => ChromavertColor): string {
   const stops: string[] = [];
@@ -171,6 +197,26 @@ function updatePlane(color: ChromavertColor): void {
 
 function commitPlane(color: ChromavertColor): void {
   emit("commit", color);
+}
+
+function selectPlane(value: PickerPlaneId): void {
+  if (value !== props.plane) emit("update:plane", value);
+}
+
+function oklabLightnessColor(value: number): ChromavertColor {
+  return OKLAB_AB_PLANE.unproject(
+    OKLAB_AB_PLANE.positionActivePoint(props.modelValue),
+    value,
+    props.modelValue,
+  );
+}
+
+function updateOklabLightness(value: number): void {
+  emit("update:modelValue", oklabLightnessColor(value));
+}
+
+function commitOklabLightness(value: number): void {
+  emit("commit", oklabLightnessColor(value));
 }
 
 function channelColor(channel: "l" | "c" | "h", value: number): ChromavertColor {
@@ -196,10 +242,15 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
 </script>
 
 <template>
-  <section class="picker-instrument" data-picker-instrument :style="instrumentStyle">
+  <section
+    class="picker-instrument"
+    data-picker-instrument
+    :data-active-plane="plane"
+    :style="instrumentStyle"
+  >
     <header class="picker-instrument__header">
       <div>
-        <p class="eyebrow">OKLCH / dual gamut view</p>
+        <p class="eyebrow">{{ plane === "oklab" ? "OKLab a/b" : "OKLCH" }} / dual gamut view</p>
         <h2>Planar picker instrument</h2>
       </div>
       <p>
@@ -208,10 +259,28 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
       </p>
     </header>
 
+    <div class="picker-instrument__view-control">
+      <span>Coordinate view</span>
+      <div role="radiogroup" aria-label="Coordinate view">
+        <button
+          v-for="option in PLANE_OPTIONS"
+          :key="option"
+          type="button"
+          role="radio"
+          :aria-checked="plane === option"
+          :data-plane-option="option"
+          @click="selectPlane(option)"
+        >
+          {{ option === "oklab" ? "OKLab" : "OKLCH" }}
+        </button>
+      </div>
+      <small>View state only · gamut evidence remains sRGB and Display P3.</small>
+    </div>
+
     <div class="picker-instrument__workspace">
       <OklchPlanarPicker
         :model-value="modelValue"
-        :plane="OKLCH_LIGHTNESS_CHROMA_PLANE"
+        :plane="activePlaneContract"
         :srgb-table="tables.srgb"
         :display-p3-table="tables.displayP3"
         :srgb-fallback-color="srgbFallback"
@@ -229,69 +298,104 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             ><i class="picker-key picker-key--fallback" />sRGB fallback marker</span
           >
           <span class="picker-instrument__legend-note">
-            Between lines = P3-only (dual mode needs sRGB fallback). Active point may cross both; no
-            boundary clamps canonical C.
+            <template v-if="plane === 'oklch'">
+              Between lines = P3-only (dual mode needs sRGB fallback). Active point may cross both;
+              no boundary clamps canonical C.
+            </template>
+            <template v-else>
+              Closed contours come from cached Cmax facts at fixed L. The active point may cross
+              either contour; neither contour clips canonical OKLCH.
+            </template>
           </span>
         </div>
 
-        <OklchLinearControl
-          id="picker-hue"
-          channel="H"
-          label="Hue"
-          :model-value="modelValue.h"
-          :min="0"
-          :max="360"
-          :step="0.1"
-          :precision="1"
-          :gradient="hueGradient"
-          :intervals="hueIntervals"
-          :warning-visible="isOutsideDisplayP3"
-          :warning-label="primaryGamutWarning"
-          :warning-position="hueWarningPosition"
-          help="P3 and sRGB brackets show table-interpolated Hue intervals at current L/C."
-          @update:model-value="updateChannel('h', $event)"
-          @commit="commitChannel('h', $event)"
-        />
+        <template v-if="plane === 'oklch'">
+          <OklchLinearControl
+            id="picker-hue"
+            channel="H"
+            label="Hue"
+            :model-value="modelValue.h"
+            :min="0"
+            :max="360"
+            :step="0.1"
+            :precision="1"
+            :gradient="hueGradient"
+            :intervals="hueIntervals"
+            :warning-visible="isOutsideDisplayP3"
+            :warning-label="primaryGamutWarning"
+            :warning-position="hueWarningPosition"
+            help="P3 and sRGB brackets show table-interpolated Hue intervals at current L/C."
+            @update:model-value="updateChannel('h', $event)"
+            @commit="commitChannel('h', $event)"
+          />
 
-        <OklchLinearControl
-          id="picker-lightness"
-          channel="L"
-          label="Lightness"
-          :model-value="modelValue.l"
-          :min="0"
-          :max="1"
-          :step="0.001"
-          :precision="4"
-          :gradient="lightnessGradient"
-          :intervals="lightnessIntervals"
-          :warning-visible="isOutsideDisplayP3"
-          :warning-label="primaryGamutWarning"
-          :warning-position="modelValue.l"
-          help="P3 and sRGB brackets show table-interpolated Lightness intervals at current C/H."
-          @update:model-value="updateChannel('l', $event)"
-          @commit="commitChannel('l', $event)"
-        />
+          <OklchLinearControl
+            id="picker-lightness"
+            channel="L"
+            label="Lightness"
+            :model-value="modelValue.l"
+            :min="0"
+            :max="1"
+            :step="0.001"
+            :precision="4"
+            :gradient="lightnessGradient"
+            :intervals="lightnessIntervals"
+            :warning-visible="isOutsideDisplayP3"
+            :warning-label="primaryGamutWarning"
+            :warning-position="modelValue.l"
+            help="P3 and sRGB brackets show table-interpolated Lightness intervals at current C/H."
+            @update:model-value="updateChannel('l', $event)"
+            @commit="commitChannel('l', $event)"
+          />
 
-        <OklchLinearControl
-          id="picker-chroma"
-          channel="C"
-          label="Chroma"
-          :model-value="modelValue.c"
-          :min="0"
-          :max="OKLCH_PICKER_MAX_CHROMA"
-          :step="0.001"
-          :precision="4"
-          :gradient="chromaGradient"
-          :markers="chromaControlMarkers"
-          :intervals="chromaIntervals"
-          :overflow-max="true"
-          :warning-visible="isOutsideDisplayP3"
-          :warning-label="primaryGamutWarning"
-          :warning-position="chromaWarningPosition"
-          :help="chromaHelp"
-          @update:model-value="updateChannel('c', $event)"
-          @commit="commitChannel('c', $event)"
-        />
+          <OklchLinearControl
+            id="picker-chroma"
+            channel="C"
+            label="Chroma"
+            :model-value="modelValue.c"
+            :min="0"
+            :max="OKLCH_PICKER_MAX_CHROMA"
+            :step="0.001"
+            :precision="4"
+            :gradient="chromaGradient"
+            :markers="chromaControlMarkers"
+            :intervals="chromaIntervals"
+            :overflow-max="true"
+            :warning-visible="isOutsideDisplayP3"
+            :warning-label="primaryGamutWarning"
+            :warning-position="chromaWarningPosition"
+            :help="chromaHelp"
+            @update:model-value="updateChannel('c', $event)"
+            @commit="commitChannel('c', $event)"
+          />
+        </template>
+
+        <template v-else>
+          <OklchLinearControl
+            id="picker-oklab-lightness"
+            channel="L"
+            label="OKLab lightness · fixed axis"
+            :model-value="planeProjection.fixed"
+            :min="0"
+            :max="1"
+            :step="0.001"
+            :precision="4"
+            :gradient="oklabLightnessGradient"
+            :intervals="lightnessIntervals"
+            :warning-visible="isOutsideDisplayP3"
+            :warning-label="primaryGamutWarning"
+            :warning-position="planeProjection.fixed"
+            :help="oklabDomainHelp"
+            @update:model-value="updateOklabLightness"
+            @commit="commitOklabLightness"
+          />
+          <div class="picker-instrument__coordinate-readout" aria-label="OKLab coordinates">
+            <span>Projected coordinate</span>
+            <code>a {{ planeProjection.x.toFixed(4) }}</code>
+            <code>b {{ planeProjection.y.toFixed(4) }}</code>
+            <small>Editable radius ≤ 0.4000 · no RGB gamut clamp</small>
+          </div>
+        </template>
 
         <div class="picker-instrument__readouts" aria-label="Picker gamut status">
           <div data-picker-gamut-status="display-p3">
@@ -315,7 +419,10 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
           </div>
           <div class="picker-instrument__active-readout">
             <span>Active canonical</span>
-            <code>C {{ modelValue.c.toFixed(4) }}</code>
+            <code v-if="plane === 'oklab'">
+              OKLCH C {{ modelValue.c.toFixed(4) }} · H {{ modelValue.h.toFixed(2) }}°
+            </code>
+            <code v-else>C {{ modelValue.c.toFixed(4) }}</code>
           </div>
           <div class="picker-instrument__fallback-readout">
             <span>sRGB fallback guide</span>
@@ -331,9 +438,16 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
           </div>
         </div>
         <p class="picker-instrument__method">
-          Inside/outside membership uses exact gamut conversion. Boundary paths, ticks, intervals,
-          and the fallback guide are table-interpolated visualization; export fallback remains the
-          exact engine path.
+          Inside/outside membership uses exact gamut conversion.
+          <template v-if="plane === 'oklab'">
+            Closed contours project cached Cmax(L, h) samples into a/b; field samples unproject
+            through OKLab to canonical OKLCH. The disc edge is an instrument limit, not gamut
+            mapping.
+          </template>
+          <template v-else>
+            Boundary paths, ticks, intervals, and the fallback guide are table-interpolated
+            visualization; export fallback remains the exact engine path.
+          </template>
           <span v-if="isOutsideDisplayP3" data-primary-gamut-warning-status>
             {{ primaryGamutWarning }}
           </span>
