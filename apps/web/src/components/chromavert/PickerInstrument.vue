@@ -172,8 +172,8 @@ const chromaHelp = computed(() =>
 );
 const oklabDomainHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Active radius ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 OKLab a/b instrument disc. The marker projects to the radial edge; fixed L preserves raw a/b, while pointer and a/b edits remain constrained.`
-    : "Fixed L preserves the current raw OKLab a/b coordinates. The radial instrument disc is independent of RGB gamut contours.",
+    ? `Active radius ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 OKLab a/b instrument disc. The marker projects to the radial edge; canonical OKLCH remains unchanged until an edit.`
+    : "The fixed L control unprojects the current OKLab a/b coordinate. The radial instrument disc is independent of RGB gamut contours.",
 );
 
 function colorGradient(segments: number, colorAt: (position: number) => ChromavertColor): string {
@@ -239,27 +239,33 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
     :style="instrumentStyle"
   >
     <header class="picker-instrument__header">
-      <div class="picker-instrument__heading">
-        <h2>Color plane</h2>
-        <p>Canonical OKLCH stays editable beyond the sRGB and Display P3 contours.</p>
+      <div>
+        <p class="eyebrow">{{ plane === "oklab" ? "OKLab a/b" : "OKLCH" }} / dual gamut view</p>
+        <h2>Planar picker instrument</h2>
       </div>
-      <div
-        class="picker-instrument__plane-toggle"
-        role="group"
-        aria-label="Color plane coordinates"
-      >
+      <p>
+        Canonical OKLCH stays editable beyond either boundary. Display P3 is primary; sRGB is
+        secondary.
+      </p>
+    </header>
+
+    <div class="picker-instrument__view-control">
+      <span>Coordinate view</span>
+      <div role="radiogroup" aria-label="Coordinate view">
         <button
           v-for="option in PLANE_OPTIONS"
           :key="option"
           type="button"
-          :aria-pressed="plane === option"
+          role="radio"
+          :aria-checked="plane === option"
           :data-plane-option="option"
           @click="selectPlane(option)"
         >
           {{ option === "oklab" ? "OKLab" : "OKLCH" }}
         </button>
       </div>
-    </header>
+      <small>View state only · gamut evidence remains sRGB and Display P3.</small>
+    </div>
 
     <div class="picker-instrument__workspace">
       <OklchPlanarPicker
@@ -287,8 +293,8 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
               no boundary clamps canonical C.
             </template>
             <template v-else>
-              The circular edit domain ends at C 0.4000. Canonical OKLCH may cross either contour
-              without being clipped.
+              Closed contours come from cached Cmax facts at fixed L. The active point may cross
+              either contour; neither contour clips canonical OKLCH.
             </template>
           </span>
         </div>
@@ -358,7 +364,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
           <OklchLinearControl
             id="picker-oklab-lightness"
             channel="L"
-            label="OKLab lightness"
+            label="OKLab lightness · fixed axis"
             :model-value="planeProjection.fixed"
             :min="0"
             :max="1"
@@ -374,7 +380,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             @commit="commitOklabLightness"
           />
           <div class="picker-instrument__coordinate-readout" aria-label="OKLab coordinates">
-            <span>Canonical projection</span>
+            <span>Projected coordinate</span>
             <code>a {{ planeProjection.x.toFixed(4) }}</code>
             <code>b {{ planeProjection.y.toFixed(4) }}</code>
             <small>Editable radius ≤ 0.4000 · no RGB gamut clamp</small>
@@ -421,27 +427,21 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             <code v-else>not required</code>
           </div>
         </div>
-        <p
-          v-if="isOutsideDisplayP3"
-          class="picker-instrument__primary-warning"
-          data-primary-gamut-warning-status
-        >
-          {{ primaryGamutWarning }}
+        <p class="picker-instrument__method">
+          Inside/outside membership uses exact gamut conversion.
+          <template v-if="plane === 'oklab'">
+            Closed contours project cached Cmax(L, h) samples into a/b; field samples unproject
+            through OKLab to canonical OKLCH. The disc edge is an instrument limit, not gamut
+            mapping.
+          </template>
+          <template v-else>
+            Boundary paths, ticks, intervals, and the fallback guide are table-interpolated
+            visualization; export fallback remains the exact engine path.
+          </template>
+          <span v-if="isOutsideDisplayP3" data-primary-gamut-warning-status>
+            {{ primaryGamutWarning }}
+          </span>
         </p>
-        <details class="picker-instrument__method">
-          <summary>Evidence method</summary>
-          <p>
-            Inside/outside membership uses exact gamut conversion.
-            <template v-if="plane === 'oklab'">
-              Closed contours project cached Cmax(L, h) samples into a/b. The circular edge and
-              corner mask are instrument presentation, not gamut mapping.
-            </template>
-            <template v-else>
-              Boundary paths, ticks, intervals, and the fallback guide are table-interpolated;
-              export fallback remains the exact engine path.
-            </template>
-          </p>
-        </details>
       </div>
     </div>
   </section>

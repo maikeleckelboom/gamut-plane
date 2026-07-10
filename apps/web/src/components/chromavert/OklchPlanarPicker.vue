@@ -45,8 +45,8 @@ const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<"pending" | "display-p3" | "srgb" | "unavailable">("pending");
 
 let context: CanvasRenderingContext2D | null = null;
-let cartesianFieldBuffer: HTMLCanvasElement | null = null;
-let cartesianFieldContext: CanvasRenderingContext2D | null = null;
+let discFieldBuffer: HTMLCanvasElement | null = null;
+let discFieldContext: CanvasRenderingContext2D | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
@@ -161,14 +161,14 @@ function getCanvasContext(element: HTMLCanvasElement): CanvasRenderingContext2D 
   }
 }
 
-function getCartesianFieldContext(size: number): CanvasRenderingContext2D | null {
-  cartesianFieldBuffer ??= document.createElement("canvas");
-  if (cartesianFieldBuffer.width !== size || cartesianFieldBuffer.height !== size) {
-    cartesianFieldBuffer.width = size;
-    cartesianFieldBuffer.height = size;
+function getDiscFieldContext(size: number): CanvasRenderingContext2D | null {
+  discFieldBuffer ??= document.createElement("canvas");
+  if (discFieldBuffer.width !== size || discFieldBuffer.height !== size) {
+    discFieldBuffer.width = size;
+    discFieldBuffer.height = size;
   }
-  cartesianFieldContext ??= getCanvasContext(cartesianFieldBuffer);
-  return cartesianFieldContext;
+  discFieldContext ??= getCanvasContext(discFieldBuffer);
+  return discFieldContext;
 }
 
 function resizeCanvas(element: HTMLCanvasElement): {
@@ -228,8 +228,8 @@ function drawField(): void {
     }
   } else {
     const { rowCount, columnSamples } = sampling;
-    const bufferContext = getCartesianFieldContext(rowCount);
-    if (!bufferContext || !cartesianFieldBuffer) return;
+    const bufferContext = getDiscFieldContext(rowCount);
+    if (!bufferContext || !discFieldBuffer) return;
     bufferContext.setTransform(1, 0, 0, 1, 0, 0);
     bufferContext.clearRect(0, 0, rowCount, rowCount);
 
@@ -249,7 +249,7 @@ function drawField(): void {
 
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
-    context.drawImage(cartesianFieldBuffer, 0, 0, backingWidth, backingHeight);
+    context.drawImage(discFieldBuffer, 0, 0, backingWidth, backingHeight);
   }
 
   lastFieldKey = fieldKey;
@@ -468,7 +468,7 @@ onBeforeUnmount(() => {
     data-picker-plane
     :data-plane-id="plane.id"
     :data-field-resolution="
-      plane.fieldSampling.kind === 'cartesian-square'
+      plane.fieldSampling.kind === 'disc-gradient'
         ? `${plane.fieldSampling.rowCount}x${plane.fieldSampling.columnSamples}`
         : undefined
     "
@@ -494,48 +494,10 @@ onBeforeUnmount(() => {
       <canvas ref="canvas" aria-hidden="true" />
       <span
         v-if="plane.id === 'oklab'"
-        class="oklch-planar-picker__domain-mask"
-        data-instrument-domain-mask
-        aria-hidden="true"
-      />
-      <span
-        v-if="plane.id === 'oklab'"
-        class="oklch-planar-picker__zero-axes"
-        data-zero-axes
-        aria-hidden="true"
-      />
-      <span
-        v-if="plane.id === 'oklab'"
         class="oklch-planar-picker__domain-boundary"
         data-instrument-domain="disc"
         aria-hidden="true"
       />
-      <template v-if="plane.id === 'oklab'">
-        <span
-          class="oklch-planar-picker__direction oklch-planar-picker__direction--negative-a"
-          data-axis-direction="negative-a"
-          aria-hidden="true"
-          >−a</span
-        >
-        <span
-          class="oklch-planar-picker__direction oklch-planar-picker__direction--positive-a"
-          data-axis-direction="positive-a"
-          aria-hidden="true"
-          >+a</span
-        >
-        <span
-          class="oklch-planar-picker__direction oklch-planar-picker__direction--positive-b"
-          data-axis-direction="positive-b"
-          aria-hidden="true"
-          >+b</span
-        >
-        <span
-          class="oklch-planar-picker__direction oklch-planar-picker__direction--negative-b"
-          data-axis-direction="negative-b"
-          aria-hidden="true"
-          >−b</span
-        >
-      </template>
       <svg
         class="oklch-planar-picker__gamut"
         :viewBox="`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`"
@@ -544,25 +506,13 @@ onBeforeUnmount(() => {
       >
         <path
           :d="displayP3Path"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--p3 oklch-planar-picker__boundary--keyline"
-          data-gamut-keyline="display-p3"
-          vector-effect="non-scaling-stroke"
-        />
-        <path
-          :d="displayP3Path"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--p3 oklch-planar-picker__boundary--core"
+          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--p3"
           data-gamut-boundary="display-p3"
           vector-effect="non-scaling-stroke"
         />
         <path
           :d="srgbPath"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--srgb oklch-planar-picker__boundary--keyline"
-          data-gamut-keyline="srgb"
-          vector-effect="non-scaling-stroke"
-        />
-        <path
-          :d="srgbPath"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--srgb oklch-planar-picker__boundary--core"
+          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--srgb"
           data-gamut-boundary="srgb"
           vector-effect="non-scaling-stroke"
         />

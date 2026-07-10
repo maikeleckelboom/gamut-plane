@@ -58,8 +58,6 @@ describe("PickerInstrument edit contract", () => {
 
       await wrapper.get('[data-plane-option="oklab"]').trigger("click");
       expect(wrapper.emitted("update:plane")).toEqual([["oklab"]]);
-      expect(wrapper.get('[data-plane-option="oklab"]').attributes("aria-pressed")).toBe("false");
-      expect(wrapper.get('[data-plane-option="oklab"]').attributes("role")).toBeUndefined();
       expect(wrapper.emitted("update:modelValue")).toBeUndefined();
       expect(wrapper.emitted("commit")).toBeUndefined();
       expect(canonical).toEqual(canonicalSnapshot);
@@ -68,16 +66,11 @@ describe("PickerInstrument edit contract", () => {
       await flushPromises();
       const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
       expect(plane.get('[data-instrument-domain="disc"]').exists()).toBe(true);
-      expect(plane.get("[data-instrument-domain-mask]").exists()).toBe(true);
-      expect(plane.get("[data-zero-axes]").exists()).toBe(true);
-      expect(plane.findAll("[data-axis-direction]")).toHaveLength(4);
       expect(plane.get("[data-neutral-center]").exists()).toBe(true);
       expect(plane.attributes("data-field-resolution")).toBe("80x24");
-      expect(plane.findAll("[data-gamut-keyline]")).toHaveLength(2);
       for (const boundary of plane.findAll("[data-gamut-boundary]")) {
         expect(boundary.attributes("d")).toMatch(/ Z$/);
       }
-      expect(wrapper.get('[data-plane-option="oklab"]').attributes("aria-pressed")).toBe("true");
 
       const fixedControl = wrapper
         .findAllComponents(OklchLinearControl)

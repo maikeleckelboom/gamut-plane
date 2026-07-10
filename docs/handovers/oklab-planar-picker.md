@@ -2,7 +2,7 @@
 
 ## Scope
 
-The OKLab field samples the full Cartesian square through the engine's canonical OKLCH projection adapter. Rendering stays synchronous and uses 80 rows with 24 canonical samples per row (1,920 samples). A reusable 80 × 80 color buffer interpolates each row, then high-quality canvas upscaling smooths the square viewport. The editable domain is the inscribed C = 0.4 circle: pointer and a/b keyboard edits project to that boundary, while a neutral presentation mask darkens the non-editable corners and leaves only a faint trace of the sampled field. The mask is not gamut mapping.
+The OKLab field samples canonical OKLCH through the engine's OKLab projection adapter. Rendering stays synchronous and uses 80 rows with 24 canonical samples per row (1,920 samples). A reusable 80 × 80 color buffer interpolates each row, then high-quality canvas upscaling smooths the complete square field. Outside-disc samples remain uninterrupted, truthful OKLab color evidence. A neutral one-pixel circle marks the editable domain; pointer and keyboard edits still project to its C = 0.4 boundary.
 
 ## Environment
 
@@ -18,7 +18,7 @@ The OKLab field samples the full Cartesian square through the engine's canonical
 - RAF scheduling through completed fixed-L buffered draw, six samples: 21.9–27.1 ms, median approximately 25.45 ms; this includes waiting for the next animation frame
 - a/b pointer movement: zero field redraw cost because the fixed-L slice remains valid; marker and canonical updates retain the existing RAF path
 
-The first measured 96 × 96 per-cell implementation took 49.3 ms on a 414.7 CSS px field. A 128-row × 32-sample row-gradient pass took 28.1 ms. Reducing the deterministic lattice to 80 × 24 brought a direct-row pass to 13.1 ms, but its perimeter remained visibly stepped. The final reusable-buffer pass removes that artifact while retaining the complete square field, circular edit boundary, and explicit non-domain corner treatment.
+The first measured 96 × 96 per-cell implementation took 49.3 ms on a 414.7 CSS px field. A 128-row × 32-sample row-gradient pass took 28.1 ms. Reducing the deterministic lattice to 80 × 24 brought a direct-row pass to 13.1 ms, but its perimeter remained visibly stepped. The final reusable-buffer pass removes that artifact while retaining the complete disc boundary and explicit non-domain corner treatment.
 
 ## Worker decision
 

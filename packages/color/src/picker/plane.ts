@@ -53,7 +53,7 @@ export type PickerPlaneKeyboardAction =
 
 export type PickerPlaneFieldSampling =
   | { kind: "column-gradient"; rowStep: number }
-  | { kind: "cartesian-square"; rowCount: number; columnSamples: number };
+  | { kind: "disc-gradient"; rowCount: number; columnSamples: number };
 
 /**
  * The deliberately small contract shared by Chromavert's approved editable
@@ -456,7 +456,7 @@ export const OKLAB_AB_PLANE: PickerPlaneContract = {
   },
   fixedAxis: { id: "lightness", symbol: "L", label: "OKLab lightness", min: 0, max: 1 },
   fieldSampling: {
-    kind: "cartesian-square",
+    kind: "disc-gradient",
     rowCount: OKLAB_FIELD_ROW_COUNT,
     columnSamples: OKLAB_FIELD_COLUMN_SAMPLES,
   },
