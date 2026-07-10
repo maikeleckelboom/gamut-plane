@@ -9,6 +9,7 @@ import {
   PICKER_BRACKET_LANE_INSET,
   PICKER_SLIDER_EDGE_CLEARANCE,
   PICKER_SLIDER_FIELD_INSET,
+  PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_THUMB_WIDTH,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_SRGB_DASH_GAP,
@@ -87,6 +88,7 @@ const instrumentStyle = {
   "--picker-srgb-dash-length": `${PICKER_SRGB_DASH_LENGTH}px`,
   "--picker-srgb-dash-gap": `${PICKER_SRGB_DASH_GAP}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
+  "--picker-slider-thumb-top": `${PICKER_SLIDER_THUMB_TOP}px`,
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };

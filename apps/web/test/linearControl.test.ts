@@ -4,6 +4,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import OklchLinearControl, {
   type LinearControlInterval,
 } from "@/components/chromavert/OklchLinearControl.vue";
+import {
+  PICKER_SLIDER_THUMB_TOP,
+  PICKER_SLIDER_WARNING_GAP,
+  PICKER_SLIDER_WARNING_TOP,
+  PICKER_WARNING_GLYPH_SIZE,
+} from "@/components/chromavert/pickerInstrumentStyle";
 
 const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
 
@@ -37,6 +43,7 @@ describe("OklchLinearControl gamut annotations", () => {
       warningPosition: 0,
     });
     const warning = wrapper.get('[data-gamut-warning="linear"]');
+    const controlStyle = (wrapper.element as HTMLElement).style;
 
     expect(warning.attributes("aria-hidden")).toBe("true");
     expect(warning.attributes("data-warning-channel")).toBe("h");
@@ -52,6 +59,11 @@ describe("OklchLinearControl gamut annotations", () => {
     expect(
       (warning.element as HTMLElement).style.getPropertyValue("--picker-slider-warning-edge"),
     ).toBe("9px");
+    expect(controlStyle.getPropertyValue("--picker-slider-warning-top")).toBe("-13px");
+    expect(controlStyle.getPropertyValue("--picker-slider-thumb-top")).toBe("2px");
+    expect(PICKER_SLIDER_WARNING_TOP + PICKER_WARNING_GLYPH_SIZE).toBe(
+      PICKER_SLIDER_THUMB_TOP - PICKER_SLIDER_WARNING_GAP,
+    );
     expect(wrapper.get("#test-control-gamut-warning").text()).toBe(WARNING_LABEL);
     expect(wrapper.get('input[type="range"]').attributes("aria-describedby")).toBe(
       "test-control-help test-control-gamut-warning",
