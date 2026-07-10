@@ -517,7 +517,7 @@ describe("OKLCH picker geometry and analysis", () => {
       }
     });
 
-    it("samples the genuine OKLab disc deterministically through canonical OKLCH", () => {
+    it("samples the full OKLab Cartesian square deterministically through canonical OKLCH", () => {
       expect(OKLAB_FIELD_ROW_COUNT).toBe(80);
       expect(OKLAB_FIELD_COLUMN_SAMPLES).toBe(24);
       const points = [
