@@ -537,7 +537,6 @@ onBeforeUnmount(() => {
                     data-gamut-boundary-hit="display-p3"
                     vector-effect="non-scaling-stroke"
                     aria-label="Display P3 gamut boundary"
-                    @pointerdown.stop
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">Display P3 gamut boundary</TooltipContent>
@@ -558,7 +557,6 @@ onBeforeUnmount(() => {
                     data-gamut-boundary-hit="srgb"
                     vector-effect="non-scaling-stroke"
                     aria-label="sRGB gamut boundary"
-                    @pointerdown.stop
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">sRGB gamut boundary</TooltipContent>
@@ -573,7 +571,6 @@ onBeforeUnmount(() => {
                     r="499"
                     vector-effect="non-scaling-stroke"
                     aria-label="OKLab editable domain, not a gamut boundary"
-                    @pointerdown.stop
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">

@@ -127,7 +127,12 @@ describe("OklchPlanarPicker pointer interaction", () => {
       releasePointerCapture: { configurable: true, value: releasePointerCapture },
     });
 
-    dispatchPointer(surface, "pointerdown", { pointerId: 7, clientX: 70, clientY: 60 });
+    const displayP3Boundary = wrapper.get('[data-gamut-boundary-hit="display-p3"]').element;
+    dispatchPointer(displayP3Boundary, "pointerdown", {
+      pointerId: 7,
+      clientX: 70,
+      clientY: 60,
+    });
     const warningAtCanonical = { left: warning.style.left, top: warning.style.top };
     expect(warning.style.visibility).toBe("visible");
     expect(warning.style.display).not.toBe("none");
