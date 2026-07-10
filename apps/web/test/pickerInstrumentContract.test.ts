@@ -35,4 +35,21 @@ describe("PickerInstrument edit contract", () => {
 
     wrapper.unmount();
   });
+
+  it.each([
+    [292.7, "right"],
+    [359, "left"],
+  ] as const)("preserves the verified Hue %s warning placement", async (hue, side) => {
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: parseUserColor(`oklch(50% 0.5 ${hue})`) },
+    });
+    await flushPromises();
+
+    const warning = wrapper.get('[data-picker-control="h"] [data-gamut-warning="linear"]');
+    expect(warning.attributes("data-visible")).toBe("true");
+    expect(warning.attributes("data-warning-side")).toBe(side);
+
+    wrapper.unmount();
+  });
 });

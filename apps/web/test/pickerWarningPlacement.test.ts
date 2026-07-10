@@ -190,4 +190,18 @@ describe("getSliderWarningPosition", () => {
       }).side,
     ).toBe("right");
   });
+
+  it("chooses the lower-collision candidate when both sides are occupied", () => {
+    const placement = getSliderWarningPosition({
+      ...dimensions,
+      position: 0.5,
+      obstacles: [
+        { center: 64, width: 3 },
+        { center: 64, width: 3 },
+        { center: 36, width: 3 },
+      ],
+    });
+
+    expect(placement.side).toBe("left");
+  });
 });
