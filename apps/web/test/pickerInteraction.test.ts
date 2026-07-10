@@ -79,7 +79,8 @@ describe("OklchPlanarPicker pointer interaction", () => {
         modelValue: canonical,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbFallbackGuideChroma: null,
+        srgbFallbackColor: null,
+        activeOutsideDisplayP3: false,
       },
     });
     await flushPromises();

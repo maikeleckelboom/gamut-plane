@@ -8,6 +8,7 @@ export * from "./export/tailwindTheme";
 export * from "./fixes/rankFixes";
 export * from "./fixes/searchContrastFixes";
 export * from "./fixes/searchGamutFixes";
+export * from "./input/formatOklch";
 export * from "./input/parseUserColor";
 export * from "./input/serializeColor";
 export * from "./math/apca";

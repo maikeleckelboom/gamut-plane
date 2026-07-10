@@ -16,7 +16,8 @@ const props = defineProps<{
   modelValue: ChromavertColor;
   srgbTable: GamutBoundaryTable;
   displayP3Table: GamutBoundaryTable;
-  srgbFallbackGuideChroma: number | null;
+  srgbFallbackColor: ChromavertColor | null;
+  activeOutsideDisplayP3: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -44,16 +45,19 @@ let lastFieldKey = "";
 const activePoint = computed(() => oklchToPlanePoint(props.modelValue));
 const boundedActivePoint = computed(() => clampPlanePointToInstrumentBounds(activePoint.value));
 const fallbackPoint = computed<PlanePoint | null>(() => {
-  if (props.srgbFallbackGuideChroma === null) return null;
+  if (!props.srgbFallbackColor) return null;
   return clampPlanePointToInstrumentBounds({
-    x: props.srgbFallbackGuideChroma / OKLCH_PICKER_MAX_CHROMA,
-    y: 1 - props.modelValue.l,
+    x: props.srgbFallbackColor.c / OKLCH_PICKER_MAX_CHROMA,
+    y: 1 - props.srgbFallbackColor.l,
   });
 });
 
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
 const fallbackMarkerStyle = computed(() =>
   fallbackPoint.value ? pointStyle(fallbackPoint.value) : undefined,
+);
+const fallbackCss = computed(() =>
+  props.srgbFallbackColor ? serializeColor(props.srgbFallbackColor) : "",
 );
 const fallbackConnectorStyle = computed(() => {
   const fallback = fallbackPoint.value;
@@ -351,7 +355,7 @@ onBeforeUnmount(() => {
       <span
         v-if="fallbackPoint"
         class="oklch-planar-picker__marker oklch-planar-picker__marker--fallback"
-        :style="fallbackMarkerStyle"
+        :style="{ ...fallbackMarkerStyle, '--fallback-marker-color': fallbackCss }"
         data-fallback-marker
         aria-hidden="true"
       />
@@ -359,6 +363,7 @@ onBeforeUnmount(() => {
         ref="marker"
         class="oklch-planar-picker__marker oklch-planar-picker__marker--active"
         :style="{ ...markerStyle, '--marker-color': activeCss }"
+        :data-outside-display-p3="activeOutsideDisplayP3 ? 'true' : 'false'"
         data-active-marker
         aria-hidden="true"
       />

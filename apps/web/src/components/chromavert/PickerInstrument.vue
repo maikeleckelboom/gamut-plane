@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   OKLCH_PICKER_MAX_CHROMA,
+  deriveFallback,
   getCachedGamutBoundaryTable,
   getChromaSliderMarkers,
   getLightnessGamutIntervals,
@@ -107,11 +108,15 @@ const chromaGradient = computed(() =>
 );
 
 const activeCss = computed(() => serializeColor(props.modelValue));
+const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
+const srgbFallback = computed(() =>
+  status.value.srgb.inGamut ? null : deriveFallback(props.modelValue, "srgb").fallback,
+);
 const fallbackGuideChroma = computed(() => chromaMarkers.value.srgbFallbackGuide?.chroma ?? null);
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 instrument domain. The thumb stays at the edge; canonical C is unchanged.`
-    : "The active thumb may cross table boundary guides. Gamut output is never silently clamped.",
+    ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 instrument domain. The slider thumb pins at 0.4; the numeric field preserves canonical C.`
+    : "The slider thumb may cross table boundary guides. Gamut output is never silently clamped.",
 );
 
 function colorGradient(segments: number, colorAt: (position: number) => ChromavertColor): string {
@@ -163,17 +168,22 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
         :model-value="modelValue"
         :srgb-table="tables.srgb"
         :display-p3-table="tables.displayP3"
-        :srgb-fallback-guide-chroma="fallbackGuideChroma"
+        :srgb-fallback-color="srgbFallback"
+        :active-outside-display-p3="isOutsideDisplayP3"
         @update:model-value="updatePlane"
       />
 
       <div class="picker-instrument__controls">
         <div class="picker-instrument__legend" aria-label="Picker gamut legend">
-          <span><i class="picker-key picker-key--p3" />Display P3 · primary</span>
-          <span><i class="picker-key picker-key--srgb" />sRGB · secondary</span>
-          <span v-if="fallbackGuideChroma !== null"
-            ><i class="picker-key picker-key--fallback" />sRGB fallback guide</span
+          <span><i class="picker-key picker-key--p3" />P3 boundary (solid)</span>
+          <span><i class="picker-key picker-key--srgb" />sRGB boundary (dashed)</span>
+          <span v-if="srgbFallback"
+            ><i class="picker-key picker-key--fallback" />sRGB fallback marker</span
           >
+          <span class="picker-instrument__legend-note">
+            Between lines = P3-only (dual mode needs sRGB fallback). Active point may cross both; no
+            boundary clamps canonical C.
+          </span>
         </div>
 
         <OklchLinearControl
@@ -216,6 +226,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :precision="4"
           :gradient="chromaGradient"
           :markers="chromaControlMarkers"
+          :overflow-max="true"
           :help="chromaHelp"
           @update:model-value="updateChannel('c', $event)"
         />

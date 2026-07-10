@@ -27,12 +27,14 @@ const props = withDefaults(
     precision?: number;
     markers?: LinearControlMarker[];
     intervals?: LinearControlInterval[];
+    overflowMax?: boolean;
     help?: string;
   }>(),
   {
     precision: 3,
     markers: () => [],
     intervals: () => [],
+    overflowMax: false,
     help: "",
   },
 );
@@ -46,14 +48,26 @@ const boundedModelValue = computed(() => clamp(props.modelValue));
 const isOutsideInstrument = computed(
   () => props.modelValue < props.min || props.modelValue > props.max,
 );
+const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
 
 function clamp(value: number): number {
   return Math.min(props.max, Math.max(props.min, value));
 }
 
-function updateFromEvent(event: Event): void {
+function clampNumeric(value: number): number {
+  return props.overflowMax ? Math.max(props.min, value) : clamp(value);
+}
+
+function updateFromNumeric(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
-  if (Number.isFinite(value)) emit("update:modelValue", clamp(value));
+  if (!Number.isFinite(value)) return;
+  emit("update:modelValue", clampNumeric(value));
+}
+
+function updateFromRange(event: Event): void {
+  const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
+  if (!Number.isFinite(value)) return;
+  emit("update:modelValue", clamp(value));
 }
 
 function positionStyle(position: number): Record<string, string> {
@@ -84,9 +98,9 @@ function intervalStyle(interval: LinearControlInterval): Record<string, string> 
         :aria-label="`${label} numeric value`"
         :value="modelValue.toFixed(precision)"
         :min="min"
-        :max="max"
+        :max="numericMax"
         :step="step"
-        @change="updateFromEvent"
+        @change="updateFromNumeric"
       />
     </header>
 
@@ -120,7 +134,7 @@ function intervalStyle(interval: LinearControlInterval): Record<string, string> 
         :min="min"
         :max="max"
         :step="step"
-        @input="updateFromEvent"
+        @input="updateFromRange"
       />
     </div>
 
