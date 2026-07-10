@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {
-  OKLCH_PICKER_MAX_CHROMA,
-  buildLightnessChromaBoundaryPath,
-  clampPlanePointToInstrumentBounds,
-  oklchToPlanePoint,
-  planePointToOklch,
   serializeColor,
   type ChromavertColor,
   type GamutBoundaryTable,
+  type PickerPlaneContract,
+  type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@chromavert/color";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -25,6 +22,7 @@ import { placePlanarWarning } from "@/components/chromavert/pickerWarningPlaceme
 
 const props = defineProps<{
   modelValue: ChromavertColor;
+  plane: PickerPlaneContract;
   srgbTable: GamutBoundaryTable;
   displayP3Table: GamutBoundaryTable;
   srgbFallbackColor: ChromavertColor | null;
@@ -38,9 +36,6 @@ const emit = defineEmits<{
 }>();
 
 const VIEWBOX_SIZE = 1000;
-const FIELD_ROW_STEP = 10;
-const KEYBOARD_FINE_STEP = 0.005;
-const KEYBOARD_COARSE_STEP = 0.02;
 
 const surface = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -60,14 +55,12 @@ let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
 
-const activePoint = computed(() => oklchToPlanePoint(props.modelValue));
-const boundedActivePoint = computed(() => clampPlanePointToInstrumentBounds(activePoint.value));
+const activeProjection = computed(() => props.plane.project(props.modelValue));
+const activePoint = computed(() => activeProjection.value.point);
+const boundedActivePoint = computed(() => props.plane.positionActivePoint(props.modelValue));
 const fallbackPoint = computed<PlanePoint | null>(() => {
   if (!props.srgbFallbackColor) return null;
-  return clampPlanePointToInstrumentBounds({
-    x: props.srgbFallbackColor.c / OKLCH_PICKER_MAX_CHROMA,
-    y: 1 - props.srgbFallbackColor.l,
-  });
+  return props.plane.positionActivePoint(props.srgbFallbackColor);
 });
 
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
@@ -90,14 +83,17 @@ const fallbackConnectorStyle = computed(() => {
 });
 
 const srgbPath = computed(() =>
-  geometryToSvgPath(buildLightnessChromaBoundaryPath(props.srgbTable, props.modelValue.h)),
+  geometryToSvgPath(props.plane.buildGamutContour(props.srgbTable, activeProjection.value.fixed)),
 );
 const displayP3Path = computed(() =>
-  geometryToSvgPath(buildLightnessChromaBoundaryPath(props.displayP3Table, props.modelValue.h)),
+  geometryToSvgPath(
+    props.plane.buildGamutContour(props.displayP3Table, activeProjection.value.fixed),
+  ),
 );
 const activeCss = computed(() => serializeColor(props.modelValue));
 const planeLabel = computed(() => {
-  const label = `OKLCH plane. Horizontal chroma ${props.modelValue.c.toFixed(3)}. Vertical lightness ${props.modelValue.l.toFixed(3)}. Arrow keys adjust the selected point.`;
+  const projection = activeProjection.value;
+  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point.`;
   return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
 });
 const instrumentStyle = {
@@ -175,29 +171,49 @@ function drawField(): void {
   if (!context) return;
 
   const { width, height, backingWidth, backingHeight, pixelRatio } = resizeCanvas(element);
-  const hue = props.modelValue.h;
-  const fieldKey = `${width}:${height}:${pixelRatio}:${hue.toFixed(3)}:${canvasColorSpace.value}`;
+  const fixed = activeProjection.value.fixed;
+  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed.toFixed(3)}:${canvasColorSpace.value}`;
   if (fieldKey === lastFieldKey) return;
 
-  const rowCount = Math.ceil(height / FIELD_ROW_STEP) + 1;
-  const color: ChromavertColor = { l: 0, c: 0, h: hue, alpha: 1 };
+  const color: ChromavertColor = { l: 0, c: 0, h: 0, alpha: 1 };
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, backingWidth, backingHeight);
 
-  for (let column = 0; column < width; column += 1) {
-    const gradient = context.createLinearGradient(0, 0, 0, backingHeight);
-    color.c = (column / Math.max(1, width - 1)) * OKLCH_PICKER_MAX_CHROMA;
+  const sampling = props.plane.fieldSampling;
+  if (sampling.kind === "column-gradient") {
+    const rowCount = Math.ceil(height / sampling.rowStep) + 1;
+    for (let column = 0; column < width; column += 1) {
+      const gradient = context.createLinearGradient(0, 0, 0, backingHeight);
+      const x = column / Math.max(1, width - 1);
 
-    for (let index = 0; index < rowCount; index += 1) {
-      const row = Math.min(index * FIELD_ROW_STEP, height);
-      color.l = 1 - row / height;
-      gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
+      for (let index = 0; index < rowCount; index += 1) {
+        const row = Math.min(index * sampling.rowStep, height);
+        props.plane.sampleField({ x, y: row / height }, fixed, color);
+        gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
+      }
+
+      context.fillStyle = gradient;
+      const start = Math.round(column * pixelRatio);
+      const end = Math.round((column + 1) * pixelRatio);
+      context.fillRect(start, 0, Math.max(1, end - start), backingHeight);
     }
-
-    context.fillStyle = gradient;
-    const start = Math.round(column * pixelRatio);
-    const end = Math.round((column + 1) * pixelRatio);
-    context.fillRect(start, 0, Math.max(1, end - start), backingHeight);
+  } else {
+    const resolution = sampling.resolution;
+    context.fillStyle = "oklch(0.12 0 0)";
+    context.fillRect(0, 0, backingWidth, backingHeight);
+    for (let row = 0; row < resolution; row += 1) {
+      for (let column = 0; column < resolution; column += 1) {
+        const point = { x: (column + 0.5) / resolution, y: (row + 0.5) / resolution };
+        if (!props.plane.isPointInInstrumentDomain(point)) continue;
+        props.plane.sampleField(point, fixed, color);
+        context.fillStyle = serializeColor(color);
+        const left = Math.floor((column / resolution) * backingWidth);
+        const top = Math.floor((row / resolution) * backingHeight);
+        const right = Math.ceil(((column + 1) / resolution) * backingWidth);
+        const bottom = Math.ceil(((row + 1) / resolution) * backingHeight);
+        context.fillRect(left, top, right - left, bottom - top);
+      }
+    }
   }
 
   lastFieldKey = fieldKey;
@@ -210,7 +226,7 @@ function scheduleFieldDraw(): void {
 
 function pointFromPointer(event: PointerEvent): PlanePoint | null {
   if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0) return null;
-  return clampPlanePointToInstrumentBounds({
+  return props.plane.constrainPoint({
     x: (event.clientX - surfaceBounds.left) / surfaceBounds.width,
     y: (event.clientY - surfaceBounds.top) / surfaceBounds.height,
   });
@@ -283,7 +299,7 @@ function emitLivePoint(point: PlanePoint): ChromavertColor {
   pendingPoint = null;
   latestInteractionPoint = point;
   positionActiveAnnotations(point);
-  const color = planePointToOklch(point, props.modelValue);
+  const color = props.plane.unproject(point, activeProjection.value.fixed, props.modelValue);
   latestInteractionColor = color;
   emit("update:modelValue", color);
   return color;
@@ -364,31 +380,23 @@ function onLostPointerCapture(event: PointerEvent): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  const step = event.shiftKey ? KEYBOARD_COARSE_STEP : KEYBOARD_FINE_STEP;
-  const next: ChromavertColor = {
-    l: props.modelValue.l,
-    c: props.modelValue.c,
-    h: props.modelValue.h,
-    alpha: props.modelValue.alpha,
-  };
-
-  if (event.key === "ArrowLeft") next.c -= step;
-  else if (event.key === "ArrowRight") next.c += step;
-  else if (event.key === "ArrowUp") next.l += step;
-  else if (event.key === "ArrowDown") next.l -= step;
-  else if (event.key === "Home") next.c = 0;
-  else if (event.key === "End") next.c = OKLCH_PICKER_MAX_CHROMA;
+  let action: PickerPlaneKeyboardAction;
+  if (event.key === "ArrowLeft") action = "decrease-x";
+  else if (event.key === "ArrowRight") action = "increase-x";
+  else if (event.key === "ArrowUp") action = "increase-y";
+  else if (event.key === "ArrowDown") action = "decrease-y";
+  else if (event.key === "Home") action = "minimum-x";
+  else if (event.key === "End") action = "maximum-x";
   else return;
 
   event.preventDefault();
-  next.l = Math.min(1, Math.max(0, next.l));
-  next.c = Math.min(OKLCH_PICKER_MAX_CHROMA, Math.max(0, next.c));
+  const next = props.plane.editFromKeyboard(props.modelValue, action, event.shiftKey);
   emit("update:modelValue", next);
   emit("commit", next);
 }
 
 watch(
-  () => props.modelValue.h,
+  () => activeProjection.value.fixed,
   () => scheduleFieldDraw(),
 );
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
@@ -427,7 +435,9 @@ onBeforeUnmount(() => {
       tabindex="0"
       :aria-label="planeLabel"
       :data-render-color-space="canvasColorSpace"
-      :data-outside-instrument="activePoint.x > 1 ? 'true' : 'false'"
+      :data-outside-instrument="
+        props.plane.isPointInInstrumentDomain(activePoint) ? 'false' : 'true'
+      "
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="finishPointer"
@@ -501,8 +511,10 @@ onBeforeUnmount(() => {
       }}
     </span>
     <span class="oklch-planar-picker__axis oklch-planar-picker__axis--lightness">
-      L · lightness
+      {{ plane.yAxis.symbol }} · {{ plane.yAxis.label }}
     </span>
-    <span class="oklch-planar-picker__axis oklch-planar-picker__axis--chroma">C · chroma</span>
+    <span class="oklch-planar-picker__axis oklch-planar-picker__axis--chroma">
+      {{ plane.xAxis.symbol }} · {{ plane.xAxis.label }}
+    </span>
   </div>
 </template>

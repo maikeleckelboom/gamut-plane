@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   buildLightnessChromaBoundaryPath,
   clampPlanePointToInstrumentBounds,
@@ -88,6 +89,36 @@ describe("OKLCH picker geometry and analysis", () => {
     expect(roundtrip.h).toBe(color.h);
     expect(roundtrip.alpha).toBe(color.alpha);
     expect(roundtrip.source).toBeUndefined();
+  });
+
+  it("routes the generalized plane contract through the locked OKLCH behavior", () => {
+    const color: ChromavertColor = { l: 0.37, c: 0.29, h: 312.5, alpha: 0.45 };
+    const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(color);
+
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.id).toBe("oklch");
+    expect(projection).toEqual({
+      point: oklchToPlanePoint(color),
+      x: color.c,
+      y: color.l,
+      fixed: color.h,
+    });
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.positionActivePoint(color)).toEqual(projection.point);
+    expect(
+      OKLCH_LIGHTNESS_CHROMA_PLANE.unproject(projection.point, projection.fixed, color),
+    ).toEqual(planePointToOklch(projection.point, color));
+
+    const sampled = { l: 0, c: 0, h: 0, alpha: 1 };
+    expect(
+      OKLCH_LIGHTNESS_CHROMA_PLANE.sampleField(projection.point, projection.fixed, sampled),
+    ).toBe(sampled);
+    expect(sampled).toEqual({ l: color.l, c: color.c, h: color.h, alpha: 1 });
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour(tables.srgb, color.h, 17)).toEqual(
+      buildLightnessChromaBoundaryPath(tables.srgb, color.h, 17),
+    );
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.editFromKeyboard(color, "increase-x", false)).toEqual({
+      ...color,
+      c: color.c + 0.005,
+    });
   });
 
   it("keeps out-of-gamut chroma until the explicit instrument edge", () => {

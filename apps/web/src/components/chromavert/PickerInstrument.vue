@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   deriveFallback,
   getCachedGamutBoundaryTable,
@@ -210,6 +211,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
     <div class="picker-instrument__workspace">
       <OklchPlanarPicker
         :model-value="modelValue"
+        :plane="OKLCH_LIGHTNESS_CHROMA_PLANE"
         :srgb-table="tables.srgb"
         :display-p3-table="tables.displayP3"
         :srgb-fallback-color="srgbFallback"

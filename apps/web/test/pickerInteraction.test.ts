@@ -2,6 +2,7 @@ import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   getCachedGamutBoundaryTable,
   getPickerGamutStatus,
@@ -89,6 +90,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
       attachTo: document.body,
       props: {
         modelValue: canonical,
+        plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
         srgbFallbackColor: null,
