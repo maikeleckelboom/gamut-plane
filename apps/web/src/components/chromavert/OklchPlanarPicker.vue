@@ -34,6 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "update:modelValue": [color: ChromavertColor];
+  commit: [color: ChromavertColor];
 }>();
 
 const VIEWBOX_SIZE = 1000;
@@ -53,6 +54,8 @@ let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
 let activePointerId: number | null = null;
+let latestInteractionPoint: PlanePoint | null = null;
+let latestInteractionColor: ChromavertColor | null = null;
 let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
@@ -276,19 +279,24 @@ function positionActiveAnnotations(point: PlanePoint): void {
   warning.style.visibility = "visible";
 }
 
-function commitPoint(point: PlanePoint): void {
+function emitLivePoint(point: PlanePoint): ChromavertColor {
   pendingPoint = null;
+  latestInteractionPoint = point;
   positionActiveAnnotations(point);
-  emit("update:modelValue", planePointToOklch(point, props.modelValue));
+  const color = planePointToOklch(point, props.modelValue);
+  latestInteractionColor = color;
+  emit("update:modelValue", color);
+  return color;
 }
 
 function schedulePoint(point: PlanePoint): void {
   pendingPoint = point;
+  latestInteractionPoint = point;
   positionActiveAnnotations(point);
   if (pointerRaf !== null) return;
   pointerRaf = window.requestAnimationFrame(() => {
     pointerRaf = null;
-    if (pendingPoint) commitPoint(pendingPoint);
+    if (pendingPoint) emitLivePoint(pendingPoint);
   });
 }
 
@@ -305,6 +313,8 @@ function onPointerDown(event: PointerEvent): void {
   if (!point || !surface.value) return;
   event.preventDefault();
   activePointerId = event.pointerId;
+  latestInteractionPoint = null;
+  latestInteractionColor = null;
   surface.value.setPointerCapture?.(event.pointerId);
   schedulePoint(point);
 }
@@ -319,26 +329,38 @@ function onPointerMove(event: PointerEvent): void {
 
 function finishPointer(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
-  const point = pointFromPointer(event) ?? pendingPoint;
+  const point = pointFromPointer(event) ?? pendingPoint ?? latestInteractionPoint;
   cancelPendingPoint();
-  if (point) commitPoint(point);
+  if (point) {
+    const color = emitLivePoint(point);
+    emit("commit", color);
+  }
   const element = surface.value;
-  if (element?.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
   activePointerId = null;
+  latestInteractionPoint = null;
+  latestInteractionColor = null;
+  if (element?.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
 }
 
 function onPointerCancel(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
   cancelPendingPoint();
   activePointerId = null;
+  latestInteractionPoint = null;
+  latestInteractionColor = null;
   positionActiveAnnotations(boundedActivePoint.value);
 }
 
 function onLostPointerCapture(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
-  if (pendingPoint) commitPoint(pendingPoint);
+  const pending = pendingPoint;
+  const point = pending ?? latestInteractionPoint;
+  const color = pending && point ? emitLivePoint(point) : latestInteractionColor;
   cancelPendingPoint();
   activePointerId = null;
+  latestInteractionPoint = null;
+  latestInteractionColor = null;
+  if (color) emit("commit", color);
 }
 
 function onKeydown(event: KeyboardEvent): void {
@@ -362,6 +384,7 @@ function onKeydown(event: KeyboardEvent): void {
   next.l = Math.min(1, Math.max(0, next.l));
   next.c = Math.min(OKLCH_PICKER_MAX_CHROMA, Math.max(0, next.c));
   emit("update:modelValue", next);
+  emit("commit", next);
 }
 
 watch(

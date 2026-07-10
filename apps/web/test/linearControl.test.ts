@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import OklchLinearControl, {
   type LinearControlInterval,
@@ -36,6 +36,28 @@ afterEach(() => {
 });
 
 describe("OklchLinearControl gamut annotations", () => {
+  it("separates live range input from commit without repeated layout reads", async () => {
+    const wrapper = mountControl({ modelValue: 180 });
+    const track = wrapper.get(".oklch-linear-control__track").element as HTMLElement;
+    const measure = vi.spyOn(track, "getBoundingClientRect");
+    const range = wrapper.get('input[type="range"]');
+
+    (range.element as HTMLInputElement).value = "210";
+    await range.trigger("input");
+    (range.element as HTMLInputElement).value = "220";
+    await range.trigger("input");
+
+    expect(wrapper.emitted("update:modelValue")).toEqual([[210], [220]]);
+    expect(wrapper.emitted("commit")).toBeUndefined();
+    expect(measure).not.toHaveBeenCalled();
+
+    await range.trigger("change");
+    expect(wrapper.emitted("commit")).toEqual([[220]]);
+    expect(measure).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
   it("clamps a supplementary warning across native thumb travel and describes both inputs", async () => {
     const wrapper = mountControl({
       help: "Table-derived visual interval.",
@@ -189,7 +211,15 @@ describe("OklchLinearControl gamut annotations", () => {
     (number.element as HTMLInputElement).value = "0.55";
     await number.trigger("change");
     expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([0.55]);
+    expect(wrapper.emitted("commit")?.at(-1)).toEqual([0.55]);
     expect((wrapper.get('input[type="range"]').element as HTMLInputElement).value).toBe("0.4");
+
+    const updateCount = wrapper.emitted("update:modelValue")?.length;
+    const commitCount = wrapper.emitted("commit")?.length;
+    (number.element as HTMLInputElement).value = "";
+    await number.trigger("change");
+    expect(wrapper.emitted("update:modelValue")).toHaveLength(updateCount ?? 0);
+    expect(wrapper.emitted("commit")).toHaveLength(commitCount ?? 0);
 
     wrapper.unmount();
   });

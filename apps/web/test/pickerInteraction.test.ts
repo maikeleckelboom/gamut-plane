@@ -72,6 +72,10 @@ function emittedColors(wrapper: VueWrapper): ChromavertColor[] {
   return (wrapper.emitted("update:modelValue") ?? []).map(([color]) => color as ChromavertColor);
 }
 
+function committedColors(wrapper: VueWrapper): ChromavertColor[] {
+  return (wrapper.emitted("commit") ?? []).map(([color]) => color as ChromavertColor);
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
   document.body.innerHTML = "";
@@ -128,6 +132,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     dispatchPointer(surface, "pointermove", { pointerId: 7, clientX: 500, clientY: -100 });
 
     expect(emittedColors(wrapper)).toHaveLength(0);
+    expect(committedColors(wrapper)).toHaveLength(0);
     expect(marker.style.left).toBe("100%");
     expect(marker.style.top).toBe("0%");
     const edgePlacement = placePlanarWarning({
@@ -152,6 +157,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     const latestStatus = getPickerGamutStatus(latestDrag!, tables);
     expect(latestStatus.srgb.inGamut).toBe(false);
     expect(latestStatus.displayP3.inGamut).toBe(false);
+    expect(committedColors(wrapper)).toHaveLength(0);
 
     dispatchPointer(surface, "pointerup", { pointerId: 7, clientX: 90, clientY: 70 });
 
@@ -159,6 +165,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(pointerUpColors).toHaveLength(2);
     expect(pointerUpColors[1]?.l).toBeCloseTo(0.5, 12);
     expect(pointerUpColors[1]?.c).toBeCloseTo(OKLCH_PICKER_MAX_CHROMA * 0.4, 12);
+    expect(committedColors(wrapper)).toEqual([pointerUpColors[1]]);
     expect(releasePointerCapture).toHaveBeenCalledWith(7);
 
     dispatchPointer(surface, "pointerdown", { pointerId: 8, clientX: 70, clientY: 60 });
@@ -173,10 +180,19 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect({ left: warning.style.left, top: warning.style.top }).toEqual(warningAtCanonical);
     animationFrames.flush();
     expect(emittedColors(wrapper)).toHaveLength(2);
+    expect(committedColors(wrapper)).toHaveLength(1);
+
+    dispatchPointer(surface, "pointerdown", { pointerId: 9, clientX: 70, clientY: 60 });
+    dispatchPointer(surface, "pointermove", { pointerId: 9, clientX: 150, clientY: 80 });
+    animationFrames.flush();
+    const liveBeforeLostCapture = emittedColors(wrapper).at(-1)!;
+    dispatchPointer(surface, "lostpointercapture", { pointerId: 9 });
+    expect(committedColors(wrapper).at(-1)).toEqual(liveBeforeLostCapture);
 
     await wrapper.get("[data-render-color-space]").trigger("keydown", { key: "ArrowRight" });
     const keyboardColor = emittedColors(wrapper).at(-1)!;
     expect(keyboardColor.c).toBeCloseTo(0.125, 12);
+    expect(committedColors(wrapper).at(-1)).toEqual(keyboardColor);
     await wrapper.setProps({ modelValue: keyboardColor });
     expect(marker.style.left).toBe("31.25%");
     expect(marker.style.top).toBe("40%");

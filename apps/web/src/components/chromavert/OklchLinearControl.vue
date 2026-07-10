@@ -74,6 +74,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "update:modelValue": [value: number];
+  commit: [value: number];
 }>();
 
 const helpId = computed(() => (props.help ? `${props.id}-help` : undefined));
@@ -182,13 +183,21 @@ function clampNumeric(value: number): number {
 function updateFromNumeric(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
   if (!Number.isFinite(value)) return;
-  emit("update:modelValue", clampNumeric(value));
+  const next = clampNumeric(value);
+  emit("update:modelValue", next);
+  emit("commit", next);
 }
 
 function updateFromRange(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
   if (!Number.isFinite(value)) return;
   emit("update:modelValue", clamp(value));
+}
+
+function commitFromRange(event: Event): void {
+  const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
+  if (!Number.isFinite(value)) return;
+  emit("commit", clamp(value));
 }
 
 function positionStyle(position: number): Record<string, string> {
@@ -339,6 +348,7 @@ function bracketCapsPath(tone: LinearControlInterval["tone"]): string {
         :max="max"
         :step="step"
         @input="updateFromRange"
+        @change="commitFromRange"
       />
     </div>
 

@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "update:modelValue": [color: ChromavertColor];
+  commit: [color: ChromavertColor];
 }>();
 
 const TABLE_OPTIONS = { hueSteps: 120, lightnessSteps: 65, searchIterations: 14 } as const;
@@ -167,7 +168,11 @@ function updatePlane(color: ChromavertColor): void {
   emit("update:modelValue", color);
 }
 
-function updateChannel(channel: "l" | "c" | "h", value: number): void {
+function commitPlane(color: ChromavertColor): void {
+  emit("commit", color);
+}
+
+function channelColor(channel: "l" | "c" | "h", value: number): ChromavertColor {
   const color: ChromavertColor = {
     l: props.modelValue.l,
     c: props.modelValue.c,
@@ -177,7 +182,15 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
   if (channel === "l") color.l = value;
   else if (channel === "c") color.c = value;
   else color.h = normalizeHue(value);
-  emit("update:modelValue", color);
+  return color;
+}
+
+function updateChannel(channel: "l" | "c" | "h", value: number): void {
+  emit("update:modelValue", channelColor(channel, value));
+}
+
+function commitChannel(channel: "l" | "c" | "h", value: number): void {
+  emit("commit", channelColor(channel, value));
 }
 </script>
 
@@ -203,6 +216,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
         :warning-visible="isOutsideDisplayP3"
         :warning-label="primaryGamutWarning"
         @update:model-value="updatePlane"
+        @commit="commitPlane"
       />
 
       <div class="picker-instrument__controls">
@@ -234,6 +248,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :warning-position="hueWarningPosition"
           help="P3 and sRGB brackets show table-interpolated Hue intervals at current L/C."
           @update:model-value="updateChannel('h', $event)"
+          @commit="commitChannel('h', $event)"
         />
 
         <OklchLinearControl
@@ -252,6 +267,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :warning-position="modelValue.l"
           help="P3 and sRGB brackets show table-interpolated Lightness intervals at current C/H."
           @update:model-value="updateChannel('l', $event)"
+          @commit="commitChannel('l', $event)"
         />
 
         <OklchLinearControl
@@ -272,6 +288,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
           :warning-position="chromaWarningPosition"
           :help="chromaHelp"
           @update:model-value="updateChannel('c', $event)"
+          @commit="commitChannel('c', $event)"
         />
 
         <div class="picker-instrument__readouts" aria-label="Picker gamut status">
