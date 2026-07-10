@@ -6,6 +6,7 @@ export interface LinearControlMarker {
   label: string;
   position: number;
   tone: "srgb" | "display-p3" | "fallback";
+  cssColor?: string;
 }
 
 export interface LinearControlInterval {
@@ -74,6 +75,12 @@ function positionStyle(position: number): Record<string, string> {
   return { left: `${Math.min(1, Math.max(0, position)) * 100}%` };
 }
 
+function tickStyle(marker: LinearControlMarker): Record<string, string> {
+  const style: Record<string, string> = positionStyle(marker.position);
+  if (marker.cssColor) style["--tick-color"] = marker.cssColor;
+  return style;
+}
+
 function intervalStyle(interval: LinearControlInterval): Record<string, string> {
   const start = Math.min(1, Math.max(0, interval.start));
   const end = Math.min(1, Math.max(start, interval.end));
@@ -119,7 +126,7 @@ function intervalStyle(interval: LinearControlInterval): Record<string, string> 
         :key="marker.id"
         class="oklch-linear-control__tick"
         :class="`oklch-linear-control__tick--${marker.tone}`"
-        :style="positionStyle(marker.position)"
+        :style="tickStyle(marker)"
         :title="marker.label"
         :aria-label="marker.label"
         :data-gamut-marker="marker.id"

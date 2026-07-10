@@ -77,6 +77,7 @@ const chromaControlMarkers = computed<LinearControlMarker[]>(() => {
       label: `sRGB table fallback guide C ${fallback.chroma.toFixed(4)}`,
       position: fallback.position,
       tone: "fallback",
+      cssColor: fallbackCss.value,
     });
   }
   return markers;
@@ -112,6 +113,12 @@ const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
 const srgbFallback = computed(() =>
   status.value.srgb.inGamut ? null : deriveFallback(props.modelValue, "srgb").fallback,
 );
+const fallbackCss = computed(() => (srgbFallback.value ? serializeColor(srgbFallback.value) : ""));
+const instrumentStyle = computed<Record<string, string>>(() => {
+  const style: Record<string, string> = { "--picker-active": activeCss.value };
+  if (fallbackCss.value) style["--picker-fallback"] = fallbackCss.value;
+  return style;
+});
 const fallbackGuideChroma = computed(() => chromaMarkers.value.srgbFallbackGuide?.chroma ?? null);
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
@@ -147,11 +154,7 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
 </script>
 
 <template>
-  <section
-    class="picker-instrument"
-    data-picker-instrument
-    :style="{ '--picker-active': activeCss }"
-  >
+  <section class="picker-instrument" data-picker-instrument :style="instrumentStyle">
     <header class="picker-instrument__header">
       <div>
         <p class="eyebrow">OKLCH / dual gamut view</p>
