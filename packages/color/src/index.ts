@@ -19,6 +19,8 @@ export * from "./model/color";
 export * from "./model/gamut";
 export * from "./model/proof";
 export * from "./model/scale";
+export * from "./picker/analysis";
+export * from "./picker/plane";
 export * from "./scale/curve";
 export * from "./scale/generateScale";
 export * from "./scale/pinning";

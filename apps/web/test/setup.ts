@@ -24,3 +24,18 @@ window.cancelAnimationFrame ??= (handle) => window.clearTimeout(handle);
 window.scrollTo = vi.fn();
 
 Element.prototype.scrollIntoView ??= vi.fn();
+
+const canvasGradient = { addColorStop: vi.fn() };
+const canvasContext = {
+  clearRect: vi.fn(),
+  createLinearGradient: vi.fn(() => canvasGradient),
+  fillRect: vi.fn(),
+  fillStyle: "",
+  getContextAttributes: vi.fn(() => ({ colorSpace: "srgb" })),
+  setTransform: vi.fn(),
+};
+
+Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+  configurable: true,
+  value: vi.fn(() => canvasContext),
+});
