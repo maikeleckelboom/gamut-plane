@@ -13,6 +13,7 @@ import {
   clampPlanePointToInstrumentBounds,
   clearGamutBoundaryTableCache,
   constrainOklabPlanePoint,
+  convertOklchToOklab,
   getCachedGamutBoundaryTable,
   getChromaSliderMarkers,
   getHueGamutIntervals,
@@ -462,6 +463,58 @@ describe("OKLCH picker geometry and analysis", () => {
       const color = oklabPlanePointToOklch(bounded, 0.6, { h: 245, alpha: 0.8 });
       expect(color.c).toBeCloseTo(0.4, 11);
       expect(color.alpha).toBe(0.8);
+    });
+
+    it.each([
+      ["inside", { l: 0.63, c: 0.24, h: 218.5, alpha: 0.37 }],
+      ["outside", { l: 0.63, c: 0.52, h: 218.5, alpha: 0.37 }],
+    ] satisfies [string, ChromavertColor][])(
+      "edits only fixed OKLab L for a canonical color %s the instrument domain",
+      (_domain, color) => {
+        const before = convertOklchToOklab(color);
+        const edited = OKLAB_AB_PLANE.editFixedAxis(color, 0.27);
+        const after = convertOklchToOklab(edited);
+
+        expect(after[0]).toBeCloseTo(0.27, 12);
+        expect(after[1]).toBeCloseTo(before[1]!, 12);
+        expect(after[2]).toBeCloseTo(before[2]!, 12);
+        expect(edited.c).toBeCloseTo(color.c, 12);
+        expect(edited.h).toBeCloseTo(color.h, 12);
+        expect(edited.alpha).toBe(color.alpha);
+      },
+    );
+
+    it("resolves Home and End at horizontal disc extrema without changing in-domain b or L", () => {
+      const color: ChromavertColor = { l: 0.58, c: 0.5, h: 30, alpha: 0.62 };
+      const projection = OKLAB_AB_PLANE.project(color);
+      const expectedExtent = Math.sqrt(OKLAB_PICKER_AXIS_LIMIT ** 2 - projection.y ** 2);
+
+      const home = OKLAB_AB_PLANE.project(
+        OKLAB_AB_PLANE.editFromKeyboard(color, "minimum-x", false),
+      );
+      const end = OKLAB_AB_PLANE.project(
+        OKLAB_AB_PLANE.editFromKeyboard(color, "maximum-x", false),
+      );
+
+      expect(home.x).toBeCloseTo(-expectedExtent, 12);
+      expect(end.x).toBeCloseTo(expectedExtent, 12);
+      expect(home.y).toBeCloseTo(projection.y, 12);
+      expect(end.y).toBeCloseTo(projection.y, 12);
+      expect(home.fixed).toBeCloseTo(projection.fixed, 12);
+      expect(end.fixed).toBeCloseTo(projection.fixed, 12);
+    });
+
+    it("uses the nearest vertical pole when canonical b is outside the horizontal disc domain", () => {
+      const color: ChromavertColor = { l: 0.41, c: 0.52, h: 90, alpha: 0.48 };
+
+      for (const action of ["minimum-x", "maximum-x"] as const) {
+        const edited = OKLAB_AB_PLANE.editFromKeyboard(color, action, false);
+        const projection = OKLAB_AB_PLANE.project(edited);
+        expect(projection.x).toBeCloseTo(0, 12);
+        expect(projection.y).toBeCloseTo(OKLAB_PICKER_AXIS_LIMIT, 12);
+        expect(projection.fixed).toBeCloseTo(color.l, 12);
+        expect(edited.alpha).toBe(color.alpha);
+      }
     });
 
     it("samples the genuine OKLab disc deterministically through canonical OKLCH", () => {

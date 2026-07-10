@@ -22,15 +22,16 @@ export interface PickerPlaneAxis {
 }
 
 export interface PlanePoint {
-  /** Normalized chroma position. Values outside 0..1 are outside the instrument domain. */
+  /** Normalized horizontal viewport position. Axis meaning is defined by the active plane. */
   x: number;
-  /** Normalized inverse-lightness position: 0 is L=1 and 1 is L=0. */
+  /** Normalized vertical viewport position. Axis meaning is defined by the active plane. */
   y: number;
 }
 
 export type PlaneColorReference = Pick<ChromavertColor, "h" | "alpha">;
 
 export interface PickerPlaneProjection {
+  /** Raw canonical projection; it may sit outside the editable instrument domain. */
   point: PlanePoint;
   x: number;
   y: number;
@@ -74,6 +75,7 @@ export interface PickerPlaneContract {
     output: ChromavertColor,
     scratch?: PickerPlaneSampleScratch,
   ): ChromavertColor;
+  /** Positions display annotations, including any deliberate instrument-domain projection. */
   positionActivePoint(color: ChromavertColor): PlanePoint;
   buildGamutContour(
     table: GamutBoundaryTable,
@@ -83,6 +85,8 @@ export interface PickerPlaneContract {
   ): Float32Array;
   constrainPoint(point: PlanePoint): PlanePoint;
   isPointInInstrumentDomain(point: PlanePoint): boolean;
+  /** Edits only the fixed axis while preserving both raw plane coordinates. */
+  editFixedAxis(color: ChromavertColor, fixed: number): ChromavertColor;
   editFromKeyboard(
     color: ChromavertColor,
     action: PickerPlaneKeyboardAction,
@@ -98,6 +102,10 @@ function assertFinitePoint(point: PlanePoint): void {
 
 function clampUnit(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+function assertFiniteFixedAxis(value: number): void {
+  if (!Number.isFinite(value)) throw new TypeError("Fixed-axis value must be finite");
 }
 
 /** Clamps only to the rectangular picker domain, never to an output gamut. */
@@ -222,6 +230,17 @@ function editOklchFromKeyboard(
   return next;
 }
 
+function editOklchFixedHue(color: ChromavertColor, hue: number): ChromavertColor {
+  assertChromavertColor(color);
+  assertFiniteFixedAxis(hue);
+  return {
+    l: color.l,
+    c: color.c,
+    h: normalizeHue(hue),
+    alpha: color.alpha,
+  };
+}
+
 export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
   id: "oklch",
   label: "OKLCH",
@@ -243,6 +262,7 @@ export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
   buildGamutContour: buildLightnessChromaBoundaryPath,
   constrainPoint: clampPlanePointToInstrumentBounds,
   isPointInInstrumentDomain: isPointInRectangularInstrument,
+  editFixedAxis: editOklchFixedHue,
   editFromKeyboard: editOklchFromKeyboard,
 };
 
@@ -388,10 +408,33 @@ function editOklabFromKeyboard(
   else if (action === "increase-x") a += step;
   else if (action === "increase-y") b += step;
   else if (action === "decrease-y") b -= step;
-  else if (action === "minimum-x") a = -OKLAB_PICKER_AXIS_LIMIT;
-  else a = OKLAB_PICKER_AXIS_LIMIT;
+  else {
+    const boundedB = Math.min(OKLAB_PICKER_AXIS_LIMIT, Math.max(-OKLAB_PICKER_AXIS_LIMIT, b));
+    const horizontalExtent = Math.sqrt(Math.max(0, OKLAB_PICKER_AXIS_LIMIT ** 2 - boundedB ** 2));
+    a = action === "minimum-x" ? -horizontalExtent : horizontalExtent;
+    b = boundedB;
+    return writeOklabPointToCanonical(
+      oklabPointFromCartesian(a, b),
+      projection.fixed,
+      color,
+      { l: 0, c: 0, h: 0, alpha: color.alpha },
+      undefined,
+      false,
+    );
+  }
 
   return oklabPlanePointToOklch(oklabPointFromCartesian(a, b), projection.fixed, color);
+}
+
+function editOklabFixedLightness(color: ChromavertColor, lightness: number): ChromavertColor {
+  assertChromavertColor(color);
+  assertFiniteFixedAxis(lightness);
+  return {
+    l: clampUnit(lightness),
+    c: color.c,
+    h: color.h,
+    alpha: color.alpha,
+  };
 }
 
 export const OKLAB_AB_PLANE: PickerPlaneContract = {
@@ -425,5 +468,6 @@ export const OKLAB_AB_PLANE: PickerPlaneContract = {
   buildGamutContour: buildOklabGamutContour,
   constrainPoint: constrainOklabPlanePoint,
   isPointInInstrumentDomain: isPointInOklabInstrumentDomain,
+  editFixedAxis: editOklabFixedLightness,
   editFromKeyboard: editOklabFromKeyboard,
 };

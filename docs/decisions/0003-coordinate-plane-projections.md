@@ -23,6 +23,7 @@ The CIE Lab plane must later be weighed directly against starting full Proof. Pr
 - no `OKLCH | OKLab | Lab | RGB` union becomes canonical state
 - plane selection cannot affect scale generation, fallback, export artifacts, or output hashes
 - plane switching cannot perform a projection round trip or write a new color
-- pointer, keyboard, and fixed-axis edits use the active plane's explicit unprojection path
+- pointer and a/b keyboard edits use the active plane's instrument-constrained unprojection path
+- fixed-axis editing uses a separate axis-only path; changing OKLab L preserves the raw transient a/b coordinates even when the visible marker is projected to the instrument boundary
 - the plane contract is limited to the accepted OKLCH and OKLab views rather than becoming a plugin system
 - CIE Lab/LCH and unrelated editable coordinate spaces remain outside this decision

@@ -147,13 +147,7 @@ const chromaGradient = computed(() =>
   })),
 );
 const oklabLightnessGradient = computed(() =>
-  colorGradient(12, (position) =>
-    OKLAB_AB_PLANE.unproject(
-      OKLAB_AB_PLANE.positionActivePoint(props.modelValue),
-      position,
-      props.modelValue,
-    ),
-  ),
+  colorGradient(12, (position) => OKLAB_AB_PLANE.editFixedAxis(props.modelValue, position)),
 );
 
 const activeCss = computed(() => serializeColor(props.modelValue));
@@ -204,11 +198,7 @@ function selectPlane(value: PickerPlaneId): void {
 }
 
 function oklabLightnessColor(value: number): ChromavertColor {
-  return OKLAB_AB_PLANE.unproject(
-    OKLAB_AB_PLANE.positionActivePoint(props.modelValue),
-    value,
-    props.modelValue,
-  );
+  return OKLAB_AB_PLANE.editFixedAxis(props.modelValue, value);
 }
 
 function updateOklabLightness(value: number): void {
