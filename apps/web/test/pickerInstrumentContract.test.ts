@@ -66,7 +66,7 @@ describe("PickerInstrument edit contract", () => {
       await flushPromises();
       const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
       expect(plane.get('[data-instrument-domain="disc"]').exists()).toBe(true);
-      expect(plane.get("[data-neutral-center]").exists()).toBe(true);
+      expect(plane.find("[data-neutral-center]").exists()).toBe(false);
       expect(plane.attributes("data-field-resolution")).toBe("80x24");
       for (const boundary of plane.findAll("[data-gamut-boundary]")) {
         expect(boundary.attributes("d")).toMatch(/ Z$/);
@@ -115,6 +115,72 @@ describe("PickerInstrument edit contract", () => {
     const warning = wrapper.get('[data-picker-control="h"] [data-gamut-warning="linear"]');
     expect(warning.attributes("data-visible")).toBe("true");
     expect(warning.attributes("data-warning-side")).toBe(side);
+
+    wrapper.unmount();
+  });
+
+  it("identifies marker roles and toggles boundary guides without editing the color", async () => {
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: {
+        modelValue: parseUserColor("oklch(62% 0.42 30)"),
+        plane: "oklab",
+      },
+    });
+    await flushPromises();
+
+    const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
+    expect(plane.find('[data-marker-role="neutral-origin"]').exists()).toBe(false);
+    expect(plane.get('[data-marker-role="active-color"]').attributes("aria-label")).toBe(
+      "Active canonical color",
+    );
+    expect(plane.get('[data-marker-role="srgb-fallback"]').attributes("aria-label")).toBe(
+      "Derived sRGB fallback",
+    );
+
+    const boundaryHits = plane.findAll("[data-gamut-boundary-hit]");
+    expect(boundaryHits.map((hit) => hit.attributes("aria-label"))).toEqual([
+      "Display P3 gamut boundary",
+      "sRGB gamut boundary",
+      "OKLab editable domain, not a gamut boundary",
+    ]);
+
+    const p3BoundaryHit = plane.get('[data-gamut-boundary-hit="display-p3"]');
+    expect(p3BoundaryHit.attributes("tabindex")).toBeUndefined();
+    expect(p3BoundaryHit.attributes("role")).toBeUndefined();
+
+    const surface = plane.get("[data-render-color-space]");
+    await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
+    await flushPromises();
+
+    const menu = document.body.querySelector('[data-slot="context-menu-content"]');
+    expect(menu?.textContent).toContain("Boundary visibility");
+    expect(menu?.textContent).toContain("Display P3 gamut");
+    expect(menu?.textContent).toContain("sRGB gamut");
+    expect(menu?.textContent).toContain("OKLab editable domain");
+    expect(menu?.textContent).toContain("Neutral origin");
+
+    const neutralToggle = document.body.querySelector(
+      '[data-boundary-toggle="neutral-origin"]',
+    ) as HTMLElement;
+    neutralToggle.click();
+    await flushPromises();
+    expect(plane.get('[data-marker-role="neutral-origin"]').attributes("aria-label")).toBe(
+      "Neutral origin, a 0, b 0",
+    );
+
+    await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
+    await flushPromises();
+
+    const srgbToggle = document.body.querySelector('[data-boundary-toggle="srgb"]') as HTMLElement;
+    srgbToggle.click();
+    await flushPromises();
+
+    expect(plane.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(plane.find('[data-gamut-boundary-hit="srgb"]').exists()).toBe(false);
+    expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    expect(wrapper.emitted("commit")).toBeUndefined();
 
     wrapper.unmount();
   });

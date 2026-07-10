@@ -12,6 +12,15 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
 import GamutWarningGlyph from "@/components/chromavert/GamutWarningGlyph.vue";
 import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
   PICKER_ACTIVE_MARKER_RADIUS,
   PICKER_FALLBACK_MARKER_RADIUS,
   PICKER_WARNING_GLYPH_SIZE,
@@ -43,6 +52,10 @@ const canvas = ref<HTMLCanvasElement | null>(null);
 const marker = ref<HTMLSpanElement | null>(null);
 const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<"pending" | "display-p3" | "srgb" | "unavailable">("pending");
+const showDisplayP3Boundary = ref(true);
+const showSrgbBoundary = ref(true);
+const showInstrumentDomain = ref(true);
+const showNeutralOrigin = ref(false);
 
 let context: CanvasRenderingContext2D | null = null;
 let discFieldBuffer: HTMLCanvasElement | null = null;
@@ -112,7 +125,7 @@ const displayP3Path = computed(() =>
 const activeCss = computed(() => serializeColor(props.modelValue));
 const planeLabel = computed(() => {
   const projection = activeProjection.value;
-  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point.`;
+  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point. Right-click for boundary visibility.`;
   return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
 });
 const instrumentStyle = {
@@ -474,89 +487,194 @@ onBeforeUnmount(() => {
     "
     :style="instrumentStyle"
   >
-    <div
-      ref="surface"
-      class="oklch-planar-picker__surface"
-      role="application"
-      tabindex="0"
-      :aria-label="planeLabel"
-      :data-render-color-space="canvasColorSpace"
-      :data-outside-instrument="
-        props.plane.isPointInInstrumentDomain(activePoint) ? 'false' : 'true'
-      "
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="finishPointer"
-      @pointercancel="onPointerCancel"
-      @lostpointercapture="onLostPointerCapture"
-      @keydown="onKeydown"
-    >
-      <canvas ref="canvas" aria-hidden="true" />
-      <span
-        v-if="plane.id === 'oklab'"
-        class="oklch-planar-picker__domain-boundary"
-        data-instrument-domain="disc"
-        aria-hidden="true"
-      />
-      <svg
-        class="oklch-planar-picker__gamut"
-        :viewBox="`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          :d="displayP3Path"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--p3"
-          data-gamut-boundary="display-p3"
-          vector-effect="non-scaling-stroke"
-        />
-        <path
-          :d="srgbPath"
-          class="oklch-planar-picker__boundary oklch-planar-picker__boundary--srgb"
-          data-gamut-boundary="srgb"
-          vector-effect="non-scaling-stroke"
-        />
-      </svg>
-      <span
-        v-if="plane.id === 'oklab'"
-        class="oklch-planar-picker__neutral-center"
-        data-neutral-center
-        aria-hidden="true"
-      />
-      <span
-        v-if="fallbackPoint"
-        class="oklch-planar-picker__fallback-connector"
-        :style="fallbackConnectorStyle"
-        data-fallback-connector
-        aria-hidden="true"
-      />
-      <span
-        v-if="fallbackPoint"
-        class="oklch-planar-picker__marker oklch-planar-picker__marker--fallback"
-        :style="{ ...fallbackMarkerStyle, '--fallback-marker-color': fallbackCss }"
-        data-fallback-marker
-        aria-hidden="true"
-      />
-      <span
-        ref="warningMarker"
-        v-show="warningVisible"
-        class="oklch-planar-picker__warning"
-        data-gamut-warning="planar"
-        :data-visible="warningVisible ? 'true' : 'false'"
-        style="visibility: hidden"
-        aria-hidden="true"
-      >
-        <GamutWarningGlyph />
-      </span>
-      <span
-        ref="marker"
-        class="oklch-planar-picker__marker oklch-planar-picker__marker--active"
-        :style="{ ...markerStyle, '--marker-color': activeCss }"
-        :data-outside-display-p3="warningVisible ? 'true' : 'false'"
-        data-active-marker
-        aria-hidden="true"
-      />
-    </div>
+    <TooltipProvider>
+      <ContextMenu>
+        <ContextMenuTrigger as-child>
+          <div
+            ref="surface"
+            class="oklch-planar-picker__surface"
+            role="application"
+            tabindex="0"
+            :aria-label="planeLabel"
+            :data-render-color-space="canvasColorSpace"
+            :data-outside-instrument="
+              props.plane.isPointInInstrumentDomain(activePoint) ? 'false' : 'true'
+            "
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="finishPointer"
+            @pointercancel="onPointerCancel"
+            @lostpointercapture="onLostPointerCapture"
+            @keydown="onKeydown"
+          >
+            <canvas ref="canvas" aria-hidden="true" />
+            <span
+              v-if="plane.id === 'oklab' && showInstrumentDomain"
+              class="oklch-planar-picker__domain-boundary"
+              data-instrument-domain="disc"
+              aria-hidden="true"
+            />
+            <svg
+              class="oklch-planar-picker__gamut"
+              :viewBox="`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`"
+              preserveAspectRatio="none"
+              role="group"
+              aria-label="Gamut and instrument boundary guides"
+            >
+              <path
+                v-if="showDisplayP3Boundary"
+                :d="displayP3Path"
+                class="oklch-planar-picker__boundary oklch-planar-picker__boundary--p3"
+                data-gamut-boundary="display-p3"
+                vector-effect="non-scaling-stroke"
+                aria-hidden="true"
+              />
+              <Tooltip v-if="showDisplayP3Boundary">
+                <TooltipTrigger as-child>
+                  <path
+                    :d="displayP3Path"
+                    class="oklch-planar-picker__boundary-hit"
+                    data-gamut-boundary-hit="display-p3"
+                    vector-effect="non-scaling-stroke"
+                    aria-label="Display P3 gamut boundary"
+                    @pointerdown.stop
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top">Display P3 gamut boundary</TooltipContent>
+              </Tooltip>
+              <path
+                v-if="showSrgbBoundary"
+                :d="srgbPath"
+                class="oklch-planar-picker__boundary oklch-planar-picker__boundary--srgb"
+                data-gamut-boundary="srgb"
+                vector-effect="non-scaling-stroke"
+                aria-hidden="true"
+              />
+              <Tooltip v-if="showSrgbBoundary">
+                <TooltipTrigger as-child>
+                  <path
+                    :d="srgbPath"
+                    class="oklch-planar-picker__boundary-hit"
+                    data-gamut-boundary-hit="srgb"
+                    vector-effect="non-scaling-stroke"
+                    aria-label="sRGB gamut boundary"
+                    @pointerdown.stop
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top">sRGB gamut boundary</TooltipContent>
+              </Tooltip>
+              <Tooltip v-if="plane.id === 'oklab' && showInstrumentDomain">
+                <TooltipTrigger as-child>
+                  <circle
+                    class="oklch-planar-picker__boundary-hit"
+                    data-gamut-boundary-hit="instrument-domain"
+                    cx="500"
+                    cy="500"
+                    r="499"
+                    vector-effect="non-scaling-stroke"
+                    aria-label="OKLab editable domain, not a gamut boundary"
+                    @pointerdown.stop
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  OKLab editable domain · not a gamut boundary
+                </TooltipContent>
+              </Tooltip>
+            </svg>
+            <Tooltip v-if="plane.id === 'oklab' && showNeutralOrigin">
+              <TooltipTrigger as-child>
+                <span
+                  class="oklch-planar-picker__neutral-center"
+                  data-neutral-center
+                  data-marker-role="neutral-origin"
+                  aria-label="Neutral origin, a 0, b 0"
+                />
+              </TooltipTrigger>
+              <TooltipContent side="top">Neutral origin · a 0 · b 0</TooltipContent>
+            </Tooltip>
+            <span
+              v-if="fallbackPoint"
+              class="oklch-planar-picker__fallback-connector"
+              :style="fallbackConnectorStyle"
+              data-fallback-connector
+              aria-hidden="true"
+            />
+            <Tooltip v-if="fallbackPoint">
+              <TooltipTrigger as-child>
+                <span
+                  class="oklch-planar-picker__marker oklch-planar-picker__marker--fallback"
+                  :style="{ ...fallbackMarkerStyle, '--fallback-marker-color': fallbackCss }"
+                  data-fallback-marker
+                  data-marker-role="srgb-fallback"
+                  aria-label="Derived sRGB fallback"
+                />
+              </TooltipTrigger>
+              <TooltipContent side="top">Derived sRGB fallback</TooltipContent>
+            </Tooltip>
+            <span
+              ref="warningMarker"
+              v-show="warningVisible"
+              class="oklch-planar-picker__warning"
+              data-gamut-warning="planar"
+              :data-visible="warningVisible ? 'true' : 'false'"
+              style="visibility: hidden"
+              aria-hidden="true"
+            >
+              <GamutWarningGlyph />
+            </span>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <span
+                  ref="marker"
+                  class="oklch-planar-picker__marker oklch-planar-picker__marker--active"
+                  :style="{ ...markerStyle, '--marker-color': activeCss }"
+                  :data-outside-display-p3="warningVisible ? 'true' : 'false'"
+                  data-active-marker
+                  data-marker-role="active-color"
+                  aria-label="Active canonical color"
+                />
+              </TooltipTrigger>
+              <TooltipContent side="top">Active canonical color</TooltipContent>
+            </Tooltip>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent class="picker-boundary-menu">
+          <ContextMenuLabel>Boundary visibility</ContextMenuLabel>
+          <ContextMenuSeparator />
+          <ContextMenuCheckboxItem
+            v-model="showDisplayP3Boundary"
+            data-boundary-toggle="display-p3"
+          >
+            <i class="picker-key picker-key--p3" aria-hidden="true" />
+            Display P3 gamut
+          </ContextMenuCheckboxItem>
+          <ContextMenuCheckboxItem v-model="showSrgbBoundary" data-boundary-toggle="srgb">
+            <i class="picker-key picker-key--srgb" aria-hidden="true" />
+            sRGB gamut
+          </ContextMenuCheckboxItem>
+          <ContextMenuCheckboxItem
+            v-if="plane.id === 'oklab'"
+            v-model="showInstrumentDomain"
+            data-boundary-toggle="instrument-domain"
+          >
+            <i class="picker-key picker-key--domain" aria-hidden="true" />
+            OKLab editable domain
+          </ContextMenuCheckboxItem>
+          <ContextMenuCheckboxItem
+            v-if="plane.id === 'oklab'"
+            v-model="showNeutralOrigin"
+            data-boundary-toggle="neutral-origin"
+          >
+            <i class="picker-key picker-key--neutral" aria-hidden="true" />
+            Neutral origin
+          </ContextMenuCheckboxItem>
+          <ContextMenuSeparator />
+          <p class="picker-boundary-menu__note">
+            View state only · color and export stay unchanged.
+          </p>
+        </ContextMenuContent>
+      </ContextMenu>
+    </TooltipProvider>
     <span class="oklch-planar-picker__render-mode">
       {{
         canvasColorSpace === "display-p3"
