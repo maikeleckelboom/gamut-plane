@@ -8,3 +8,5 @@ export * from "./math/fallback";
 export * from "./math/gamutBoundary";
 export * from "./model/color";
 export * from "./model/gamut";
+export * from "./picker/analysis";
+export * from "./picker/plane";

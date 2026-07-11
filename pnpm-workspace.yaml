@@ -4,6 +4,7 @@ packages:
 
 allowBuilds:
   scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/454929b051eaa599e9fb30ce64dd7a53537d8e18: true
+  vue-demi: true
 
 catalog:
   typescript: 6.0.3

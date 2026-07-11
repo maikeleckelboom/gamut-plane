@@ -1,0 +1,27 @@
+export interface PickerInstrumentOffset {
+  x: number;
+  y: number;
+}
+
+export const PICKER_WARNING_GLYPH_SIZE = 14;
+export const PICKER_WARNING_PREFERRED_OFFSET: Readonly<PickerInstrumentOffset> = Object.freeze({
+  x: 16,
+  y: -16,
+});
+export const PICKER_WARNING_SURFACE_INSET = 3;
+export const PICKER_WARNING_MARKER_CLEARANCE = 3;
+export const PICKER_ACTIVE_MARKER_RADIUS = 9;
+export const PICKER_FALLBACK_MARKER_RADIUS = 5.5;
+
+export const PICKER_SLIDER_FIELD_INSET = 5;
+export const PICKER_SLIDER_TRACK_HEIGHT = 32;
+export const PICKER_SLIDER_DEFAULT_TRACK_WIDTH = 320;
+export const PICKER_SLIDER_THUMB_WIDTH = 10;
+export const PICKER_SLIDER_THUMB_TOP = 2;
+export const PICKER_SLIDER_EDGE_CLEARANCE = 2;
+export const PICKER_SLIDER_WARNING_SIDE_GAP = 2;
+export const PICKER_SLIDER_ANNOTATION_CLEARANCE = 2;
+export const PICKER_SLIDER_TICK_COLLISION_WIDTH = 3;
+export const PICKER_SLIDER_FALLBACK_COLLISION_WIDTH = 10;
+export const PICKER_SLIDER_WARNING_TOP =
+  (PICKER_SLIDER_TRACK_HEIGHT - PICKER_WARNING_GLYPH_SIZE) / 2;
