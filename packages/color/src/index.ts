@@ -14,6 +14,7 @@ export * from "./input/serializeColor";
 export * from "./math/apca";
 export * from "./math/contrast";
 export * from "./math/convert";
+export * from "./math/distance";
 export * from "./math/fallback";
 export * from "./math/gamutBoundary";
 export * from "./model/color";
