@@ -90,7 +90,7 @@ function candidateWithChroma(candidate: number[], chroma: number): number[] {
 
 /**
  * Precomputes a deterministic Cmax grid. This work belongs off the interaction
- * path (and can be moved into a worker); picker reads are interpolation-only.
+ * path (and can be moved into a worker); consumers use interpolation-only reads.
  */
 export function generateGamutBoundaryTable(
   gamut: GamutId,

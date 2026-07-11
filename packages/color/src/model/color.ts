@@ -1,15 +1,8 @@
 export type ColorSource =
   | { kind: "input"; raw: string }
-  | { kind: "generated-from-curve"; scaleId: string; step: string }
-  | { kind: "pinned"; reason?: string }
-  | { kind: "pinned-via-fix"; fixId: string }
-  | { kind: "derived-fallback"; sourceId: string; targetGamut: GamutId }
-  | { kind: "derived-on-color"; sourceId: string }
-  | { kind: "imported"; source: "image" | "json" | "manual" };
+  | { kind: "derived-fallback"; sourceId: string; targetGamut: GamutId };
 
 export type GamutId = "srgb" | "display-p3" | "rec2020";
-
-export type GamutPolicy = "srgb-safe" | "p3-expressive" | "dual";
 
 /** The canonical editable color representation used throughout Chromavert. */
 export interface ChromavertColor {
