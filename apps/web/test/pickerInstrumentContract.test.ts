@@ -102,6 +102,69 @@ describe("PickerInstrument edit contract", () => {
     },
   );
 
+  it("edits bounded OKLab a and b values through the plane unprojection contract", async () => {
+    const canonical = parseUserColor("oklch(62% 0.2 45 / 0.7)");
+    const canonicalSnapshot = structuredClone(canonical);
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: canonical, plane: "oklab" },
+    });
+    await flushPromises();
+
+    const aInput = wrapper.get('[data-oklab-coordinate="a"]');
+    expect(aInput.attributes("min")).toBe(String(OKLAB_AB_PLANE.xAxis.min));
+    expect(aInput.attributes("max")).toBe(String(OKLAB_AB_PLANE.xAxis.max));
+
+    const initialProjection = OKLAB_AB_PLANE.project(canonical);
+    const expectedA = OKLAB_AB_PLANE.unproject(
+      {
+        x: 1,
+        y:
+          1 -
+          (initialProjection.y - OKLAB_AB_PLANE.yAxis.min) /
+            (OKLAB_AB_PLANE.yAxis.max - OKLAB_AB_PLANE.yAxis.min),
+      },
+      initialProjection.fixed,
+      canonical,
+    );
+    (aInput.element as HTMLInputElement).value = "0.8";
+    await aInput.trigger("input");
+
+    const liveA = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as ChromavertColor;
+    expect(liveA).toEqual(expectedA);
+    expect(liveA.c).toBeCloseTo(0.4, 12);
+    expect(liveA.alpha).toBe(canonical.alpha);
+
+    await wrapper.setProps({ modelValue: liveA });
+    const projectionAfterA = OKLAB_AB_PLANE.project(liveA);
+    const expectedB = OKLAB_AB_PLANE.unproject(
+      {
+        x:
+          (projectionAfterA.x - OKLAB_AB_PLANE.xAxis.min) /
+          (OKLAB_AB_PLANE.xAxis.max - OKLAB_AB_PLANE.xAxis.min),
+        y: 1,
+      },
+      projectionAfterA.fixed,
+      liveA,
+    );
+    const bInput = wrapper.get('[data-oklab-coordinate="b"]');
+    expect(bInput.attributes("min")).toBe(String(OKLAB_AB_PLANE.yAxis.min));
+    expect(bInput.attributes("max")).toBe(String(OKLAB_AB_PLANE.yAxis.max));
+    (bInput.element as HTMLInputElement).value = "-0.8";
+    await bInput.trigger("input");
+    await bInput.trigger("change");
+
+    const liveB = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as ChromavertColor;
+    const committedB = wrapper.emitted("commit")?.at(-1)?.[0] as ChromavertColor;
+    expect(liveB).toEqual(expectedB);
+    expect(committedB).toEqual(expectedB);
+    expect(liveB.c).toBeCloseTo(0.4, 12);
+    expect(liveB.alpha).toBe(canonical.alpha);
+    expect(canonical).toEqual(canonicalSnapshot);
+
+    wrapper.unmount();
+  });
+
   it.each([
     [292.7, "right"],
     [359, "left"],
@@ -134,9 +197,9 @@ describe("PickerInstrument edit contract", () => {
     expect(plane.get('[data-marker-role="active-color"]').attributes("aria-label")).toBe(
       "Active canonical color",
     );
-    expect(plane.get('[data-marker-role="srgb-fallback"]').attributes("aria-label")).toBe(
-      "Derived sRGB fallback",
-    );
+    expect(
+      plane.get('[data-marker-role="srgb-table-fallback-guide"]').attributes("aria-label"),
+    ).toBe("sRGB table fallback guide");
 
     const boundaryHits = plane.findAll("[data-gamut-boundary-hit]");
     expect(boundaryHits.map((hit) => hit.attributes("aria-label"))).toEqual([
@@ -181,6 +244,25 @@ describe("PickerInstrument edit contract", () => {
     expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
+
+    wrapper.unmount();
+  });
+
+  it("never draws an interpolated fallback guide beyond the active canonical point", async () => {
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: parseUserColor("oklch(48% 0.225 262)"), plane: "oklch" },
+    });
+    await flushPromises();
+
+    const active = wrapper.get('[data-marker-role="active-color"]');
+    const fallback = wrapper.get('[data-marker-role="srgb-table-fallback-guide"]');
+    expect(fallback.attributes("style")).toContain(
+      active.attributes("style").match(/left: [^;]+/)![0],
+    );
+    expect(wrapper.get(".picker-instrument__fallback-readout").text()).toContain(
+      "table fallback guide overlaps active",
+    );
 
     wrapper.unmount();
   });

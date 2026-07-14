@@ -3,8 +3,6 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
-  deriveFallback,
-  getCachedGamutBoundaryTable,
   getChromaSliderMarkers,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
@@ -12,7 +10,6 @@ import {
   normalizeHue,
   serializeColor,
   type ChromavertColor,
-  type PickerGamutBoundaryTables,
   type PickerPlaneId,
 } from "@chromavert/color";
 import { computed } from "vue";
@@ -22,6 +19,7 @@ import OklchLinearControl, {
   type LinearControlMarker,
 } from "@/components/chromavert/OklchLinearControl.vue";
 import OklchPlanarPicker from "@/components/chromavert/OklchPlanarPicker.vue";
+import { PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
 
 const props = withDefaults(
   defineProps<{
@@ -37,19 +35,8 @@ const emit = defineEmits<{
   commit: [color: ChromavertColor];
 }>();
 
-const TABLE_OPTIONS = { hueSteps: 120, lightnessSteps: 65, searchIterations: 14 } as const;
 const PLANE_OPTIONS: readonly PickerPlaneId[] = ["oklch", "oklab"];
-let sharedTables: PickerGamutBoundaryTables | undefined;
-
-function getSharedPickerTables(): PickerGamutBoundaryTables {
-  sharedTables ??= {
-    srgb: getCachedGamutBoundaryTable("srgb", TABLE_OPTIONS),
-    displayP3: getCachedGamutBoundaryTable("display-p3", TABLE_OPTIONS),
-  };
-  return sharedTables;
-}
-
-const tables = getSharedPickerTables();
+const tables = PICKER_GAMUT_TABLES;
 const activePlaneContract = computed(() =>
   props.plane === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
 );
@@ -103,7 +90,7 @@ const chromaControlMarkers = computed<LinearControlMarker[]>(() => {
       label: `sRGB table fallback guide C ${fallback.chroma.toFixed(4)}`,
       position: fallback.position,
       tone: "fallback",
-      cssColor: fallbackCss.value,
+      cssColor: fallbackGuideCss.value,
     });
   }
   return markers;
@@ -155,13 +142,22 @@ const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
 const primaryGamutWarning = "Outside primary Display P3. Canonical OKLCH is preserved.";
 const hueWarningPosition = computed(() => normalizeHue(props.modelValue.h) / 360);
 const chromaWarningPosition = computed(() => chromaMarkers.value.active.position);
-const srgbFallback = computed(() =>
-  status.value.srgb.inGamut ? null : deriveFallback(props.modelValue, "srgb").fallback,
+const srgbTableFallbackGuide = computed(() =>
+  status.value.srgb.inGamut
+    ? null
+    : {
+        l: props.modelValue.l,
+        c: Math.min(props.modelValue.c, status.value.srgb.interpolatedMaximumChroma),
+        h: props.modelValue.h,
+        alpha: props.modelValue.alpha,
+      },
 );
-const fallbackCss = computed(() => (srgbFallback.value ? serializeColor(srgbFallback.value) : ""));
+const fallbackGuideCss = computed(() =>
+  srgbTableFallbackGuide.value ? serializeColor(srgbTableFallbackGuide.value) : "",
+);
 const instrumentStyle = computed<Record<string, string>>(() => {
   const style: Record<string, string> = { "--picker-active": activeCss.value };
-  if (fallbackCss.value) style["--picker-fallback"] = fallbackCss.value;
+  if (fallbackGuideCss.value) style["--picker-fallback"] = fallbackGuideCss.value;
   return style;
 });
 const fallbackGuideChroma = computed(() => chromaMarkers.value.srgbFallbackGuide?.chroma ?? null);
@@ -207,6 +203,49 @@ function updateOklabLightness(value: number): void {
 
 function commitOklabLightness(value: number): void {
   emit("commit", oklabLightnessColor(value));
+}
+
+type OklabCoordinate = "a" | "b";
+
+function clampAxisValue(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function oklabCoordinateColor(coordinate: OklabCoordinate, value: number): ChromavertColor | null {
+  if (!Number.isFinite(value)) return null;
+
+  const contract = activePlaneContract.value;
+  const projection = planeProjection.value;
+  const a = clampAxisValue(
+    coordinate === "a" ? value : projection.x,
+    contract.xAxis.min,
+    contract.xAxis.max,
+  );
+  const b = clampAxisValue(
+    coordinate === "b" ? value : projection.y,
+    contract.yAxis.min,
+    contract.yAxis.max,
+  );
+  const point = {
+    x: (a - contract.xAxis.min) / (contract.xAxis.max - contract.xAxis.min),
+    y: 1 - (b - contract.yAxis.min) / (contract.yAxis.max - contract.yAxis.min),
+  };
+
+  return contract.unproject(point, projection.fixed, props.modelValue);
+}
+
+function numericValue(event: Event): number {
+  return (event.currentTarget as HTMLInputElement).valueAsNumber;
+}
+
+function updateOklabCoordinate(coordinate: OklabCoordinate, event: Event): void {
+  const color = oklabCoordinateColor(coordinate, numericValue(event));
+  if (color) emit("update:modelValue", color);
+}
+
+function commitOklabCoordinate(coordinate: OklabCoordinate, event: Event): void {
+  const color = oklabCoordinateColor(coordinate, numericValue(event));
+  if (color) emit("commit", color);
 }
 
 function channelColor(channel: "l" | "c" | "h", value: number): ChromavertColor {
@@ -273,7 +312,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
         :plane="activePlaneContract"
         :srgb-table="tables.srgb"
         :display-p3-table="tables.displayP3"
-        :srgb-fallback-color="srgbFallback"
+        :srgb-fallback-guide-color="srgbTableFallbackGuide"
         :warning-visible="isOutsideDisplayP3"
         :warning-label="primaryGamutWarning"
         @update:model-value="updatePlane"
@@ -284,8 +323,8 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
         <div class="picker-instrument__legend" aria-label="Picker gamut legend">
           <span><i class="picker-key picker-key--p3" />P3 boundary (solid)</span>
           <span><i class="picker-key picker-key--srgb" />sRGB boundary (dashed)</span>
-          <span v-if="srgbFallback"
-            ><i class="picker-key picker-key--fallback" />sRGB fallback marker</span
+          <span v-if="srgbTableFallbackGuide"
+            ><i class="picker-key picker-key--fallback" />sRGB table fallback guide</span
           >
           <span class="picker-instrument__legend-note">
             <template v-if="plane === 'oklch'">
@@ -379,11 +418,44 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             @update:model-value="updateOklabLightness"
             @commit="commitOklabLightness"
           />
-          <div class="picker-instrument__coordinate-readout" aria-label="OKLab coordinates">
-            <span>Projected coordinate</span>
-            <code>a {{ planeProjection.x.toFixed(4) }}</code>
-            <code>b {{ planeProjection.y.toFixed(4) }}</code>
-            <small>Editable radius ≤ 0.4000 · no RGB gamut clamp</small>
+          <div
+            class="picker-instrument__coordinate-readout"
+            aria-label="Editable OKLab coordinates"
+          >
+            <span>Editable coordinate</span>
+            <label>
+              <span>a</span>
+              <input
+                type="number"
+                :value="planeProjection.x.toFixed(4)"
+                :min="activePlaneContract.xAxis.min"
+                :max="activePlaneContract.xAxis.max"
+                step="0.001"
+                inputmode="decimal"
+                data-oklab-coordinate="a"
+                aria-label="OKLab a numeric value"
+                @input="updateOklabCoordinate('a', $event)"
+                @change="commitOklabCoordinate('a', $event)"
+                @keydown.enter.prevent="commitOklabCoordinate('a', $event)"
+              />
+            </label>
+            <label>
+              <span>b</span>
+              <input
+                type="number"
+                :value="planeProjection.y.toFixed(4)"
+                :min="activePlaneContract.yAxis.min"
+                :max="activePlaneContract.yAxis.max"
+                step="0.001"
+                inputmode="decimal"
+                data-oklab-coordinate="b"
+                aria-label="OKLab b numeric value"
+                @input="updateOklabCoordinate('b', $event)"
+                @change="commitOklabCoordinate('b', $event)"
+                @keydown.enter.prevent="commitOklabCoordinate('b', $event)"
+              />
+            </label>
+            <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
           </div>
         </template>
 
@@ -415,18 +487,19 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             <code v-else>C {{ modelValue.c.toFixed(4) }}</code>
           </div>
           <div class="picker-instrument__fallback-readout">
-            <span>sRGB fallback guide</span>
+            <span>sRGB table fallback guide</span>
             <code v-if="fallbackGuideChroma !== null && status.srgb.interpolatedDeltaC > 0">
               table C {{ fallbackGuideChroma.toFixed(4) }} · ΔC guide −{{
                 status.srgb.interpolatedDeltaC.toFixed(4)
               }}
             </code>
             <code v-else-if="fallbackGuideChroma !== null">
-              exact outside · table guide overlaps active
+              exact outside · table fallback guide overlaps active
             </code>
             <code v-else>not required</code>
           </div>
         </div>
+        <slot name="context" />
         <p class="picker-instrument__method">
           Inside/outside membership uses exact gamut conversion.
           <template v-if="plane === 'oklab'">
@@ -435,7 +508,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             mapping.
           </template>
           <template v-else>
-            Boundary paths, ticks, intervals, and the fallback guide are table-interpolated
+            Boundary paths, ticks, intervals, and the table fallback guide are interpolated
             visualization; export fallback remains the exact engine path.
           </template>
           <span v-if="isOutsideDisplayP3" data-primary-gamut-warning-status>

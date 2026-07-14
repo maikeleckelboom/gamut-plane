@@ -239,6 +239,11 @@ describe("OklchLinearControl gamut annotations", () => {
     expect(wrapper.emitted("commit")?.at(-1)).toEqual([0.55]);
     expect((wrapper.get('input[type="range"]').element as HTMLInputElement).value).toBe("0.4");
 
+    (number.element as HTMLInputElement).value = "0.56";
+    await number.trigger("keydown", { key: "Enter" });
+    expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([0.56]);
+    expect(wrapper.emitted("commit")?.at(-1)).toEqual([0.56]);
+
     const updateCount = wrapper.emitted("update:modelValue")?.length;
     const commitCount = wrapper.emitted("commit")?.length;
     (number.element as HTMLInputElement).value = "";

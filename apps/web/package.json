@@ -5,15 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b && vite build && node scripts/prepareStaticBuild.mjs",
+    "check:picker-tables": "node scripts/generatePickerTables.mjs --check",
+    "check:static-build": "node scripts/prepareStaticBuild.mjs --check",
+    "generate:picker-tables": "node scripts/generatePickerTables.mjs",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
-    "test": "vitest run",
+    "test": "pnpm check:picker-tables && vitest run",
     "lint": "oxlint src test"
   },
   "dependencies": {
     "@chromavert/color": "workspace:*",
     "@chromavert/proof": "workspace:*",
+    "@fontsource-variable/instrument-sans": "5.2.8",
+    "@fontsource-variable/outfit": "5.2.8",
     "@lucide/vue": "1.23.0",
     "@tailwindcss/vite": "4.3.2",
     "@vueuse/core": "14.3.0",

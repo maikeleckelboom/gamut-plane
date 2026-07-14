@@ -35,7 +35,7 @@ const props = defineProps<{
   plane: PickerPlaneContract;
   srgbTable: GamutBoundaryTable;
   displayP3Table: GamutBoundaryTable;
-  srgbFallbackColor: ChromavertColor | null;
+  srgbFallbackGuideColor: ChromavertColor | null;
   warningVisible: boolean;
   warningLabel: string;
 }>();
@@ -61,6 +61,7 @@ let context: CanvasRenderingContext2D | null = null;
 let discFieldBuffer: HTMLCanvasElement | null = null;
 let discFieldContext: CanvasRenderingContext2D | null = null;
 let resizeObserver: ResizeObserver | null = null;
+let resolutionQuery: MediaQueryList | null = null;
 let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
@@ -75,25 +76,25 @@ const fieldScratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0
 const activeProjection = computed(() => props.plane.project(props.modelValue));
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.positionActivePoint(props.modelValue));
-const fallbackPoint = computed<PlanePoint | null>(() => {
-  if (!props.srgbFallbackColor) return null;
-  return props.plane.positionActivePoint(props.srgbFallbackColor);
+const fallbackGuidePoint = computed<PlanePoint | null>(() => {
+  if (!props.srgbFallbackGuideColor) return null;
+  return props.plane.positionActivePoint(props.srgbFallbackGuideColor);
 });
 
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
-const fallbackMarkerStyle = computed(() =>
-  fallbackPoint.value ? pointStyle(fallbackPoint.value) : undefined,
+const fallbackGuideMarkerStyle = computed(() =>
+  fallbackGuidePoint.value ? pointStyle(fallbackGuidePoint.value) : undefined,
 );
-const fallbackCss = computed(() =>
-  props.srgbFallbackColor ? serializeColor(props.srgbFallbackColor) : "",
+const fallbackGuideCss = computed(() =>
+  props.srgbFallbackGuideColor ? serializeColor(props.srgbFallbackGuideColor) : "",
 );
-const fallbackConnectorStyle = computed(() => {
-  const fallback = fallbackPoint.value;
-  if (!fallback) return undefined;
+const fallbackGuideConnectorStyle = computed(() => {
+  const guide = fallbackGuidePoint.value;
+  if (!guide) return undefined;
   const active = boundedActivePoint.value;
   if (props.plane.id === "oklab") {
-    const deltaX = fallback.x - active.x;
-    const deltaY = fallback.y - active.y;
+    const deltaX = guide.x - active.x;
+    const deltaY = guide.y - active.y;
     return {
       left: `${active.x * 100}%`,
       top: `${active.y * 100}%`,
@@ -102,11 +103,11 @@ const fallbackConnectorStyle = computed(() => {
       transformOrigin: "left center",
     };
   }
-  const left = Math.min(active.x, fallback.x);
+  const left = Math.min(active.x, guide.x);
   return {
     left: `${left * 100}%`,
     top: `${active.y * 100}%`,
-    width: `${Math.abs(active.x - fallback.x) * 100}%`,
+    width: `${Math.abs(active.x - guide.x) * 100}%`,
   };
 });
 
@@ -194,7 +195,7 @@ function resizeCanvas(element: HTMLCanvasElement): {
   const bounds = element.getBoundingClientRect();
   const width = Math.max(1, Math.round(bounds.width));
   const height = Math.max(1, Math.round(bounds.height));
-  const pixelRatio = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+  const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
   const backingWidth = Math.round(width * pixelRatio);
   const backingHeight = Math.round(height * pixelRatio);
 
@@ -273,6 +274,22 @@ function scheduleFieldDraw(): void {
   fieldRaf = window.requestAnimationFrame(drawField);
 }
 
+function handleResolutionChange(): void {
+  lastFieldKey = "";
+  scheduleFieldDraw();
+  observeResolution();
+}
+
+function observeResolution(): void {
+  resolutionQuery?.removeEventListener("change", handleResolutionChange);
+  if (typeof window.matchMedia !== "function") {
+    resolutionQuery = null;
+    return;
+  }
+  resolutionQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+  resolutionQuery.addEventListener("change", handleResolutionChange);
+}
+
 function pointFromPointer(event: PointerEvent): PlanePoint | null {
   if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0) return null;
   return props.plane.constrainPoint({
@@ -286,15 +303,21 @@ function measureSurface(): void {
   if (!element) return;
   const bounds = element.getBoundingClientRect();
   if (bounds.width <= 0 || bounds.height <= 0) return;
+
+  const hasLayoutMetrics = element.offsetWidth > 0 && element.offsetHeight > 0;
+  const scaleX = hasLayoutMetrics ? bounds.width / element.offsetWidth : 1;
+  const scaleY = hasLayoutMetrics ? bounds.height / element.offsetHeight : 1;
+  const localWidth = element.clientWidth || bounds.width;
+  const localHeight = element.clientHeight || bounds.height;
   surfaceBounds = {
-    left: bounds.left,
-    top: bounds.top,
-    width: bounds.width,
-    height: bounds.height,
+    left: bounds.left + element.clientLeft * scaleX,
+    top: bounds.top + element.clientTop * scaleY,
+    width: localWidth * scaleX,
+    height: localHeight * scaleY,
   };
   surfaceLocalSize = {
-    width: element.clientWidth || bounds.width,
-    height: element.clientHeight || bounds.height,
+    width: localWidth,
+    height: localHeight,
   };
 }
 
@@ -314,7 +337,7 @@ function positionActiveAnnotations(point: PlanePoint): void {
     return;
   }
 
-  const fallback = fallbackPoint.value;
+  const fallbackGuide = fallbackGuidePoint.value;
   const placement = placePlanarWarning({
     activeCenter: {
       x: point.x * surfaceLocalSize.width,
@@ -329,11 +352,11 @@ function positionActiveAnnotations(point: PlanePoint): void {
     preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
     surfaceInset: PICKER_WARNING_SURFACE_INSET,
     markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
-    fallbackMarker: fallback
+    fallbackMarker: fallbackGuide
       ? {
           center: {
-            x: fallback.x * surfaceLocalSize.width,
-            y: fallback.y * surfaceLocalSize.height,
+            x: fallbackGuide.x * surfaceLocalSize.width,
+            y: fallbackGuide.y * surfaceLocalSize.height,
           },
           radius: PICKER_FALLBACK_MARKER_RADIUS,
         }
@@ -449,7 +472,7 @@ watch(
   () => scheduleFieldDraw(),
 );
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
-watch(fallbackPoint, () => positionActiveAnnotations(boundedActivePoint.value));
+watch(fallbackGuidePoint, () => positionActiveAnnotations(boundedActivePoint.value));
 
 onMounted(() => {
   resizeObserver =
@@ -461,6 +484,7 @@ onMounted(() => {
           scheduleFieldDraw();
         });
   if (surface.value) resizeObserver?.observe(surface.value);
+  observeResolution();
   void nextTick(() => {
     measureSurface();
     positionActiveAnnotations(boundedActivePoint.value);
@@ -470,6 +494,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
+  resolutionQuery?.removeEventListener("change", handleResolutionChange);
   if (fieldRaf !== null) window.cancelAnimationFrame(fieldRaf);
   cancelPendingPoint();
 });
@@ -590,23 +615,26 @@ onBeforeUnmount(() => {
               <TooltipContent side="top">Neutral origin · a 0 · b 0</TooltipContent>
             </Tooltip>
             <span
-              v-if="fallbackPoint"
+              v-if="fallbackGuidePoint"
               class="oklch-planar-picker__fallback-connector"
-              :style="fallbackConnectorStyle"
-              data-fallback-connector
+              :style="fallbackGuideConnectorStyle"
+              data-table-fallback-guide-connector
               aria-hidden="true"
             />
-            <Tooltip v-if="fallbackPoint">
+            <Tooltip v-if="fallbackGuidePoint">
               <TooltipTrigger as-child>
                 <span
                   class="oklch-planar-picker__marker oklch-planar-picker__marker--fallback"
-                  :style="{ ...fallbackMarkerStyle, '--fallback-marker-color': fallbackCss }"
-                  data-fallback-marker
-                  data-marker-role="srgb-fallback"
-                  aria-label="Derived sRGB fallback"
+                  :style="{
+                    ...fallbackGuideMarkerStyle,
+                    '--fallback-marker-color': fallbackGuideCss,
+                  }"
+                  data-table-fallback-guide-marker
+                  data-marker-role="srgb-table-fallback-guide"
+                  aria-label="sRGB table fallback guide"
                 />
               </TooltipTrigger>
-              <TooltipContent side="top">Derived sRGB fallback</TooltipContent>
+              <TooltipContent side="top">sRGB table fallback guide</TooltipContent>
             </Tooltip>
             <span
               ref="warningMarker"

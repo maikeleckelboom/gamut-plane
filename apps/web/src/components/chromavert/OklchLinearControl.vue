@@ -344,6 +344,7 @@ function sectionStyle(section: GamutSection): Record<string, string> {
         :max="numericMax"
         :step="step"
         @change="updateFromNumeric"
+        @keydown.enter.prevent="updateFromNumeric"
       />
     </header>
 

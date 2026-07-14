@@ -1,8 +1,26 @@
 export type ColorSource =
-  | { kind: "input"; raw: string }
-  | { kind: "derived-fallback"; sourceId: string; targetGamut: GamutId };
+  | { readonly kind: "input"; readonly raw: string }
+  | {
+      readonly kind: "generated-from-curve";
+      readonly scaleId: string;
+      readonly step: string;
+    }
+  | { readonly kind: "pinned"; readonly reason?: string }
+  | { readonly kind: "pinned-via-fix"; readonly fixId: string }
+  | {
+      readonly kind: "derived-fallback";
+      readonly sourceId: string;
+      readonly targetGamut: GamutId;
+    }
+  | { readonly kind: "derived-on-color"; readonly sourceId: string }
+  | {
+      readonly kind: "imported";
+      readonly source: "image" | "json" | "manual";
+    };
 
 export type GamutId = "srgb" | "display-p3" | "rec2020";
+
+export type GamutPolicy = "srgb-safe" | "p3-expressive" | "dual";
 
 /** The canonical editable color representation used throughout Chromavert. */
 export interface ChromavertColor {
@@ -41,5 +59,11 @@ export function assertChromavertColor(color: ChromavertColor): void {
 export function copyColor(color: ChromavertColor): ChromavertColor {
   return color.source === undefined
     ? { l: color.l, c: color.c, h: color.h, alpha: color.alpha }
-    : { l: color.l, c: color.c, h: color.h, alpha: color.alpha, source: color.source };
+    : {
+        l: color.l,
+        c: color.c,
+        h: color.h,
+        alpha: color.alpha,
+        source: { ...color.source },
+      };
 }

@@ -70,6 +70,38 @@ function dispatchPointer(
   element.dispatchEvent(event);
 }
 
+function mockSurfaceContentBox(
+  element: HTMLElement,
+  {
+    left,
+    top,
+    width,
+    height,
+    border = 2,
+  }: { left: number; top: number; width: number; height: number; border?: number },
+): void {
+  const borderWidth = border * 2;
+  Object.defineProperties(element, {
+    clientLeft: { configurable: true, value: border },
+    clientTop: { configurable: true, value: border },
+    clientWidth: { configurable: true, value: width },
+    clientHeight: { configurable: true, value: height },
+    offsetWidth: { configurable: true, value: width + borderWidth },
+    offsetHeight: { configurable: true, value: height + borderWidth },
+  });
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: left,
+    y: top,
+    left,
+    top,
+    right: left + width + borderWidth,
+    bottom: top + height + borderWidth,
+    width: width + borderWidth,
+    height: height + borderWidth,
+    toJSON: () => ({}),
+  });
+}
+
 function emittedColors(wrapper: VueWrapper): ChromavertColor[] {
   return (wrapper.emitted("update:modelValue") ?? []).map(([color]) => color as ChromavertColor);
 }
@@ -94,7 +126,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbFallbackColor: null,
+        srgbFallbackGuideColor: null,
         warningVisible: true,
         warningLabel: "Outside primary Display P3. Canonical OKLCH is preserved.",
       },
@@ -105,17 +137,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     const surface = wrapper.get("[data-picker-plane] > div").element as HTMLElement;
     const marker = wrapper.get("[data-active-marker]").element as HTMLElement;
     const warning = wrapper.get('[data-gamut-warning="planar"]').element as HTMLElement;
-    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
-      x: 10,
-      y: 20,
-      left: 10,
-      top: 20,
-      right: 210,
-      bottom: 120,
-      width: 200,
-      height: 100,
-      toJSON: () => ({}),
-    });
+    mockSurfaceContentBox(surface, { left: 10, top: 20, width: 200, height: 100 });
 
     const capturedPointers = new Set<number>();
     const setPointerCapture = vi.fn((pointerId: number) => capturedPointers.add(pointerId));
@@ -130,8 +152,8 @@ describe("OklchPlanarPicker pointer interaction", () => {
     const displayP3Boundary = wrapper.get('[data-gamut-boundary-hit="display-p3"]').element;
     dispatchPointer(displayP3Boundary, "pointerdown", {
       pointerId: 7,
-      clientX: 70,
-      clientY: 60,
+      clientX: 72,
+      clientY: 62,
     });
     const warningAtCanonical = { left: warning.style.left, top: warning.style.top };
     expect(warning.style.visibility).toBe("visible");
@@ -167,7 +189,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(latestStatus.displayP3.inGamut).toBe(false);
     expect(committedColors(wrapper)).toHaveLength(0);
 
-    dispatchPointer(surface, "pointerup", { pointerId: 7, clientX: 90, clientY: 70 });
+    dispatchPointer(surface, "pointerup", { pointerId: 7, clientX: 92, clientY: 72 });
 
     const pointerUpColors = emittedColors(wrapper);
     expect(pointerUpColors).toHaveLength(2);
@@ -176,8 +198,8 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(committedColors(wrapper)).toEqual([pointerUpColors[1]]);
     expect(releasePointerCapture).toHaveBeenCalledWith(7);
 
-    dispatchPointer(surface, "pointerdown", { pointerId: 8, clientX: 70, clientY: 60 });
-    dispatchPointer(surface, "pointermove", { pointerId: 8, clientX: 210, clientY: 120 });
+    dispatchPointer(surface, "pointerdown", { pointerId: 8, clientX: 72, clientY: 62 });
+    dispatchPointer(surface, "pointermove", { pointerId: 8, clientX: 212, clientY: 122 });
     expect(marker.style.left).toBe("100%");
     expect(marker.style.top).toBe("100%");
     expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
@@ -190,7 +212,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(emittedColors(wrapper)).toHaveLength(2);
     expect(committedColors(wrapper)).toHaveLength(1);
 
-    dispatchPointer(surface, "pointerdown", { pointerId: 9, clientX: 70, clientY: 60 });
+    dispatchPointer(surface, "pointerdown", { pointerId: 9, clientX: 72, clientY: 62 });
     dispatchPointer(surface, "pointermove", { pointerId: 9, clientX: 150, clientY: 80 });
     animationFrames.flush();
     const liveBeforeLostCapture = emittedColors(wrapper).at(-1)!;
@@ -219,7 +241,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
         plane: OKLAB_AB_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbFallbackColor: null,
+        srgbFallbackGuideColor: null,
         warningVisible: false,
         warningLabel: "",
       },
@@ -228,17 +250,7 @@ describe("OklchPlanarPicker pointer interaction", () => {
     animationFrames.flush();
 
     const surface = wrapper.get("[data-picker-plane] > div").element as HTMLElement;
-    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
-      x: 10,
-      y: 20,
-      left: 10,
-      top: 20,
-      right: 210,
-      bottom: 220,
-      width: 200,
-      height: 200,
-      toJSON: () => ({}),
-    });
+    mockSurfaceContentBox(surface, { left: 10, top: 20, width: 200, height: 200 });
     const capturedPointers = new Set<number>();
     Object.defineProperties(surface, {
       setPointerCapture: {
@@ -255,8 +267,8 @@ describe("OklchPlanarPicker pointer interaction", () => {
       },
     });
 
-    dispatchPointer(surface, "pointerdown", { pointerId: 31, clientX: 110, clientY: 120 });
-    dispatchPointer(surface, "pointermove", { pointerId: 31, clientX: 410, clientY: 120 });
+    dispatchPointer(surface, "pointerdown", { pointerId: 31, clientX: 112, clientY: 122 });
+    dispatchPointer(surface, "pointermove", { pointerId: 31, clientX: 412, clientY: 122 });
     expect(emittedColors(wrapper)).toHaveLength(0);
     animationFrames.flush();
 
@@ -267,12 +279,12 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(radialLive.alpha).toBe(0.7);
     expect(committedColors(wrapper)).toHaveLength(0);
 
-    dispatchPointer(surface, "pointerup", { pointerId: 31, clientX: 410, clientY: 120 });
+    dispatchPointer(surface, "pointerup", { pointerId: 31, clientX: 412, clientY: 122 });
     expect(committedColors(wrapper)).toHaveLength(1);
     expect(committedColors(wrapper)[0]).toEqual(emittedColors(wrapper).at(-1));
 
-    dispatchPointer(surface, "pointerdown", { pointerId: 32, clientX: 110, clientY: 120 });
-    dispatchPointer(surface, "pointermove", { pointerId: 32, clientX: 110, clientY: 20 });
+    dispatchPointer(surface, "pointerdown", { pointerId: 32, clientX: 112, clientY: 122 });
+    dispatchPointer(surface, "pointermove", { pointerId: 32, clientX: 112, clientY: 22 });
     animationFrames.flush();
     const commitsBeforeCaptureLoss = committedColors(wrapper).length;
     dispatchPointer(surface, "lostpointercapture", { pointerId: 32 });
