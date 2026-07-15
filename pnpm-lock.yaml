@@ -65,6 +65,9 @@ importers:
       reka-ui:
         specifier: 2.10.1
         version: 2.10.1(vue@3.5.39(typescript@6.0.3))
+      scheme-tokens:
+        specifier: github:maikeleckelboom/scheme-tokens#19bc9b751cd0a3be666f0454ad3b01a8630a6343
+        version: https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/19bc9b751cd0a3be666f0454ad3b01a8630a6343
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
@@ -133,9 +136,6 @@ importers:
       '@chromavert/color':
         specifier: workspace:*
         version: link:../color
-      scheme-tokens:
-        specifier: github:maikeleckelboom/scheme-tokens#454929b051eaa599e9fb30ce64dd7a53537d8e18
-        version: https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/454929b051eaa599e9fb30ce64dd7a53537d8e18
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -1319,8 +1319,8 @@ packages:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
 
-  scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/454929b051eaa599e9fb30ce64dd7a53537d8e18:
-    resolution: {gitHosted: true, integrity: sha512-0VWq+UcG0911tAnfzY3VhHofbGVjMGm38HAtXf7DLPuGWvdx8VocgUm8L9tO4OibxHyaXDyJuzu5e+RDUSFaLw==, tarball: https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/454929b051eaa599e9fb30ce64dd7a53537d8e18}
+  scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/19bc9b751cd0a3be666f0454ad3b01a8630a6343:
+    resolution: {gitHosted: true, integrity: sha512-uTh8V9x9lsj0hX/u1xqDPV4NXzEr3NU/DPssWVr5Uuv6FMynmoSCMYAG++zKGVb4GW+4SW5wpDTgQREy4KL/fg==, tarball: https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/19bc9b751cd0a3be666f0454ad3b01a8630a6343}
     version: 0.1.0
     engines: {node: '>=22'}
 
@@ -2602,7 +2602,7 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
 
-  scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/454929b051eaa599e9fb30ce64dd7a53537d8e18: {}
+  scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/19bc9b751cd0a3be666f0454ad3b01a8630a6343: {}
 
   semver@7.8.5: {}
 
