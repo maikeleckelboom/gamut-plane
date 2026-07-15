@@ -293,29 +293,10 @@ describe("PickerInstrument edit contract", () => {
     const p3BoundaryHit = plane.get('[data-gamut-boundary-hit="display-p3"]');
     expect(p3BoundaryHit.attributes("tabindex")).toBeUndefined();
     expect(p3BoundaryHit.attributes("role")).toBeUndefined();
-
-    const guideControl = plane.get("[data-guide-control]");
-    expect(guideControl.get("summary").text()).toBe("Guides");
-    const p3GuideToggle = guideControl.get('[data-guide-toggle="display-p3"]');
-    const srgbGuideToggle = guideControl.get('[data-guide-toggle="srgb"]');
-    const domainGuideToggle = guideControl.get('[data-guide-toggle="instrument-domain"]');
-    const neutralGuideToggle = guideControl.get('[data-guide-toggle="neutral-origin"]');
-    expect((p3GuideToggle.element as HTMLInputElement).checked).toBe(true);
-    expect((srgbGuideToggle.element as HTMLInputElement).checked).toBe(true);
-    expect((domainGuideToggle.element as HTMLInputElement).checked).toBe(true);
-    expect((neutralGuideToggle.element as HTMLInputElement).checked).toBe(false);
-
-    await neutralGuideToggle.setValue(true);
-    expect(plane.get('[data-marker-role="neutral-origin"]').attributes("aria-label")).toBe(
-      "Neutral origin, a 0, b 0",
-    );
-
-    await srgbGuideToggle.setValue(false);
-    expect(plane.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
-    expect(plane.find('[data-gamut-boundary-hit="srgb"]').exists()).toBe(false);
-    expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
+    expect(plane.find("[data-guide-control]").exists()).toBe(false);
 
     const surface = plane.get("[data-render-color-space]");
+    expect(surface.attributes("aria-label")).toContain("Right-click for boundary visibility.");
     await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
     await flushPromises();
 
@@ -326,12 +307,24 @@ describe("PickerInstrument edit contract", () => {
     expect(menu?.textContent).toContain("OKLab editable domain");
     expect(menu?.textContent).toContain("Neutral origin");
 
+    const neutralToggle = document.body.querySelector(
+      '[data-boundary-toggle="neutral-origin"]',
+    ) as HTMLElement;
+    neutralToggle.click();
+    await flushPromises();
+    expect(plane.get('[data-marker-role="neutral-origin"]').attributes("aria-label")).toBe(
+      "Neutral origin, a 0, b 0",
+    );
+
+    await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
+    await flushPromises();
+
     const srgbToggle = document.body.querySelector('[data-boundary-toggle="srgb"]') as HTMLElement;
     srgbToggle.click();
     await flushPromises();
 
-    expect(plane.get('[data-gamut-boundary="srgb"]').exists()).toBe(true);
-    expect(plane.get('[data-gamut-boundary-hit="srgb"]').exists()).toBe(true);
+    expect(plane.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(plane.find('[data-gamut-boundary-hit="srgb"]').exists()).toBe(false);
     expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
