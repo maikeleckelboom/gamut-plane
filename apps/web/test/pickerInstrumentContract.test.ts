@@ -6,8 +6,10 @@ import {
   parseUserColor,
   serializeColor,
   type ChromavertColor,
+  type PickerPlaneId,
 } from "@chromavert/color";
 import OklchLinearControl from "@/components/chromavert/OklchLinearControl.vue";
+import OklchPlanarPicker from "@/components/chromavert/OklchPlanarPicker.vue";
 import PickerInstrument from "@/components/chromavert/PickerInstrument.vue";
 
 afterEach(() => {
@@ -41,6 +43,86 @@ describe("PickerInstrument edit contract", () => {
 
     wrapper.unmount();
   });
+
+  it("forwards planar cancellation after a live color without committing it", async () => {
+    const canonical = parseUserColor("oklch(62% 0.2 210)");
+    const live = parseUserColor("oklch(74% 0.28 210)");
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: canonical },
+    });
+    await flushPromises();
+
+    const plane = wrapper.getComponent(OklchPlanarPicker);
+    plane.vm.$emit("update:modelValue", live);
+    plane.vm.$emit("cancel");
+    await flushPromises();
+
+    expect(wrapper.emitted("update:modelValue")).toEqual([[live]]);
+    expect(wrapper.emitted("cancel")).toEqual([[]]);
+    expect(wrapper.emitted("commit")).toBeUndefined();
+
+    wrapper.unmount();
+  });
+
+  it("keeps gamut status and methodology in collapsed progressive evidence", async () => {
+    const wrapper = mount(PickerInstrument, {
+      attachTo: document.body,
+      props: { modelValue: parseUserColor("oklch(62% 0.2 210)") },
+    });
+    await flushPromises();
+
+    const instrument = wrapper.get("[data-picker-instrument]");
+    const title = instrument.get("#picker-instrument-title");
+    expect(instrument.attributes("aria-labelledby")).toBe("picker-instrument-title");
+    expect(title.classes()).toContain("sr-only");
+    expect(title.text()).toBe("Planar picker instrument");
+    expect(instrument.find(".picker-instrument__header").exists()).toBe(false);
+
+    const evidence = wrapper.get("[data-picker-evidence]");
+    expect(evidence.attributes("open")).toBeUndefined();
+    expect(evidence.get("summary").text()).toContain("Gamut evidence");
+    expect(evidence.get('[data-picker-gamut-status="display-p3"]').exists()).toBe(true);
+    expect(evidence.get('[data-picker-gamut-status="srgb"]').exists()).toBe(true);
+    expect(evidence.get(".picker-instrument__fallback-readout").exists()).toBe(true);
+    expect(evidence.get(".picker-instrument__method").exists()).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it.each([
+    ["oklch", "ArrowRight", "oklab"],
+    ["oklch", "ArrowDown", "oklab"],
+    ["oklab", "ArrowLeft", "oklch"],
+    ["oklab", "ArrowUp", "oklch"],
+  ] as const)(
+    "moves coordinate focus from %s with %s and selects %s",
+    async (from: PickerPlaneId, key: string, to: PickerPlaneId) => {
+      const wrapper = mount(PickerInstrument, {
+        attachTo: document.body,
+        props: { modelValue: parseUserColor("oklch(62% 0.2 210)"), plane: from },
+      });
+      await flushPromises();
+
+      const current = wrapper.get(`[data-plane-option="${from}"]`);
+      const next = wrapper.get(`[data-plane-option="${to}"]`);
+      expect(current.attributes("tabindex")).toBe("0");
+      expect(next.attributes("tabindex")).toBe("-1");
+
+      await current.trigger("keydown", { key });
+
+      expect(wrapper.emitted("update:plane")?.at(-1)).toEqual([to]);
+      expect(document.activeElement).toBe(next.element);
+      expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+      expect(wrapper.emitted("commit")).toBeUndefined();
+
+      await wrapper.setProps({ plane: to });
+      expect(current.attributes("tabindex")).toBe("-1");
+      expect(next.attributes("tabindex")).toBe("0");
+
+      wrapper.unmount();
+    },
+  );
 
   it.each([
     ["inside", "oklch(62% 0.2 210 / 0.7)"],
@@ -212,6 +294,27 @@ describe("PickerInstrument edit contract", () => {
     expect(p3BoundaryHit.attributes("tabindex")).toBeUndefined();
     expect(p3BoundaryHit.attributes("role")).toBeUndefined();
 
+    const guideControl = plane.get("[data-guide-control]");
+    expect(guideControl.get("summary").text()).toBe("Guides");
+    const p3GuideToggle = guideControl.get('[data-guide-toggle="display-p3"]');
+    const srgbGuideToggle = guideControl.get('[data-guide-toggle="srgb"]');
+    const domainGuideToggle = guideControl.get('[data-guide-toggle="instrument-domain"]');
+    const neutralGuideToggle = guideControl.get('[data-guide-toggle="neutral-origin"]');
+    expect((p3GuideToggle.element as HTMLInputElement).checked).toBe(true);
+    expect((srgbGuideToggle.element as HTMLInputElement).checked).toBe(true);
+    expect((domainGuideToggle.element as HTMLInputElement).checked).toBe(true);
+    expect((neutralGuideToggle.element as HTMLInputElement).checked).toBe(false);
+
+    await neutralGuideToggle.setValue(true);
+    expect(plane.get('[data-marker-role="neutral-origin"]').attributes("aria-label")).toBe(
+      "Neutral origin, a 0, b 0",
+    );
+
+    await srgbGuideToggle.setValue(false);
+    expect(plane.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(plane.find('[data-gamut-boundary-hit="srgb"]').exists()).toBe(false);
+    expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
+
     const surface = plane.get("[data-render-color-space]");
     await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
     await flushPromises();
@@ -223,24 +326,12 @@ describe("PickerInstrument edit contract", () => {
     expect(menu?.textContent).toContain("OKLab editable domain");
     expect(menu?.textContent).toContain("Neutral origin");
 
-    const neutralToggle = document.body.querySelector(
-      '[data-boundary-toggle="neutral-origin"]',
-    ) as HTMLElement;
-    neutralToggle.click();
-    await flushPromises();
-    expect(plane.get('[data-marker-role="neutral-origin"]').attributes("aria-label")).toBe(
-      "Neutral origin, a 0, b 0",
-    );
-
-    await surface.trigger("contextmenu", { button: 2, clientX: 120, clientY: 160 });
-    await flushPromises();
-
     const srgbToggle = document.body.querySelector('[data-boundary-toggle="srgb"]') as HTMLElement;
     srgbToggle.click();
     await flushPromises();
 
-    expect(plane.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
-    expect(plane.find('[data-gamut-boundary-hit="srgb"]').exists()).toBe(false);
+    expect(plane.get('[data-gamut-boundary="srgb"]').exists()).toBe(true);
+    expect(plane.get('[data-gamut-boundary-hit="srgb"]').exists()).toBe(true);
     expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();

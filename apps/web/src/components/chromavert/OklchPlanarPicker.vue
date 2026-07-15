@@ -43,6 +43,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:modelValue": [color: ChromavertColor];
   commit: [color: ChromavertColor];
+  cancel: [];
 }>();
 
 const VIEWBOX_SIZE = 1000;
@@ -126,7 +127,7 @@ const displayP3Path = computed(() =>
 const activeCss = computed(() => serializeColor(props.modelValue));
 const planeLabel = computed(() => {
   const projection = activeProjection.value;
-  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point. Right-click for boundary visibility.`;
+  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point. Use the Guides control for boundary visibility.`;
   return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
 });
 const instrumentStyle = {
@@ -437,6 +438,7 @@ function onPointerCancel(event: PointerEvent): void {
   latestInteractionPoint = null;
   latestInteractionColor = null;
   positionActiveAnnotations(boundedActivePoint.value);
+  emit("cancel");
 }
 
 function onLostPointerCapture(event: PointerEvent): void {
@@ -700,6 +702,35 @@ onBeforeUnmount(() => {
         </ContextMenuContent>
       </ContextMenu>
     </TooltipProvider>
+    <details class="oklch-planar-picker__guide-control" data-guide-control>
+      <summary>Guides</summary>
+      <div role="group" aria-label="Plane guide visibility">
+        <label>
+          <input v-model="showDisplayP3Boundary" type="checkbox" data-guide-toggle="display-p3" />
+          <i class="picker-key picker-key--p3" aria-hidden="true" />
+          Display P3
+        </label>
+        <label>
+          <input v-model="showSrgbBoundary" type="checkbox" data-guide-toggle="srgb" />
+          <i class="picker-key picker-key--srgb" aria-hidden="true" />
+          sRGB
+        </label>
+        <label v-if="plane.id === 'oklab'">
+          <input
+            v-model="showInstrumentDomain"
+            type="checkbox"
+            data-guide-toggle="instrument-domain"
+          />
+          <i class="picker-key picker-key--domain" aria-hidden="true" />
+          Editable domain
+        </label>
+        <label v-if="plane.id === 'oklab'">
+          <input v-model="showNeutralOrigin" type="checkbox" data-guide-toggle="neutral-origin" />
+          <i class="picker-key picker-key--neutral" aria-hidden="true" />
+          Neutral origin
+        </label>
+      </div>
+    </details>
     <span class="oklch-planar-picker__render-mode">
       {{
         canvasColorSpace === "display-p3"

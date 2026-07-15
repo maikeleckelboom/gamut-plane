@@ -116,7 +116,7 @@ afterEach(() => {
 });
 
 describe("OklchPlanarPicker pointer interaction", () => {
-  it("coalesces rectangular drags, commits pointerup, and cancels pending movement", async () => {
+  it("coalesces rectangular drags, commits pointerup, and cancels after live movement", async () => {
     const animationFrames = installAnimationFrameController();
     const canonical: ChromavertColor = { l: 0.6, c: 0.12, h: 210, alpha: 1 };
     const wrapper = mount(OklchPlanarPicker, {
@@ -203,14 +203,18 @@ describe("OklchPlanarPicker pointer interaction", () => {
     expect(marker.style.left).toBe("100%");
     expect(marker.style.top).toBe("100%");
     expect({ left: warning.style.left, top: warning.style.top }).not.toEqual(warningAtCanonical);
+    animationFrames.flush();
+    expect(emittedColors(wrapper)).toHaveLength(3);
+    expect(wrapper.emitted("cancel")).toBeUndefined();
 
     dispatchPointer(surface, "pointercancel", { pointerId: 8 });
     expect(marker.style.left).toBe("30%");
     expect(marker.style.top).toBe("40%");
     expect({ left: warning.style.left, top: warning.style.top }).toEqual(warningAtCanonical);
     animationFrames.flush();
-    expect(emittedColors(wrapper)).toHaveLength(2);
+    expect(emittedColors(wrapper)).toHaveLength(3);
     expect(committedColors(wrapper)).toHaveLength(1);
+    expect(wrapper.emitted("cancel")).toEqual([[]]);
 
     dispatchPointer(surface, "pointerdown", { pointerId: 9, clientX: 72, clientY: 62 });
     dispatchPointer(surface, "pointermove", { pointerId: 9, clientX: 150, clientY: 80 });
