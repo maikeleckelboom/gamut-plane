@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc -b",
     "test": "pnpm check:picker-tables && vitest run",
-    "lint": "oxlint src test"
+    "test:e2e": "playwright test",
+    "lint": "oxlint src test e2e playwright.config.ts"
   },
   "dependencies": {
     "@chromavert/color": "workspace:*",
@@ -29,6 +30,7 @@
     "vue": "3.5.39"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@types/node": "24.13.2",
     "@vitejs/plugin-vue": "6.0.7",
     "@vue/test-utils": "2.4.6",
