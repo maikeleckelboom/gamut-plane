@@ -144,18 +144,8 @@ const mergedIntervals = computed<Record<GamutTone, GamutSection[]>>(() => {
   }
   return result;
 });
-const outOfGamutSections = computed<GamutSection[]>(() =>
-  GAMUT_TONES.flatMap((tone) => {
-    if (mergedIntervals.value[tone].length === 0) return [];
-    const sections: GamutSection[] = [];
-    let cursor = 0;
-    for (const interval of mergedIntervals.value[tone]) {
-      if (interval.start > cursor) sections.push({ start: cursor, end: interval.start, tone });
-      cursor = Math.max(cursor, interval.end);
-    }
-    if (cursor < 1) sections.push({ start: cursor, end: 1, tone });
-    return sections;
-  }),
+const inGamutSections = computed<GamutSection[]>(() =>
+  GAMUT_TONES.flatMap((tone) => mergedIntervals.value[tone]),
 );
 const gamutThresholds = computed<GamutThreshold[]>(() =>
   GAMUT_TONES.flatMap((tone) => {
@@ -348,25 +338,16 @@ function sectionStyle(section: GamutSection): Record<string, string> {
       @pointerleave="hoverPosition = null"
     >
       <span class="oklch-linear-control__field" :style="{ backgroundImage: gradient }" />
-      <span class="oklch-linear-control__gamut-material" aria-hidden="true">
+      <span class="oklch-linear-control__gamut-ranges" aria-hidden="true">
         <span
-          v-for="(section, index) in outOfGamutSections"
-          :key="`${section.tone}-veil-${index}`"
-          class="oklch-linear-control__veil"
-          :class="`oklch-linear-control__veil--${section.tone}`"
+          v-for="(section, index) in inGamutSections"
+          :key="`${section.tone}-range-${index}`"
+          class="oklch-linear-control__gamut-range"
+          :class="`oklch-linear-control__gamut-range--${section.tone}`"
           :style="sectionStyle(section)"
-          :data-gamut-veil="section.tone"
-          :data-veil-start="section.start"
-          :data-veil-end="section.end"
-        />
-        <span
-          v-for="threshold in gamutThresholds"
-          :key="`${threshold.tone}-threshold-${threshold.position}`"
-          class="oklch-linear-control__threshold"
-          :class="`oklch-linear-control__threshold--${threshold.tone}`"
-          :style="positionStyle(threshold.position)"
-          :data-gamut-threshold="threshold.tone"
-          :data-threshold-position="threshold.position"
+          :data-gamut-range="section.tone"
+          :data-range-start="section.start"
+          :data-range-end="section.end"
         />
       </span>
       <span

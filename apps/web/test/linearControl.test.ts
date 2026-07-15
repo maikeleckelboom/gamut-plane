@@ -279,7 +279,7 @@ describe("OklchLinearControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("renders out-of-gamut veils and reveals only the nearby crossing label", async () => {
+  it("marks in-gamut ranges without veiling the sampled field and reveals nearby crossings", async () => {
     const intervals: LinearControlInterval[] = [
       { start: 0, end: 0.12, tone: "display-p3" },
       { start: 0.78, end: 1, tone: "display-p3" },
@@ -287,26 +287,22 @@ describe("OklchLinearControl gamut annotations", () => {
       { start: 0.4, end: 0.4, tone: "srgb" },
     ];
     const wrapper = mountControl({ intervals });
-    const p3Veils = wrapper.findAll('[data-gamut-veil="display-p3"]');
-    const srgbVeils = wrapper.findAll('[data-gamut-veil="srgb"]');
-    const p3Thresholds = wrapper.findAll('[data-gamut-threshold="display-p3"]');
-    const srgbThresholds = wrapper.findAll('[data-gamut-threshold="srgb"]');
+    const p3Ranges = wrapper.findAll('[data-gamut-range="display-p3"]');
+    const srgbRanges = wrapper.findAll('[data-gamut-range="srgb"]');
 
-    expect(p3Veils).toHaveLength(1);
-    expect(p3Veils[0]?.attributes("data-veil-start")).toBe("0.12");
-    expect(p3Veils[0]?.attributes("data-veil-end")).toBe("0.78");
-    expect(srgbVeils).toHaveLength(2);
-    expect(srgbVeils[0]?.attributes("data-veil-start")).toBe("0");
-    expect(srgbVeils[0]?.attributes("data-veil-end")).toBe("0.05");
-    expect(srgbVeils[1]?.attributes("data-veil-start")).toBe("0.62");
-    expect(srgbVeils[1]?.attributes("data-veil-end")).toBe("1");
-    expect(
-      p3Thresholds.map((threshold) => threshold.attributes("data-threshold-position")),
-    ).toEqual(["0.12", "0.78"]);
-    expect(
-      srgbThresholds.map((threshold) => threshold.attributes("data-threshold-position")),
-    ).toEqual(["0.05", "0.62"]);
-    expect(wrapper.find(".oklch-linear-control__bracket").exists()).toBe(false);
+    expect(p3Ranges).toHaveLength(2);
+    expect(p3Ranges[0]?.attributes("data-range-start")).toBe("0");
+    expect(p3Ranges[0]?.attributes("data-range-end")).toBe("0.12");
+    expect(p3Ranges[1]?.attributes("data-range-start")).toBe("0.78");
+    expect(p3Ranges[1]?.attributes("data-range-end")).toBe("1");
+    expect(srgbRanges).toHaveLength(1);
+    expect(srgbRanges[0]?.attributes("data-range-start")).toBe("0.05");
+    expect(srgbRanges[0]?.attributes("data-range-end")).toBe("0.62");
+    expect(wrapper.find("[data-gamut-veil]").exists()).toBe(false);
+    expect(wrapper.find("[data-gamut-threshold]").exists()).toBe(false);
+    expect(wrapper.get(".oklch-linear-control__field").attributes("style")).toContain(
+      "linear-gradient(90deg, black, white)",
+    );
     expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
 
     const track = wrapper.get(".oklch-linear-control__track");
