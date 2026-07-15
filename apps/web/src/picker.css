@@ -118,7 +118,7 @@
   --proof-info: var(--spectrum-blue-ink, oklch(0.48 0.17 248));
   --surface-0: var(--site-paper-raised, oklch(0.995 0.002 96));
   --surface-1: var(--site-paper, oklch(0.985 0.006 96));
-  --surface-2: oklch(0.96 0.004 96);
+  --surface-2: color-mix(in oklch, var(--surface-1) 92%, var(--foreground));
   --surface-3: var(--site-accent-wash, oklch(0.69 0.17 248 / 0.12));
   --hairline: var(--site-line, oklch(0.185 0.018 255 / 0.14));
   --quiet: var(--site-muted, oklch(0.44 0.016 255));
@@ -156,6 +156,8 @@
 }
 
 .picker-instrument {
+  --picker-plane-axis-space: 24px;
+  --picker-plane-max-size: 400px;
   min-width: 0;
 }
 
@@ -212,7 +214,9 @@
 
 .picker-instrument__workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 1.15fr) minmax(270px, 0.72fr);
+  grid-template-columns:
+    minmax(320px, calc(var(--picker-plane-max-size) + var(--picker-plane-axis-space)))
+    minmax(270px, 1fr);
   gap: clamp(20px, 3vw, 34px);
   align-items: start;
 }
@@ -220,7 +224,7 @@
 .oklch-planar-picker {
   position: relative;
   min-width: 0;
-  padding: 0 0 20px 24px;
+  padding: 0 0 20px var(--picker-plane-axis-space);
 }
 
 .oklch-planar-picker__surface {
@@ -516,7 +520,7 @@
 .oklch-planar-picker__axis--chroma {
   right: 0;
   bottom: 3px;
-  left: 24px;
+  left: var(--picker-plane-axis-space);
   text-align: center;
 }
 
@@ -919,7 +923,7 @@
   --popover-foreground: var(--site-ink, oklch(0.185 0.018 255));
   --foreground: var(--site-ink, oklch(0.185 0.018 255));
   --border: var(--site-line-strong, oklch(0.185 0.018 255 / 0.32));
-  color-scheme: light;
+  color-scheme: inherit;
   font-family: var(--mono);
 }
 
@@ -935,7 +939,7 @@
   }
 
   .oklch-planar-picker {
-    width: min(100%, 620px);
+    width: min(100%, calc(var(--picker-plane-max-size) + var(--picker-plane-axis-space)));
     margin: 0 auto;
   }
 }
@@ -993,12 +997,8 @@
     display: none;
   }
 
-  .oklch-planar-picker {
-    padding-left: 19px;
-  }
-
-  .oklch-planar-picker__axis--chroma {
-    left: 19px;
+  .picker-instrument {
+    --picker-plane-axis-space: 19px;
   }
 
   .picker-instrument__readouts {

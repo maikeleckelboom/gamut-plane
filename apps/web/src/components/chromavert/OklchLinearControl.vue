@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useResizeObserver } from "@vueuse/core";
+import { computed, onMounted, ref } from "vue";
 
 import GamutWarningGlyph from "@/components/chromavert/GamutWarningGlyph.vue";
 import {
@@ -105,7 +106,6 @@ const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
 const trackLeft = ref(0);
 const hoverPosition = ref<number | null>(null);
 const isRangeFocused = ref(false);
-let trackResizeObserver: ResizeObserver | undefined;
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
@@ -251,18 +251,10 @@ function updateTrackBounds(): void {
   trackLeft.value = bounds.left;
 }
 
-onMounted(() => {
-  const element = trackElement.value;
-  if (!element) return;
-  updateTrackBounds();
-  if (typeof ResizeObserver === "undefined") return;
-  trackResizeObserver = new ResizeObserver(([entry]) => {
-    if (entry) updateTrackWidth(entry.contentRect.width);
-  });
-  trackResizeObserver.observe(element);
+onMounted(updateTrackBounds);
+useResizeObserver(trackElement, ([entry]) => {
+  if (entry) updateTrackWidth(entry.contentRect.width);
 });
-
-onBeforeUnmount(() => trackResizeObserver?.disconnect());
 
 function clamp(value: number): number {
   return Math.min(props.max, Math.max(props.min, value));
