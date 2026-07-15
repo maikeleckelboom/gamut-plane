@@ -21,5 +21,6 @@ export * from "./model/scale";
 export * from "./picker/analysis";
 export * from "./picker/plane";
 export * from "./scale/curve";
+export * from "./scale/generateFamily";
 export * from "./scale/generateScale";
 export * from "./scale/pinning";
