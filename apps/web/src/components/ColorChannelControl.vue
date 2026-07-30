@@ -359,6 +359,7 @@ function sectionStyle(section: GamutSection): Record<string, string> {
         :title="marker.label"
         :aria-label="marker.label"
         :data-gamut-marker="marker.id"
+        role="img"
       />
       <span
         v-show="warningVisible"

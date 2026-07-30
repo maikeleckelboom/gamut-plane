@@ -295,7 +295,7 @@ describe("PlaneInstrument edit contract", () => {
 
     const p3BoundaryHit = plane.get('[data-gamut-boundary-hit="display-p3"]');
     expect(p3BoundaryHit.attributes("tabindex")).toBeUndefined();
-    expect(p3BoundaryHit.attributes("role")).toBeUndefined();
+    expect(p3BoundaryHit.attributes("role")).toBe("img");
     expect(plane.find("[data-guide-control]").exists()).toBe(false);
 
     const surface = plane.get("[data-render-color-space]");

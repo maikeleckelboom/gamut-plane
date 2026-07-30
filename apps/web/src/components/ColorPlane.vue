@@ -544,6 +544,7 @@ onBeforeUnmount(() => {
           data-gamut-boundary-hit="display-p3"
           vector-effect="non-scaling-stroke"
           aria-label="Display P3 gamut boundary"
+          role="img"
         />
         <path
           v-if="showSrgbBoundary"
@@ -560,6 +561,7 @@ onBeforeUnmount(() => {
           data-gamut-boundary-hit="srgb"
           vector-effect="non-scaling-stroke"
           aria-label="sRGB gamut boundary"
+          role="img"
         />
         <circle
           v-if="plane.id === 'oklab'"
@@ -570,6 +572,7 @@ onBeforeUnmount(() => {
           r="499"
           vector-effect="non-scaling-stroke"
           aria-label="OKLab editable domain, not a gamut boundary"
+          role="img"
         />
       </svg>
       <span
@@ -590,6 +593,7 @@ onBeforeUnmount(() => {
         data-marker-role="srgb-boundary-projection"
         title="sRGB boundary projection"
         aria-label="sRGB boundary projection"
+        role="img"
       />
       <span
         ref="warningMarker"
@@ -611,6 +615,7 @@ onBeforeUnmount(() => {
         data-marker-role="active-color"
         title="Selected color"
         aria-label="Selected color"
+        role="img"
       />
     </div>
     <span class="color-plane__render-mode">
