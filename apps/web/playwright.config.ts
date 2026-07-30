@@ -2,16 +2,19 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["production.spec.ts", "releaseAssets.spec.ts"],
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,
   workers: 1,
-  reporter: [["line"]],
-  snapshotPathTemplate: "{testDir}/screenshots/{arg}{ext}",
+  reporter: process.env.CI
+    ? [["line"], ["html", { open: "never", outputFolder: "playwright-report" }]]
+    : [["line"]],
+  snapshotPathTemplate: "{testDir}/screenshots/{arg}-{platform}{ext}",
   expect: {
     toHaveScreenshot: {
       animations: "disabled",
-      maxDiffPixelRatio: 0.015,
+      maxDiffPixelRatio: 0.003,
     },
   },
   use: {
@@ -23,6 +26,7 @@ export default defineConfig({
     locale: "en-US",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+    video: "off",
   },
   projects: [
     {
