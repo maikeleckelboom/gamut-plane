@@ -13,3 +13,6 @@ catalog:
 
 minimumReleaseAgeExclude:
   - vite@8.1.4
+
+overrides:
+  postcss: 8.5.25

@@ -1,17 +1,28 @@
 {
   "name": "@gamut-plane/workspace",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "High-performance interactive OKLab and OKLCH color planes with precise display-gamut boundaries.",
+  "license": "MIT",
+  "author": "Maikel Eckelboom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikeleckelboom/gamut-plane.git"
+  },
   "scripts": {
     "dev": "pnpm --filter @gamut-plane/web dev",
     "build": "pnpm -r --if-present build",
+    "check:build": "pnpm --filter @gamut-plane/web check:build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @gamut-plane/web test:e2e",
+    "test:production": "pnpm --filter @gamut-plane/web test:production",
     "lint": "pnpm -r --if-present lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check:gamut-tables": "pnpm --filter @gamut-plane/web check:gamut-tables"
+    "check:gamut-tables": "pnpm --filter @gamut-plane/web check:gamut-tables",
+    "generate:release-assets": "pnpm --filter @gamut-plane/web generate:release-assets",
+    "preview:production": "pnpm --filter @gamut-plane/web preview:production"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

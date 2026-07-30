@@ -1,18 +1,30 @@
 {
   "name": "@gamut-plane/web",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "Standalone Vue application for interactive OKLab and OKLCH gamut-plane inspection.",
+  "license": "MIT",
+  "author": "Maikel Eckelboom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikeleckelboom/gamut-plane.git",
+    "directory": "apps/web"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "check:build": "node scripts/checkProductionBuild.ts",
     "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
     "generate:gamut-tables": "node scripts/generateGamutTables.ts",
+    "generate:release-assets": "playwright test --config playwright.assets.config.ts",
     "preview": "vite preview",
+    "preview:production": "node scripts/serveProduction.ts",
     "typecheck": "vue-tsc -b",
     "test": "pnpm check:gamut-tables && vitest run",
     "test:e2e": "playwright test",
-    "lint": "oxlint src test e2e playwright.config.ts"
+    "test:production": "playwright test --config playwright.production.config.ts",
+    "lint": "oxlint src test e2e scripts *.config.ts"
   },
   "dependencies": {
     "@gamut-plane/core": "workspace:*",
@@ -20,6 +32,7 @@
     "vue": "3.5.39"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
     "@playwright/test": "1.61.1",
     "@types/node": "24.13.2",
     "@vitejs/plugin-vue": "6.0.7",
@@ -30,5 +43,8 @@
     "vite": "8.1.4",
     "vitest": "catalog:",
     "vue-tsc": "3.3.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

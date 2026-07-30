@@ -1,7 +1,15 @@
 {
   "name": "@gamut-plane/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "Framework-neutral OKLab, OKLCH, display-gamut, and color-plane mathematics for Gamut Plane.",
+  "license": "MIT",
+  "author": "Maikel Eckelboom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikeleckelboom/gamut-plane.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -22,5 +30,8 @@
   "devDependencies": {
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
