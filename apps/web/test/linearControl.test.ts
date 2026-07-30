@@ -2,21 +2,21 @@ import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
-import OklchLinearControl, {
+import ColorChannelControl, {
   type LinearControlInterval,
-} from "@/components/chromavert/OklchLinearControl.vue";
+} from "@/components/ColorChannelControl.vue";
 import {
   PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
-} from "@/components/chromavert/pickerInstrumentStyle";
+} from "@/components/planeInstrumentStyle";
 
 const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
 
-function mountControl(overrides: Partial<InstanceType<typeof OklchLinearControl>["$props"]> = {}) {
-  return mount(OklchLinearControl, {
+function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl>["$props"]> = {}) {
+  return mount(ColorChannelControl, {
     attachTo: document.body,
     props: {
       id: "test-control",
@@ -36,10 +36,10 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("OklchLinearControl gamut annotations", () => {
+describe("ColorChannelControl gamut annotations", () => {
   it("separates live range input from commit without repeated layout reads", async () => {
     const wrapper = mountControl({ modelValue: 180 });
-    const track = wrapper.get(".oklch-linear-control__track").element as HTMLElement;
+    const track = wrapper.get(".channel-control__track").element as HTMLElement;
     const measure = vi.spyOn(track, "getBoundingClientRect");
     const range = wrapper.get('input[type="range"]');
 
@@ -300,12 +300,12 @@ describe("OklchLinearControl gamut annotations", () => {
     expect(srgbRanges[0]?.attributes("data-range-end")).toBe("0.62");
     expect(wrapper.find("[data-gamut-veil]").exists()).toBe(false);
     expect(wrapper.find("[data-gamut-threshold]").exists()).toBe(false);
-    expect(wrapper.get(".oklch-linear-control__field").attributes("style")).toContain(
+    expect(wrapper.get(".channel-control__field").attributes("style")).toContain(
       "linear-gradient(90deg, black, white)",
     );
     expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
 
-    const track = wrapper.get(".oklch-linear-control__track");
+    const track = wrapper.get(".channel-control__track");
     track.element.dispatchEvent(
       new MouseEvent("pointermove", { bubbles: true, clientX: 0.12 * 320 }),
     );

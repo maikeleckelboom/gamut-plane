@@ -3,7 +3,6 @@ packages:
   - packages/*
 
 allowBuilds:
-  scheme-tokens@https://codeload.github.com/maikeleckelboom/scheme-tokens/tar.gz/19bc9b751cd0a3be666f0454ad3b01a8630a6343: true
   vue-demi: true
 
 catalog:

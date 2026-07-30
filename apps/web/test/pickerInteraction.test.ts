@@ -7,18 +7,18 @@ import {
   OKLCH_PICKER_MAX_CHROMA,
   getCachedGamutBoundaryTable,
   getPickerGamutStatus,
-  type ChromavertColor,
+  type OklchColor,
   type PickerGamutBoundaryTables,
-} from "@chromavert/color";
-import OklchPlanarPicker from "@/components/chromavert/OklchPlanarPicker.vue";
+} from "@gamut-plane/core";
+import ColorPlane from "@/components/ColorPlane.vue";
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "@/components/chromavert/pickerInstrumentStyle";
-import { placePlanarWarning } from "@/components/chromavert/pickerWarningPlacement";
+} from "@/components/planeInstrumentStyle";
+import { placePlanarWarning } from "@/components/pickerWarningPlacement";
 
 const TABLE_OPTIONS = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
 const tables: PickerGamutBoundaryTables = {
@@ -102,12 +102,12 @@ function mockSurfaceContentBox(
   });
 }
 
-function emittedColors(wrapper: VueWrapper): ChromavertColor[] {
-  return (wrapper.emitted("update:modelValue") ?? []).map(([color]) => color as ChromavertColor);
+function emittedColors(wrapper: VueWrapper): OklchColor[] {
+  return (wrapper.emitted("update:modelValue") ?? []).map(([color]) => color as OklchColor);
 }
 
-function committedColors(wrapper: VueWrapper): ChromavertColor[] {
-  return (wrapper.emitted("commit") ?? []).map(([color]) => color as ChromavertColor);
+function committedColors(wrapper: VueWrapper): OklchColor[] {
+  return (wrapper.emitted("commit") ?? []).map(([color]) => color as OklchColor);
 }
 
 afterEach(() => {
@@ -115,18 +115,18 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("OklchPlanarPicker pointer interaction", () => {
+describe("ColorPlane pointer interaction", () => {
   it("coalesces rectangular drags, commits pointerup, and cancels after live movement", async () => {
     const animationFrames = installAnimationFrameController();
-    const canonical: ChromavertColor = { l: 0.6, c: 0.12, h: 210, alpha: 1 };
-    const wrapper = mount(OklchPlanarPicker, {
+    const canonical: OklchColor = { l: 0.6, c: 0.12, h: 210, alpha: 1 };
+    const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         modelValue: canonical,
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbFallbackGuideColor: null,
+        srgbBoundaryGuideColor: null,
         warningVisible: true,
         warningLabel: "Outside primary Display P3. Canonical OKLCH is preserved.",
       },
@@ -237,15 +237,15 @@ describe("OklchPlanarPicker pointer interaction", () => {
 
   it("keeps OKLab pointer live/commit scheduling, radial bounds, and keyboard commits distinct", async () => {
     const animationFrames = installAnimationFrameController();
-    const canonical: ChromavertColor = { l: 0.6, c: 0.1, h: 0, alpha: 0.7 };
-    const wrapper = mount(OklchPlanarPicker, {
+    const canonical: OklchColor = { l: 0.6, c: 0.1, h: 0, alpha: 0.7 };
+    const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         modelValue: canonical,
         plane: OKLAB_AB_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbFallbackGuideColor: null,
+        srgbBoundaryGuideColor: null,
         warningVisible: false,
         warningLabel: "",
       },

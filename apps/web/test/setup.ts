@@ -19,6 +19,16 @@ Object.defineProperty(navigator, "clipboard", {
   value: { writeText: vi.fn().mockResolvedValue(undefined) },
 });
 
+Object.defineProperty(globalThis, "isSecureContext", {
+  configurable: true,
+  value: true,
+});
+
+Object.defineProperty(document, "execCommand", {
+  configurable: true,
+  value: vi.fn(() => true),
+});
+
 window.requestAnimationFrame ??= (callback) => window.setTimeout(callback, 0);
 window.cancelAnimationFrame ??= (handle) => window.clearTimeout(handle);
 window.scrollTo = vi.fn();
@@ -60,7 +70,7 @@ Object.defineProperties(URL, {
   createObjectURL: {
     configurable: true,
     writable: true,
-    value: vi.fn(() => "blob:chromavert-test"),
+    value: vi.fn(() => "blob:gamut-plane-test"),
   },
   revokeObjectURL: {
     configurable: true,

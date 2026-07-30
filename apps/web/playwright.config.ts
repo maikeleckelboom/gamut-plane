@@ -1,0 +1,43 @@
+import { defineConfig, devices } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: false,
+  forbidOnly: true,
+  retries: 0,
+  workers: 1,
+  reporter: [["line"]],
+  snapshotPathTemplate: "{testDir}/screenshots/{arg}{ext}",
+  expect: {
+    toHaveScreenshot: {
+      animations: "disabled",
+      maxDiffPixelRatio: 0.015,
+    },
+  },
+  use: {
+    baseURL: "http://127.0.0.1:4177",
+    colorScheme: "dark",
+    contextOptions: {
+      reducedMotion: "reduce",
+    },
+    locale: "en-US",
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        deviceScaleFactor: 1,
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
+  ],
+  webServer: {
+    command: "pnpm dev --host 127.0.0.1 --port 4177",
+    url: "http://127.0.0.1:4177",
+    reuseExistingServer: false,
+    timeout: 120_000,
+  },
+});

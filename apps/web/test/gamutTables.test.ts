@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findMaximumChroma, getMaximumChromaFromTable } from "@chromavert/color";
+import { findMaximumChroma, getMaximumChromaFromTable } from "@gamut-plane/core";
 import { PICKER_GAMUT_TABLE_DIGEST, PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
 
 describe("bundled picker gamut facts", () => {

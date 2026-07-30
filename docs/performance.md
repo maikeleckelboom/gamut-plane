@@ -1,0 +1,53 @@
+# Performance
+
+## Maintained contracts
+
+The renderer is intentionally Canvas 2D and keeps work bounded through explicit invalidation:
+
+- Field drawing is scheduled through at most one pending `requestAnimationFrame`.
+- Pointer movement stores only the latest point and applies it through at most one pending animation frame.
+- Same-plane edits to the two visible axes move annotations without rebuilding the field or gamut contours.
+- A fixed-axis change invalidates the field once and rebuilds each contour from its deterministic table.
+- Size, actual device pixel ratio, granted Canvas color space, plane, and fixed axis form the field cache key.
+- Canvas backing dimensions use the uncapped device pixel ratio. CSS dimensions remain the interaction coordinate system.
+- The OKLab field is sampled into one reusable 80 × 80 offscreen buffer with 24 color samples per row, then scaled to the visible backing store.
+- Mutable color vectors, sampling scratch data, the offscreen canvas, Canvas contexts, and generated `Float32Array` tables are reused instead of allocated per sample.
+- Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
+
+These are correctness and workload-shape contracts, not universal frame-time promises. Unit tests assert invalidation behavior, pointer-frame coalescing, generated-table determinism, and device-pixel-ratio handling. Playwright tests exercise resize stability and interaction in a real browser.
+
+## Reference observations
+
+Earlier measurements on a Windows development machine placed one uncached fixed-lightness OKLab field construction around 7.4–9.7 ms. A separate audit measured warm generation of one gamut table around 6.8–7.0 ms and a cached lookup around 0.02 ms.
+
+Those observations are contextual, not benchmark guarantees: the machines, browser/runtime versions, power state, and instrumentation were not identical to this baseline. They justify keeping generation off the interaction path and preserving cache keys; they do not establish a cross-machine regression threshold.
+
+## Standalone-baseline measurements
+
+The 2026-07-30 standalone audit used Windows 11 Pro 10.0.26200, an AMD Ryzen 7 8845HS, Node.js 24.16.0, pnpm 11.9.0, and Vite's SSR module loader. It measured `performance.now()` around the core functions only, using the checked-in table settings of 120 hue steps, 65 lightness steps, and 14 search iterations.
+
+After 10 unrecorded warm-up generations, 100 uncached samples per gamut produced:
+
+| Operation                 |   Median |      p95 |  Minimum |  Maximum |
+| ------------------------- | -------: | -------: | -------: | -------: |
+| Generate sRGB table       | 14.68 ms | 20.81 ms | 11.05 ms | 31.69 ms |
+| Generate Display P3 table | 18.10 ms | 28.03 ms | 12.76 ms | 35.61 ms |
+
+After priming the cache, 10,000 lookups per gamut had a 0.0005 ms median. The sRGB p95 was 0.0012 ms and the Display P3 p95 was 0.0008 ms.
+
+Uncached generation on this environment is slower than the earlier 6.8–7.0 ms observation; cached lookup is faster than the earlier 0.02 ms observation. The comparison is directional only because the earlier hardware and harness were not preserved. No new browser field-construction number was collected, so the earlier 7.4–9.7 ms range must not be treated as a current result.
+
+## Reproducible benchmark protocol
+
+Use the following protocol when a renderer, sampling, or table algorithm change needs numeric evidence:
+
+1. Record the Git revision, operating system, CPU, GPU, power mode, browser and Node versions, viewport, device pixel ratio, and granted Canvas color space.
+2. Use a production build and close unrelated high-load applications.
+3. Warm the instrument with at least 20 draws of each plane before recording.
+4. Measure at least 100 iterations for each scenario: cached same-axis update, fixed-axis redraw, resize redraw, OKLCH field, OKLab field, and contour construction for each gamut.
+5. Use browser performance marks around the exact draw or contour function; do not time user input, Vue mounting, dev-server startup, or screenshot capture as renderer work.
+6. Report median, 95th percentile, minimum, maximum, and sample count. Preserve raw samples with the change under review.
+7. Compare the same scenario and environment before and after the change. Treat a result smaller than normal run-to-run variance as inconclusive.
+8. Run unit, browser, and screenshot tests after instrumentation is removed or disabled.
+
+Any accepted performance optimization must preserve exact membership, plane geometry, boundary semantics, interaction cancellation, high-DPI sharpness, and the visible color-space capability report.

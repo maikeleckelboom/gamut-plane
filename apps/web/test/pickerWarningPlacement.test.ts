@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_FALLBACK_MARKER_RADIUS,
+  PICKER_PROJECTION_MARKER_RADIUS,
   PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_EDGE_CLEARANCE,
   PICKER_SLIDER_THUMB_WIDTH,
@@ -11,12 +11,12 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "@/components/chromavert/pickerInstrumentStyle";
+} from "@/components/planeInstrumentStyle";
 import {
   getSliderWarningPosition,
   placePlanarWarning,
   type PlanarWarningPlacementInput,
-} from "@/components/chromavert/pickerWarningPlacement";
+} from "@/components/pickerWarningPlacement";
 
 const SURFACE_SIZE = { width: 100, height: 100 } as const;
 const WARNING_SIZE = {
@@ -90,11 +90,11 @@ describe("placePlanarWarning", () => {
     expectClearOfActive(placement, activeCenter);
   });
 
-  it("avoids a fallback marker at the preferred position when another quadrant fits", () => {
+  it("avoids a boundary projection marker at the preferred position when another quadrant fits", () => {
     const input = placementInput({ x: 50, y: 50 });
-    input.fallbackMarker = {
+    input.projectionMarker = {
       center: { x: 66, y: 34 },
-      radius: PICKER_FALLBACK_MARKER_RADIUS,
+      radius: PICKER_PROJECTION_MARKER_RADIUS,
     };
 
     expect(placePlanarWarning(input)).toEqual({ left: 27, top: 27 });
@@ -102,9 +102,9 @@ describe("placePlanarWarning", () => {
 
   it("is deterministic and does not mutate nested input geometry", () => {
     const input = placementInput({ x: 6, y: 94 });
-    input.fallbackMarker = {
+    input.projectionMarker = {
       center: { x: 22, y: 78 },
-      radius: PICKER_FALLBACK_MARKER_RADIUS,
+      radius: PICKER_PROJECTION_MARKER_RADIUS,
     };
     const snapshot = structuredClone(input);
 
