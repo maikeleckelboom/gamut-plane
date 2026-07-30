@@ -172,15 +172,20 @@ const instrumentStyle = computed<Record<string, string>>(() => {
 const boundaryProjectionChroma = computed(
   () => chromaMarkers.value.srgbBoundaryProjection?.chroma ?? null,
 );
+const controlHelp = computed(() =>
+  props.plane === "oklab"
+    ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
+    : "Hue fixes this plane. Channel guides show current Display P3 and sRGB limits; canonical chroma is not clamped.",
+);
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
     ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 view. The slider stops at its edge; the numeric field preserves canonical C.`
-    : "Thresholds show current P3 and sRGB limits. Canonical chroma is not clamped.",
+    : undefined,
 );
 const oklabDomainHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
     ? `Active radius ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; canonical OKLCH remains unchanged.`
-    : "Lightness edits the current a/b coordinate; the disc is not a gamut boundary.",
+    : undefined,
 );
 
 function colorGradient(segments: number, colorAt: (position: number) => OklchColor): string {
@@ -337,23 +342,27 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
     </div>
 
     <div class="plane-instrument__workspace">
-      <ColorPlane
-        :model-value="modelValue"
-        :plane="activePlaneContract"
-        :srgb-table="tables.srgb"
-        :display-p3-table="tables.displayP3"
-        :srgb-boundary-guide-color="srgbBoundaryProjectionColor"
-        :warning-visible="isOutsideDisplayP3"
-        :warning-label="primaryGamutWarning"
-        :show-srgb-boundary="showSrgbBoundary"
-        :show-display-p3-boundary="showDisplayP3Boundary"
-        @update:model-value="updatePlane"
-        @commit="commitPlane"
-        @cancel="cancelPlane"
-        @capability="emit('capability', $event)"
-      />
+      <div class="plane-instrument__field">
+        <ColorPlane
+          :model-value="modelValue"
+          :plane="activePlaneContract"
+          :srgb-table="tables.srgb"
+          :display-p3-table="tables.displayP3"
+          :srgb-boundary-guide-color="srgbBoundaryProjectionColor"
+          :warning-visible="isOutsideDisplayP3"
+          :warning-label="primaryGamutWarning"
+          :show-srgb-boundary="showSrgbBoundary"
+          :show-display-p3-boundary="showDisplayP3Boundary"
+          @update:model-value="updatePlane"
+          @commit="commitPlane"
+          @cancel="cancelPlane"
+          @capability="emit('capability', $event)"
+        />
+        <slot name="field-legend" />
+      </div>
 
       <div class="plane-instrument__controls">
+        <p class="plane-instrument__control-help">{{ controlHelp }}</p>
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
             id="picker-hue"
@@ -369,7 +378,6 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="hueWarningPosition"
-            help="Thresholds follow current lightness and chroma."
             @update:model-value="updateChannel('h', $event)"
             @commit="commitChannel('h', $event)"
           />
@@ -388,7 +396,6 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="modelValue.l"
-            help="Thresholds follow current chroma and hue."
             @update:model-value="updateChannel('l', $event)"
             @commit="commitChannel('l', $event)"
           />
@@ -472,52 +479,31 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
           </div>
         </template>
 
-        <details class="plane-instrument__evidence" data-picker-evidence>
+        <details class="plane-instrument__evidence" data-boundary-details>
           <summary>
-            <span>Gamut evidence</span>
-            <small>
-              P3 {{ status.displayP3.inGamut ? "inside" : "outside" }} / sRGB
-              {{ status.srgb.inGamut ? "inside" : "outside" }}
-            </small>
+            <span>Boundary details</span>
+            <small>Table guides / projection</small>
           </summary>
           <div class="plane-instrument__evidence-body">
-            <div class="plane-instrument__legend" aria-label="Picker gamut legend">
-              <span><i class="picker-key picker-key--p3" />P3 boundary (solid)</span>
-              <span><i class="picker-key picker-key--srgb" />sRGB boundary (dashed)</span>
-              <span v-if="srgbBoundaryProjectionColor"
-                ><i class="picker-key picker-key--projection" />sRGB boundary projection</span
-              >
-              <span class="plane-instrument__legend-note">
-                <template v-if="plane === 'oklch'">
-                  Between lines = P3-only (selected color is outside sRGB). Active point may cross
-                  both; no boundary clamps canonical C.
-                </template>
-                <template v-else>
-                  Closed contours come from cached Cmax facts at fixed L. The active point may cross
-                  either contour; neither contour clips canonical OKLCH.
-                </template>
-              </span>
-            </div>
+            <p class="plane-instrument__legend-note">
+              <template v-if="plane === 'oklch'">
+                Table guides follow the fixed hue. The active point may cross either guide without
+                clamping canonical chroma.
+              </template>
+              <template v-else>
+                Closed contours project cached Cmax facts at fixed lightness. Neither contour clips
+                canonical OKLCH.
+              </template>
+            </p>
 
-            <div class="plane-instrument__readouts" aria-label="Picker gamut status">
-              <div data-picker-gamut-status="display-p3">
-                <span>Display P3</span>
-                <strong :class="status.displayP3.inGamut ? 'status-pass' : 'status-warning'">
-                  {{ status.displayP3.inGamut ? "inside" : "outside" }}
-                </strong>
-                <code>
-                  table boundary guide C
-                  {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }}
-                </code>
+            <div class="plane-instrument__readouts" aria-label="Boundary guide details">
+              <div data-boundary-guide="display-p3">
+                <span>Display P3 table guide</span>
+                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
               </div>
-              <div data-picker-gamut-status="srgb">
-                <span>sRGB</span>
-                <strong :class="status.srgb.inGamut ? 'status-pass' : 'status-info'">
-                  {{ status.srgb.inGamut ? "inside" : "outside" }}
-                </strong>
-                <code>
-                  table boundary guide C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }}
-                </code>
+              <div data-boundary-guide="srgb">
+                <span>sRGB table guide</span>
+                <code> C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }} </code>
               </div>
               <div class="plane-instrument__active-readout">
                 <span>Active canonical</span>
@@ -542,7 +528,6 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
               </div>
             </div>
             <p class="plane-instrument__method">
-              Inside/outside membership uses exact gamut conversion.
               <template v-if="plane === 'oklab'">
                 Closed contours project cached Cmax(L, h) samples into a/b; field samples unproject
                 through OKLab to canonical OKLCH. The disc edge is an instrument limit, not gamut
@@ -552,9 +537,6 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
                 Boundary paths, ticks, intervals, and the boundary projection are interpolated
                 visualization; exact membership and serialization remain separate.
               </template>
-              <span v-if="isOutsideDisplayP3" data-primary-gamut-warning-status>
-                {{ primaryGamutWarning }}
-              </span>
             </p>
           </div>
         </details>

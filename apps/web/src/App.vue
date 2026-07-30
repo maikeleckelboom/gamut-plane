@@ -12,6 +12,11 @@ import { computed, ref } from "vue";
 
 import PlaneInstrument from "@/components/PlaneInstrument.vue";
 import type { CanvasColorSpaceStatus } from "@/components/ColorPlane.vue";
+import {
+  CSS_DISPLAY_DECIMALS,
+  formatOklchForDisplay,
+  formatRgbCssForDisplay,
+} from "@/colorPresentation";
 import { PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
 
 const selectedColor = ref<OklchColor>({
@@ -27,17 +32,31 @@ const boundaries = ref({
 });
 const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
+const copiedRepresentation = ref<CssRepresentation | null>(null);
 
 const gamutStatus = computed(() => getPickerGamutStatus(selectedColor.value, PICKER_GAMUT_TABLES));
 const oklab = computed(() => toOklabColor(selectedColor.value));
-const oklchCss = computed(() => serializeColor(selectedColor.value));
-const srgbCss = computed(() => exactCss("srgb"));
-const displayP3Css = computed(() => exactCss("display-p3"));
+const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
+const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
+const srgbCanonicalCss = computed(() => exactCss("srgb"));
+const displayP3CanonicalCss = computed(() => exactCss("display-p3"));
+const srgbDisplayCss = computed(() =>
+  srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
+);
+const displayP3DisplayCss = computed(() =>
+  displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
+);
 
-const { copy, isSupported: clipboardSupported } = useClipboard({
+const {
+  copied,
+  copy,
+  isSupported: clipboardSupported,
+} = useClipboard({
   legacy: true,
   copiedDuring: 1800,
 });
+
+type CssRepresentation = "oklch" | "display-p3" | "srgb";
 
 const capabilityLabel = computed(() => {
   if (canvasCapability.value === "display-p3") {
@@ -61,21 +80,33 @@ function updateSelectedColor(color: OklchColor): void {
   selectedColor.value = color;
 }
 
-async function copyCss(label: string, value: string | null): Promise<void> {
+function isCopied(representation: CssRepresentation): boolean {
+  return copied.value && copiedRepresentation.value === representation;
+}
+
+async function copyCss(
+  representation: CssRepresentation,
+  label: string,
+  value: string | null,
+): Promise<void> {
   if (!value) return;
+  copyAnnouncement.value = "";
   await copy(value);
+  copiedRepresentation.value = representation;
   copyAnnouncement.value = `Copied ${label}: ${value}`;
 }
 </script>
 
 <template>
   <main class="app-shell">
-    <header class="project-header">
-      <div>
+    <header class="project-header" aria-describedby="project-description">
+      <div class="project-identity">
         <p class="project-kicker">Color-space instrument</p>
         <h1>Gamut Plane</h1>
+        <p id="project-description">
+          Interactive OKLab and OKLCH planes with precise sRGB and Display P3 gamut boundaries.
+        </p>
       </div>
-      <p>Interactive OKLab and OKLCH planes with precise sRGB and Display P3 gamut boundaries.</p>
     </header>
 
     <section class="instrument-layout" aria-label="Gamut Plane instrument">
@@ -89,26 +120,30 @@ async function copyCss(label: string, value: string | null): Promise<void> {
           @update:plane="activePlane = $event"
           @commit="updateSelectedColor"
           @capability="canvasCapability = $event"
-        />
-
-        <fieldset class="boundary-controls">
-          <legend>Boundary visibility</legend>
-          <label>
-            <input
-              v-model="boundaries.displayP3"
-              type="checkbox"
-              data-boundary-toggle="display-p3"
-            />
-            <span class="boundary-key boundary-key--p3" aria-hidden="true" />
-            Display P3
-          </label>
-          <label>
-            <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
-            <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
-            sRGB
-          </label>
-          <p>Visibility changes the view only. The selected color is unchanged.</p>
-        </fieldset>
+        >
+          <template #field-legend>
+            <fieldset class="boundary-legend" data-boundary-legend>
+              <legend>Boundary visibility</legend>
+              <div class="boundary-legend__options">
+                <label>
+                  <input
+                    v-model="boundaries.displayP3"
+                    type="checkbox"
+                    data-boundary-toggle="display-p3"
+                  />
+                  <span class="boundary-key boundary-key--p3" aria-hidden="true" />
+                  <span>Display P3</span>
+                </label>
+                <label>
+                  <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
+                  <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
+                  <span>sRGB</span>
+                </label>
+              </div>
+              <p>Visibility changes the view only; the selected color is unchanged.</p>
+            </fieldset>
+          </template>
+        </PlaneInstrument>
       </div>
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
@@ -168,31 +203,66 @@ async function copyCss(label: string, value: string | null): Promise<void> {
         </section>
 
         <section class="css-output" aria-labelledby="css-output-title">
-          <h3 id="css-output-title">CSS representations</h3>
-          <div>
-            <span>OKLCH</span>
-            <code>{{ oklchCss }}</code>
-            <button type="button" @click="copyCss('OKLCH', oklchCss)">Copy OKLCH</button>
+          <div class="inspector-section-heading">
+            <h3 id="css-output-title">CSS representations</h3>
+            <p>Shown to {{ CSS_DISPLAY_DECIMALS }} decimals. Copy preserves canonical precision.</p>
           </div>
-          <div>
-            <span>Display P3</span>
-            <code v-if="displayP3Css">{{ displayP3Css }}</code>
-            <p v-else>Outside Display P3. No clipped value emitted.</p>
+          <div class="css-representation" data-css-representation="oklch">
+            <span>OKLCH</span>
             <button
               type="button"
-              :disabled="!displayP3Css"
-              @click="copyCss('Display P3', displayP3Css)"
+              data-copy-representation="oklch"
+              :data-copied="isCopied('oklch') ? 'true' : 'false'"
+              :aria-label="isCopied('oklch') ? 'Copied OKLCH CSS value' : 'Copy OKLCH CSS value'"
+              @click="copyCss('oklch', 'OKLCH', oklchCanonicalCss)"
             >
-              Copy Display P3
+              {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
+            <code>{{ oklchDisplayCss }}</code>
           </div>
-          <div>
-            <span>sRGB</span>
-            <code v-if="srgbCss">{{ srgbCss }}</code>
-            <p v-else>Outside sRGB. No clipped value emitted.</p>
-            <button type="button" :disabled="!srgbCss" @click="copyCss('sRGB', srgbCss)">
-              Copy sRGB
+          <div class="css-representation" data-css-representation="display-p3">
+            <span>Display P3</span>
+            <button
+              type="button"
+              data-copy-representation="display-p3"
+              :data-copied="isCopied('display-p3') ? 'true' : 'false'"
+              :disabled="!displayP3CanonicalCss"
+              :aria-describedby="displayP3CanonicalCss ? undefined : 'display-p3-copy-reason'"
+              :aria-label="
+                isCopied('display-p3') ? 'Copied Display P3 CSS value' : 'Copy Display P3 CSS value'
+              "
+              :title="
+                displayP3CanonicalCss
+                  ? undefined
+                  : 'Unavailable because the selected color is outside Display P3.'
+              "
+              @click="copyCss('display-p3', 'Display P3', displayP3CanonicalCss)"
+            >
+              {{ isCopied("display-p3") ? "Copied" : "Copy" }}
             </button>
+            <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
+            <p v-else id="display-p3-copy-reason">Outside Display P3. No clipped value emitted.</p>
+          </div>
+          <div class="css-representation" data-css-representation="srgb">
+            <span>sRGB</span>
+            <button
+              type="button"
+              data-copy-representation="srgb"
+              :data-copied="isCopied('srgb') ? 'true' : 'false'"
+              :disabled="!srgbCanonicalCss"
+              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
+              :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
+              :title="
+                srgbCanonicalCss
+                  ? undefined
+                  : 'Unavailable because the selected color is outside sRGB.'
+              "
+              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
+            >
+              {{ isCopied("srgb") ? "Copied" : "Copy" }}
+            </button>
+            <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
+            <p v-else id="srgb-copy-reason">Outside sRGB. No clipped value emitted.</p>
           </div>
           <p v-if="!clipboardSupported" class="copy-support">
             Clipboard access is unavailable in this browser.

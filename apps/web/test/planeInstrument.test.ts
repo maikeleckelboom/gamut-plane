@@ -65,7 +65,7 @@ describe("PlaneInstrument edit contract", () => {
     wrapper.unmount();
   });
 
-  it("keeps gamut status and methodology in collapsed progressive evidence", async () => {
+  it("keeps unique geometry facts in collapsed boundary details without duplicating exact status", async () => {
     const wrapper = mount(PlaneInstrument, {
       attachTo: document.body,
       props: { modelValue: parseCssColor("oklch(62% 0.2 210)") },
@@ -79,13 +79,16 @@ describe("PlaneInstrument edit contract", () => {
     expect(title.text()).toBe("Color plane instrument");
     expect(instrument.find(".plane-instrument__header").exists()).toBe(false);
 
-    const evidence = wrapper.get("[data-picker-evidence]");
-    expect(evidence.attributes("open")).toBeUndefined();
-    expect(evidence.get("summary").text()).toContain("Gamut evidence");
-    expect(evidence.get('[data-picker-gamut-status="display-p3"]').exists()).toBe(true);
-    expect(evidence.get('[data-picker-gamut-status="srgb"]').exists()).toBe(true);
-    expect(evidence.get(".plane-instrument__projection-readout").exists()).toBe(true);
-    expect(evidence.get(".plane-instrument__method").exists()).toBe(true);
+    const details = wrapper.get("[data-boundary-details]");
+    expect(details.attributes("open")).toBeUndefined();
+    expect(details.get("summary").text()).toContain("Boundary details");
+    expect(details.get("summary").text()).toContain("Table guides / projection");
+    expect(details.findAll("[data-picker-gamut-status]")).toHaveLength(0);
+    expect(details.get('[data-boundary-guide="display-p3"]').exists()).toBe(true);
+    expect(details.get('[data-boundary-guide="srgb"]').exists()).toBe(true);
+    expect(details.get(".plane-instrument__projection-readout").exists()).toBe(true);
+    expect(details.get(".plane-instrument__method").exists()).toBe(true);
+    expect(details.text()).not.toMatch(/\binside\b|\boutside\b/i);
 
     wrapper.unmount();
   });
