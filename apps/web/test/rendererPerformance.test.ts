@@ -1,12 +1,15 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { defineComponent, h, ref } from "vue";
 
 import {
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   getCachedGamutBoundaryTable,
+  type OklchColor,
   type PickerPlaneContract,
 } from "@gamut-plane/core";
 import ColorPlane from "@/components/ColorPlane.vue";
+import PlaneInstrument from "@/components/PlaneInstrument.vue";
 
 function installAnimationFrameController() {
   let nextId = 1;
@@ -93,6 +96,138 @@ describe("renderer invalidation contracts", () => {
     expect(wrapper.get('[data-gamut-boundary="srgb"]').attributes("d")).not.toBe(initialPath);
     frames.flush();
     expect(createLinearGradient.mock.calls.length).toBeGreaterThan(initialGradientBuilds);
+
+    wrapper.unmount();
+  });
+
+  it("uses 192 reusable horizontal samples only for the active field preview", async () => {
+    const frames = installAnimationFrameController();
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 520,
+      bottom: 520,
+      width: 520,
+      height: 520,
+      toJSON: () => ({}),
+    });
+    const context = document.createElement("canvas").getContext("2d")!;
+    const createLinearGradient = vi.mocked(context.createLinearGradient);
+    const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
+    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
+    const wrapper = mount(ColorPlane, {
+      attachTo: document.body,
+      props: {
+        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
+        srgbTable: getCachedGamutBoundaryTable("srgb", options),
+        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbBoundaryGuideColor: null,
+        warningVisible: false,
+        warningLabel: "",
+      },
+    });
+    await flushPromises();
+    frames.flush();
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+
+    createLinearGradient.mockClear();
+    getContext.mockClear();
+    await wrapper.setProps({ interactionPreview: true });
+    await flushPromises();
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
+    expect(wrapper.attributes("data-field-quality")).toBe("preview");
+    expect(createLinearGradient).toHaveBeenCalledTimes(192);
+    expect(getContext).toHaveBeenCalledTimes(1);
+
+    createLinearGradient.mockClear();
+    await wrapper.setProps({ interactionPreview: false });
+    await flushPromises();
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+    expect(createLinearGradient).toHaveBeenCalledTimes(520);
+
+    createLinearGradient.mockClear();
+    await wrapper.setProps({ interactionPreview: true });
+    await flushPromises();
+    frames.flush();
+    expect(createLinearGradient).toHaveBeenCalledTimes(192);
+    expect(getContext).toHaveBeenCalledTimes(1);
+
+    await wrapper.setProps({ interactionPreview: false });
+    await flushPromises();
+    frames.flush();
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+
+    wrapper.unmount();
+  });
+
+  it("coalesces rapid hue range input before fixed-axis contours and field redraw", async () => {
+    const frames = installAnimationFrameController();
+    const context = document.createElement("canvas").getContext("2d")!;
+    const createLinearGradient = vi.mocked(context.createLinearGradient);
+    createLinearGradient.mockClear();
+    const model = ref({ l: 0.62, c: 0.2, h: 210, alpha: 1 });
+    const publications: number[] = [];
+    const commits: number[] = [];
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(PlaneInstrument, {
+            modelValue: model.value,
+            "onUpdate:modelValue": (color: OklchColor) => {
+              publications.push(color.h);
+              model.value = color;
+            },
+            onCommit: (color: OklchColor) => commits.push(color.h),
+          });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+    frames.flush();
+
+    const range = wrapper.get("#picker-hue");
+    const boundary = wrapper.get('[data-gamut-boundary="srgb"]');
+    const initialPath = boundary.attributes("d");
+    const initialGradientBuilds = createLinearGradient.mock.calls.length;
+
+    for (const value of [220, 245, 270]) {
+      (range.element as HTMLInputElement).value = String(value);
+      await range.trigger("input");
+    }
+
+    expect(frames.pendingCount).toBe(1);
+    expect(publications).toEqual([]);
+    expect(boundary.attributes("d")).toBe(initialPath);
+
+    frames.flush();
+    await flushPromises();
+
+    expect(publications).toEqual([270]);
+    expect(model.value.h).toBe(270);
+    expect(boundary.attributes("d")).not.toBe(initialPath);
+    expect(frames.pendingCount).toBe(1);
+    expect(createLinearGradient).toHaveBeenCalledTimes(initialGradientBuilds);
+
+    frames.flush();
+    expect(createLinearGradient.mock.calls.length).toBeGreaterThan(initialGradientBuilds);
+
+    (range.element as HTMLInputElement).value = "290";
+    await range.trigger("input");
+    (range.element as HTMLInputElement).value = "300";
+    await range.trigger("change");
+    await flushPromises();
+
+    expect(publications).toEqual([270, 300]);
+    expect(commits).toEqual([300]);
+    expect(model.value.h).toBe(300);
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
 
     wrapper.unmount();
   });

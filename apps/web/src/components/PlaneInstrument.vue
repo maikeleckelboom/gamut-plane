@@ -12,7 +12,7 @@ import {
   type OklchColor,
   type PickerPlaneId,
 } from "@gamut-plane/core";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 import ColorChannelControl, {
   type LinearControlInterval,
@@ -172,6 +172,8 @@ const instrumentStyle = computed<Record<string, string>>(() => {
 const boundaryProjectionChroma = computed(
   () => chromaMarkers.value.srgbBoundaryProjection?.chroma ?? null,
 );
+const hueRangeDragging = ref(false);
+const fixedAxisFieldPreview = computed(() => props.plane === "oklch" && hueRangeDragging.value);
 const controlHelp = computed(() =>
   props.plane === "oklab"
     ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
@@ -308,6 +310,13 @@ function updateChannel(channel: "l" | "c" | "h", value: number): void {
 function commitChannel(channel: "l" | "c" | "h", value: number): void {
   emit("commit", channelColor(channel, value));
 }
+
+watch(
+  () => props.plane,
+  () => {
+    hueRangeDragging.value = false;
+  },
+);
 </script>
 
 <template>
@@ -351,6 +360,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
           :srgb-boundary-guide-color="srgbBoundaryProjectionColor"
           :warning-visible="isOutsideDisplayP3"
           :warning-label="primaryGamutWarning"
+          :interaction-preview="fixedAxisFieldPreview"
           :show-srgb-boundary="showSrgbBoundary"
           :show-display-p3-boundary="showDisplayP3Boundary"
           @update:model-value="updatePlane"
@@ -380,6 +390,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
             :warning-position="hueWarningPosition"
             @update:model-value="updateChannel('h', $event)"
             @commit="commitChannel('h', $event)"
+            @range-interaction="hueRangeDragging = $event"
           />
 
           <ColorChannelControl

@@ -13,10 +13,8 @@ import { PICKER_WARNING_GLYPH_SIZE } from "@/components/planeInstrumentStyle";
     focusable="false"
     data-gamut-warning-glyph
   >
-    <path class="gamut-warning-glyph__keyline" d="M8 1.7 14.2 14H1.8L8 1.7Z" />
-    <path class="gamut-warning-glyph__core" d="M8 1.7 14.2 14H1.8L8 1.7Z" />
-    <path class="gamut-warning-glyph__keyline" d="M8 5.3v4.3m0 2.7v.05" />
-    <path class="gamut-warning-glyph__core" d="M8 5.3v4.3m0 2.7v.05" />
+    <path class="gamut-warning-glyph__keyline" d="M8 1.75 14.25 8 8 14.25 1.75 8Z" />
+    <path class="gamut-warning-glyph__core" d="M8 5.15v4.15m0 2.15v.05" />
   </svg>
 </template>
 
@@ -28,18 +26,18 @@ import { PICKER_WARNING_GLYPH_SIZE } from "@/components/planeInstrumentStyle";
 }
 
 .gamut-warning-glyph path {
-  fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .gamut-warning-glyph__keyline {
-  stroke: oklch(0.08 0 0 / 0.96);
-  stroke-width: 3;
+  fill: oklch(0.08 0 0 / 0.96);
+  stroke: oklch(0.94 0.006 265 / 0.96);
+  stroke-width: 1;
 }
 
 .gamut-warning-glyph__core {
-  stroke: oklch(0.94 0.006 265 / 0.96);
-  stroke-width: 1.1;
+  stroke: var(--status-outside);
+  stroke-width: 1.45;
 }
 </style>

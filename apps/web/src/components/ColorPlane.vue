@@ -33,10 +33,12 @@ const props = withDefaults(
     srgbBoundaryGuideColor: OklchColor | null;
     warningVisible: boolean;
     warningLabel: string;
+    interactionPreview?: boolean;
     showSrgbBoundary?: boolean;
     showDisplayP3Boundary?: boolean;
   }>(),
   {
+    interactionPreview: false,
     showSrgbBoundary: true,
     showDisplayP3Boundary: true,
   },
@@ -50,6 +52,7 @@ const emit = defineEmits<{
 }>();
 
 const VIEWBOX_SIZE = 1000;
+const INTERACTION_PREVIEW_COLUMN_SAMPLES = 192;
 
 const surface = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -61,6 +64,8 @@ const { pixelRatio } = useDevicePixelRatio();
 let context: CanvasRenderingContext2D | null = null;
 let discFieldBuffer: HTMLCanvasElement | null = null;
 let discFieldContext: CanvasRenderingContext2D | null = null;
+let columnPreviewBuffer: HTMLCanvasElement | null = null;
+let columnPreviewContext: CanvasRenderingContext2D | null = null;
 let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
@@ -191,6 +196,46 @@ function getDiscFieldContext(size: number): CanvasRenderingContext2D | null {
   return discFieldContext;
 }
 
+function getColumnPreviewContext(width: number, height: number): CanvasRenderingContext2D | null {
+  columnPreviewBuffer ??= document.createElement("canvas");
+  if (columnPreviewBuffer.width !== width || columnPreviewBuffer.height !== height) {
+    columnPreviewBuffer.width = width;
+    columnPreviewBuffer.height = height;
+  }
+  columnPreviewContext ??= getCanvasContext(columnPreviewBuffer);
+  return columnPreviewContext;
+}
+
+function drawColumnGradientField(
+  target: CanvasRenderingContext2D,
+  targetHeight: number,
+  sampleCount: number,
+  sampleScale: number,
+  logicalHeight: number,
+  fixed: number,
+  color: OklchColor,
+): void {
+  const sampling = props.plane.fieldSampling;
+  if (sampling.kind !== "column-gradient") return;
+  const rowCount = Math.ceil(logicalHeight / sampling.rowStep) + 1;
+
+  for (let column = 0; column < sampleCount; column += 1) {
+    const gradient = target.createLinearGradient(0, 0, 0, targetHeight);
+    const x = column / Math.max(1, sampleCount - 1);
+
+    for (let index = 0; index < rowCount; index += 1) {
+      const row = Math.min(index * sampling.rowStep, logicalHeight);
+      props.plane.sampleField({ x, y: row / logicalHeight }, fixed, color, fieldScratch);
+      gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
+    }
+
+    target.fillStyle = gradient;
+    const start = Math.round(column * sampleScale);
+    const end = Math.round((column + 1) * sampleScale);
+    target.fillRect(start, 0, Math.max(1, end - start), targetHeight);
+  }
+}
+
 function resizeCanvas(element: HTMLCanvasElement): {
   width: number;
   height: number;
@@ -221,7 +266,8 @@ function drawField(): void {
 
   const { width, height, backingWidth, backingHeight, pixelRatio } = resizeCanvas(element);
   const fixed = fixedAxis.value;
-  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed.toFixed(3)}:${canvasColorSpace.value}`;
+  const fieldQuality = props.interactionPreview ? "preview" : "full";
+  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed.toFixed(3)}:${canvasColorSpace.value}:${fieldQuality}`;
   if (fieldKey === lastFieldKey) return;
 
   const color: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
@@ -230,21 +276,29 @@ function drawField(): void {
 
   const sampling = props.plane.fieldSampling;
   if (sampling.kind === "column-gradient") {
-    const rowCount = Math.ceil(height / sampling.rowStep) + 1;
-    for (let column = 0; column < width; column += 1) {
-      const gradient = context.createLinearGradient(0, 0, 0, backingHeight);
-      const x = column / Math.max(1, width - 1);
-
-      for (let index = 0; index < rowCount; index += 1) {
-        const row = Math.min(index * sampling.rowStep, height);
-        props.plane.sampleField({ x, y: row / height }, fixed, color, fieldScratch);
-        gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
-      }
-
-      context.fillStyle = gradient;
-      const start = Math.round(column * pixelRatio);
-      const end = Math.round((column + 1) * pixelRatio);
-      context.fillRect(start, 0, Math.max(1, end - start), backingHeight);
+    const usePreview = props.interactionPreview && width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
+    if (usePreview) {
+      const previewContext = getColumnPreviewContext(
+        INTERACTION_PREVIEW_COLUMN_SAMPLES,
+        backingHeight,
+      );
+      if (!previewContext || !columnPreviewBuffer) return;
+      previewContext.setTransform(1, 0, 0, 1, 0, 0);
+      previewContext.clearRect(0, 0, INTERACTION_PREVIEW_COLUMN_SAMPLES, backingHeight);
+      drawColumnGradientField(
+        previewContext,
+        backingHeight,
+        INTERACTION_PREVIEW_COLUMN_SAMPLES,
+        1,
+        height,
+        fixed,
+        color,
+      );
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(columnPreviewBuffer, 0, 0, backingWidth, backingHeight);
+    } else {
+      drawColumnGradientField(context, backingHeight, width, pixelRatio, height, fixed, color);
     }
   } else {
     const { rowCount, columnSamples } = sampling;
@@ -459,6 +513,10 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 watch(fixedAxis, () => scheduleFieldDraw());
+watch(
+  () => props.interactionPreview,
+  () => scheduleFieldDraw(),
+);
 watch(pixelRatio, () => {
   lastFieldKey = "";
   scheduleFieldDraw();
@@ -491,6 +549,7 @@ onBeforeUnmount(() => {
     class="color-plane"
     data-picker-plane
     :data-plane-id="plane.id"
+    :data-field-quality="interactionPreview ? 'preview' : 'full'"
     :data-field-resolution="
       plane.fieldSampling.kind === 'disc-gradient'
         ? `${plane.fieldSampling.rowCount}x${plane.fieldSampling.columnSamples}`

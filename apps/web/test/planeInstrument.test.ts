@@ -1,5 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   OKLAB_AB_PLANE,
@@ -12,12 +12,46 @@ import ColorChannelControl from "@/components/ColorChannelControl.vue";
 import ColorPlane from "@/components/ColorPlane.vue";
 import PlaneInstrument from "@/components/PlaneInstrument.vue";
 
+function installAnimationFrameController() {
+  let nextId = 1;
+  const callbacks = new Map<number, FrameRequestCallback>();
+
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    const id = nextId++;
+    callbacks.set(id, callback);
+    return id;
+  });
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    callbacks.delete(id);
+  });
+
+  return {
+    flush(): void {
+      const scheduled = [...callbacks.values()];
+      callbacks.clear();
+      for (const callback of scheduled) callback(0);
+    },
+  };
+}
+
+function dispatchPointer(element: Element, type: string, pointerId: number): void {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    pointerId: { value: pointerId },
+    pointerType: { value: "mouse" },
+    button: { value: 0 },
+  });
+  element.dispatchEvent(event);
+}
+
 afterEach(() => {
+  vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
 
 describe("PlaneInstrument edit contract", () => {
   it("forwards linear live and committed values as complete canonical colors", async () => {
+    const frames = installAnimationFrameController();
     const canonical = parseCssColor("oklch(62% 0.2 210)");
     const wrapper = mount(PlaneInstrument, {
       attachTo: document.body,
@@ -28,6 +62,8 @@ describe("PlaneInstrument edit contract", () => {
 
     (hue.element as HTMLInputElement).value = "292.7";
     await hue.trigger("input");
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    frames.flush();
 
     const live = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as OklchColor;
     expect(live.l).toBe(canonical.l);
@@ -40,6 +76,37 @@ describe("PlaneInstrument edit contract", () => {
 
     const committed = wrapper.emitted("commit")?.at(-1)?.[0] as OklchColor;
     expect(committed).toEqual(live);
+
+    wrapper.unmount();
+  });
+
+  it("enables the field preview only during a Hue range pointer interaction", async () => {
+    const frames = installAnimationFrameController();
+    const wrapper = mount(PlaneInstrument, {
+      attachTo: document.body,
+      props: { modelValue: parseCssColor("oklch(62% 0.2 210)") },
+    });
+    await flushPromises();
+    frames.flush();
+    const plane = wrapper.getComponent(ColorPlane);
+    const hue = wrapper.get("#picker-hue").element;
+    const lightness = wrapper.get("#picker-lightness").element;
+
+    expect(plane.props("interactionPreview")).toBe(false);
+    dispatchPointer(hue, "pointerdown", 11);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(true);
+    expect(plane.attributes("data-field-quality")).toBe("preview");
+
+    dispatchPointer(hue, "pointerup", 11);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    expect(plane.attributes("data-field-quality")).toBe("full");
+
+    dispatchPointer(lightness, "pointerdown", 12);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    dispatchPointer(lightness, "pointercancel", 12);
 
     wrapper.unmount();
   });
@@ -133,6 +200,7 @@ describe("PlaneInstrument edit contract", () => {
   ])(
     "switches coordinate view without a color edit and preserves fixed-L axes %s the domain",
     async (_domain, serialized) => {
+      const frames = installAnimationFrameController();
       const canonical = parseCssColor(serialized);
       const canonicalSnapshot = structuredClone(canonical);
       const wrapper = mount(PlaneInstrument, {
@@ -168,6 +236,7 @@ describe("PlaneInstrument edit contract", () => {
       const fixedLightness = wrapper.get('[data-picker-control="l"] input[type="range"]');
       (fixedLightness.element as HTMLInputElement).value = "0.72";
       await fixedLightness.trigger("input");
+      frames.flush();
 
       const live = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as OklchColor;
       expect(live.l).toBeCloseTo(0.72, 11);

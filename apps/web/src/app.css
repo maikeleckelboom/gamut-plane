@@ -934,7 +934,7 @@ button:disabled {
   appearance: none;
   outline: 0;
   background: transparent;
-  cursor: ew-resize;
+  cursor: pointer;
 }
 
 .channel-control__range::-webkit-slider-runnable-track {
@@ -954,6 +954,7 @@ button:disabled {
   box-shadow:
     0 0 0 1px oklch(0 0 0 / 0.78),
     0 2px 7px oklch(0 0 0 / 0.8);
+  cursor: grab;
 }
 
 .channel-control__range::-moz-range-track {
@@ -971,6 +972,19 @@ button:disabled {
   box-shadow:
     0 0 0 1px oklch(0 0 0 / 0.78),
     0 2px 7px oklch(0 0 0 / 0.8);
+  cursor: grab;
+}
+
+.channel-control__range:active {
+  cursor: grabbing;
+}
+
+.channel-control__range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.channel-control__range:active::-moz-range-thumb {
+  cursor: grabbing;
 }
 
 .channel-control__tick,

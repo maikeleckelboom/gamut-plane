@@ -32,12 +32,53 @@ function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl
   });
 }
 
+function installAnimationFrameController() {
+  let nextId = 1;
+  let cancellationCount = 0;
+  const callbacks = new Map<number, FrameRequestCallback>();
+
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    const id = nextId++;
+    callbacks.set(id, callback);
+    return id;
+  });
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    if (callbacks.delete(id)) cancellationCount += 1;
+  });
+
+  return {
+    get pendingCount(): number {
+      return callbacks.size;
+    },
+    get cancellationCount(): number {
+      return cancellationCount;
+    },
+    flush(): void {
+      const scheduled = [...callbacks.values()];
+      callbacks.clear();
+      for (const callback of scheduled) callback(0);
+    },
+  };
+}
+
+function dispatchPointer(element: Element, type: string, pointerId: number): void {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    pointerId: { value: pointerId },
+    pointerType: { value: "mouse" },
+    button: { value: 0 },
+  });
+  element.dispatchEvent(event);
+}
+
 afterEach(() => {
+  vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
 
 describe("ColorChannelControl gamut annotations", () => {
-  it("separates live range input from commit without repeated layout reads", async () => {
+  it("publishes only the latest live range value once per animation frame", async () => {
+    const frames = installAnimationFrameController();
     const wrapper = mountControl({ modelValue: 180 });
     const track = wrapper.get(".channel-control__track").element as HTMLElement;
     const measure = vi.spyOn(track, "getBoundingClientRect");
@@ -48,13 +89,126 @@ describe("ColorChannelControl gamut annotations", () => {
     (range.element as HTMLInputElement).value = "220";
     await range.trigger("input");
 
-    expect(wrapper.emitted("update:modelValue")).toEqual([[210], [220]]);
+    expect(frames.pendingCount).toBe(1);
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
     expect(measure).not.toHaveBeenCalled();
 
-    await range.trigger("change");
-    expect(wrapper.emitted("commit")).toEqual([[220]]);
+    frames.flush();
+    expect(wrapper.emitted("update:modelValue")).toEqual([[220]]);
+
+    (range.element as HTMLInputElement).value = "230";
+    await range.trigger("input");
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
+    expect(wrapper.emitted("update:modelValue")).toEqual([[220], [230]]);
     expect(measure).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it("cancels a pending live frame and synchronously publishes the committed range value first", async () => {
+    const frames = installAnimationFrameController();
+    const order: string[] = [];
+    const wrapper = mountControl({
+      modelValue: 180,
+      "onUpdate:modelValue": (value: number) => order.push(`update:${value}`),
+      onCommit: (value: number) => order.push(`commit:${value}`),
+    });
+    const range = wrapper.get('input[type="range"]');
+
+    (range.element as HTMLInputElement).value = "210";
+    await range.trigger("input");
+    (range.element as HTMLInputElement).value = "220";
+    await range.trigger("input");
+    expect(frames.pendingCount).toBe(1);
+
+    (range.element as HTMLInputElement).value = "225";
+    await range.trigger("change");
+
+    expect(frames.pendingCount).toBe(0);
+    expect(frames.cancellationCount).toBe(1);
+    expect(order).toEqual(["update:225", "commit:225"]);
+    expect(wrapper.emitted("update:modelValue")).toEqual([[225]]);
+    expect(wrapper.emitted("commit")).toEqual([[225]]);
+
+    frames.flush();
+    expect(order).toEqual(["update:225", "commit:225"]);
+
+    wrapper.unmount();
+  });
+
+  it("cancels pending range work on unmount without a stale emission", async () => {
+    const frames = installAnimationFrameController();
+    const wrapper = mountControl({ modelValue: 180 });
+    const range = wrapper.get('input[type="range"]');
+
+    (range.element as HTMLInputElement).value = "240";
+    await range.trigger("input");
+    expect(frames.pendingCount).toBe(1);
+
+    wrapper.unmount();
+    expect(frames.pendingCount).toBe(0);
+    expect(frames.cancellationCount).toBe(1);
+    frames.flush();
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+  });
+
+  it("preserves native range clamping and keyboard input commit behavior", () => {
+    const frames = installAnimationFrameController();
+    const order: string[] = [];
+    const wrapper = mountControl({
+      modelValue: 180,
+      "onUpdate:modelValue": (value: number) => order.push(`update:${value}`),
+      onCommit: (value: number) => order.push(`commit:${value}`),
+    });
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    range.value = "999";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
+    expect(order).toEqual(["update:360"]);
+
+    range.focus();
+    range.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
+    range.value = "359";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(frames.pendingCount).toBe(0);
+    expect(order).toEqual(["update:360", "update:359", "commit:359"]);
+
+    wrapper.unmount();
+  });
+
+  it("reports pointer interaction completion and cancels pending work on interaction loss", () => {
+    const frames = installAnimationFrameController();
+    const wrapper = mountControl({ modelValue: 180 });
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    dispatchPointer(range, "pointerdown", 7);
+    range.value = "220";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(frames.pendingCount).toBe(1);
+    dispatchPointer(range, "lostpointercapture", 7);
+
+    expect(frames.pendingCount).toBe(0);
+    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false]]);
+    frames.flush();
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+
+    dispatchPointer(range, "pointerdown", 8);
+    range.value = "230";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(wrapper.emitted("update:modelValue")).toEqual([[230]]);
+    expect(wrapper.emitted("commit")).toEqual([[230]]);
+    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false], [true], [false]]);
+
+    dispatchPointer(range, "pointerdown", 9);
+    dispatchPointer(range, "pointerup", 9);
+    expect(wrapper.emitted("range-interaction")?.slice(-2)).toEqual([[true], [false]]);
 
     wrapper.unmount();
   });
