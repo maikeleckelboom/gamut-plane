@@ -23,6 +23,7 @@ import {
 import { placePlanarWarning } from "@/components/pickerWarningPlacement";
 
 export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
+type RenderedFieldQuality = "full" | "preview";
 
 const props = withDefaults(
   defineProps<{
@@ -59,6 +60,7 @@ const canvas = ref<HTMLCanvasElement | null>(null);
 const marker = ref<HTMLSpanElement | null>(null);
 const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<CanvasColorSpaceStatus>("pending");
+const renderedFieldQuality = ref<RenderedFieldQuality>("full");
 const { pixelRatio } = useDevicePixelRatio();
 
 let context: CanvasRenderingContext2D | null = null;
@@ -266,7 +268,12 @@ function drawField(): void {
 
   const { width, height, backingWidth, backingHeight, pixelRatio } = resizeCanvas(element);
   const fixed = fixedAxis.value;
-  const fieldQuality = props.interactionPreview ? "preview" : "full";
+  const sampling = props.plane.fieldSampling;
+  const usePreview =
+    sampling.kind === "column-gradient" &&
+    props.interactionPreview &&
+    width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
+  const fieldQuality: RenderedFieldQuality = usePreview ? "preview" : "full";
   const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed.toFixed(3)}:${canvasColorSpace.value}:${fieldQuality}`;
   if (fieldKey === lastFieldKey) return;
 
@@ -274,9 +281,7 @@ function drawField(): void {
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, backingWidth, backingHeight);
 
-  const sampling = props.plane.fieldSampling;
   if (sampling.kind === "column-gradient") {
-    const usePreview = props.interactionPreview && width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
     if (usePreview) {
       const previewContext = getColumnPreviewContext(
         INTERACTION_PREVIEW_COLUMN_SAMPLES,
@@ -327,6 +332,7 @@ function drawField(): void {
   }
 
   lastFieldKey = fieldKey;
+  renderedFieldQuality.value = fieldQuality;
 }
 
 function scheduleFieldDraw(): void {
@@ -549,7 +555,7 @@ onBeforeUnmount(() => {
     class="color-plane"
     data-picker-plane
     :data-plane-id="plane.id"
-    :data-field-quality="interactionPreview ? 'preview' : 'full'"
+    :data-field-quality="renderedFieldQuality"
     :data-field-resolution="
       plane.fieldSampling.kind === 'disc-gradient'
         ? `${plane.fieldSampling.rowCount}x${plane.fieldSampling.columnSamples}`

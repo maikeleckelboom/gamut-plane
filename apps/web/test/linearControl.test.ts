@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { nextTick } from "vue";
+import { defineComponent, h, nextTick, ref } from "vue";
 
 import ColorChannelControl, {
   type LinearControlInterval,
@@ -30,6 +30,39 @@ function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl
       ...overrides,
     },
   });
+}
+
+function mountCanonicalControl(initialValue = 180) {
+  const model = ref(initialValue);
+  const updates: number[] = [];
+  const commits: number[] = [];
+  const Host = defineComponent({
+    setup() {
+      return () =>
+        h(ColorChannelControl, {
+          id: "canonical-control",
+          label: "Hue",
+          channel: "H",
+          modelValue: model.value,
+          min: 0,
+          max: 360,
+          step: 1,
+          gradient: "linear-gradient(90deg, black, white)",
+          "onUpdate:modelValue": (value: number) => {
+            updates.push(value);
+            model.value = value;
+          },
+          onCommit: (value: number) => commits.push(value),
+        });
+    },
+  });
+
+  return {
+    wrapper: mount(Host, { attachTo: document.body }),
+    model,
+    updates,
+    commits,
+  };
 }
 
 function installAnimationFrameController() {
@@ -138,6 +171,131 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
+  it("restores the canonical native value when pending pointer input is cancelled", () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    dispatchPointer(range, "pointerdown", 17);
+    range.value = "220";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(range.value).toBe("220");
+    expect(frames.pendingCount).toBe(1);
+
+    dispatchPointer(range, "pointercancel", 17);
+
+    expect(frames.pendingCount).toBe(0);
+    expect(range.value).toBe("180");
+    expect(model.value).toBe(180);
+    expect(updates).toEqual([]);
+    expect(commits).toEqual([]);
+    expect(control.emitted("range-interaction")).toEqual([[true], [false]]);
+    frames.flush();
+    expect(updates).toEqual([]);
+
+    wrapper.unmount();
+  });
+
+  it("restores the latest published value and cannot publish a later cancelled value", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    dispatchPointer(range, "pointerdown", 18);
+    range.value = "210";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    frames.flush();
+    await nextTick();
+    expect(model.value).toBe(210);
+    expect(range.value).toBe("210");
+
+    range.value = "240";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(frames.pendingCount).toBe(1);
+    dispatchPointer(range, "lostpointercapture", 18);
+
+    expect(range.value).toBe("210");
+    expect(model.value).toBe(210);
+    expect(updates).toEqual([210]);
+    expect(commits).toEqual([]);
+    frames.flush();
+    expect(updates).toEqual([210]);
+
+    wrapper.unmount();
+  });
+
+  it("keeps a normally completed value through later blur and capture loss", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    dispatchPointer(range, "pointerdown", 19);
+    range.value = "220";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    range.value = "225";
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+    await nextTick();
+
+    range.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+    dispatchPointer(range, "lostpointercapture", 19);
+
+    expect(frames.pendingCount).toBe(0);
+    expect(model.value).toBe(225);
+    expect(range.value).toBe("225");
+    expect(updates).toEqual([225]);
+    expect(commits).toEqual([225]);
+    expect(control.emitted("range-interaction")).toEqual([[true], [false]]);
+    frames.flush();
+    expect(updates).toEqual([225]);
+
+    wrapper.unmount();
+  });
+
+  it("does not emit or roll back when cancellation has no pending range value", () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    dispatchPointer(range, "pointerdown", 20);
+    dispatchPointer(range, "pointercancel", 20);
+    range.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+    expect(frames.pendingCount).toBe(0);
+    expect(model.value).toBe(180);
+    expect(range.value).toBe("180");
+    expect(updates).toEqual([]);
+    expect(commits).toEqual([]);
+    expect(control.emitted("range-interaction")).toBeUndefined();
+
+    wrapper.unmount();
+  });
+
+  it("restores pending native input on blur without reporting a pointer interaction", () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    range.value = "200";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(frames.pendingCount).toBe(1);
+    range.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+
+    expect(frames.pendingCount).toBe(0);
+    expect(range.value).toBe("180");
+    expect(model.value).toBe(180);
+    expect(updates).toEqual([]);
+    expect(commits).toEqual([]);
+    expect(control.emitted("range-interaction")).toBeUndefined();
+    frames.flush();
+    expect(updates).toEqual([]);
+
+    wrapper.unmount();
+  });
+
   it("cancels pending range work on unmount without a stale emission", async () => {
     const frames = installAnimationFrameController();
     const wrapper = mountControl({ modelValue: 180 });
@@ -182,33 +340,33 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("reports pointer interaction completion and cancels pending work on interaction loss", () => {
+  it("reports pointer interaction only after input and exactly once per active pointer", () => {
     const frames = installAnimationFrameController();
     const wrapper = mountControl({ modelValue: 180 });
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
     dispatchPointer(range, "pointerdown", 7);
-    range.value = "220";
-    range.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(frames.pendingCount).toBe(1);
-    dispatchPointer(range, "lostpointercapture", 7);
-
-    expect(frames.pendingCount).toBe(0);
-    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false]]);
-    frames.flush();
-    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    expect(wrapper.emitted("range-interaction")).toBeUndefined();
+    dispatchPointer(range, "pointerup", 7);
+    expect(wrapper.emitted("range-interaction")).toBeUndefined();
 
     dispatchPointer(range, "pointerdown", 8);
-    range.value = "230";
+    range.value = "220";
     range.dispatchEvent(new Event("input", { bubbles: true }));
-    range.dispatchEvent(new Event("change", { bubbles: true }));
-    expect(wrapper.emitted("update:modelValue")).toEqual([[230]]);
-    expect(wrapper.emitted("commit")).toEqual([[230]]);
-    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false], [true], [false]]);
+    range.value = "225";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(frames.pendingCount).toBe(1);
+    expect(wrapper.emitted("range-interaction")).toEqual([[true]]);
+    dispatchPointer(range, "pointerup", 8);
+    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false]]);
 
     dispatchPointer(range, "pointerdown", 9);
-    dispatchPointer(range, "pointerup", 9);
-    expect(wrapper.emitted("range-interaction")?.slice(-2)).toEqual([[true], [false]]);
+    range.value = "230";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    dispatchPointer(range, "pointercancel", 9);
+    dispatchPointer(range, "lostpointercapture", 9);
+    expect(wrapper.emitted("range-interaction")).toEqual([[true], [false], [true], [false]]);
+    expect(frames.pendingCount).toBe(0);
 
     wrapper.unmount();
   });

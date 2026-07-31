@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import GamutWarningGlyph from "@/components/GamutWarningGlyph.vue";
 import {
@@ -103,6 +103,7 @@ const isOutsideInstrument = computed(
 );
 const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
 const trackElement = ref<HTMLElement>();
+const rangeElement = ref<HTMLInputElement>();
 const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
 const trackLeft = ref(0);
 const hoverPosition = ref<number | null>(null);
@@ -111,6 +112,8 @@ let pendingRangeValue: number | null = null;
 let rangeRaf: number | null = null;
 let isUnmounted = false;
 let activeRangePointerId: number | null = null;
+let rangeInteractionReported = false;
+let lastPublishedRangeValue = boundedModelValue.value;
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
@@ -271,26 +274,42 @@ function updateFromRange(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
   if (!Number.isFinite(value)) return;
   pendingRangeValue = clamp(value);
+  if (activeRangePointerId !== null && !rangeInteractionReported) {
+    rangeInteractionReported = true;
+    emit("range-interaction", true);
+  }
   if (rangeRaf !== null) return;
   rangeRaf = window.requestAnimationFrame(() => {
     rangeRaf = null;
     const next = pendingRangeValue;
     pendingRangeValue = null;
-    if (next !== null && !isUnmounted) emit("update:modelValue", next);
+    if (next !== null && !isUnmounted) {
+      lastPublishedRangeValue = next;
+      emit("update:modelValue", next);
+    }
   });
 }
 
-function cancelPendingRange(): void {
+function clearPendingRange(): boolean {
+  const hadPendingValue = pendingRangeValue !== null;
   if (rangeRaf !== null) window.cancelAnimationFrame(rangeRaf);
   rangeRaf = null;
   pendingRangeValue = null;
+  return hadPendingValue;
+}
+
+function cancelPendingRange(): void {
+  if (clearPendingRange() && rangeElement.value) {
+    rangeElement.value.value = String(clamp(lastPublishedRangeValue));
+  }
 }
 
 function commitFromRange(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
   if (!Number.isFinite(value)) return;
   const next = clamp(value);
-  cancelPendingRange();
+  clearPendingRange();
+  lastPublishedRangeValue = next;
   emit("update:modelValue", next);
   emit("commit", next);
   finishRangeInteraction();
@@ -298,13 +317,14 @@ function commitFromRange(event: Event): void {
 
 function beginRangeInteraction(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (activeRangePointerId !== null) return;
   activeRangePointerId = event.pointerId;
-  emit("range-interaction", true);
 }
 
 function finishRangeInteraction(): void {
-  if (activeRangePointerId === null) return;
   activeRangePointerId = null;
+  if (!rangeInteractionReported) return;
+  rangeInteractionReported = false;
   emit("range-interaction", false);
 }
 
@@ -343,6 +363,10 @@ function tickStyle(marker: LinearControlMarker): Record<string, string> {
 function sectionStyle(section: GamutSection): Record<string, string> {
   return { left: `${section.start * 100}%`, width: `${(section.end - section.start) * 100}%` };
 }
+
+watch(boundedModelValue, (value) => {
+  if (pendingRangeValue === null) lastPublishedRangeValue = value;
+});
 
 onBeforeUnmount(() => {
   isUnmounted = true;
@@ -431,6 +455,7 @@ onBeforeUnmount(() => {
         <GamutWarningGlyph />
       </span>
       <input
+        ref="rangeElement"
         :id="id"
         class="channel-control__range"
         type="range"

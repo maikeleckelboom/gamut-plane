@@ -138,7 +138,9 @@ describe("renderer invalidation contracts", () => {
     await wrapper.setProps({ interactionPreview: true });
     await flushPromises();
     expect(frames.pendingCount).toBe(1);
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
     frames.flush();
+    await flushPromises();
     expect(wrapper.attributes("data-field-quality")).toBe("preview");
     expect(createLinearGradient).toHaveBeenCalledTimes(192);
     expect(getContext).toHaveBeenCalledTimes(1);
@@ -147,7 +149,9 @@ describe("renderer invalidation contracts", () => {
     await wrapper.setProps({ interactionPreview: false });
     await flushPromises();
     expect(frames.pendingCount).toBe(1);
+    expect(wrapper.attributes("data-field-quality")).toBe("preview");
     frames.flush();
+    await flushPromises();
     expect(wrapper.attributes("data-field-quality")).toBe("full");
     expect(createLinearGradient).toHaveBeenCalledTimes(520);
 
@@ -161,7 +165,99 @@ describe("renderer invalidation contracts", () => {
     await wrapper.setProps({ interactionPreview: false });
     await flushPromises();
     frames.flush();
+    await flushPromises();
     expect(wrapper.attributes("data-field-quality")).toBe("full");
+
+    wrapper.unmount();
+  });
+
+  it("keeps narrow column fields at actual full quality when preview is requested", async () => {
+    const frames = installAnimationFrameController();
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 192,
+      bottom: 240,
+      width: 192,
+      height: 240,
+      toJSON: () => ({}),
+    });
+    const context = document.createElement("canvas").getContext("2d")!;
+    const createLinearGradient = vi.mocked(context.createLinearGradient);
+    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
+    const wrapper = mount(ColorPlane, {
+      attachTo: document.body,
+      props: {
+        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
+        srgbTable: getCachedGamutBoundaryTable("srgb", options),
+        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbBoundaryGuideColor: null,
+        warningVisible: false,
+        warningLabel: "",
+      },
+    });
+    await flushPromises();
+    frames.flush();
+    await flushPromises();
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+
+    createLinearGradient.mockClear();
+    await wrapper.setProps({ interactionPreview: true });
+    await flushPromises();
+    expect(frames.pendingCount).toBe(1);
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+    frames.flush();
+    await flushPromises();
+
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+    expect(createLinearGradient).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it("does not report preview quality when its Canvas buffer is unavailable", async () => {
+    const frames = installAnimationFrameController();
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 520,
+      bottom: 520,
+      width: 520,
+      height: 520,
+      toJSON: () => ({}),
+    });
+    const context = document.createElement("canvas").getContext("2d")!;
+    const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
+    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
+    const wrapper = mount(ColorPlane, {
+      attachTo: document.body,
+      props: {
+        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
+        srgbTable: getCachedGamutBoundaryTable("srgb", options),
+        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbBoundaryGuideColor: null,
+        warningVisible: false,
+        warningLabel: "",
+      },
+    });
+    await flushPromises();
+    frames.flush();
+    await flushPromises();
+
+    getContext.mockImplementation(() => null);
+    await wrapper.setProps({ interactionPreview: true });
+    await flushPromises();
+    frames.flush();
+    await flushPromises();
+
+    expect(wrapper.attributes("data-field-quality")).toBe("full");
+    getContext.mockImplementation(() => context);
 
     wrapper.unmount();
   });

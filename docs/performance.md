@@ -12,7 +12,7 @@ The renderer is intentionally Canvas 2D and keeps work bounded through explicit 
 - Size, actual device pixel ratio, granted Canvas color space, plane, and fixed axis form the field cache key.
 - Canvas backing dimensions use the uncapped device pixel ratio. CSS dimensions remain the interaction coordinate system.
 - The OKLab field is sampled into one reusable 80 × 80 offscreen buffer with 24 color samples per row, then scaled to the visible backing store.
-- While the OKLCH Hue range has an active pointer drag, only the colored field uses one reusable 192-column preview buffer. Exact canonical state and contours remain live; interaction completion or loss restores the ordinary full-width draw immediately.
+- After native input begins during an OKLCH Hue pointer interaction, only the colored field uses one reusable 192-column preview buffer. Exact canonical state and contours remain live. Pointer completion immediately disables preview and schedules the ordinary full-width draw; rendered quality becomes full when that draw completes.
 - Mutable color vectors, sampling scratch data, the offscreen canvas, Canvas contexts, and generated `Float32Array` tables are reused instead of allocated per sample.
 - Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
 

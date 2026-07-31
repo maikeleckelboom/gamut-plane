@@ -113,6 +113,11 @@ test("Hue dragging previews only the field and settles at full quality", async (
   await expect(plane).toHaveAttribute("data-field-quality", "full");
   expect(await hue.evaluate((element) => getComputedStyle(element).cursor)).toBe("pointer");
 
+  await hue.dispatchEvent("pointerdown", { pointerId: 41, pointerType: "mouse", button: 0 });
+  await expect(plane).toHaveAttribute("data-field-quality", "full");
+  await hue.dispatchEvent("pointerup", { pointerId: 41, pointerType: "mouse", button: 0 });
+  await expect(plane).toHaveAttribute("data-field-quality", "full");
+
   await page.mouse.move(bounds!.x + bounds!.width * 0.25, bounds!.y + bounds!.height / 2);
   await page.mouse.down();
   await expect(plane).toHaveAttribute("data-field-quality", "preview");

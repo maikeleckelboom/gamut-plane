@@ -26,6 +26,9 @@ function installAnimationFrameController() {
   });
 
   return {
+    get pendingCount(): number {
+      return callbacks.size;
+    },
     flush(): void {
       const scheduled = [...callbacks.values()];
       callbacks.clear();
@@ -80,7 +83,82 @@ describe("PlaneInstrument edit contract", () => {
     wrapper.unmount();
   });
 
-  it("enables the field preview only during a Hue range pointer interaction", async () => {
+  it("starts Hue preview on first input and reports completed field quality", async () => {
+    const frames = installAnimationFrameController();
+    vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 520,
+      bottom: 520,
+      width: 520,
+      height: 520,
+      toJSON: () => ({}),
+    });
+    const context = document.createElement("canvas").getContext("2d")!;
+    const createLinearGradient = vi.mocked(context.createLinearGradient);
+    const wrapper = mount(PlaneInstrument, {
+      attachTo: document.body,
+      props: { modelValue: parseCssColor("oklch(62% 0.2 210)") },
+    });
+    await flushPromises();
+    frames.flush();
+    await flushPromises();
+    const plane = wrapper.getComponent(ColorPlane);
+    const hueControl = wrapper
+      .findAllComponents(ColorChannelControl)
+      .find((control) => control.props("id") === "picker-hue")!;
+    const hue = wrapper.get("#picker-hue").element as HTMLInputElement;
+
+    expect(plane.props("interactionPreview")).toBe(false);
+    createLinearGradient.mockClear();
+    dispatchPointer(hue, "pointerdown", 11);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    expect(hueControl.emitted("range-interaction")).toBeUndefined();
+    expect(frames.pendingCount).toBe(0);
+
+    dispatchPointer(hue, "pointerup", 11);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    expect(plane.attributes("data-field-quality")).toBe("full");
+    expect(hueControl.emitted("range-interaction")).toBeUndefined();
+    expect(frames.pendingCount).toBe(0);
+    expect(createLinearGradient).not.toHaveBeenCalled();
+
+    dispatchPointer(hue, "pointerdown", 12);
+    hue.value = "240";
+    hue.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(true);
+    expect(plane.attributes("data-field-quality")).toBe("full");
+    expect(hueControl.emitted("range-interaction")).toEqual([[true]]);
+
+    hue.value = "250";
+    hue.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+    expect(hueControl.emitted("range-interaction")).toEqual([[true]]);
+
+    frames.flush();
+    await flushPromises();
+    expect(plane.attributes("data-field-quality")).toBe("preview");
+
+    dispatchPointer(hue, "pointerup", 12);
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    expect(plane.attributes("data-field-quality")).toBe("preview");
+    expect(hueControl.emitted("range-interaction")).toEqual([[true], [false]]);
+    expect(frames.pendingCount).toBe(1);
+
+    frames.flush();
+    await flushPromises();
+    expect(plane.attributes("data-field-quality")).toBe("full");
+
+    wrapper.unmount();
+  });
+
+  it("ends activated Hue preview once on cancellation and ignores other edit modes", async () => {
     const frames = installAnimationFrameController();
     const wrapper = mount(PlaneInstrument, {
       attachTo: document.body,
@@ -88,25 +166,58 @@ describe("PlaneInstrument edit contract", () => {
     });
     await flushPromises();
     frames.flush();
+    await flushPromises();
     const plane = wrapper.getComponent(ColorPlane);
-    const hue = wrapper.get("#picker-hue").element;
-    const lightness = wrapper.get("#picker-lightness").element;
+    const hueControl = wrapper
+      .findAllComponents(ColorChannelControl)
+      .find((control) => control.props("id") === "picker-hue")!;
+    const hue = wrapper.get("#picker-hue").element as HTMLInputElement;
 
-    expect(plane.props("interactionPreview")).toBe(false);
-    dispatchPointer(hue, "pointerdown", 11);
+    dispatchPointer(hue, "pointerdown", 21);
+    hue.value = "260";
+    hue.dispatchEvent(new Event("input", { bubbles: true }));
     await flushPromises();
     expect(plane.props("interactionPreview")).toBe(true);
-    expect(plane.attributes("data-field-quality")).toBe("preview");
 
-    dispatchPointer(hue, "pointerup", 11);
+    dispatchPointer(hue, "pointercancel", 21);
+    dispatchPointer(hue, "lostpointercapture", 21);
     await flushPromises();
     expect(plane.props("interactionPreview")).toBe(false);
-    expect(plane.attributes("data-field-quality")).toBe("full");
+    expect(hueControl.emitted("range-interaction")).toEqual([[true], [false]]);
+    frames.flush();
+    await flushPromises();
 
-    dispatchPointer(lightness, "pointerdown", 12);
+    hue.value = "205";
+    hue.dispatchEvent(new Event("input", { bubbles: true }));
     await flushPromises();
     expect(plane.props("interactionPreview")).toBe(false);
-    dispatchPointer(lightness, "pointercancel", 12);
+    expect(hueControl.emitted("range-interaction")).toEqual([[true], [false]]);
+    frames.flush();
+    await flushPromises();
+
+    for (const id of ["picker-lightness", "picker-chroma"] as const) {
+      const range = wrapper.get(`#${id}`).element as HTMLInputElement;
+      dispatchPointer(range, "pointerdown", id === "picker-lightness" ? 22 : 23);
+      range.value = id === "picker-lightness" ? "0.7" : "0.25";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+      await flushPromises();
+      expect(plane.props("interactionPreview")).toBe(false);
+      dispatchPointer(range, "pointercancel", id === "picker-lightness" ? 22 : 23);
+      frames.flush();
+      await flushPromises();
+    }
+
+    await wrapper.setProps({ plane: "oklab" });
+    await flushPromises();
+    frames.flush();
+    await flushPromises();
+    const fixedLightness = wrapper.get("#picker-oklab-lightness").element as HTMLInputElement;
+    dispatchPointer(fixedLightness, "pointerdown", 24);
+    fixedLightness.value = "0.72";
+    fixedLightness.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+    expect(plane.props("interactionPreview")).toBe(false);
+    dispatchPointer(fixedLightness, "pointercancel", 24);
 
     wrapper.unmount();
   });
