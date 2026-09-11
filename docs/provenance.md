@@ -1,9 +1,7 @@
 # Provenance
 
-Gamut Plane began as a clean-room extraction from a larger private application workspace. The retained code was reorganized around a standalone color-domain core and a runnable Vue instrument.
+Gamut Plane was extracted from a larger private application workspace. Its color math and coordinate-plane interface were reorganized into a framework-neutral core, a Vue component, and a standalone app.
 
-This repository contains only the generic coordinate-plane color tooling needed for that instrument. Application-specific provenance, scale, theme, proof, export, route, sharing, persistence, telemetry, and shell behavior were excluded.
+The extraction excluded the original application's theme, scale, export, sharing, persistence, telemetry, and routing features. The retained Git history records the standalone project's development.
 
-The remaining implementation is not presented as a package copied from an external public project. The local Git history is the record of this standalone repository. Third-party runtime and development packages remain under their own licenses and are identified by the lockfile and [Third-Party Notices](../THIRD_PARTY_NOTICES.md).
-
-No retained code, documentation, or interface copy claims ownership by or dependency on the earlier application. Future contributions should continue to use neutral color-domain terminology and should not recreate excluded product contracts through aliases or compatibility layers.
+Project source, generated gamut tables, and original visual assets are covered by the [MIT license](../LICENSE). Third-party dependencies retain their own licenses; see [Third-Party Notices](../THIRD_PARTY_NOTICES.md) and the lockfile.

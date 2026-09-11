@@ -1,6 +1,10 @@
 # @gamut-plane/vue
 
-A Vue color instrument for editing one OKLCH color in OKLCH or OKLab coordinates, with sRGB and Display P3 guides. **Not yet published to npm.**
+A Vue component for editing one OKLCH color in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
+
+This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
+
+## Usage
 
 ```vue
 <script setup lang="ts">
@@ -16,14 +20,43 @@ const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
 </template>
 ```
 
-Requires Vue 3.5+. Vue is a peer dependency; `@gamut-plane/core` and `@vueuse/core` are external runtime dependencies. Before registry publication, install both Gamut Plane tarballs together and override the transitive core dependency to the local core tarball in the consuming package manager. The repository README gives the exact pnpm procedure. Build and validate with `pnpm build:packages` and `pnpm test:package` from the repository.
+## Component API
 
-The optional `plane` model (`GamutPlaneView`: `"oklch" | "oklab"`) defaults locally to OKLCH. Bind `v-model:plane` for parent control. `showSrgbBoundary` and `showDisplayP3Boundary` default to true. `commit` reports a completed color edit; `cancel` reports an aborted plane gesture or discarded numeric draft. Plane cancellation restores the starting color; a parent replacement or view change supersedes the gesture without rollback. Native ranges retain published values when interrupted. `capability` reports `CanvasColorSpaceStatus` (`pending`, `display-p3`, `srgb`, `unavailable`). The optional `field-legend` slot places host content below the field.
+| API                          | Behavior                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------- |
+| `v-model`                    | Required `OklchColor`; receives live color edits                                            |
+| `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
+| `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
+| `showDisplayP3Boundary`      | Boolean prop; defaults to `true`                                                            |
+| `@commit="onCommit"`         | Receives the color when an edit completes, for example to record undo history               |
+| `@cancel="onCancel"`         | Reports an aborted plane gesture or discarded numeric draft, with no payload                |
+| `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
+| `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
 
-Color updates preserve alpha and unedited authored values. Finite lightness/alpha must be in 0–1, chroma nonnegative, and hue finite. View changes do not rewrite the color. Sampled guides and the bounded editing geometry are separate from exact gamut membership; no automatic gamut mapping occurs.
+Import `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View changes do not emit color updates or commits. Visibility props affect the field contours; other gamut information remains available.
 
-Import the stylesheet once. It has local dark defaults, inherits the host font and accepts `--gamut-plane-accent` for focus/selection emphasis. Layout follows available component width. No document resets, Tailwind, or demo CSS are needed.
+The color model requires finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue. Edits preserve alpha and unedited values. Gamut guides and the bounded editing geometry do not clamp the authored color to a display gamut.
 
-ESM import and server rendering of the shell are tested in Node.js 24 without browser globals. Canvas initializes on mount. This is not a claim of tested Nuxt integration. See the [repository documentation](https://github.com/maikeleckelboom/gamut-plane#readme) for interaction, rendering, testing, and browser limitations.
+Cancelling a plane drag restores its starting color. A parent replacement or view change ends the gesture without rollback; interrupted native ranges retain published values. Numeric drafts apply on completion and discard on Escape. See the [interaction lifecycle](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md#interaction-lifecycle) for details.
 
-MIT licensed; see `LICENSE`.
+## Styling and embedding
+
+Import `@gamut-plane/vue/style.css` once. It supplies local dark surfaces, inherits the host font, and adapts to the component's available width. The app stylesheet is not required.
+
+Use `--gamut-plane-accent` for focus and selection emphasis:
+
+```vue
+<GamutPlane v-model="color" style="--gamut-plane-accent: oklch(0.8 0.12 180)" />
+```
+
+Internal classes and other custom properties are not a theme API. Instances have independent state and IDs. Separate Vue applications in one document should set distinct `app.config.idPrefix` values.
+
+## Rendering and validation
+
+Canvas may grant Display P3, fall back to sRGB, or be unavailable. The capability event describes the granted context, not the display hardware. Exact membership is independent of painted output. Modern CSS color support is required; without container queries, the layout stays in one column.
+
+ESM import and server-rendered shells are tested in Node.js 24 without browser globals. Canvas initializes on mount. Hydration and Nuxt integration have not been tested. Browser checks use pinned Chromium; other engines and physical devices need separate verification.
+
+From the repository, run `pnpm build:packages` to build both packages and `pnpm test:package` to test an isolated tarball consumer. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
+
+[MIT License](LICENSE).

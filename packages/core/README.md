@@ -1,9 +1,28 @@
 # @gamut-plane/core
 
-Framework-neutral OKLab/OKLCH conversion, exact sRGB and Display P3 membership, CSS serialization, and plane geometry for Gamut Plane. ESM JavaScript and TypeScript declarations are built into `dist`.
+Framework-neutral OKLab/OKLCH conversion, sRGB and Display P3 membership, CSS serialization/parsing, and color-plane geometry. The package uses `@texel/color` and has no Vue, DOM, or Canvas dependency.
 
-This repository package is **not published to npm**. It is the explicit runtime dependency of `@gamut-plane/vue`; prerelease consumers install both local tarballs. It uses `@texel/color` for color conversion and parsing and has no Vue or browser dependency.
+This package is private and **not published to npm**. Build it from the repository with `pnpm --filter @gamut-plane/core build`. ESM JavaScript and TypeScript declarations are written to `dist`; Node.js 24+ is the supported build and server runtime.
 
-Build with `pnpm --filter @gamut-plane/core build` from the repository. See the [repository documentation](https://github.com/maikeleckelboom/gamut-plane#readme) for local development and packed-consumer validation. Node.js 24+ is the supported build and server runtime.
+## Usage
 
-MIT licensed; see `LICENSE`.
+Install a local tarball using the [repository instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Core can be used without the Vue package:
+
+```ts
+import { isColorInGamut, serializeColor, type OklchColor } from "@gamut-plane/core";
+
+const color: OklchColor = { l: 0.68, c: 0.18, h: 252, alpha: 1 };
+const css = serializeColor(color, "oklch");
+const insideSrgb = isColorInGamut(color, "srgb");
+const p3Css = isColorInGamut(color, "display-p3") ? serializeColor(color, "display-p3") : null;
+```
+
+`OklchColor` uses finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue in degrees. RGB serialization throws for a color outside the requested gamut rather than clipping it. `formatOklch` provides rounded display text; `serializeColor` preserves serialization precision.
+
+## Math and guides
+
+`isColorInGamut` converts directly to linear-light RGB using `GAMUT_EPSILON`. Boundary-table lookups and contours are interpolated guides and should not replace that test. The plane helpers distinguish editable geometry from display gamuts and project views over a single OKLCH color.
+
+See [Architecture](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md) for package boundaries and [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) for unit and packed-consumer checks.
+
+[MIT License](LICENSE).

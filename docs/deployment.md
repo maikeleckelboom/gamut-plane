@@ -1,73 +1,60 @@
 # Cloudflare Pages deployment
 
-This document describes the reviewed v0.1.0 deployment shape. It does not authorize or perform a deployment.
+Gamut Plane builds to static files in `apps/web/dist`. Use a Git-integrated Cloudflare Pages project connected to the public GitHub repository.
 
-## Git integration settings
+## Build settings
 
-Connect the private GitHub repository to Cloudflare Pages from the repository root with these settings:
+| Setting                      | Value                                                                        |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| Root directory               | Repository root; leave the root path blank                                   |
+| Build command                | `pnpm install --frozen-lockfile && pnpm build && pnpm check:build`           |
+| Build output directory       | `apps/web/dist`                                                              |
+| Production branch            | `dev` for the first candidate, then `main` before promotion                  |
+| Node version                 | `NODE_VERSION=24`                                                            |
+| pnpm version                 | `PNPM_VERSION=11.9.0`                                                        |
+| Automatic dependency install | `SKIP_DEPENDENCY_INSTALL=1`                                                  |
+| Public site URL              | `VITE_PUBLIC_SITE_URL` set to the actual HTTPS site root, in Production only |
 
-| Setting                                  | Value                                                                        |
-| ---------------------------------------- | ---------------------------------------------------------------------------- |
-| Root directory                           | Repository root; leave the advanced root path blank                          |
-| Build command                            | `pnpm install --frozen-lockfile && pnpm build && pnpm check:build`           |
-| Build output directory                   | `apps/web/dist`                                                              |
-| Production branch after v0.1.0 promotion | `main`                                                                       |
-| Node version                             | `NODE_VERSION=24`                                                            |
-| pnpm version                             | `PNPM_VERSION=11.9.0`                                                        |
-| Automatic dependency install             | `SKIP_DEPENDENCY_INSTALL=1`                                                  |
-| Public site URL                          | `VITE_PUBLIC_SITE_URL=https://<verified-production-host>` in Production only |
+Set the tool versions and install setting for both Production and Preview environments. The build command owns the frozen-lockfile install. Cloudflare's build image does not infer the Node version from `package.json#engines`; see its [build-image configuration](https://developers.cloudflare.com/pages/configuration/build-image/).
 
-`SKIP_DEPENDENCY_INSTALL=1` prevents Cloudflare's implicit install from duplicating the explicit frozen-lockfile installation in the build command. Cloudflare's build image does not derive the Node version from `package.json#engines`, so `NODE_VERSION` is required even though the workspace declares the same floor.
+Check for an existing Pages project before creating one. The [release runbook](release.md) covers candidate verification and promotion. In Pages settings, change the [production branch](https://developers.cloudflare.com/pages/configuration/branch-build-controls/) to `main` immediately before pushing the promotion merge. Keep automatic production deployments enabled.
 
-The first controlled release follows [Release](release.md): deploy the reviewed `dev` candidate as the temporary production branch, verify it, add the real demo URL, and then change the Pages production branch to `main` immediately before pushing the reviewed merge. Steady-state production builds only from `main`.
+## Site URL and metadata
 
-## Public URL metadata
+Local and preview builds work without `VITE_PUBLIC_SITE_URL` and omit URL-dependent Open Graph fields. Leave it unset in Preview.
 
-`VITE_PUBLIC_SITE_URL` is optional at build time. Local and preview builds work without it and omit URL-dependent Open Graph fields.
+Once Cloudflare assigns the production hostname, set the Production value to its HTTPS site root without credentials, a query string, or a fragment. Rebuild if the initial deployment ran without it. The build adds `og:url`, an absolute `og:image`, and an absolute `twitter:image`.
 
-For the production environment, set it to the exact HTTPS site root without credentials, a query string, or a fragment. The Vite build then adds:
+Verify those values on the deployed page before adding the URL to the README or GitHub homepage. A configured environment variable alone is not deployment verification.
 
-- `og:url`;
-- an absolute `og:image`;
-- an absolute `twitter:image`.
+## Routing, headers, and caching
 
-The repository deliberately has no hardcoded canonical URL. Do not set `VITE_PUBLIC_SITE_URL` in preview deployments to the production URL, because a preview should not claim production URL ownership.
+The app has one page and no client router. There is no `_redirects` file, Pages Function, or top-level `404.html`. Cloudflare therefore applies its [default single-page-app fallback](https://developers.cloudflare.com/pages/configuration/serving-pages/) to unmatched paths. The local production helper returns 404 for missing files instead; it does not emulate that Pages fallback.
 
-## Routing
+Vite copies `apps/web/public/_headers` to the build root. Pages reads it as configuration:
 
-The application has one static route and emits a top-level `index.html`. It has no client router and needs no `_redirects`, Pages Function, or SPA fallback. A request for an unknown path should remain a 404.
+- `/` and `/index.html` request revalidation with `Cache-Control: no-cache`.
+- Hashed `/assets/*` files use one-year immutable browser caching.
+- The global rule sets CSP, permissions policy, referrer policy, MIME-sniffing protection, and frame-embedding protection.
 
-## Headers and caching
+The CSP allows same-origin resources and `data:` images. Inline styles are allowed because Vue binds colors and marker geometry through style attributes. No remote scripts, fonts, or analytics are configured.
 
-Vite copies `apps/web/public/_headers` to the build root. Cloudflare Pages parses it rather than serving it.
+## Local production checks
 
-- `/` and `/index.html` use `Cache-Control: no-cache`.
-- hashed `/assets/*` files use one-year immutable browser caching;
-- all responses receive a restrictive CSP, permissions policy, referrer policy, MIME-sniffing protection, and frame-embedding protection.
-
-The CSP permits only same-origin scripts, fonts, connections, and images plus `data:` images. `style-src 'unsafe-inline'` is required because Vue binds calculated inline style properties for active colors and marker geometry. No remote script, font, analytics, telemetry, or tracking origin is allowed.
-
-## Local production build and preview
-
-From the repository root:
+From the repository root, after installing dependencies and Chromium as described in [Testing](testing.md):
 
 ```powershell
-pnpm install --frozen-lockfile
-$env:VITE_PUBLIC_SITE_URL = "https://gamut-plane.example"
 pnpm build
 pnpm check:build
 pnpm test:production
-Remove-Item Env:\VITE_PUBLIC_SITE_URL
 ```
 
-`test:production` starts the built-output server at `http://127.0.0.1:4178`, applies the checked-in `_headers` rules, runs the production browser suite, and stops the server.
+To also exercise absolute URL metadata locally, set `VITE_PUBLIC_SITE_URL` to `https://gamut-plane.example` before building. That reserved example hostname is a test input, not a deployment URL. Remove the variable afterward with `Remove-Item Env:\VITE_PUBLIC_SITE_URL`.
 
-For interactive review:
+`test:production` starts the built-output server at `http://127.0.0.1:4178`, applies the checked-in header rules, runs the browser suite, and stops the server. For interactive review, run `pnpm preview:production` and stop it with `Ctrl+C`. Keep the port free before either command.
 
-```powershell
-pnpm preview:production
-```
+## Verify the deployed site
 
-Open `http://127.0.0.1:4178`, then stop the server with `Ctrl+C`. The fixed port must be free before starting.
+Confirm the Cloudflare deployment's commit matches the release candidate. Check HTTPS, page metadata, the favicon and social image, response headers for HTML and hashed assets, and actual unmatched-path behavior. Exercise both planes, boundary visibility, pointer and keyboard edits, clipboard success and failure, narrow layout, and 200% text. Inspect the console for errors and blocked resources.
 
-The local server is a verification helper for this repository's static rules. Cloudflare Pages remains the authority for deployed behavior; recheck response headers and console output on the actual production URL.
+Record the URL, commit, deployment identifier, and results. Repeat these checks after the README URL update and after promotion to `main`.

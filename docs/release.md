@@ -1,53 +1,56 @@
-# v0.1.0 release procedure
+# v0.1.0 release runbook
 
-This is the controlled first application-release runbook. Do not execute it until the `dev` candidate is reviewed and its GitHub Actions workflow is green.
+This release covers the standalone application. The repository is already public. Both npm packages remain private and unpublished.
 
-## Preconditions
+The sequence is: validate `dev`, deploy it as the temporary production candidate, record the verified URL, rerun `dev` CI, point Cloudflare production at `main`, merge, verify `main`, then tag and release.
 
-- repository visibility is private;
-- the current branch is `dev`;
-- `dev` equals `origin/dev`;
-- `main` equals `origin/main` at the filtered provenance baseline;
-- the working tree is clean;
-- no `v0.1.0` tag or GitHub release exists;
-- no production deployment exists;
-- a reviewer has approved the README screenshot, Open Graph image, favicon, accessibility result, and remaining release findings.
+## 1. Record the candidate
 
-Record the exact candidate commit and the `main` baseline before continuing:
+Start on a clean `dev` checkout and fetch the remote state:
 
 ```powershell
 git fetch --prune origin
-git status --short --untracked-files=all
+git status --short --branch --untracked-files=all
 git rev-parse dev
 git rev-parse origin/dev
-git rev-parse main
 git rev-parse origin/main
-git tag --list v0.1.0
-gh release view v0.1.0
-gh repo view --json visibility,defaultBranchRef,homepageUrl
+git rev-list --left-right --count origin/main...origin/dev
+git ls-remote --tags origin refs/tags/v0.1.0
+gh release list --repo maikeleckelboom/gamut-plane
+gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl,licenseInfo
 ```
 
-`gh release view` is expected to report that the release does not exist. Any other mismatch is a stop condition.
+`dev` must equal `origin/dev`, and `origin/main` must be its ancestor: the first count from `rev-list` must be zero. Record both commit IDs. Stop if either branch moves unexpectedly or a `v0.1.0` tag or release already exists.
 
-## Ordered release
-
-### 1. Confirm `dev` CI
+Confirm both CI jobs succeeded for that exact `dev` commit:
 
 ```powershell
 gh run list --workflow CI --branch dev --limit 5
 gh run watch <DEV_RUN_ID> --exit-status
 ```
 
-The final candidate commit must have successful static/unit and browser/accessibility/visual jobs.
+Replace angle-bracket values in this runbook with the recorded IDs or paths before running commands.
 
-### 2. Repeat clean-clone validation
+### Public repository checks
 
-Clone to a new temporary directory, check out the recorded candidate commit, and run:
+The default branch is `main`. Before the first promotion, it lacks the README and MIT license present on `dev`, so the public landing page does not yet describe this candidate and GitHub reports no detected license. Keep `main` as the default branch; check its README and license detection after promotion.
+
+Review the candidate's tracked files and release assets for credentials, private URLs, local paths, temporary output, and unrelated product material. The source is already public, so this check is not a future visibility gate. Retain the [provenance record](provenance.md).
+
+No verified production URL is recorded yet. Check Cloudflare for an existing project before creating one; an empty README or homepage does not prove that no deployment exists.
+
+## 2. Run the clean-checkout gate
+
+Use a fresh clone with no copied `node_modules`, build output, or environment files. Check out the recorded candidate commit. Use Node.js 24 and the repository-pinned pnpm 11.9.0; check both versions before installing. A shared package-download cache is fine.
 
 ```powershell
-corepack enable
-corepack prepare pnpm@11.9.0 --activate
+git clone --branch dev https://github.com/maikeleckelboom/gamut-plane.git <CLEAN_DIRECTORY>
+cd <CLEAN_DIRECTORY>
+git checkout --detach <CANDIDATE_COMMIT>
+node --version
+pnpm --version
 pnpm install --frozen-lockfile
+pnpm --filter @gamut-plane/web exec playwright install chromium
 pnpm format:check
 pnpm lint
 pnpm typecheck
@@ -59,118 +62,83 @@ pnpm test:e2e
 pnpm test:production
 pnpm test:package
 pnpm audit --prod
+git diff --check
+git status --short --untracked-files=all
 ```
 
-Stop all preview processes and remove the temporary clone after recording the results.
+On Linux, use `playwright install --with-deps chromium` to install browser system dependencies as CI does. See [Testing](testing.md) for test selection, snapshot policy, and retained failure evidence.
 
-### 3. Review visual and accessibility evidence
+Check every command's exit status. Record the candidate commit, tool versions, platform, environment variables affecting the build, and results. Investigate audit findings against the shipped bundle and package runtime graph before changing dependencies. Stop on unresolved failures. Keep failure logs and traces; remove the temporary checkout only after recording the results and stopping its servers.
 
-Inspect:
+## 3. Review visual and accessibility evidence
 
-- `docs/assets/gamut-plane-desktop.png`;
-- `apps/web/public/og/gamut-plane.png`;
-- `apps/web/public/favicon.svg` at 16 and 32 pixels;
-- Windows and Linux Playwright references;
-- the axe result in OKLCH, OKLab, and narrow modes;
-- the 200% text and keyboard-only tests.
+Inspect the [README screenshot](assets/gamut-plane-desktop.png), [Open Graph image](../apps/web/public/og/gamut-plane.png), [favicon](../apps/web/public/favicon.svg) at 16 and 32 pixels, and [Windows and Linux references](../apps/web/e2e/screenshots).
 
-Do not proceed with an unexplained diff or serious/critical accessibility violation.
+Check the axe results in OKLCH, OKLab, and narrow layouts, along with keyboard and 200% text tests. Resolve unexplained visual differences or serious/critical accessibility findings. Regenerate assets only for a corresponding visual change, and inspect the result.
 
-### 4. Create and verify the production deployment
+## 4. Deploy and verify `dev`
 
-Create the Git-integrated Cloudflare Pages project using [Deployment](deployment.md). For this first release only, select `dev` as the production branch so the production artifact can be verified before `main` changes. Set the exact production environment variables, including the resulting `VITE_PUBLIC_SITE_URL`.
+Follow [Deployment](deployment.md) to connect the public repository to a Git-integrated Cloudflare Pages project. Select `dev` as the temporary production branch. Set the production environment variables, including `VITE_PUBLIC_SITE_URL` once the actual site hostname is assigned. If the first build ran without it, rebuild the same candidate with the URL set.
 
-Wait for the production deployment of the recorded candidate commit. Verify the HTTPS URL, commit association, response headers, favicon, Open Graph image, metadata, both planes, both gamut boundaries, pointer and keyboard input, copy semantics, narrow layout, 200% text, and console.
+Verify the deployed commit, HTTPS URL, response headers, metadata, favicon, social image, both planes and boundaries, pointer and keyboard input, copy behavior, narrow layout, 200% text, and browser console. Use the deployed site for these checks; local production tests do not establish Cloudflare behavior.
 
-After the URL is verified, replace the pending live-demo text in `README.md` with the real link on `dev`, commit and push that documentation-only change, wait for `dev` CI and the updated production deployment, and repeat URL verification. This final `dev` commit becomes the promotion candidate.
-
-### 5. Promote `dev` to `main` without rewriting history
-
-Before pushing the merge, change the Cloudflare Pages production branch from `dev` to `main`. Then:
+After verification, replace the README's production-demo status with the real link on `dev`. Set the repository homepage to the same URL:
 
 ```powershell
-git fetch --prune origin
+gh repo edit maikeleckelboom/gamut-plane --homepage <VERIFIED_PRODUCTION_URL>
+```
+
+Commit and push the README change. Wait for both `dev` CI jobs and its updated Cloudflare production deployment, then repeat URL and commit verification. Record this final `dev` commit as the promotion candidate. Source, dependency, configuration, or asset changes require the affected validation to be repeated before promotion.
+
+## 5. Promote to `main`
+
+Fetch again and confirm that `origin/dev` is still the promotion candidate and `origin/main` is still the recorded baseline. Change the Cloudflare Pages production branch from `dev` to `main`, save the setting, and leave automatic production deployments enabled. Then merge without rewriting history:
+
+```powershell
 git switch main
 git pull --ff-only origin main
 git merge --no-ff origin/dev -m "chore(release): promote v0.1.0"
+git diff --exit-code origin/dev HEAD
 git push origin main
 ```
 
-Do not rebase, squash, amend, force-push, or move the filtered baseline. The merge commit must retain the original history.
+The merge tree must match the promotion candidate. Stop before pushing if the comparison differs. Do not rebase, squash, amend, or force-push.
 
-### 6. Confirm `main` CI and production
+## 6. Verify `main` CI and production
 
 ```powershell
 gh run list --workflow CI --branch main --limit 5
 gh run watch <MAIN_RUN_ID> --exit-status
+gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl,licenseInfo
 ```
 
-Confirm Cloudflare production rebuilt from the new `main` merge and still serves the verified application. Stop if GitHub Actions or Cloudflare differs from the reviewed candidate.
+Both jobs must succeed for the new merge commit. Confirm Cloudflare deployed that commit from `main`, and repeat the production checks from step 4. Verify the public README, its image and documentation links, the homepage, and MIT license detection. Resolve any mismatch before tagging.
 
-### 7. Create the annotated tag
+## 7. Tag and release
 
-With `main` at the successful promotion merge:
+With a clean `main` checkout at the successful promotion merge:
 
 ```powershell
-git status --short --untracked-files=all
+git status --short --branch --untracked-files=all
 git tag -a v0.1.0 -m "Gamut Plane v0.1.0"
 git push origin v0.1.0
+gh release create v0.1.0 --title "Gamut Plane v0.1.0" --notes-file <RELEASE_NOTES_FILE> --verify-tag
 ```
 
-Do not move or recreate the tag after publication.
+Prepare release notes describing the two planes, exact membership and sampled guides, Canvas rendering limits, and the production URL. State that the npm packages remain unpublished. Do not move or recreate the tag after publication.
 
-### 8. Create the GitHub release
+In a logged-out browser session, check that the tag, release, source archives, production app, and social image are reachable. Repository visibility stays public throughout this procedure.
 
-Prepare concise notes that describe the two working planes, exact membership versus sampled contours, Canvas 2D renderer, interaction/accessibility coverage, and Cloudflare deployment. Then:
+## Package publication
 
-```powershell
-gh release create v0.1.0 --title "Gamut Plane v0.1.0" --notes-file <REVIEWED_NOTES_FILE> --verify-tag
-```
+`@gamut-plane/core` and `@gamut-plane/vue` stay at `0.1.0` with `private: true`. Their built artifacts and tarball-consumer tests support local use. This application release does not include npm publication.
 
-Do not publish an npm package.
+A future package release needs a separate decision covering scope/name access, registry metadata, removal of the private guards, core publication before Vue, and a registry-installed consumer check.
 
-### 9. Change visibility and repository metadata
+## Recovery
 
-Only after the tag and release resolve correctly:
+- **Candidate deployment fails:** keep work on `dev`, fix the cause, repeat affected checks and CI, and redeploy. Do not promote a failed candidate.
+- **`main` CI or production fails:** do not tag or release. Investigate transient failures before rerunning them. Correct a defect with a new commit or revert the merge with a new commit. If needed, roll Cloudflare back to a previous successful production deployment; preview deployments are not rollback targets.
+- **Metadata is wrong:** correct it and repeat CI and deployment verification before tagging. After release, do not move the tag to change released source; use a follow-up release.
 
-```powershell
-gh repo edit maikeleckelboom/gamut-plane --visibility public --accept-visibility-change-consequences
-gh repo edit maikeleckelboom/gamut-plane --homepage "https://<verified-production-host>"
-gh repo view maikeleckelboom/gamut-plane --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl
-```
-
-Keep the default branch as `main`. Do not change branch protection, Issues, tags, or releases as part of the visibility operation.
-
-### 10. Logged-out verification
-
-In a private/logged-out browser session, verify:
-
-- the repository is public;
-- the README image and every documentation link resolve;
-- the live-demo and repository-homepage links use the verified production URL;
-- the `v0.1.0` tag and release are visible;
-- source archives download;
-- the production app and social image are reachable;
-- no private URL, credential, local path, or excluded product material is exposed.
-
-## Package publication is a separate decision
-
-`@gamut-plane/core` and `@gamut-plane/vue` now have built ESM/declaration artifacts and a packed-consumer check. Both remain private and unpublished. Application release, deployment and repository visibility changes do not authorize npm publication. A future publication decision must confirm scope/name access, versions and registry metadata, remove the private guards deliberately, release core so the Vue dependency resolves, and verify a registry-installed consumer. No publishing credentials, automation or registry reservation are configured here.
-
-## Rollback guidance
-
-### Deployment failure
-
-Do not merge `dev` into `main`. Correct the candidate on `dev`, rerun the full suite and CI, and deploy again. If an earlier successful production deployment exists, use Cloudflare Pages' production rollback control; preview deployments are not rollback targets.
-
-### Failed `main` CI
-
-Do not tag, release, or change visibility. If the failure is transient, rerun it and record the evidence. If the merge is defective, fix it through a new reviewed commit or revert the merge with a new commit; never reset, rebase, or force-push `main`. Roll back Cloudflare production to the last successful production deployment if needed.
-
-### Incorrect metadata
-
-Before tagging, correct metadata on `dev`, repeat CI/deployment verification, and promote the corrected commit. After an immutable `v0.1.0` release, do not move the tag; publish a corrective follow-up release if the error cannot be fixed safely without changing released source.
-
-### Accidental visibility
-
-Immediately return the repository to private, record the exposure window, inspect access and clone events where available, and audit the tree again for secrets. Visibility rollback cannot retract clones already made. Do not resume publication until the cause and exposure are reviewed.
+Never reset or force-push a shared branch as a release recovery step.

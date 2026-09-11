@@ -2,13 +2,13 @@
 
 ## Layer boundaries
 
-Dependency direction is **core → Vue → app** (each layer consumes the one before it).
+The app imports the Vue and core packages. Vue imports core; core has no dependency on either layer.
 
 - `packages/core` (`@gamut-plane/core`) owns framework-neutral color types, conversion, exact gamut membership, CSS serialization/parsing, plane geometry, keyboard math, boundary search and sampled-table analysis. It has no Vue, DOM or Canvas dependency.
 - `packages/vue` (`@gamut-plane/vue`) owns `GamutPlane`, its internal controls, Canvas/SVG rendering, pointer arbitration, numeric drafts, invalidation, local styling, generated visualization data and component/consumer tests.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
 
-The app has no source alias or private subpath into either package. Its own `@` alias resolves only app code. The Vue renderer remains component-owned; there is no separate renderer, provider or plugin layer.
+The app imports built public package entries. Its `@` alias resolves only app code. The Vue component owns its renderer.
 
 ## Distribution and public API
 
@@ -16,11 +16,11 @@ Both packages export built ESM JavaScript and declarations from `dist`. Core use
 
 Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. The instrument retains ownership of gestures, rollback and rendering invalidation.
 
-Vue exports only `GamutPlane`, `OklchColor`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. The required color model, optional plane model, two boundary-visibility props, completed/cancelled edit events, capability event and `field-legend` slot are the entire component API. The unused context slot is omitted. Renderer constants, table paths, preview flags and IDs stay private.
+Vue exports `GamutPlane`, `OklchColor`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. The component accepts a required color model, an optional plane model and two boundary-visibility props. It emits completed/cancelled edit and capability events and provides a `field-legend` slot. See the [API reference](../packages/vue/README.md#component-api). Renderer constants, table paths, preview flags and IDs are internal.
 
 The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ownership. View changes never convert or republish the authored color. Boundary props default to true. `field-legend` accepts host-owned explanatory or visibility controls without exposing renderer state. Canvas capability describes the granted context, not display hardware; `pending` is the initial shell state.
 
-The artifacts contain only built output, package metadata, README and MIT license. CSS is marked side-effectful. Both package manifests remain private to prevent accidental publication. No registry package is claimed. The isolated consumer installs actual tarballs and maps the unpublished core dependency to its tarball; future registry distribution can resolve the normal core version already written by pnpm pack.
+The artifacts contain built output, package metadata, README and MIT license. Core declares no side effects; Vue marks CSS as side-effectful so bundlers retain it. Both manifests use `private: true`. Local consumers override the packed Vue package's versioned core dependency with the core tarball, as shown in the [installation instructions](../README.md#install-local-packages).
 
 ## Styling and host ownership
 
@@ -32,7 +32,7 @@ Vue `useId()` supplies stable title/control IDs. Multiple instruments in one Vue
 
 ## Server rendering
 
-Importing either ESM entry needs no browser globals. The instrument can server-render its shell and guides; Canvas context work, observers and drawing begin on mount. Packed-consumer tests import and server-render both views with two instances in Node 24, checking unique IDs, no emitted edits and preserved authored values. Hydration and full Nuxt integration require their own application test; this smoke test makes no broader claim.
+Importing either ESM entry needs no browser globals. The instrument can server-render its shell and guides; Canvas context work, observers and drawing begin on mount. Packed-consumer tests render both views with two instances in Node 24, checking unique IDs, no emitted edits and preserved authored values. Hydration and Nuxt integration have not been tested.
 
 ## Interaction lifecycle
 
@@ -51,26 +51,26 @@ There is one authored color in the parent. The component has temporary gesture s
 | Numeric Escape                                               | Discard a dirty draft without changing the color; emit `cancel`. Idle Escape bubbles to the host.                                                                                               |
 | Unmount                                                      | Cancel queued pointer/range/draw work and release pointer capture. Do not publish or commit during teardown.                                                                                    |
 
-Plane feedback is recognized by exact equality of the four authored channels with the last emitted color, so ordinary reactive or cloned `v-model` feedback retains ownership. A differing value supersedes the gesture. Identical-valued external replacements are indistinguishable from feedback through the existing value-only API; no revision protocol is introduced. Parents should feed accepted updates back promptly rather than replaying delayed stale values.
+Plane feedback is recognized by exact equality of the four authored channels with the last emitted color, so ordinary reactive or cloned `v-model` feedback retains ownership. A differing value supersedes the gesture. Identical-valued external replacements are indistinguishable from feedback through this value-only API. Parents should feed accepted updates back promptly rather than replaying delayed stale values.
 
-`NumericInput.vue` owns draft, validation and completion deduplication for channel and OKLab fields. It does not own color math. `GamutPlane.vue` continues to use core plane unprojection for a/b edits and preserves alpha. Numeric values are not round-tripped through hex or a sampled projection.
+`NumericInput.vue` owns drafts, validation and completion deduplication for channel and OKLab fields. `GamutPlane.vue` uses core plane unprojection for a/b edits and preserves alpha. Numeric values are not round-tripped through hex or a sampled projection.
 
 `ColorPlane.vue` owns pointer capture and geometry. ResizeObserver updates its local size; a scoped VueUse scroll listener marks pointer bounds dirty, and the next pointer event measures them again. Mount/reveal and DPR changes schedule rendering. Escape is handled on the focused input/surface only, not by a global key listener.
 
-The installed `useClipboard` implementation does not expose failure from its legacy `execCommand` fallback. The demo instead checks native `writeText` rejection and the legacy boolean result. Its feedback timeout still uses VueUse. Clipboard success is shown only after a successful operation.
+The app checks native `writeText` rejection and the legacy `execCommand` boolean result before showing clipboard success. It uses VueUse for the feedback timeout. The installed VueUse clipboard helper does not expose the legacy fallback's failure result, so the app handles the write directly.
 
 ## Exact facts and visualization guides
 
 Exact Display P3 and sRGB membership is calculated directly from the active color. It is not sampled from a contour.
 
-Contours, crossing ticks, and the sRGB boundary projection are interpolated visualization guides. They use `Float32Array` data generated ahead of time and may be less precise than direct conversion. The UI and API keep this evidence class distinct from exact membership and serialization.
+Contours, crossing ticks, and the sRGB boundary projection interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization.
 
 ## Generated tables
 
 The Vue package owns checked-in tables at `packages/vue/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Vite embeds those resources in the Vue ESM artifact. Import decodes the payloads; it does not search or generate boundaries at startup.
 
-Generation does not run at application startup or during interaction. `pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. Any intentional setting or algorithm change must regenerate the file and update its tests and evidence in the same change.
+`pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. After changing the algorithm or settings, run `pnpm --filter @gamut-plane/vue generate:gamut-tables` and include the generated file and relevant test changes in the same commit.
 
 ## Renderer boundary
 
-`ColorPlane.vue` owns Canvas context negotiation, drawing buffers, invalidation keys and DOM integration, delegating projection and sampling math to core. Field samples, exact membership and editable-plane geometry retain their separate contracts. Packaging does not change sampling resolution or introduce gamut mapping.
+`ColorPlane.vue` owns Canvas context negotiation, drawing buffers, invalidation keys and DOM integration, delegating projection and sampling math to core. See [Performance](performance.md) for sampling dimensions, caching, and preview behavior.

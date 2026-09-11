@@ -2,7 +2,7 @@
   "name": "@gamut-plane/workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "High-performance interactive OKLab and OKLCH color planes with precise display-gamut boundaries.",
+  "description": "Interactive OKLCH and OKLab color planes for Vue, with sRGB and Display P3 gamut boundaries.",
   "license": "MIT",
   "author": "Maikel Eckelboom",
   "repository": {

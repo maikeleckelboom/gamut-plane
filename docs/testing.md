@@ -1,88 +1,83 @@
 # Testing
 
-## Validation layers
+## Setup and commands
 
-The repository uses five complementary layers:
+Use Node.js 24+ and pnpm 11.9.0. From the repository root:
 
-1. core unit tests for color conversion, gamut membership, projections, keyboard edits, contours, and generated-table contracts;
-2. `packages/vue/test` for rendering invalidation, pointer arbitration, DPR, numeric completion and reactive parent feedback; `apps/web/test` for inspector/copy composition and presentation;
-3. Playwright behavior and accessibility tests against the development server;
-4. Playwright production tests against `apps/web/dist`, served with the checked-in Cloudflare Pages `_headers` rules;
-5. isolated tarball consumption, strict typechecking, ESM import/SSR, production host build and package-owned browser tests.
-
-Automated axe checks fail on serious or critical violations in default OKLCH, OKLab, and narrow OKLCH states. Explicit semantic tests remain responsible for heading order, landmarks, keyboard reachability, visible focus, boundary controls, copy semantics and announcements, text gamut status, enlarged text, and horizontal overflow.
-
-## Component and embedding regressions
-
-`test/instrumentHost.test.ts` mounts a reactive parent that feeds color updates back, including cloned objects. It covers rollback, external replacement, pointer ownership, pending final values, equal-valued fixed-axis view switches, view changes during a gesture, and teardown. Fixed-prop tests remain useful for geometry and emission details but are not cancellation proof.
-
-`test/interactionHelpers.ts` provides the shared single-frame controller and pointer dispatcher. Renderer tests assert cache invalidation (including sub-millidegree fixed-axis changes), contour reuse, preview/full-quality transitions and disposal. DPR tests cover uncapped backing dimensions and runtime DPR changes.
-
-The maintained host lives in `packages/vue/consumer`; `packages/vue/e2e` owns its embedding, renderer and accessibility cases. It imports only `@gamut-plane/vue` and `style.css`, with one color-only model and one controlled plane model. No demo CSS, source alias, shared tsconfig or generated-file import is available to it.
-
-Run `pnpm test:package` from the root. This builds both packages, uses `pnpm pack`, inspects the real tar file lists and manifests, then copies the fixture into an OS temporary directory outside the workspace. It installs the two tarballs with a local core override (necessary while core is unpublished), plus declared consumer dependencies. It checks one physical Vue runtime, typechecks with library checking enabled, imports and server-renders both views without DOM globals, builds the consumer, and runs Chromium against that production build.
-
-The browser cases cover independent colors/views/focus, two-way plane ownership, IDs/associations, numeric drafts and alpha preservation, cancellation, container widths from 280–800px, 623/624/625px threshold edges, first reveal, scrolling/resizing during capture, enlarged text, host style isolation (including colliding internal class names), rendered gamut guides and axe accessibility. Screenshots must show light-to-dark field variation in both instances, so a painted but invisible Canvas cannot pass solely through bitmap inspection. Renderer-only browser cases moved out of the app suite. The app retains page integration, inspector propagation, boundary checkbox wiring, clipboard, visual references, metadata and deployment coverage; its axe checks validate the composed page as well.
-
-Successful temporary consumers are removed. Failures retain the consumer and Playwright traces/screenshots for diagnosis; the path is printed. To keep a successful host for inspection, run `pnpm --filter @gamut-plane/vue test:package --keep` after building the packages. Run focused Playwright selections from the retained consumer, using its installed tools and production output.
-
-Browser success-copy tests explicitly grant clipboard permissions and read back the copied representation. Failure tests override/reject the operation; unit tests also cover a false legacy result. Successful button feedback alone is not clipboard proof.
-
-Run app browser selections with `pnpm --filter @gamut-plane/web exec playwright test e2e/instrument.spec.ts`. The maintained full gate is listed in the README. Use `--last-failed` for the immediately preceding run when applicable; do not update unrelated visual references.
-
-Browser automation and axe are not physical-device, screen-reader, or manual assistive-technology verification. Non-Chromium engines and unavailable platforms must be reported as unverified.
-
-## Visual snapshot policy
-
-Visual references are operating-system-specific. Playwright stores them as:
-
-```text
-apps/web/e2e/screenshots/<name>-win32.png
-apps/web/e2e/screenshots/<name>-linux.png
+```powershell
+pnpm install --frozen-lockfile
+pnpm --filter @gamut-plane/web exec playwright install chromium
+pnpm build:packages
 ```
 
-Windows references are retained for reviewed local Chromium runs. Linux references are generated and reviewed from the `ubuntu-24.04` GitHub Actions environment. CI never updates references automatically.
+On Linux, use `playwright install --with-deps chromium` to include browser system dependencies. Browser tests start their own servers on ports 4177, 4178, and 4179; keep those ports free and run the suites sequentially.
 
-Determinism is controlled by:
+| Command                   | Coverage                                                         |
+| ------------------------- | ---------------------------------------------------------------- |
+| `pnpm format:check`       | Oxfmt formatting                                                 |
+| `pnpm lint`               | Oxlint checks across packages and app                            |
+| `pnpm typecheck`          | Package declarations and TypeScript/Vue source                   |
+| `pnpm test`               | Core, Vue component, and app unit tests                          |
+| `pnpm check:gamut-tables` | Deterministic regeneration against checked-in tables             |
+| `pnpm build`              | Package artifacts and production app                             |
+| `pnpm check:build`        | Production file inventory, metadata assets, and header rules     |
+| `pnpm test:e2e`           | App behavior, accessibility, and platform visual references      |
+| `pnpm test:production`    | Built app served with the repository's header rules              |
+| `pnpm test:package`       | Isolated tarball installation, types, SSR, and browser embedding |
+| `pnpm audit --prod`       | Advisories in the resolved production dependency graph           |
 
-- exact `@playwright/test` and browser versions from the lockfile;
-- one Chromium worker;
-- fixed viewport per scenario;
-- device scale factor `1`;
-- `en-US` locale;
-- dark color scheme;
-- reduced motion;
-- disabled screenshot animations;
-- platform-specific system-font rasterization references;
-- a `0.003` maximum differing-pixel ratio.
+`typecheck`, `test`, and `test:package` build the packages first. Build the app before running production checks. The [release runbook](release.md#2-run-the-clean-checkout-gate) gives the complete clean-checkout sequence. CI runs static/unit validation followed by browser/accessibility/visual validation on Ubuntu 24.04; the production dependency audit is an additional local release check.
 
-Platform-specific references absorb understood operating-system font and rasterization differences. The tolerance is not a substitute for reviewing field, contour, layout, control, and typography changes. A visual update must be generated on the affected platform, inspected, and committed intentionally.
+## Unit and component tests
+
+Core tests cover color conversion, direct gamut membership, serialization/parsing, plane projections, keyboard edits, and boundary math. Vue tests cover generated-table accuracy, drawing invalidation, pointer arbitration, device pixel ratio, numeric drafts, and parent feedback. App tests cover inspector presentation and clipboard behavior.
+
+`packages/vue/test/instrumentHost.test.ts` mounts a reactive parent that feeds updates back, including cloned color objects. It exercises rollback, external replacement, pointer ownership, final-value delivery, view changes during a gesture, and teardown. Fixed-prop tests cover geometry and emissions; reactive-parent tests cover cancellation under normal `v-model` feedback.
+
+`packages/vue/test/interactionHelpers.ts` supplies frame control and pointer dispatch. Renderer tests cover cache invalidation, small fixed-axis changes, contour reuse, preview/full-quality transitions, disposal, uncapped backing dimensions, and runtime DPR changes.
+
+## Browser and accessibility tests
+
+The app suite covers page integration, inspector updates, boundary checkboxes, clipboard success and failure, and visual references. Successful copy cases grant clipboard permissions and read the value back; failure cases reject the write. Unit tests also cover a false result from the legacy clipboard fallback.
+
+Axe checks fail on serious or critical violations in OKLCH, OKLab, and narrow OKLCH layouts. Semantic tests cover heading order, landmarks, keyboard reachability, visible focus, boundary controls, copy announcements, text gamut status, 200% text, and horizontal overflow.
+
+Run a focused app selection with:
+
+```powershell
+pnpm --filter @gamut-plane/web exec playwright test e2e/instrument.spec.ts
+```
+
+Use `--last-failed` for failures from the immediately preceding run. Investigate the failing assertion, readiness condition, and trace before changing code or references. Use `--repeat-each` when checking whether a failure is transient.
+
+Automation uses the lockfile-pinned Chromium version. Other engines, physical devices, screen readers, and manual assistive-technology use need separate checks.
+
+## Packed Vue consumption
+
+`packages/vue/consumer` is an independent Vue application fixture. It imports the component and stylesheet through public entries, without demo CSS, source aliases, shared tsconfig, or generated-file imports. One instance uses a color-only model; another also binds its plane.
+
+`pnpm test:package` builds and packs both packages, checks tarball manifests and file lists, and copies the fixture into an OS temporary directory outside the workspace. It installs the tarballs with a local core override, then runs strict typechecking, Node ESM import and server rendering, a production host build, and Chromium tests from `packages/vue/e2e`.
+
+The browser cases cover independent instance state and focus, plane ownership, IDs, numeric drafts, alpha preservation, cancellation, 280–800px containers, the 623/624/625px layout threshold, first reveal, scrolling/resizing during capture, enlarged text, style isolation, gamut guides, and axe accessibility. Screenshots check visible light-to-dark field variation in both instances, since Canvas bitmap pixels alone do not establish that the browser composited the field.
+
+Successful consumers are removed. Failures retain the consumer and Playwright evidence at the printed path. To keep a successful consumer for inspection, run `pnpm --filter @gamut-plane/vue test:package --keep` after building the packages. Run focused browser tests from that directory using its installed tools and production output.
+
+## Visual references
+
+Snapshots live at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png`. Windows references cover local Chromium runs; Linux references cover Ubuntu 24.04 CI. CI does not update them automatically.
+
+The suite uses one Chromium worker, fixed scenario viewports, DPR 1, `en-US`, dark color scheme, reduced motion, disabled screenshot animations, and a `0.003` maximum differing-pixel ratio. Separate references account for system-font rasterization differences.
+
+Update a reference only for an understood visual change, on the affected platform. Inspect field rendering, contours, layout, controls, and typography before committing. Do not increase the tolerance to hide a failure.
 
 ## Release assets
 
-Run:
+The [README screenshot](assets/gamut-plane-desktop.png) is a 1440 × 1000 app capture. The [Open Graph image](../apps/web/public/og/gamut-plane.png) is a 1200 × 630 composition of the app's plane, boundaries, and identity. The [favicon](../apps/web/public/favicon.svg) is an SVG.
 
-```powershell
-pnpm generate:release-assets
-```
-
-The dedicated Playwright capture:
-
-- writes the reviewed 1440 × 1000 application screenshot to `docs/assets/gamut-plane-desktop.png`;
-- builds the 1200 × 630 Open Graph image from the real rendered plane and boundary elements;
-- verifies both gamut boundaries are present;
-- verifies the social composition is not clipped;
-- renders the SVG favicon at 16 and 32 pixels for local inspection.
-
-The social composition uses only browser-provided generic fonts and project-owned visual elements. It has no browser chrome, private path, development overlay, remote asset, or third-party artwork.
+After a visual change that affects these assets, run `pnpm generate:release-assets`. This writes the README and social images, checks boundary presence and clipping, and renders the favicon at 16 and 32 pixels under `apps/web/test-results`. Inspect the output before committing; routine validation does not require regeneration.
 
 ## Production verification
 
-After `pnpm build`, run:
+`pnpm check:build` checks required files, hashed JavaScript and CSS, social-image dimensions, cache/security rules, and the absence of source maps, source/test output, local paths, and stale product material.
 
-```powershell
-pnpm check:build
-pnpm test:production
-```
-
-The artifact checker verifies required files, hashed JavaScript and CSS, social-image dimensions, cache/security headers, missing source maps, absence of source and test files, and absence of stale private product material. The production browser suite verifies metadata, static resources, response headers, both planes, both gamut boundaries, keyboard and pointer input, copy semantics, narrow layout, and 200% text.
+`pnpm test:production` checks metadata, resources, headers, both planes and boundaries, keyboard and pointer input, copy behavior, narrow layout, and 200% text against `apps/web/dist`. Its local server applies the repository's header rules but does not emulate all Cloudflare routing and caching behavior. Follow [Deployment](deployment.md#verify-the-deployed-site) to verify the real site.

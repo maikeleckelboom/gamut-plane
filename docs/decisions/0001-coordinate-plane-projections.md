@@ -1,4 +1,4 @@
-# 0001 — Coordinate planes project canonical OKLCH
+# 0001: Coordinate planes project canonical OKLCH
 
 Status: accepted
 
@@ -24,11 +24,11 @@ Hue is the fixed axis. Each chroma column contains sampled lightness color rathe
 
 ## OKLab a/b plane
 
-The mapping projects canonical OKLCH through OKLab at fixed OKLab lightness. The square field shows color evidence outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
+The mapping projects canonical OKLCH through OKLab at fixed OKLab lightness. The square field shows colors outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
 
 Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. The disc is an instrument constraint, not an RGB gamut boundary.
 
-## Dual-boundary evidence
+## Gamut boundaries
 
 Both planes show Display P3 and sRGB together:
 
@@ -42,10 +42,10 @@ Boundary visibility is view state, not an output-policy selector.
 
 ## Exact facts and interpolated guides
 
-The instrument distinguishes two evidence classes:
+Membership and guides use different calculations:
 
 1. Exact inside/outside membership comes from direct color conversion for the active color.
-2. Boundary contours, crossing ticks, and the sRGB boundary projection come from deterministic interpolation over generated gamut-boundary tables bundled with the web app.
+2. Boundary contours, crossing ticks, and the sRGB boundary projection come from deterministic interpolation over generated gamut-boundary tables bundled with the Vue package.
 
 Interpolated geometry is visualization. It cannot be used as exact membership, silently mutate the active color, or substitute for exact serialization.
 
@@ -53,10 +53,10 @@ Interpolated geometry is visualization. It cannot be used as exact membership, s
 
 - Both planes provide pointer and complete keyboard operation.
 - Live pointer movement is coalesced to one pending animation frame.
-- A completed interaction emits one commit; cancellation restores the interaction origin.
+- Completed color edits emit a commit. Cancelling a plane drag restores its starting color unless a parent replacement or view change supersedes it. Native ranges retain published values when interrupted; see the [interaction lifecycle](../architecture.md#interaction-lifecycle).
 - Plane switching performs no color round trip.
 - Canvas capability changes painted preview colors only, never gamut truth.
 - Canvas backing dimensions follow the actual device pixel ratio and are invalidated when display resolution changes.
-- Generated numeric tables and reusable buffers stay outside component-owned domain logic.
+- Core owns projection and sampling math. The Vue package owns the generated table artifact and reusable rendering buffers.
 - Same-plane visible-axis movement does not invalidate the field or contours; fixed-axis movement does.
 - Additional editable coordinate spaces require a separate decision. This contract is not a plugin system.

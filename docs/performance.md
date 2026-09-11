@@ -1,8 +1,10 @@
 # Performance
 
-## Maintained contracts
+The renderer uses Canvas 2D with cached fields and sampled gamut guides. The contracts below describe current behavior. Timing results are historical measurements of specific source states and environments, not benchmarks of the current package or frame-rate guarantees.
 
-The renderer in `packages/vue` is intentionally Canvas 2D and keeps work bounded through explicit invalidation:
+## Rendering contracts
+
+The renderer in `packages/vue` schedules and invalidates work as follows:
 
 - Field drawing is scheduled through at most one pending `requestAnimationFrame`.
 - Pointer movement stores only the latest point and applies it through at most one pending animation frame.
@@ -16,17 +18,17 @@ The renderer in `packages/vue` is intentionally Canvas 2D and keeps work bounded
 - Mutable color vectors, sampling scratch data, the offscreen canvas, Canvas contexts, and generated `Float32Array` tables are reused instead of allocated per sample.
 - Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
 
-These are correctness and workload-shape contracts, not universal frame-time promises. Unit tests assert invalidation behavior, pointer-frame coalescing, generated-table determinism, and device-pixel-ratio handling. Playwright tests exercise resize stability and interaction in a real browser.
+Unit tests cover invalidation, pointer-frame coalescing, generated-table determinism, and device-pixel-ratio handling. Playwright tests cover resize stability and interaction in a browser.
 
-## Reference observations
+## Early observations
 
-Earlier measurements on a Windows development machine placed one uncached fixed-lightness OKLab field construction around 7.4–9.7 ms. A separate audit measured warm generation of one gamut table around 6.8–7.0 ms and a cached lookup around 0.02 ms.
+Early Windows measurements placed one uncached fixed-lightness OKLab field construction around 7.4–9.7 ms, warm generation of one gamut table around 6.8–7.0 ms, and a cached lookup around 0.02 ms.
 
-Those observations are contextual, not benchmark guarantees: the machines, browser/runtime versions, power state, and instrumentation were not identical to this baseline. They justify keeping generation off the interaction path and preserving cache keys; they do not establish a cross-machine regression threshold.
+The full environment and harness were not preserved for these observations. They provide historical context only and cannot serve as regression thresholds.
 
 ## Standalone-baseline measurements
 
-The 2026-07-30 standalone audit used Windows 11 Pro 10.0.26200, an AMD Ryzen 7 8845HS, Node.js 24.16.0, pnpm 11.9.0, and Vite's SSR module loader. It measured `performance.now()` around the core functions only, using the checked-in table settings of 120 hue steps, 65 lightness steps, and 14 search iterations.
+The 2026-07-30 measurements used Windows 11 Pro 10.0.26200, an AMD Ryzen 7 8845HS, Node.js 24.16.0, pnpm 11.9.0, and Vite's SSR module loader. They timed the core functions with `performance.now()`, using 120 hue steps, 65 lightness steps, and 14 search iterations.
 
 After 10 unrecorded warm-up generations, 100 uncached samples per gamut produced:
 
@@ -37,11 +39,11 @@ After 10 unrecorded warm-up generations, 100 uncached samples per gamut produced
 
 After priming the cache, 10,000 lookups per gamut had a 0.0005 ms median. The sRGB p95 was 0.0012 ms and the Display P3 p95 was 0.0008 ms.
 
-Uncached generation on this environment is slower than the earlier 6.8–7.0 ms observation; cached lookup is faster than the earlier 0.02 ms observation. The comparison is directional only because the earlier hardware and harness were not preserved. No new browser field-construction number was collected, so the earlier 7.4–9.7 ms range must not be treated as a current result.
+No browser field-construction measurement was collected in this run. Its table-generation timings are not directly comparable to the early observations, whose hardware and harness were not preserved.
 
 ## 2026-07-31 Hue interaction measurements
 
-The pre-change control was revision `fc9d7fd4f7deaea82e01efd95fb3415a66c0cb9e`. The candidate was measured from this change's working tree on that revision before commit. Both runs used the same Windows 11 Pro 10.0.26200 machine, AMD Ryzen 7 8845HS CPU, NVIDIA RTX 4060 Laptop GPU plus AMD Radeon 780M Graphics, Balanced power scheme, Node.js 24.16.0, pnpm 11.9.0, headless Chromium 149.0.7827.55, a 1440 × 1000 viewport, device pixel ratio 1, and a granted Display P3 Canvas. The visible Canvas backing store was 518 × 518.
+The baseline was revision `fc9d7fd4f7deaea82e01efd95fb3415a66c0cb9e`. The candidate was an uncommitted Hue-preview implementation based on that revision; the raw record does not identify an exact candidate tree. Both runs used the same Windows 11 Pro 10.0.26200 machine, AMD Ryzen 7 8845HS CPU, NVIDIA RTX 4060 Laptop GPU plus AMD Radeon 780M Graphics, Balanced power scheme, Node.js 24.16.0, pnpm 11.9.0, headless Chromium 149.0.7827.55, a 1440 × 1000 viewport, device pixel ratio 1, and a granted Display P3 Canvas. The visible Canvas backing store was 518 × 518.
 
 Both revisions were built for production and served by the pinned Vite preview server. Each run began with 20 unrecorded fixed-axis draws in OKLCH and 20 in OKLab. One native Hue range drag then used 100 Playwright pointer steps. The settled sample used 100 native `input`/`change` pairs and allowed two animation frames per value. Instrumentation measured `performance.now()` from the visible Canvas clear through its final `fillRect` or preview `drawImage`. Values are contextual main-thread construction costs, not universal frame-rate guarantees.
 
@@ -52,9 +54,9 @@ Both revisions were built for production and served by the pinned Vite preview s
 | Baseline settled full field  |                518 |          100 | 54.8 ms | 59.5 ms | 40.5 ms | 65.0 ms |
 | Candidate settled full field |                518 |          100 | 54.1 ms | 60.0 ms | 49.3 ms | 76.4 ms |
 
-Source coalescing is still required: deterministic tests prove that multiple native inputs before one animation frame publish only the latest value, and that `change` cannot lose the final value. It was not sufficient by itself in the serialized native-drag trace. The baseline produced 101 model publications and 202 visible contour-path mutations for 101 input events; after coalescing, the same Playwright trace still produced 100 publications and 200 path mutations because the automation protocol yielded between almost every pointer step. Each canonical publication still updates both exact fixed-hue contour paths. The per-draw full-field work therefore remained well beyond one 60 Hz frame in this environment.
+Frame coalescing had little effect in the serialized native-drag trace: 101 input events produced 101 model publications and 202 contour-path mutations before coalescing, then 100 publications and 200 mutations afterward. Playwright yielded between almost every pointer step, so events rarely shared a frame. Unit tests cover bursts within one frame and final-value delivery on `change`. Each publication still updates both sampled contour paths, and full-field construction exceeded one 60 Hz frame in this environment.
 
-That evidence justified the second, interaction-only layer. During a Hue pointer drag, the Canvas field alone uses 192 reusable horizontal samples. Canonical hue, inspector output, exact membership, CSS serialization, and both contours continue to use the exact current color. `change`, pointer completion, cancellation, capture loss, blur, and component teardown leave no preview active; the next settled draw uses the original full-width algorithm and backing dimensions. No preview applies to Lightness, Chroma, keyboard edits, or OKLab fixed-lightness edits.
+The Hue preview reduces field sampling to 192 columns during pointer dragging. It leaves the authored hue, inspector output, membership, serialization, and contour calculations unchanged. Completion or interruption ends the preview; the next settled draw uses the full-width algorithm. Lightness, Chroma, keyboard edits, and OKLab fixed-lightness edits do not use this preview.
 
 The settled before/after distributions overlap and should be treated as unchanged, not as a claimed settled-render improvement. The candidate retained 518 columns and a 518 × 518 backing store. Raw measurements and the harness description are preserved in [`performance-data/2026-07-31-hue-slider.json`](performance-data/2026-07-31-hue-slider.json).
 
@@ -71,15 +73,15 @@ Each scenario had 20 warm-ups and 100 recorded iterations. Field construction wa
 | OKLCH pointer burst |              0.20 / 0.30 ms |               0.30 / 0.60 ms |                 0.30 / 0.50 ms |                  0.30 / 0.50 ms |
 | OKLab pointer burst |              0.20 / 0.30 ms |               0.30 / 0.60 ms |                 0.30 / 0.50 ms |                  0.40 / 0.60 ms |
 
-The initial shift warranted repetition against an isolated archive of the baseline using the installed toolchain; its generated asset hashes matched the original baseline build. The baseline itself then moved substantially. These distributions do not isolate a consistent rendering regression or improvement. Full-field work remains expensive, and pointer differences approach the timer's resolution. No universal frame rate or performance win is claimed.
+The repeated baseline used an isolated source archive and produced the same asset hashes as the original baseline build, but its timings shifted substantially. These distributions do not isolate a consistent rendering regression or improvement. Full-field work remains expensive, and pointer differences approach the timer's resolution.
 
 Both revisions produced zero field redraws during visible-axis pointer bursts. Full OKLCH sampling, the 80 × 24 OKLab sampling scheme and the existing 192-column Hue preview are unchanged. The scheduling fixes invalidate a changed view even when its fixed-axis number matches the previous view, and preserve small fixed-axis changes in the cache key. Unit regressions cover those correctness cases separately from timing.
 
 ## Package size and loading
 
-The Vue build embeds two 120 × 65 Float32 tables (62,400 decoded bytes; 83,200 base64 characters). The generated payload is the largest part of the Vue JavaScript artifact. Import only decodes these deterministic bytes; it does not perform the expensive table-generation search. Core, VueUse and Vue remain external dependencies. The pack check prints actual compressed sizes and the full included file lists. No compression or sampling redesign is introduced by extraction.
+The Vue build embeds two 120 × 65 Float32 tables (62,400 decoded bytes; 83,200 base64 characters). This payload is the largest part of its JavaScript artifact. Import decodes the data without running the table-generation search. Core, VueUse and Vue are external dependencies. `pnpm test:package` prints compressed tarball sizes and included file lists.
 
-The earlier measurements above describe their recorded source states, before package extraction; they are not timing evidence for the current artifact. The renderer no longer requests `desynchronized: true`: in the pinned Windows Chromium consumer, the second Canvas had valid bitmap pixels but its field was absent from the composed page. Normal synchronized contexts rendered both fields. A browser regression checks visible light-to-dark field variation in screenshots of both instances; bitmap readback alone cannot prove visible rendering. No latency improvement is claimed for this correctness change. Invalidation and full/preview sampling contracts are covered by the moved package tests.
+The renderer uses synchronized Canvas contexts. With `desynchronized: true`, the pinned Windows Chromium consumer produced valid bitmap pixels for the second instance but failed to composite its field. A browser regression checks visible light-to-dark field variation in both instances. This was a rendering correction; no latency comparison was recorded.
 
 ## Reproducible benchmark protocol
 
