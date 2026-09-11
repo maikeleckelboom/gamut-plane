@@ -2,6 +2,8 @@
 
 Gamut Plane provides an interactive OKLCH and OKLab color plane for Vue, with sRGB and Display P3 gamut boundaries. It includes a standalone app for exploring colors and copying CSS values.
 
+**Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
+
 Both views edit the same OKLCH color:
 
 - **OKLCH:** lightness and chroma at a fixed hue.
@@ -11,7 +13,7 @@ Switching views preserves the color, including alpha and out-of-gamut values. Ga
 
 ![Gamut Plane showing OKLCH with Display P3 and sRGB boundaries](docs/assets/gamut-plane-desktop.png)
 
-The source is public under the MIT license. `@gamut-plane/core` and `@gamut-plane/vue` are private workspace packages and are **not published to npm**. A production demo is not yet available here.
+The source is public under the MIT license. `@gamut-plane/core` and `@gamut-plane/vue` are private workspace packages and are **not published to npm**.
 
 ## Run the app
 

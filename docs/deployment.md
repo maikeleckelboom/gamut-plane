@@ -21,12 +21,12 @@ The Worker's name must match `gamut-plane` in Wrangler. The asset directory is d
 
 Under **Settings > Build > Build Variables and Secrets**, set:
 
-| Build variable            | Value                                                             |
-| ------------------------- | ----------------------------------------------------------------- |
-| `NODE_VERSION`            | `24`                                                              |
-| `PNPM_VERSION`            | `11.9.0`                                                          |
-| `SKIP_DEPENDENCY_INSTALL` | `1`                                                               |
-| `VITE_PUBLIC_SITE_URL`    | Unset until the production hostname serves the verified candidate |
+| Build variable            | Value                                             |
+| ------------------------- | ------------------------------------------------- |
+| `NODE_VERSION`            | `24`                                              |
+| `PNPM_VERSION`            | `11.9.0`                                          |
+| `SKIP_DEPENDENCY_INSTALL` | `1`                                               |
+| `VITE_PUBLIC_SITE_URL`    | `https://gamut-plane.eckelboommaikel.workers.dev` |
 
 The [Workers Builds image](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/) supports all three tool/install variables. The build command owns the frozen-lockfile install. These are build variables, not Worker runtime bindings.
 
@@ -34,9 +34,9 @@ Keep automatic production builds enabled. Change the production branch under **S
 
 ## Site URL and metadata
 
-There is no verified production URL recorded yet. Local and initial production builds work without `VITE_PUBLIC_SITE_URL` and omit URL-dependent Open Graph fields.
+The production endpoint is [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev). Local builds work without `VITE_PUBLIC_SITE_URL` and omit URL-dependent Open Graph fields.
 
-First deploy the exact `dev` candidate and verify that the hostname assigned by Cloudflare successfully serves it over HTTPS. Then set `VITE_PUBLIC_SITE_URL` in the production Worker's build variables to that HTTPS site root without credentials, a query string, or a fragment. Rebuild and redeploy the same candidate. The build adds `og:url`, an absolute `og:image`, and an absolute `twitter:image`.
+Set `VITE_PUBLIC_SITE_URL` in the production Worker's build variables to that HTTPS site root without credentials, a query string, or a fragment. The next build adds `og:url`, an absolute `og:image`, and an absolute `twitter:image`.
 
 Verify those values on the deployed page before adding the URL to the README or GitHub homepage. Keep this value out of local or preview builds. If non-production builds are enabled later, ensure their build configuration leaves it unset.
 

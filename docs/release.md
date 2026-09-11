@@ -37,7 +37,7 @@ The default branch is `main`. Before the first promotion, it lacks the README an
 
 Review the candidate's tracked files and release assets for credentials, private URLs, local paths, temporary output, and unrelated product material. The source is already public, so this check is not a future visibility gate. Retain the [provenance record](provenance.md).
 
-No verified production URL is recorded yet. Check Cloudflare for an existing project before creating one; an empty README or homepage does not prove that no deployment exists.
+The production endpoint is [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev). Verify that the existing Worker's production deployment matches the candidate commit.
 
 ## 2. Run the clean-checkout gate
 
@@ -79,9 +79,9 @@ Check the axe results in OKLCH, OKLab, and narrow layouts, along with keyboard a
 
 ## 4. Deploy and verify `dev`
 
-Follow [Deployment](deployment.md) to connect the public repository to the `gamut-plane` Worker through Workers Builds. Select `dev` as the temporary production branch. Set the build command to `pnpm install --frozen-lockfile && pnpm build && pnpm check:build` and the deploy command to `pnpm exec wrangler deploy`. Configure the documented build variables and leave `VITE_PUBLIC_SITE_URL` unset for the initial deployment.
+Follow [Deployment](deployment.md) for the existing `gamut-plane` Worker's Workers Builds configuration. Select `dev` as the temporary production branch. Set the build command to `pnpm install --frozen-lockfile && pnpm build && pnpm check:build` and the deploy command to `pnpm exec wrangler deploy`. Configure the documented build variables, including `VITE_PUBLIC_SITE_URL` in **Settings > Build > Build Variables and Secrets**.
 
-Deploy the exact recorded `dev` candidate and verify that Cloudflare serves the assigned HTTPS hostname successfully. Then set `VITE_PUBLIC_SITE_URL` to that verified site root in **Settings > Build > Build Variables and Secrets**. Rebuild and redeploy the same candidate, and verify `og:url`, `og:image`, and `twitter:image` before recording the URL publicly.
+Verify that Workers Builds automatically deploys the exact recorded `dev` candidate and serves the production endpoint successfully. Check `og:url`, `og:image`, and `twitter:image` against that endpoint.
 
 Verify the deployed commit, HTTPS URL, response headers, metadata, favicon, social image, both planes and boundaries, pointer and keyboard input, copy behavior, narrow layout, 200% text, and browser console. Use the deployed site for these checks; local production tests do not establish Cloudflare behavior.
 
