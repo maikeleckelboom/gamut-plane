@@ -58,6 +58,7 @@ pnpm test
 pnpm check:gamut-tables
 pnpm build
 pnpm check:build
+pnpm exec wrangler deploy --dry-run
 pnpm test:e2e
 pnpm test:production
 pnpm test:package
@@ -78,7 +79,9 @@ Check the axe results in OKLCH, OKLab, and narrow layouts, along with keyboard a
 
 ## 4. Deploy and verify `dev`
 
-Follow [Deployment](deployment.md) to connect the public repository to a Git-integrated Cloudflare Pages project. Select `dev` as the temporary production branch. Set the production environment variables, including `VITE_PUBLIC_SITE_URL` once the actual site hostname is assigned. If the first build ran without it, rebuild the same candidate with the URL set.
+Follow [Deployment](deployment.md) to connect the public repository to the `gamut-plane` Worker through Workers Builds. Select `dev` as the temporary production branch. Set the build command to `pnpm install --frozen-lockfile && pnpm build && pnpm check:build` and the deploy command to `pnpm exec wrangler deploy`. Configure the documented build variables and leave `VITE_PUBLIC_SITE_URL` unset for the initial deployment.
+
+Deploy the exact recorded `dev` candidate and verify that Cloudflare serves the assigned HTTPS hostname successfully. Then set `VITE_PUBLIC_SITE_URL` to that verified site root in **Settings > Build > Build Variables and Secrets**. Rebuild and redeploy the same candidate, and verify `og:url`, `og:image`, and `twitter:image` before recording the URL publicly.
 
 Verify the deployed commit, HTTPS URL, response headers, metadata, favicon, social image, both planes and boundaries, pointer and keyboard input, copy behavior, narrow layout, 200% text, and browser console. Use the deployed site for these checks; local production tests do not establish Cloudflare behavior.
 
@@ -92,7 +95,7 @@ Commit and push the README change. Wait for both `dev` CI jobs and its updated C
 
 ## 5. Promote to `main`
 
-Fetch again and confirm that `origin/dev` is still the promotion candidate and `origin/main` is still the recorded baseline. Change the Cloudflare Pages production branch from `dev` to `main`, save the setting, and leave automatic production deployments enabled. Then merge without rewriting history:
+Fetch again and confirm that `origin/dev` is still the promotion candidate and `origin/main` is still the recorded baseline. In the Worker's **Settings > Build > Branch control**, change the production branch from `dev` to `main` immediately before promotion. Save the setting and leave automatic production builds enabled. Keep the GitHub default branch as `main`. Then merge without rewriting history:
 
 ```powershell
 git switch main

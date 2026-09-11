@@ -110,6 +110,6 @@ The app's inspector copies full-precision CSS values. RGB copy is available only
 | `packages/vue`  | Vue component, rendering, interactions, styles, and generated gamut tables        |
 | `apps/web`      | Standalone app, inspector, clipboard UI, and deployment assets                    |
 
-[Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Pages.
+[Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Workers Static Assets and Workers Builds.
 
 Copyright © 2026 Maikel Eckelboom. [MIT License](LICENSE). See [Provenance](docs/provenance.md) and [Third-Party Notices](THIRD_PARTY_NOTICES.md).
