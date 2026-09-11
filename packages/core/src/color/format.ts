@@ -1,4 +1,4 @@
-import { assertOklchColor, type OklchColor } from "./types";
+import { assertOklchColor, type OklchColor } from "./types.js";
 
 export const OKLCH_FORMAT_LIGHTNESS_DECIMALS = 1;
 export const OKLCH_FORMAT_CHROMA_DECIMALS = 4;

@@ -1,8 +1,8 @@
-import { isColorInGamut } from "../color/convert";
-import { assertOklchColor, type DisplayGamut, type OklchColor } from "../color/types";
-import { getMaximumChromaFromTable } from "../gamut/boundary";
-import type { GamutBoundaryTable } from "../gamut/types";
-import { OKLCH_PICKER_MAX_CHROMA } from "./plane";
+import { isColorInGamut } from "../color/convert.js";
+import { assertOklchColor, type DisplayGamut, type OklchColor } from "../color/types.js";
+import { getMaximumChromaFromTable } from "../gamut/boundary.js";
+import type { GamutBoundaryTable } from "../gamut/types.js";
+import { OKLCH_PICKER_MAX_CHROMA } from "./plane.js";
 
 const PICKER_CHROMA_EPSILON = 1e-6;
 

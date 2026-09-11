@@ -1,6 +1,6 @@
 import { OKLCH, parse } from "@texel/color";
 
-import { assertOklchColor, normalizeHue, type OklchColor } from "../color/types";
+import { assertOklchColor, normalizeHue, type OklchColor } from "../color/types.js";
 
 const NUMBER_OR_PERCENT = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?%?$/i;
 const HUE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?(?:deg)?$/i;

@@ -1,6 +1,6 @@
 # v0.1.0 release procedure
 
-This is the controlled first-release runbook. Do not execute it until the `dev` candidate is reviewed and its GitHub Actions workflow is green.
+This is the controlled first application-release runbook. Do not execute it until the `dev` candidate is reviewed and its GitHub Actions workflow is green.
 
 ## Preconditions
 
@@ -57,6 +57,7 @@ pnpm build
 pnpm check:build
 pnpm test:e2e
 pnpm test:production
+pnpm test:package
 pnpm audit --prod
 ```
 
@@ -151,6 +152,10 @@ In a private/logged-out browser session, verify:
 - source archives download;
 - the production app and social image are reachable;
 - no private URL, credential, local path, or excluded product material is exposed.
+
+## Package publication is a separate decision
+
+`@gamut-plane/core` and `@gamut-plane/vue` now have built ESM/declaration artifacts and a packed-consumer check. Both remain private and unpublished. Application release, deployment and repository visibility changes do not authorize npm publication. A future publication decision must confirm scope/name access, versions and registry metadata, remove the private guards deliberately, release core so the Vue dependency resolves, and verify a registry-installed consumer. No publishing credentials, automation or registry reservation are configured here.
 
 ## Rollback guidance
 

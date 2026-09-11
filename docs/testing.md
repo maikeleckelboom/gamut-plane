@@ -2,14 +2,35 @@
 
 ## Validation layers
 
-The release candidate uses four complementary layers:
+The repository uses five complementary layers:
 
 1. core unit tests for color conversion, gamut membership, projections, keyboard edits, contours, and generated-table contracts;
-2. Vue component tests for rendering invalidation, pointer arbitration, device pixel ratio, copy presentation, and responsive component behavior;
+2. `packages/vue/test` for rendering invalidation, pointer arbitration, DPR, numeric completion and reactive parent feedback; `apps/web/test` for inspector/copy composition and presentation;
 3. Playwright behavior and accessibility tests against the development server;
-4. Playwright production tests against `apps/web/dist`, served with the checked-in Cloudflare Pages `_headers` rules.
+4. Playwright production tests against `apps/web/dist`, served with the checked-in Cloudflare Pages `_headers` rules;
+5. isolated tarball consumption, strict typechecking, ESM import/SSR, production host build and package-owned browser tests.
 
 Automated axe checks fail on serious or critical violations in default OKLCH, OKLab, and narrow OKLCH states. Explicit semantic tests remain responsible for heading order, landmarks, keyboard reachability, visible focus, boundary controls, copy semantics and announcements, text gamut status, enlarged text, and horizontal overflow.
+
+## Component and embedding regressions
+
+`test/instrumentHost.test.ts` mounts a reactive parent that feeds color updates back, including cloned objects. It covers rollback, external replacement, pointer ownership, pending final values, equal-valued fixed-axis view switches, view changes during a gesture, and teardown. Fixed-prop tests remain useful for geometry and emission details but are not cancellation proof.
+
+`test/interactionHelpers.ts` provides the shared single-frame controller and pointer dispatcher. Renderer tests assert cache invalidation (including sub-millidegree fixed-axis changes), contour reuse, preview/full-quality transitions and disposal. DPR tests cover uncapped backing dimensions and runtime DPR changes.
+
+The maintained host lives in `packages/vue/consumer`; `packages/vue/e2e` owns its embedding, renderer and accessibility cases. It imports only `@gamut-plane/vue` and `style.css`, with one color-only model and one controlled plane model. No demo CSS, source alias, shared tsconfig or generated-file import is available to it.
+
+Run `pnpm test:package` from the root. This builds both packages, uses `pnpm pack`, inspects the real tar file lists and manifests, then copies the fixture into an OS temporary directory outside the workspace. It installs the two tarballs with a local core override (necessary while core is unpublished), plus declared consumer dependencies. It checks one physical Vue runtime, typechecks with library checking enabled, imports and server-renders both views without DOM globals, builds the consumer, and runs Chromium against that production build.
+
+The browser cases cover independent colors/views/focus, two-way plane ownership, IDs/associations, numeric drafts and alpha preservation, cancellation, container widths from 280–800px, 623/624/625px threshold edges, first reveal, scrolling/resizing during capture, enlarged text, host style isolation (including colliding internal class names), rendered gamut guides and axe accessibility. Screenshots must show light-to-dark field variation in both instances, so a painted but invisible Canvas cannot pass solely through bitmap inspection. Renderer-only browser cases moved out of the app suite. The app retains page integration, inspector propagation, boundary checkbox wiring, clipboard, visual references, metadata and deployment coverage; its axe checks validate the composed page as well.
+
+Successful temporary consumers are removed. Failures retain the consumer and Playwright traces/screenshots for diagnosis; the path is printed. To keep a successful host for inspection, run `pnpm --filter @gamut-plane/vue test:package --keep` after building the packages. Run focused Playwright selections from the retained consumer, using its installed tools and production output.
+
+Browser success-copy tests explicitly grant clipboard permissions and read back the copied representation. Failure tests override/reject the operation; unit tests also cover a false legacy result. Successful button feedback alone is not clipboard proof.
+
+Run app browser selections with `pnpm --filter @gamut-plane/web exec playwright test e2e/instrument.spec.ts`. The maintained full gate is listed in the README. Use `--last-failed` for the immediately preceding run when applicable; do not update unrelated visual references.
+
+Browser automation and axe are not physical-device, screen-reader, or manual assistive-technology verification. Non-Chromium engines and unavailable platforms must be reported as unverified.
 
 ## Visual snapshot policy
 

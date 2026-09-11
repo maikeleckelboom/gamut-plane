@@ -73,7 +73,7 @@ test("generate reviewed repository and social images", async ({ page }) => {
     copy.append(legend);
 
     const visual = document.createElement("section");
-    visual.className = "social-visual";
+    visual.className = "social-visual plane-instrument";
     visual.setAttribute("aria-label", "OKLCH plane with Display P3 and sRGB boundaries");
     visual.append(plane);
 

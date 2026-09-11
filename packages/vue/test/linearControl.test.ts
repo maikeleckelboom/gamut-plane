@@ -1,17 +1,18 @@
+import { installAnimationFrameController, dispatchPointer } from "./interactionHelpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, nextTick, ref } from "vue";
 
 import ColorChannelControl, {
   type LinearControlInterval,
-} from "@/components/ColorChannelControl.vue";
+} from "../src/components/ColorChannelControl.vue";
 import {
   PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
-} from "@/components/planeInstrumentStyle";
+} from "../src/components/planeInstrumentStyle";
 
 const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
 
@@ -63,45 +64,6 @@ function mountCanonicalControl(initialValue = 180) {
     updates,
     commits,
   };
-}
-
-function installAnimationFrameController() {
-  let nextId = 1;
-  let cancellationCount = 0;
-  const callbacks = new Map<number, FrameRequestCallback>();
-
-  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    const id = nextId++;
-    callbacks.set(id, callback);
-    return id;
-  });
-  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-    if (callbacks.delete(id)) cancellationCount += 1;
-  });
-
-  return {
-    get pendingCount(): number {
-      return callbacks.size;
-    },
-    get cancellationCount(): number {
-      return cancellationCount;
-    },
-    flush(): void {
-      const scheduled = [...callbacks.values()];
-      callbacks.clear();
-      for (const callback of scheduled) callback(0);
-    },
-  };
-}
-
-function dispatchPointer(element: Element, type: string, pointerId: number): void {
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperties(event, {
-    pointerId: { value: pointerId },
-    pointerType: { value: "mouse" },
-    button: { value: 0 },
-  });
-  element.dispatchEvent(event);
 }
 
 afterEach(() => {
@@ -546,12 +508,14 @@ describe("ColorChannelControl gamut annotations", () => {
 
     const number = wrapper.get('input[type="number"]');
     (number.element as HTMLInputElement).value = "0.55";
+    await number.trigger("input");
     await number.trigger("change");
     expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([0.55]);
     expect(wrapper.emitted("commit")?.at(-1)).toEqual([0.55]);
     expect((wrapper.get('input[type="range"]').element as HTMLInputElement).value).toBe("0.4");
 
     (number.element as HTMLInputElement).value = "0.56";
+    await number.trigger("input");
     await number.trigger("keydown", { key: "Enter" });
     expect(wrapper.emitted("update:modelValue")?.at(-1)).toEqual([0.56]);
     expect(wrapper.emitted("commit")?.at(-1)).toEqual([0.56]);
@@ -559,6 +523,7 @@ describe("ColorChannelControl gamut annotations", () => {
     const updateCount = wrapper.emitted("update:modelValue")?.length;
     const commitCount = wrapper.emitted("commit")?.length;
     (number.element as HTMLInputElement).value = "";
+    await number.trigger("input");
     await number.trigger("change");
     expect(wrapper.emitted("update:modelValue")).toHaveLength(updateCount ?? 0);
     expect(wrapper.emitted("commit")).toHaveLength(commitCount ?? 0);

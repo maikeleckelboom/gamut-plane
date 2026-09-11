@@ -1,3 +1,4 @@
+import { installAnimationFrameController } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -6,7 +7,7 @@ import {
   getCachedGamutBoundaryTable,
   parseCssColor,
 } from "@gamut-plane/core";
-import ColorPlane from "@/components/ColorPlane.vue";
+import ColorPlane from "../src/components/ColorPlane.vue";
 
 const originalPixelRatio = window.devicePixelRatio;
 
@@ -56,16 +57,7 @@ describe("planar canvas backing store", () => {
 
   it("invalidates backing dimensions when device pixel ratio changes at runtime", async () => {
     Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1 });
-    const frameCallbacks = new Map<number, FrameRequestCallback>();
-    let nextFrameId = 1;
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-      const id = nextFrameId++;
-      frameCallbacks.set(id, callback);
-      return id;
-    });
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-      frameCallbacks.delete(id);
-    });
+    const frames = installAnimationFrameController();
     const resolutionListeners = new Set<(event: MediaQueryListEvent) => void>();
     vi.mocked(window.matchMedia).mockImplementation(
       (query) =>
@@ -129,10 +121,8 @@ describe("planar canvas backing store", () => {
       listener({ matches: false, media: "(resolution: 1dppx)" } as MediaQueryListEvent);
     }
     await flushPromises();
-    expect(frameCallbacks.size).toBe(1);
-    const scheduled = [...frameCallbacks.values()];
-    frameCallbacks.clear();
-    for (const callback of scheduled) callback(0);
+    expect(frames.pendingCount).toBe(1);
+    frames.flush();
 
     expect(canvas.width).toBe(250);
     expect(canvas.height).toBe(200);

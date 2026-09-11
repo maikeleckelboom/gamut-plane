@@ -8,10 +8,10 @@ import {
   type PickerPlaneSampleScratch,
   type PlanePoint,
 } from "@gamut-plane/core";
-import { useDevicePixelRatio, useResizeObserver } from "@vueuse/core";
+import { useDevicePixelRatio, useEventListener, useResizeObserver } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-import GamutWarningGlyph from "@/components/GamutWarningGlyph.vue";
+import GamutWarningGlyph from "./GamutWarningGlyph.vue";
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
   PICKER_PROJECTION_MARKER_RADIUS,
@@ -19,10 +19,10 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "@/components/planeInstrumentStyle";
-import { placePlanarWarning } from "@/components/pickerWarningPlacement";
+} from "./planeInstrumentStyle";
+import { placePlanarWarning } from "./pickerWarningPlacement";
 
-export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
+import type { CanvasColorSpaceStatus } from "../types";
 type RenderedFieldQuality = "full" | "preview";
 
 const props = withDefaults(
@@ -74,6 +74,9 @@ let pendingPoint: PlanePoint | null = null;
 let activePointerId: number | null = null;
 let latestInteractionPoint: PlanePoint | null = null;
 let latestInteractionColor: OklchColor | null = null;
+let interactionOrigin: OklchColor | null = null;
+let boundsDirty = false;
+let isUnmounted = false;
 let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
@@ -167,7 +170,6 @@ function getCanvasContext(element: HTMLCanvasElement): CanvasRenderingContext2D 
     const requested = element.getContext("2d", {
       alpha: false,
       colorSpace: "display-p3",
-      desynchronized: true,
     });
     if (requested) {
       const granted = requested.getContextAttributes?.().colorSpace;
@@ -261,6 +263,7 @@ function resizeCanvas(element: HTMLCanvasElement): {
 
 function drawField(): void {
   fieldRaf = null;
+  if (isUnmounted) return;
   const element = canvas.value;
   if (!element) return;
   context ??= getCanvasContext(element);
@@ -274,7 +277,7 @@ function drawField(): void {
     props.interactionPreview &&
     width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
   const fieldQuality: RenderedFieldQuality = usePreview ? "preview" : "full";
-  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed.toFixed(3)}:${canvasColorSpace.value}:${fieldQuality}`;
+  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed}:${canvasColorSpace.value}:${fieldQuality}`;
   if (fieldKey === lastFieldKey) return;
 
   const color: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
@@ -336,11 +339,12 @@ function drawField(): void {
 }
 
 function scheduleFieldDraw(): void {
-  if (fieldRaf !== null) return;
+  if (isUnmounted || fieldRaf !== null) return;
   fieldRaf = window.requestAnimationFrame(drawField);
 }
 
 function pointFromPointer(event: PointerEvent): PlanePoint | null {
+  if (boundsDirty) measureSurface();
   if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0) return null;
   return props.plane.constrainPoint({
     x: (event.clientX - surfaceBounds.left) / surfaceBounds.width,
@@ -352,7 +356,11 @@ function measureSurface(): void {
   const element = surface.value;
   if (!element) return;
   const bounds = element.getBoundingClientRect();
-  if (bounds.width <= 0 || bounds.height <= 0) return;
+  boundsDirty = false;
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
+    return;
+  }
 
   const hasLayoutMetrics = element.offsetWidth > 0 && element.offsetHeight > 0;
   const scaleX = hasLayoutMetrics ? bounds.width / element.offsetWidth : 1;
@@ -419,10 +427,12 @@ function positionActiveAnnotations(point: PlanePoint): void {
 
 function emitLivePoint(point: PlanePoint): OklchColor {
   pendingPoint = null;
-  latestInteractionPoint = point;
   positionActiveAnnotations(point);
   const color = props.plane.unproject(point, activeProjection.value.fixed, props.modelValue);
-  latestInteractionColor = color;
+  if (activePointerId !== null) {
+    latestInteractionPoint = point;
+    latestInteractionColor = color;
+  }
   emit("update:modelValue", color);
   return color;
 }
@@ -434,7 +444,7 @@ function schedulePoint(point: PlanePoint): void {
   if (pointerRaf !== null) return;
   pointerRaf = window.requestAnimationFrame(() => {
     pointerRaf = null;
-    if (pendingPoint) emitLivePoint(pendingPoint);
+    if (!isUnmounted && activePointerId !== null && pendingPoint) emitLivePoint(pendingPoint);
   });
 }
 
@@ -446,13 +456,16 @@ function cancelPendingPoint(): void {
 
 function onPointerDown(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (activePointerId !== null) return;
   measureSurface();
   const point = pointFromPointer(event);
   if (!point || !surface.value) return;
   event.preventDefault();
   activePointerId = event.pointerId;
+  interactionOrigin = { ...props.modelValue };
   latestInteractionPoint = null;
   latestInteractionColor = null;
+  surface.value.focus({ preventScroll: true });
   surface.value.setPointerCapture?.(event.pointerId);
   schedulePoint(point);
 }
@@ -468,41 +481,48 @@ function onPointerMove(event: PointerEvent): void {
 function finishPointer(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
   const point = pointFromPointer(event) ?? pendingPoint ?? latestInteractionPoint;
-  cancelPendingPoint();
+  endPointer();
   if (point) {
     const color = emitLivePoint(point);
     emit("commit", color);
   }
-  const element = surface.value;
+}
+
+function endPointer(): void {
+  const pointerId = activePointerId;
+  cancelPendingPoint();
   activePointerId = null;
   latestInteractionPoint = null;
   latestInteractionColor = null;
-  if (element?.hasPointerCapture?.(event.pointerId)) element.releasePointerCapture(event.pointerId);
+  interactionOrigin = null;
+  if (pointerId !== null && surface.value?.hasPointerCapture?.(pointerId)) {
+    surface.value.releasePointerCapture(pointerId);
+  }
+}
+
+function cancelInteraction(rollback: boolean): void {
+  if (activePointerId === null) return;
+  const origin = interactionOrigin;
+  endPointer();
+  if (rollback && origin) emit("update:modelValue", origin);
+  positionActiveAnnotations(
+    props.plane.positionActivePoint(rollback && origin ? origin : props.modelValue),
+  );
+  emit("cancel");
 }
 
 function onPointerCancel(event: PointerEvent): void {
   if (event.pointerId !== activePointerId) return;
-  cancelPendingPoint();
-  activePointerId = null;
-  latestInteractionPoint = null;
-  latestInteractionColor = null;
-  positionActiveAnnotations(boundedActivePoint.value);
-  emit("cancel");
-}
-
-function onLostPointerCapture(event: PointerEvent): void {
-  if (event.pointerId !== activePointerId) return;
-  const pending = pendingPoint;
-  const point = pending ?? latestInteractionPoint;
-  const color = pending && point ? emitLivePoint(point) : latestInteractionColor;
-  cancelPendingPoint();
-  activePointerId = null;
-  latestInteractionPoint = null;
-  latestInteractionColor = null;
-  if (color) emit("commit", color);
+  cancelInteraction(true);
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape" && activePointerId !== null) {
+    event.preventDefault();
+    event.stopPropagation();
+    cancelInteraction(true);
+    return;
+  }
   let action: PickerPlaneKeyboardAction;
   if (event.key === "ArrowLeft") action = "decrease-x";
   else if (event.key === "ArrowRight") action = "increase-x";
@@ -513,12 +533,32 @@ function onKeydown(event: KeyboardEvent): void {
   else return;
 
   event.preventDefault();
+  cancelInteraction(false);
   const next = props.plane.editFromKeyboard(props.modelValue, action, event.shiftKey);
   emit("update:modelValue", next);
   emit("commit", next);
 }
 
-watch(fixedAxis, () => scheduleFieldDraw());
+watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
+watch(
+  () => props.plane,
+  () => cancelInteraction(false),
+  { flush: "sync" },
+);
+watch(
+  () => [props.modelValue.l, props.modelValue.c, props.modelValue.h, props.modelValue.alpha],
+  () => {
+    const expected = latestInteractionColor ?? interactionOrigin;
+    if (!expected || activePointerId === null) return;
+    // Cloned v-model feedback is still ours; a different parent value supersedes the gesture.
+    if (
+      (["l", "c", "h", "alpha"] as const).some((key) => props.modelValue[key] !== expected[key])
+    ) {
+      cancelInteraction(false);
+    }
+  },
+  { flush: "sync" },
+);
 watch(
   () => props.interactionPreview,
   () => scheduleFieldDraw(),
@@ -535,9 +575,17 @@ useResizeObserver(surface, () => {
   positionActiveAnnotations(boundedActivePoint.value);
   scheduleFieldDraw();
 });
+useEventListener(
+  "scroll",
+  () => {
+    boundsDirty = true;
+  },
+  { capture: true, passive: true },
+);
 
 onMounted(() => {
   void nextTick(() => {
+    if (isUnmounted) return;
     measureSurface();
     positionActiveAnnotations(boundedActivePoint.value);
     drawField();
@@ -545,8 +593,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  isUnmounted = true;
   if (fieldRaf !== null) window.cancelAnimationFrame(fieldRaf);
-  cancelPendingPoint();
+  fieldRaf = null;
+  endPointer();
 });
 </script>
 
@@ -577,7 +627,7 @@ onBeforeUnmount(() => {
       @pointermove="onPointerMove"
       @pointerup="finishPointer"
       @pointercancel="onPointerCancel"
-      @lostpointercapture="onLostPointerCapture"
+      @lostpointercapture="onPointerCancel"
       @keydown="onKeydown"
     >
       <canvas ref="canvas" aria-hidden="true" />

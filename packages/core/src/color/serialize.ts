@@ -1,8 +1,8 @@
 import { OKLCH, serialize } from "@texel/color";
 
-import { GAMUT_DEFINITIONS, colorToVector, isColorInGamut } from "./convert";
-import type { DisplayGamut, OklchColor } from "./types";
-import { GAMUT_EPSILON } from "../gamut/types";
+import { GAMUT_DEFINITIONS, colorToVector, isColorInGamut } from "./convert.js";
+import type { DisplayGamut, OklchColor } from "./types.js";
+import { GAMUT_EPSILON } from "../gamut/types.js";
 
 export type SerializationSpace = "oklch" | DisplayGamut;
 

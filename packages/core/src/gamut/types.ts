@@ -1,4 +1,4 @@
-import type { DisplayGamut } from "../color/types";
+import type { DisplayGamut } from "../color/types.js";
 
 /** Linear-light membership tolerance shared by exact gamut operations. */
 export const GAMUT_EPSILON = 1e-9;

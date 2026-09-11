@@ -44,6 +44,9 @@ importers:
       '@gamut-plane/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@gamut-plane/vue':
+        specifier: workspace:*
+        version: link:../../packages/vue
       '@vueuse/core':
         specifier: 14.3.0
         version: 14.3.0(vue@3.5.39(typescript@6.0.3))
@@ -91,12 +94,61 @@ importers:
         specifier: 1.1.11
         version: 1.1.11
     devDependencies:
+      '@types/node':
+        specifier: 24.13.2
+        version: 24.13.2
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
         version: 4.1.10(@types/node@24.13.2)(jsdom@28.0.0)(vite@8.1.4(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/vue:
+    dependencies:
+      '@gamut-plane/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vueuse/core':
+        specifier: 14.3.0
+        version: 14.3.0(vue@3.5.39(typescript@6.0.3))
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 4.12.1
+        version: 4.12.1(playwright-core@1.61.1)
+      '@playwright/test':
+        specifier: 1.61.1
+        version: 1.61.1
+      '@types/node':
+        specifier: 24.13.2
+        version: 24.13.2
+      '@vitejs/plugin-vue':
+        specifier: 6.0.7
+        version: 6.0.7(vite@8.1.4(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(vue@3.5.39(typescript@6.0.3))
+      '@vue/test-utils':
+        specifier: 2.4.6
+        version: 2.4.6
+      '@vue/tsconfig':
+        specifier: 0.9.1
+        version: 0.9.1(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))
+      jsdom:
+        specifier: 28.0.0
+        version: 28.0.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 8.1.4
+        version: 8.1.4(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@24.13.2)(jsdom@28.0.0)(vite@8.1.4(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
+      vue:
+        specifier: 3.5.39
+        version: 3.5.39(typescript@6.0.3)
+      vue-tsc:
+        specifier: 3.3.5
+        version: 3.3.5(typescript@6.0.3)
 
 packages:
 
@@ -999,8 +1051,8 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
-  nanoid@3.3.16:
-    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
+  nanoid@3.3.18:
+    resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
@@ -2069,7 +2121,7 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  nanoid@3.3.16: {}
+  nanoid@3.3.18: {}
 
   nopt@7.2.1:
     dependencies:
@@ -2154,7 +2206,7 @@ snapshots:
 
   postcss@8.5.25:
     dependencies:
-      nanoid: 3.3.16
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 

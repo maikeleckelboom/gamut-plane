@@ -7,7 +7,7 @@ export {
   type OklabColor,
   type OklchColor,
   type PickerPlane,
-} from "./color/types";
+} from "./color/types.js";
 export {
   colorFromVector,
   colorToVector,
@@ -17,16 +17,16 @@ export {
   isColorInGamut,
   toOklabColor,
   toOklchColor,
-} from "./color/convert";
+} from "./color/convert.js";
 export {
   formatOklch,
   OKLCH_FORMAT_ALPHA_DECIMALS,
   OKLCH_FORMAT_CHROMA_DECIMALS,
   OKLCH_FORMAT_HUE_DECIMALS,
   OKLCH_FORMAT_LIGHTNESS_DECIMALS,
-} from "./color/format";
-export { serializeColor, type SerializationSpace } from "./color/serialize";
-export { parseCssColor, UnsupportedColorInputError } from "./input/parseCssColor";
+} from "./color/format.js";
+export { serializeColor, type SerializationSpace } from "./color/serialize.js";
+export { parseCssColor, UnsupportedColorInputError } from "./input/parseCssColor.js";
 export {
   clearGamutBoundaryTableCache,
   findMaximumChroma,
@@ -34,8 +34,12 @@ export {
   getCachedGamutBoundaryTable,
   getGamutOutline,
   getMaximumChromaFromTable,
-} from "./gamut/boundary";
-export { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "./gamut/types";
+} from "./gamut/boundary.js";
+export {
+  GAMUT_EPSILON,
+  type GamutBoundaryOptions,
+  type GamutBoundaryTable,
+} from "./gamut/types.js";
 export {
   getChromaSliderMarkers,
   getHueGamutIntervals,
@@ -48,7 +52,7 @@ export {
   type PickerGamutBoundaryTables,
   type PickerGamutStatus,
   type PickerGamutStatusEntry,
-} from "./picker/analysis";
+} from "./picker/analysis.js";
 export {
   buildLightnessChromaBoundaryPath,
   buildOklabGamutContour,
@@ -75,4 +79,4 @@ export {
   type PickerPlaneSampleScratch,
   type PlaneColorReference,
   type PlanePoint,
-} from "./picker/plane";
+} from "./picker/plane.js";

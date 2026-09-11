@@ -20,6 +20,7 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4177",
     colorScheme: "dark",
+    permissions: ["clipboard-read", "clipboard-write"],
     contextOptions: {
       reducedMotion: "reduce",
     },

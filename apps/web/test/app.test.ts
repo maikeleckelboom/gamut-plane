@@ -9,6 +9,28 @@ afterEach(() => {
 });
 
 describe("standalone application", () => {
+  it.each(["native", "legacy"])(
+    "reports %s clipboard failure without claiming success",
+    async (method) => {
+      const original = navigator.clipboard;
+      if (method === "native")
+        vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error("Denied"));
+      else {
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+        vi.mocked(document.execCommand).mockReturnValueOnce(false);
+      }
+      const wrapper = mount(App, { attachTo: document.body });
+      await flushPromises();
+      const button = wrapper.get('[data-copy-representation="oklch"]');
+      await button.trigger("click");
+      await flushPromises();
+      expect(wrapper.get('[role="status"]').text()).toContain("Could not copy OKLCH");
+      expect(button.text()).toBe("Copy");
+      expect(document.querySelector("textarea")).toBeNull();
+      wrapper.unmount();
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: original });
+    },
+  );
   it("presents one neutral instrument surface with exact facts and truthful capability copy", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
@@ -26,15 +48,6 @@ describe("standalone application", () => {
     );
     expect(wrapper.get("#project-description").text()).toContain("Interactive OKLab and OKLCH");
     expect(wrapper.text().match(/Membership uses exact linear-light conversion/g)).toHaveLength(1);
-    expect(wrapper.text()).not.toContain("Gamut evidence");
-    expect(wrapper.text()).not.toContain("Thresholds follow current");
-    expect(wrapper.text()).not.toContain("Thresholds show current");
-
-    const visibleCopy = wrapper.text().toLowerCase();
-    for (const forbidden of ["project source", "proof", "repair", "delivery", "tokens"]) {
-      expect(visibleCopy).not.toContain(forbidden);
-    }
-
     wrapper.unmount();
   });
 

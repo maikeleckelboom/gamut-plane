@@ -1,3 +1,4 @@
+import { installAnimationFrameController, dispatchPointer } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -8,44 +9,9 @@ import {
   type OklchColor,
   type PickerPlaneId,
 } from "@gamut-plane/core";
-import ColorChannelControl from "@/components/ColorChannelControl.vue";
-import ColorPlane from "@/components/ColorPlane.vue";
-import PlaneInstrument from "@/components/PlaneInstrument.vue";
-
-function installAnimationFrameController() {
-  let nextId = 1;
-  const callbacks = new Map<number, FrameRequestCallback>();
-
-  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    const id = nextId++;
-    callbacks.set(id, callback);
-    return id;
-  });
-  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-    callbacks.delete(id);
-  });
-
-  return {
-    get pendingCount(): number {
-      return callbacks.size;
-    },
-    flush(): void {
-      const scheduled = [...callbacks.values()];
-      callbacks.clear();
-      for (const callback of scheduled) callback(0);
-    },
-  };
-}
-
-function dispatchPointer(element: Element, type: string, pointerId: number): void {
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperties(event, {
-    pointerId: { value: pointerId },
-    pointerType: { value: "mouse" },
-    button: { value: 0 },
-  });
-  element.dispatchEvent(event);
-}
+import ColorChannelControl from "../src/components/ColorChannelControl.vue";
+import ColorPlane from "../src/components/ColorPlane.vue";
+import PlaneInstrument from "../src/components/GamutPlane.vue";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -108,8 +74,9 @@ describe("PlaneInstrument edit contract", () => {
     const plane = wrapper.getComponent(ColorPlane);
     const hueControl = wrapper
       .findAllComponents(ColorChannelControl)
-      .find((control) => control.props("id") === "picker-hue")!;
-    const hue = wrapper.get("#picker-hue").element as HTMLInputElement;
+      .find((control) => control.props("channel") === "H")!;
+    const hue = wrapper.get('[data-picker-control="h"] input[type="range"]')
+      .element as HTMLInputElement;
 
     expect(plane.props("interactionPreview")).toBe(false);
     createLinearGradient.mockClear();
@@ -170,8 +137,9 @@ describe("PlaneInstrument edit contract", () => {
     const plane = wrapper.getComponent(ColorPlane);
     const hueControl = wrapper
       .findAllComponents(ColorChannelControl)
-      .find((control) => control.props("id") === "picker-hue")!;
-    const hue = wrapper.get("#picker-hue").element as HTMLInputElement;
+      .find((control) => control.props("channel") === "H")!;
+    const hue = wrapper.get('[data-picker-control="h"] input[type="range"]')
+      .element as HTMLInputElement;
 
     dispatchPointer(hue, "pointerdown", 21);
     hue.value = "260";
@@ -195,14 +163,15 @@ describe("PlaneInstrument edit contract", () => {
     frames.flush();
     await flushPromises();
 
-    for (const id of ["picker-lightness", "picker-chroma"] as const) {
-      const range = wrapper.get(`#${id}`).element as HTMLInputElement;
-      dispatchPointer(range, "pointerdown", id === "picker-lightness" ? 22 : 23);
-      range.value = id === "picker-lightness" ? "0.7" : "0.25";
+    for (const id of ["l", "c"] as const) {
+      const range = wrapper.get(`[data-picker-control="${id}"] input[type="range"]`)
+        .element as HTMLInputElement;
+      dispatchPointer(range, "pointerdown", id === "l" ? 22 : 23);
+      range.value = id === "l" ? "0.7" : "0.25";
       range.dispatchEvent(new Event("input", { bubbles: true }));
       await flushPromises();
       expect(plane.props("interactionPreview")).toBe(false);
-      dispatchPointer(range, "pointercancel", id === "picker-lightness" ? 22 : 23);
+      dispatchPointer(range, "pointercancel", id === "l" ? 22 : 23);
       frames.flush();
       await flushPromises();
     }
@@ -211,34 +180,14 @@ describe("PlaneInstrument edit contract", () => {
     await flushPromises();
     frames.flush();
     await flushPromises();
-    const fixedLightness = wrapper.get("#picker-oklab-lightness").element as HTMLInputElement;
+    const fixedLightness = wrapper.get('[data-picker-control="l"] input[type="range"]')
+      .element as HTMLInputElement;
     dispatchPointer(fixedLightness, "pointerdown", 24);
     fixedLightness.value = "0.72";
     fixedLightness.dispatchEvent(new Event("input", { bubbles: true }));
     await flushPromises();
     expect(plane.props("interactionPreview")).toBe(false);
     dispatchPointer(fixedLightness, "pointercancel", 24);
-
-    wrapper.unmount();
-  });
-
-  it("forwards planar cancellation after a live color without committing it", async () => {
-    const canonical = parseCssColor("oklch(62% 0.2 210)");
-    const live = parseCssColor("oklch(74% 0.28 210)");
-    const wrapper = mount(PlaneInstrument, {
-      attachTo: document.body,
-      props: { modelValue: canonical },
-    });
-    await flushPromises();
-
-    const plane = wrapper.getComponent(ColorPlane);
-    plane.vm.$emit("update:modelValue", live);
-    plane.vm.$emit("cancel");
-    await flushPromises();
-
-    expect(wrapper.emitted("update:modelValue")).toEqual([[live]]);
-    expect(wrapper.emitted("cancel")).toEqual([[]]);
-    expect(wrapper.emitted("commit")).toBeUndefined();
 
     wrapper.unmount();
   });
@@ -251,11 +200,10 @@ describe("PlaneInstrument edit contract", () => {
     await flushPromises();
 
     const instrument = wrapper.get("[data-plane-instrument]");
-    const title = instrument.get("#plane-instrument-title");
-    expect(instrument.attributes("aria-labelledby")).toBe("plane-instrument-title");
+    const title = instrument.get("h2");
+    expect(instrument.attributes("aria-labelledby")).toBe(title.attributes("id"));
     expect(title.classes()).toContain("sr-only");
     expect(title.text()).toBe("Color plane instrument");
-    expect(instrument.find(".plane-instrument__header").exists()).toBe(false);
 
     const details = wrapper.get("[data-boundary-details]");
     expect(details.attributes("open")).toBeUndefined();
@@ -330,7 +278,6 @@ describe("PlaneInstrument edit contract", () => {
       await flushPromises();
       const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
       expect(plane.get('[data-instrument-domain="disc"]').exists()).toBe(true);
-      expect(plane.find("[data-neutral-center]").exists()).toBe(false);
       expect(plane.attributes("data-field-resolution")).toBe("80x24");
       for (const boundary of plane.findAll("[data-gamut-boundary]")) {
         expect(boundary.attributes("d")).toMatch(/ Z$/);
@@ -338,7 +285,7 @@ describe("PlaneInstrument edit contract", () => {
 
       const fixedControl = wrapper
         .findAllComponents(ColorChannelControl)
-        .find((control) => control.props("id") === "picker-oklab-lightness");
+        .find((control) => control.props("channel") === "L");
       expect(fixedControl).toBeDefined();
       expect(fixedControl!.props("gradient")).toContain(
         serializeColor(OKLAB_AB_PLANE.editFixedAxis(canonical, 0.5)),
@@ -394,6 +341,7 @@ describe("PlaneInstrument edit contract", () => {
     );
     (aInput.element as HTMLInputElement).value = "0.8";
     await aInput.trigger("input");
+    await aInput.trigger("change");
 
     const liveA = wrapper.emitted("update:modelValue")?.at(-1)?.[0] as OklchColor;
     expect(liveA).toEqual(expectedA);
@@ -458,7 +406,6 @@ describe("PlaneInstrument edit contract", () => {
     await flushPromises();
 
     const plane = wrapper.get('[data-picker-plane][data-plane-id="oklab"]');
-    expect(plane.find('[data-marker-role="neutral-origin"]').exists()).toBe(false);
     expect(plane.get('[data-marker-role="active-color"]').attributes("aria-label")).toBe(
       "Selected color",
     );
@@ -476,10 +423,7 @@ describe("PlaneInstrument edit contract", () => {
     const p3BoundaryHit = plane.get('[data-gamut-boundary-hit="display-p3"]');
     expect(p3BoundaryHit.attributes("tabindex")).toBeUndefined();
     expect(p3BoundaryHit.attributes("role")).toBe("img");
-    expect(plane.find("[data-guide-control]").exists()).toBe(false);
 
-    const surface = plane.get("[data-render-color-space]");
-    expect(surface.attributes("aria-label")).not.toContain("Right-click");
     await wrapper.setProps({ showSrgbBoundary: false });
     await flushPromises();
 

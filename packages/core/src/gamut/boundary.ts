@@ -1,8 +1,8 @@
 import { OKLCH, convert, findCuspOKLCH, isRGBInGamut } from "@texel/color";
 
-import { GAMUT_DEFINITIONS } from "../color/convert";
-import type { DisplayGamut } from "../color/types";
-import { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "./types";
+import { GAMUT_DEFINITIONS } from "../color/convert.js";
+import type { DisplayGamut } from "../color/types.js";
+import { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "./types.js";
 
 const DEFAULT_HUE_STEPS = 180;
 const DEFAULT_LIGHTNESS_STEPS = 51;

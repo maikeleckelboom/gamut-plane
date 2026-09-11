@@ -102,6 +102,9 @@ jobs:
       - name: Verify the served production build
         run: pnpm test:production
 
+      - name: Validate packed Vue consumption
+        run: pnpm test:package
+
       - name: Upload Playwright failure evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v5

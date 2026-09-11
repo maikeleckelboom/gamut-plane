@@ -10,19 +10,21 @@
     "url": "https://github.com/maikeleckelboom/gamut-plane.git"
   },
   "scripts": {
-    "dev": "pnpm --filter @gamut-plane/web dev",
+    "dev": "pnpm build:packages && pnpm --filter @gamut-plane/web dev",
     "build": "pnpm -r --if-present build",
     "check:build": "pnpm --filter @gamut-plane/web check:build",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm build:packages && pnpm -r --if-present typecheck",
+    "test": "pnpm build:packages && pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @gamut-plane/web test:e2e",
     "test:production": "pnpm --filter @gamut-plane/web test:production",
     "lint": "pnpm -r --if-present lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check:gamut-tables": "pnpm --filter @gamut-plane/web check:gamut-tables",
+    "check:gamut-tables": "pnpm --filter @gamut-plane/vue check:gamut-tables",
     "generate:release-assets": "pnpm --filter @gamut-plane/web generate:release-assets",
-    "preview:production": "pnpm --filter @gamut-plane/web preview:production"
+    "preview:production": "pnpm --filter @gamut-plane/web preview:production",
+    "build:packages": "pnpm --filter @gamut-plane/core --filter @gamut-plane/vue build",
+    "test:package": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:package"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

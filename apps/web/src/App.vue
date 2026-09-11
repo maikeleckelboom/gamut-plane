@@ -1,23 +1,20 @@
 <script setup lang="ts">
-import {
-  getPickerGamutStatus,
-  serializeColor,
-  toOklabColor,
-  type DisplayGamut,
-  type OklchColor,
-  type PickerPlaneId,
-} from "@gamut-plane/core";
-import { useClipboard } from "@vueuse/core";
+import { isColorInGamut, serializeColor, toOklabColor, type DisplayGamut } from "@gamut-plane/core";
+import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
-import PlaneInstrument from "@/components/PlaneInstrument.vue";
-import type { CanvasColorSpaceStatus } from "@/components/ColorPlane.vue";
+import {
+  GamutPlane,
+  type OklchColor,
+  type GamutPlaneView,
+  type CanvasColorSpaceStatus,
+} from "@gamut-plane/vue";
+import "@gamut-plane/vue/style.css";
 import {
   CSS_DISPLAY_DECIMALS,
   formatOklchForDisplay,
   formatRgbCssForDisplay,
 } from "@/colorPresentation";
-import { PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
 
 const selectedColor = ref<OklchColor>({
   l: 0.68,
@@ -25,7 +22,7 @@ const selectedColor = ref<OklchColor>({
   h: 252,
   alpha: 1,
 });
-const activePlane = ref<PickerPlaneId>("oklch");
+const activePlane = ref<GamutPlaneView>("oklch");
 const boundaries = ref({
   srgb: true,
   displayP3: true,
@@ -34,7 +31,10 @@ const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
 const copiedRepresentation = ref<CssRepresentation | null>(null);
 
-const gamutStatus = computed(() => getPickerGamutStatus(selectedColor.value, PICKER_GAMUT_TABLES));
+const gamutStatus = computed(() => ({
+  srgb: { inGamut: isColorInGamut(selectedColor.value, "srgb") },
+  displayP3: { inGamut: isColorInGamut(selectedColor.value, "display-p3") },
+}));
 const oklab = computed(() => toOklabColor(selectedColor.value));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
@@ -47,14 +47,18 @@ const displayP3DisplayCss = computed(() =>
   displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
 );
 
-const {
-  copied,
-  copy,
-  isSupported: clipboardSupported,
-} = useClipboard({
-  legacy: true,
-  copiedDuring: 1800,
-});
+const clipboardSupported = useSupported(
+  () =>
+    typeof navigator.clipboard?.writeText === "function" ||
+    typeof document.execCommand === "function",
+);
+const copyFeedback = useTimeoutFn(
+  () => {
+    copiedRepresentation.value = null;
+  },
+  1800,
+  { immediate: false },
+);
 
 type CssRepresentation = "oklch" | "display-p3" | "srgb";
 
@@ -76,12 +80,8 @@ function exactCss(gamut: DisplayGamut): string | null {
   return status.inGamut ? serializeColor(selectedColor.value, gamut) : null;
 }
 
-function updateSelectedColor(color: OklchColor): void {
-  selectedColor.value = color;
-}
-
 function isCopied(representation: CssRepresentation): boolean {
-  return copied.value && copiedRepresentation.value === representation;
+  return copiedRepresentation.value === representation;
 }
 
 async function copyCss(
@@ -91,9 +91,32 @@ async function copyCss(
 ): Promise<void> {
   if (!value) return;
   copyAnnouncement.value = "";
-  await copy(value);
-  copiedRepresentation.value = representation;
-  copyAnnouncement.value = `Copied ${label}: ${value}`;
+  copiedRepresentation.value = null;
+  copyFeedback.stop();
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const previousFocus = document.activeElement;
+      const text = document.createElement("textarea");
+      text.value = value;
+      text.setAttribute("readonly", "");
+      text.style.cssText = "position: fixed; opacity: 0;";
+      document.body.append(text);
+      try {
+        text.select();
+        if (!document.execCommand("copy")) throw new Error("Clipboard copy rejected");
+      } finally {
+        text.remove();
+        if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+      }
+    }
+    copiedRepresentation.value = representation;
+    copyAnnouncement.value = `Copied ${label}: ${value}`;
+    copyFeedback.start();
+  } catch {
+    copyAnnouncement.value = `Could not copy ${label}. Select the CSS value and copy it manually.`;
+  }
 }
 </script>
 
@@ -111,14 +134,11 @@ async function copyCss(
 
     <section class="instrument-layout" aria-label="Gamut Plane instrument">
       <div class="instrument-primary">
-        <PlaneInstrument
-          :model-value="selectedColor"
-          :plane="activePlane"
+        <GamutPlane
+          v-model="selectedColor"
+          v-model:plane="activePlane"
           :show-srgb-boundary="boundaries.srgb"
           :show-display-p3-boundary="boundaries.displayP3"
-          @update:model-value="updateSelectedColor"
-          @update:plane="activePlane = $event"
-          @commit="updateSelectedColor"
           @capability="canvasCapability = $event"
         >
           <template #field-legend>
@@ -143,7 +163,7 @@ async function copyCss(
               <p>Visibility changes the view only; the selected color is unchanged.</p>
             </fieldset>
           </template>
-        </PlaneInstrument>
+        </GamutPlane>
       </div>
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">

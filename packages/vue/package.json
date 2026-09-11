@@ -1,0 +1,63 @@
+{
+  "name": "@gamut-plane/vue",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A self-contained Vue OKLab and OKLCH color-plane instrument.",
+  "license": "MIT",
+  "author": "Maikel Eckelboom",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikeleckelboom/gamut-plane.git",
+    "directory": "packages/vue"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc -p tsconfig.node.json",
+    "test": "pnpm check:gamut-tables && vitest run",
+    "lint": "oxlint src test e2e consumer scripts *.config.ts",
+    "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
+    "generate:gamut-tables": "node scripts/generateGamutTables.ts",
+    "test:package": "node scripts/checkPackedConsumer.ts"
+  },
+  "dependencies": {
+    "@gamut-plane/core": "workspace:*",
+    "@vueuse/core": "14.3.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.13.2",
+    "@vitejs/plugin-vue": "6.0.7",
+    "@vue/test-utils": "2.4.6",
+    "@vue/tsconfig": "0.9.1",
+    "jsdom": "28.0.0",
+    "typescript": "catalog:",
+    "vite": "8.1.4",
+    "vitest": "catalog:",
+    "vue": "3.5.39",
+    "vue-tsc": "3.3.5"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

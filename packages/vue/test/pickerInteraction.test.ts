@@ -1,3 +1,4 @@
+import { installAnimationFrameController, dispatchPointer } from "./interactionHelpers";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,65 +11,21 @@ import {
   type OklchColor,
   type PickerGamutBoundaryTables,
 } from "@gamut-plane/core";
-import ColorPlane from "@/components/ColorPlane.vue";
+import ColorPlane from "../src/components/ColorPlane.vue";
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "@/components/planeInstrumentStyle";
-import { placePlanarWarning } from "@/components/pickerWarningPlacement";
+} from "../src/components/planeInstrumentStyle";
+import { placePlanarWarning } from "../src/components/pickerWarningPlacement";
 
 const TABLE_OPTIONS = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
 const tables: PickerGamutBoundaryTables = {
   srgb: getCachedGamutBoundaryTable("srgb", TABLE_OPTIONS),
   displayP3: getCachedGamutBoundaryTable("display-p3", TABLE_OPTIONS),
 };
-
-function installAnimationFrameController() {
-  let nextId = 1;
-  const callbacks = new Map<number, FrameRequestCallback>();
-
-  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    const id = nextId++;
-    callbacks.set(id, callback);
-    return id;
-  });
-  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-    callbacks.delete(id);
-  });
-
-  return {
-    flush(): void {
-      const scheduled = [...callbacks.values()];
-      callbacks.clear();
-      for (const callback of scheduled) callback(0);
-    },
-  };
-}
-
-function dispatchPointer(
-  element: Element,
-  type: string,
-  init: {
-    pointerId: number;
-    clientX?: number;
-    clientY?: number;
-    pointerType?: string;
-    button?: number;
-  },
-): void {
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperties(event, {
-    pointerId: { value: init.pointerId },
-    clientX: { value: init.clientX ?? 0 },
-    clientY: { value: init.clientY ?? 0 },
-    pointerType: { value: init.pointerType ?? "mouse" },
-    button: { value: init.button ?? 0 },
-  });
-  element.dispatchEvent(event);
-}
 
 function mockSurfaceContentBox(
   element: HTMLElement,
@@ -212,16 +169,17 @@ describe("ColorPlane pointer interaction", () => {
     expect(marker.style.top).toBe("40%");
     expect({ left: warning.style.left, top: warning.style.top }).toEqual(warningAtCanonical);
     animationFrames.flush();
-    expect(emittedColors(wrapper)).toHaveLength(3);
+    expect(emittedColors(wrapper)).toHaveLength(4);
+    expect(emittedColors(wrapper).at(-1)).toEqual(canonical);
     expect(committedColors(wrapper)).toHaveLength(1);
     expect(wrapper.emitted("cancel")).toEqual([[]]);
 
     dispatchPointer(surface, "pointerdown", { pointerId: 9, clientX: 72, clientY: 62 });
     dispatchPointer(surface, "pointermove", { pointerId: 9, clientX: 150, clientY: 80 });
     animationFrames.flush();
-    const liveBeforeLostCapture = emittedColors(wrapper).at(-1)!;
     dispatchPointer(surface, "lostpointercapture", { pointerId: 9 });
-    expect(committedColors(wrapper).at(-1)).toEqual(liveBeforeLostCapture);
+    expect(emittedColors(wrapper).at(-1)).toEqual(canonical);
+    expect(committedColors(wrapper)).toHaveLength(1);
 
     await wrapper.get("[data-render-color-space]").trigger("keydown", { key: "ArrowRight" });
     const keyboardColor = emittedColors(wrapper).at(-1)!;
@@ -292,9 +250,9 @@ describe("ColorPlane pointer interaction", () => {
     animationFrames.flush();
     const commitsBeforeCaptureLoss = committedColors(wrapper).length;
     dispatchPointer(surface, "lostpointercapture", { pointerId: 32 });
-    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss + 1);
+    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss);
     dispatchPointer(surface, "lostpointercapture", { pointerId: 32 });
-    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss + 1);
+    expect(committedColors(wrapper)).toHaveLength(commitsBeforeCaptureLoss);
 
     const updatesBeforeKeyboard = emittedColors(wrapper).length;
     const commitsBeforeKeyboard = committedColors(wrapper).length;

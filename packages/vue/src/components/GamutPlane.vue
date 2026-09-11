@@ -12,24 +12,25 @@ import {
   type OklchColor,
   type PickerPlaneId,
 } from "@gamut-plane/core";
-import { computed, ref, watch } from "vue";
+import { computed, ref, useId, watch } from "vue";
+import NumericInput from "./NumericInput.vue";
+import "../style.css";
 
 import ColorChannelControl, {
   type LinearControlInterval,
   type LinearControlMarker,
-} from "@/components/ColorChannelControl.vue";
-import ColorPlane, { type CanvasColorSpaceStatus } from "@/components/ColorPlane.vue";
-import { PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
+} from "./ColorChannelControl.vue";
+import ColorPlane from "./ColorPlane.vue";
+import type { CanvasColorSpaceStatus } from "../types.js";
+import { PICKER_GAMUT_TABLES } from "../generated/gamutTables";
 
 const props = withDefaults(
   defineProps<{
     modelValue: OklchColor;
-    plane?: PickerPlaneId;
     showSrgbBoundary?: boolean;
     showDisplayP3Boundary?: boolean;
   }>(),
   {
-    plane: "oklch",
     showSrgbBoundary: true,
     showDisplayP3Boundary: true,
   },
@@ -37,17 +38,22 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "update:modelValue": [color: OklchColor];
-  "update:plane": [plane: PickerPlaneId];
   commit: [color: OklchColor];
   cancel: [];
   capability: [status: CanvasColorSpaceStatus];
 }>();
 
+defineSlots<{ "field-legend"(): unknown }>();
+
+const plane = defineModel<PickerPlaneId>("plane", { default: "oklch" });
+const instanceId = useId();
+const titleId = `${instanceId}-instrument-title`;
+
 const PLANE_OPTIONS: readonly PickerPlaneId[] = ["oklch", "oklab"];
 const planeOptionButtons = new Map<PickerPlaneId, HTMLButtonElement>();
 const tables = PICKER_GAMUT_TABLES;
 const activePlaneContract = computed(() =>
-  props.plane === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
+  plane.value === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
 );
 const planeProjection = computed(() => activePlaneContract.value.project(props.modelValue));
 const status = computed(() => getPickerGamutStatus(props.modelValue, tables));
@@ -148,7 +154,7 @@ const oklabLightnessGradient = computed(() =>
 
 const activeCss = computed(() => serializeColor(props.modelValue));
 const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
-const primaryGamutWarning = "Outside primary Display P3. Canonical OKLCH is preserved.";
+const primaryGamutWarning = "Outside Display P3";
 const hueWarningPosition = computed(() => normalizeHue(props.modelValue.h) / 360);
 const chromaWarningPosition = computed(() => chromaMarkers.value.active.position);
 const srgbBoundaryProjectionColor = computed(() =>
@@ -173,20 +179,20 @@ const boundaryProjectionChroma = computed(
   () => chromaMarkers.value.srgbBoundaryProjection?.chroma ?? null,
 );
 const hueRangeDragging = ref(false);
-const fixedAxisFieldPreview = computed(() => props.plane === "oklch" && hueRangeDragging.value);
+const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
 const controlHelp = computed(() =>
-  props.plane === "oklab"
+  plane.value === "oklab"
     ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
-    : "Hue fixes this plane. Channel guides show current Display P3 and sRGB limits; canonical chroma is not clamped.",
+    : "Hue fixes this plane. The guides show sampled gamut limits; your color can cross them.",
 );
 const chromaHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Active C ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 view. The slider stops at its edge; the numeric field preserves canonical C.`
+    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 view. Use the numeric field to edit beyond the slider.`
     : undefined,
 );
 const oklabDomainHelp = computed(() =>
   props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Active radius ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; canonical OKLCH remains unchanged.`
+    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; your color is unchanged.`
     : undefined,
 );
 
@@ -199,20 +205,8 @@ function colorGradient(segments: number, colorAt: (position: number) => OklchCol
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
 
-function updatePlane(color: OklchColor): void {
-  emit("update:modelValue", color);
-}
-
-function commitPlane(color: OklchColor): void {
-  emit("commit", color);
-}
-
-function cancelPlane(): void {
-  emit("cancel");
-}
-
 function selectPlane(value: PickerPlaneId): void {
-  if (value !== props.plane) emit("update:plane", value);
+  plane.value = value;
 }
 
 function setPlaneOptionButton(value: PickerPlaneId, element: unknown): void {
@@ -276,17 +270,13 @@ function oklabCoordinateColor(coordinate: OklabCoordinate, value: number): Oklch
   return contract.unproject(point, projection.fixed, props.modelValue);
 }
 
-function numericValue(event: Event): number {
-  return (event.currentTarget as HTMLInputElement).valueAsNumber;
-}
-
-function updateOklabCoordinate(coordinate: OklabCoordinate, event: Event): void {
-  const color = oklabCoordinateColor(coordinate, numericValue(event));
+function updateOklabCoordinate(coordinate: OklabCoordinate, value: number): void {
+  const color = oklabCoordinateColor(coordinate, value);
   if (color) emit("update:modelValue", color);
 }
 
-function commitOklabCoordinate(coordinate: OklabCoordinate, event: Event): void {
-  const color = oklabCoordinateColor(coordinate, numericValue(event));
+function commitOklabCoordinate(coordinate: OklabCoordinate, value: number): void {
+  const color = oklabCoordinateColor(coordinate, value);
   if (color) emit("commit", color);
 }
 
@@ -312,7 +302,7 @@ function commitChannel(channel: "l" | "c" | "h", value: number): void {
 }
 
 watch(
-  () => props.plane,
+  () => plane.value,
   () => {
     hueRangeDragging.value = false;
   },
@@ -325,9 +315,9 @@ watch(
     data-plane-instrument
     :data-active-plane="plane"
     :style="instrumentStyle"
-    aria-labelledby="plane-instrument-title"
+    :aria-labelledby="titleId"
   >
-    <h2 id="plane-instrument-title" class="sr-only">Color plane instrument</h2>
+    <h2 :id="titleId" class="sr-only">Color plane instrument</h2>
 
     <div class="plane-instrument__view-control">
       <span>Coordinate view</span>
@@ -363,9 +353,9 @@ watch(
           :interaction-preview="fixedAxisFieldPreview"
           :show-srgb-boundary="showSrgbBoundary"
           :show-display-p3-boundary="showDisplayP3Boundary"
-          @update:model-value="updatePlane"
-          @commit="commitPlane"
-          @cancel="cancelPlane"
+          @update:model-value="emit('update:modelValue', $event)"
+          @commit="emit('commit', $event)"
+          @cancel="emit('cancel')"
           @capability="emit('capability', $event)"
         />
         <slot name="field-legend" />
@@ -375,7 +365,7 @@ watch(
         <p class="plane-instrument__control-help">{{ controlHelp }}</p>
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
-            id="picker-hue"
+            :id="`${instanceId}-hue`"
             channel="H"
             label="Hue"
             :model-value="modelValue.h"
@@ -390,11 +380,12 @@ watch(
             :warning-position="hueWarningPosition"
             @update:model-value="updateChannel('h', $event)"
             @commit="commitChannel('h', $event)"
+            @cancel="emit('cancel')"
             @range-interaction="hueRangeDragging = $event"
           />
 
           <ColorChannelControl
-            id="picker-lightness"
+            :id="`${instanceId}-lightness`"
             channel="L"
             label="Lightness"
             :model-value="modelValue.l"
@@ -409,10 +400,11 @@ watch(
             :warning-position="modelValue.l"
             @update:model-value="updateChannel('l', $event)"
             @commit="commitChannel('l', $event)"
+            @cancel="emit('cancel')"
           />
 
           <ColorChannelControl
-            id="picker-chroma"
+            :id="`${instanceId}-chroma`"
             channel="C"
             label="Chroma"
             :model-value="modelValue.c"
@@ -430,12 +422,13 @@ watch(
             :help="chromaHelp"
             @update:model-value="updateChannel('c', $event)"
             @commit="commitChannel('c', $event)"
+            @cancel="emit('cancel')"
           />
         </template>
 
         <template v-else>
           <ColorChannelControl
-            id="picker-oklab-lightness"
+            :id="`${instanceId}-oklab-lightness`"
             channel="L"
             label="OKLab lightness · fixed axis"
             :model-value="planeProjection.fixed"
@@ -451,39 +444,40 @@ watch(
             :help="oklabDomainHelp"
             @update:model-value="updateOklabLightness"
             @commit="commitOklabLightness"
+            @cancel="emit('cancel')"
           />
           <div class="plane-instrument__coordinate-readout" aria-label="Editable OKLab coordinates">
             <span>Editable coordinate</span>
             <label>
               <span>a</span>
-              <input
-                type="number"
-                :value="planeProjection.x.toFixed(4)"
+              <NumericInput
+                :model-value="planeProjection.x"
+                :precision="4"
                 :min="activePlaneContract.xAxis.min"
                 :max="activePlaneContract.xAxis.max"
-                step="0.001"
+                :step="0.001"
                 inputmode="decimal"
                 data-oklab-coordinate="a"
                 aria-label="OKLab a numeric value"
-                @input="updateOklabCoordinate('a', $event)"
-                @change="commitOklabCoordinate('a', $event)"
-                @keydown.enter.prevent="commitOklabCoordinate('a', $event)"
+                @update:model-value="updateOklabCoordinate('a', $event)"
+                @commit="commitOklabCoordinate('a', $event)"
+                @cancel="emit('cancel')"
               />
             </label>
             <label>
               <span>b</span>
-              <input
-                type="number"
-                :value="planeProjection.y.toFixed(4)"
+              <NumericInput
+                :model-value="planeProjection.y"
+                :precision="4"
                 :min="activePlaneContract.yAxis.min"
                 :max="activePlaneContract.yAxis.max"
-                step="0.001"
+                :step="0.001"
                 inputmode="decimal"
                 data-oklab-coordinate="b"
                 aria-label="OKLab b numeric value"
-                @input="updateOklabCoordinate('b', $event)"
-                @change="commitOklabCoordinate('b', $event)"
-                @keydown.enter.prevent="commitOklabCoordinate('b', $event)"
+                @update:model-value="updateOklabCoordinate('b', $event)"
+                @commit="commitOklabCoordinate('b', $event)"
+                @cancel="emit('cancel')"
               />
             </label>
             <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
@@ -498,12 +492,12 @@ watch(
           <div class="plane-instrument__evidence-body">
             <p class="plane-instrument__legend-note">
               <template v-if="plane === 'oklch'">
-                Table guides follow the fixed hue. The active point may cross either guide without
-                clamping canonical chroma.
+                The guides follow the fixed hue. Your color can cross either guide without reducing
+                its chroma.
               </template>
               <template v-else>
-                Closed contours project cached Cmax facts at fixed lightness. Neither contour clips
-                canonical OKLCH.
+                The contours show sampled gamut limits at this lightness. Your color can cross
+                either guide.
               </template>
             </p>
 
@@ -517,7 +511,7 @@ watch(
                 <code> C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }} </code>
               </div>
               <div class="plane-instrument__active-readout">
-                <span>Active canonical</span>
+                <span>Selected color</span>
                 <code v-if="plane === 'oklab'">
                   OKLCH C {{ modelValue.c.toFixed(4) }} · H {{ modelValue.h.toFixed(2) }}°
                 </code>
@@ -540,18 +534,16 @@ watch(
             </div>
             <p class="plane-instrument__method">
               <template v-if="plane === 'oklab'">
-                Closed contours project cached Cmax(L, h) samples into a/b; field samples unproject
-                through OKLab to canonical OKLCH. The disc edge is an instrument limit, not gamut
-                mapping.
+                Contours and the boundary projection are sampled guides, not exact gamut tests. The
+                circular editing limit is separate from both display gamuts.
               </template>
               <template v-else>
-                Boundary paths, ticks, intervals, and the boundary projection are interpolated
-                visualization; exact membership and serialization remain separate.
+                Contours, channel marks and the boundary projection are sampled guides. Gamut
+                membership and CSS output use direct color conversion.
               </template>
             </p>
           </div>
         </details>
-        <slot name="context" />
       </div>
     </div>
   </section>

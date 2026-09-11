@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { findMaximumChroma, getMaximumChromaFromTable } from "@gamut-plane/core";
-import { PICKER_GAMUT_TABLE_DIGEST, PICKER_GAMUT_TABLES } from "@/generated/gamutTables";
+import { PICKER_GAMUT_TABLE_DIGEST, PICKER_GAMUT_TABLES } from "../src/generated/gamutTables";
 
 describe("bundled picker gamut facts", () => {
   it("loads the generated resolution and stable source digest", () => {

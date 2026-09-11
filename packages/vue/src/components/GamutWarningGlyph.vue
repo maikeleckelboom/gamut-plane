@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PICKER_WARNING_GLYPH_SIZE } from "@/components/planeInstrumentStyle";
+import { PICKER_WARNING_GLYPH_SIZE } from "./planeInstrumentStyle";
 </script>
 
 <template>
@@ -37,7 +37,7 @@ import { PICKER_WARNING_GLYPH_SIZE } from "@/components/planeInstrumentStyle";
 }
 
 .gamut-warning-glyph__core {
-  stroke: var(--status-outside);
+  stroke: var(--gp-status-outside, oklch(0.77 0.15 45));
   stroke-width: 1.45;
 }
 </style>

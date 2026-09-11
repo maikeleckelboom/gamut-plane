@@ -2,7 +2,8 @@
 import { useResizeObserver } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-import GamutWarningGlyph from "@/components/GamutWarningGlyph.vue";
+import NumericInput from "./NumericInput.vue";
+import GamutWarningGlyph from "./GamutWarningGlyph.vue";
 import {
   PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
@@ -16,11 +17,8 @@ import {
   PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
-} from "@/components/planeInstrumentStyle";
-import {
-  getSliderWarningPosition,
-  type SliderWarningObstacle,
-} from "@/components/pickerWarningPlacement";
+} from "./planeInstrumentStyle";
+import { getSliderWarningPosition, type SliderWarningObstacle } from "./pickerWarningPlacement";
 
 export interface LinearControlMarker {
   id: string;
@@ -87,6 +85,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: number];
   commit: [value: number];
+  cancel: [];
   "range-interaction": [active: boolean];
 }>();
 
@@ -258,18 +257,6 @@ function clamp(value: number): number {
   return Math.min(props.max, Math.max(props.min, value));
 }
 
-function clampNumeric(value: number): number {
-  return props.overflowMax ? Math.max(props.min, value) : clamp(value);
-}
-
-function updateFromNumeric(event: Event): void {
-  const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
-  if (!Number.isFinite(value)) return;
-  const next = clampNumeric(value);
-  emit("update:modelValue", next);
-  emit("commit", next);
-}
-
 function updateFromRange(event: Event): void {
   const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
   if (!Number.isFinite(value)) return;
@@ -395,17 +382,18 @@ onBeforeUnmount(() => {
       >
         {{ contextualThreshold.label }}
       </span>
-      <input
+      <NumericInput
         class="channel-control__number"
-        type="number"
         :aria-label="`${label} numeric value`"
         :aria-describedby="describedBy"
-        :value="modelValue.toFixed(precision)"
+        :model-value="modelValue"
+        :precision="precision"
         :min="min"
         :max="numericMax"
         :step="step"
-        @change="updateFromNumeric"
-        @keydown.enter.prevent="updateFromNumeric"
+        @update:model-value="emit('update:modelValue', $event)"
+        @commit="emit('commit', $event)"
+        @cancel="emit('cancel')"
       />
     </header>
 

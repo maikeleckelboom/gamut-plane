@@ -1,7 +1,7 @@
-import { convertOklabToOklch, convertOklchToOklab } from "../color/convert";
-import { assertOklchColor, normalizeHue, type OklchColor } from "../color/types";
-import { getMaximumChromaFromTable } from "../gamut/boundary";
-import type { GamutBoundaryTable } from "../gamut/types";
+import { convertOklabToOklch, convertOklchToOklab } from "../color/convert.js";
+import { assertOklchColor, normalizeHue, type OklchColor } from "../color/types.js";
+import { getMaximumChromaFromTable } from "../gamut/boundary.js";
+import type { GamutBoundaryTable } from "../gamut/types.js";
 
 export const OKLCH_PICKER_MAX_CHROMA = 0.4;
 export const OKLAB_PICKER_AXIS_LIMIT = OKLCH_PICKER_MAX_CHROMA;

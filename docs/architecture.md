@@ -2,36 +2,62 @@
 
 ## Layer boundaries
 
-Gamut Plane has two maintained layers.
+Dependency direction is **core → Vue → app** (each layer consumes the one before it).
 
-`packages/core` owns color-domain behavior:
+- `packages/core` (`@gamut-plane/core`) owns framework-neutral color types, conversion, exact gamut membership, CSS serialization/parsing, plane geometry, keyboard math, boundary search and sampled-table analysis. It has no Vue, DOM or Canvas dependency.
+- `packages/vue` (`@gamut-plane/vue`) owns `GamutPlane`, its internal controls, Canvas/SVG rendering, pointer arbitration, numeric drafts, invalidation, local styling, generated visualization data and component/consumer tests.
+- `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
 
-- neutral OKLCH and OKLab value types;
-- conversions between OKLCH, OKLab, sRGB, and Display P3;
-- exact gamut membership and boundary search;
-- CSS color parsing, formatting, and exact serialization;
-- picker-plane projection, unprojection, constraints, keyboard behavior, and sampling contracts;
-- deterministic table interpolation and derived visualization analysis.
+The app has no source alias or private subpath into either package. Its own `@` alias resolves only app code. The Vue renderer remains component-owned; there is no separate renderer, provider or plugin layer.
 
-The package is framework-independent and browser-independent. Its public barrel exports only retained reusable contracts. It must not gain Vue components, DOM types, Canvas state, app copy, route state, persistence, or generated web assets.
+## Distribution and public API
 
-`apps/web` owns the runnable instrument:
+Both packages export built ESM JavaScript and declarations from `dist`. Core uses TypeScript compilation with Node-compatible relative import extensions; Vue uses Vite library mode with `vue`, `@vueuse/core` and `@gamut-plane/core` external. `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support the component type without creating public subpaths.
 
-- Vue state and component composition;
-- Canvas 2D field rendering;
-- SVG boundary presentation and visible controls;
-- pointer and keyboard event arbitration;
-- ResizeObserver and device-pixel-ratio integration;
-- clipboard behavior and accessible status announcements;
-- capability reporting, responsive layout, browser tests, and generated visualization tables.
+Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. The instrument retains ownership of gestures, rollback and rendering invalidation.
 
-The app may depend on core. Core must never depend on the app.
+Vue exports only `GamutPlane`, `OklchColor`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. The required color model, optional plane model, two boundary-visibility props, completed/cancelled edit events, capability event and `field-legend` slot are the entire component API. The unused context slot is omitted. Renderer constants, table paths, preview flags and IDs stay private.
 
-## State ownership
+The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ownership. View changes never convert or republish the authored color. Boundary props default to true. `field-legend` accepts host-owned explanatory or visibility controls without exposing renderer state. Canvas capability describes the granted context, not display hardware; `pending` is the initial shell state.
 
-`App.vue` owns the active canonical `OklchColor`, selected plane, boundary visibility, and Canvas capability status as local state. Selecting a plane changes the view only. It does not round-trip or rewrite the color.
+The artifacts contain only built output, package metadata, README and MIT license. CSS is marked side-effectful. Both package manifests remain private to prevent accidental publication. No registry package is claimed. The isolated consumer installs actual tarballs and maps the unpublished core dependency to its tarball; future registry distribution can resolve the normal core version already written by pnpm pack.
 
-The planar component emits live color updates and one commit per completed interaction. It keeps transient pointer state locally, coalesces pointer movement through one pending animation frame, and restores the interaction origin on cancellation. No global store or persistence layer exists.
+## Styling and host ownership
+
+`packages/vue/src/style.css` supplies local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. No package rule changes document themes, body/html, generic controls or focus outside the instrument. The app's document resets, fonts and page palette stay in `app.css`.
+
+The root owns the named inline-size container `gamut-plane`. A complete one-column base layout becomes two columns at 39em (320px field + 270px controls + 34px gap at the default font size). Enlarged text raises that threshold. Below 30em, supplementary text/readouts adapt. Host width, not viewport width, owns these decisions; without container queries the one-column layout remains usable.
+
+Vue `useId()` supplies stable title/control IDs. Multiple instruments in one Vue application need no caller-supplied IDs. Separate Vue applications sharing a document should configure distinct `app.config.idPrefix` values.
+
+## Server rendering
+
+Importing either ESM entry needs no browser globals. The instrument can server-render its shell and guides; Canvas context work, observers and drawing begin on mount. Packed-consumer tests import and server-render both views with two instances in Node 24, checking unique IDs, no emitted edits and preserved authored values. Hydration and full Nuxt integration require their own application test; this smoke test makes no broader claim.
+
+## Interaction lifecycle
+
+There is one authored color in the parent. The component has temporary gesture state and numeric drafts, not a second persistent color model.
+
+| Input or event                                               | Behavior                                                                                                                                                                                        |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plane pointer down/move                                      | One pointer owns the gesture. Store only its latest point and publish at most once per animation frame.                                                                                         |
+| Pointer up                                                   | Discard the scheduled callback, publish the final point synchronously, then emit one `commit`. Subsequent capture loss is inert.                                                                |
+| Pointer cancel, unexpected capture loss, active-plane Escape | Discard queued work, emit the gesture's starting color through `update:modelValue`, then `cancel`; never `commit`.                                                                              |
+| Different parent color                                       | End the plane gesture without rollback, discard pending work and emit `cancel`. The parent's replacement stays authoritative.                                                                   |
+| View changes during a plane gesture                          | End the gesture and discard its pending point. Retain the last published color without a commit; never reinterpret an old point through the new view.                                           |
+| Plane keyboard coordinate edit                               | Publish and commit the edited value immediately.                                                                                                                                                |
+| Native range input/change                                    | Coalesce live input per frame. `change` delivers the final native value and commits it. Cancellation/blur discards pending range work and ends Hue preview, retaining already published values. |
+| Numeric input                                                | Hold a draft without publishing while typing. Enter, native change or blur completes a valid edit once. Bounds apply on completion; invalid/empty drafts restore the current value.             |
+| Numeric Escape                                               | Discard a dirty draft without changing the color; emit `cancel`. Idle Escape bubbles to the host.                                                                                               |
+| Unmount                                                      | Cancel queued pointer/range/draw work and release pointer capture. Do not publish or commit during teardown.                                                                                    |
+
+Plane feedback is recognized by exact equality of the four authored channels with the last emitted color, so ordinary reactive or cloned `v-model` feedback retains ownership. A differing value supersedes the gesture. Identical-valued external replacements are indistinguishable from feedback through the existing value-only API; no revision protocol is introduced. Parents should feed accepted updates back promptly rather than replaying delayed stale values.
+
+`NumericInput.vue` owns draft, validation and completion deduplication for channel and OKLab fields. It does not own color math. `GamutPlane.vue` continues to use core plane unprojection for a/b edits and preserves alpha. Numeric values are not round-tripped through hex or a sampled projection.
+
+`ColorPlane.vue` owns pointer capture and geometry. ResizeObserver updates its local size; a scoped VueUse scroll listener marks pointer bounds dirty, and the next pointer event measures them again. Mount/reveal and DPR changes schedule rendering. Escape is handled on the focused input/surface only, not by a global key listener.
+
+The installed `useClipboard` implementation does not expose failure from its legacy `execCommand` fallback. The demo instead checks native `writeText` rejection and the legacy boolean result. Its feedback timeout still uses VueUse. Clipboard success is shown only after a successful operation.
 
 ## Exact facts and visualization guides
 
@@ -41,20 +67,10 @@ Contours, crossing ticks, and the sRGB boundary projection are interpolated visu
 
 ## Generated tables
 
-The web app owns checked-in tables at `apps/web/src/generated/gamutTables.ts`. The TypeScript generator at `apps/web/scripts/generateGamutTables.ts` calls core math through Vite's module runner, emits deterministic `Float32Array` payloads, and records the generation settings and digest.
+The Vue package owns checked-in tables at `packages/vue/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Vite embeds those resources in the Vue ESM artifact. Import decodes the payloads; it does not search or generate boundaries at startup.
 
 Generation does not run at application startup or during interaction. `pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. Any intentional setting or algorithm change must regenerate the file and update its tests and evidence in the same change.
 
 ## Renderer boundary
 
-Rendering remains an app concern for this baseline. `ColorPlane.vue` owns Canvas context negotiation, drawing buffers, invalidation keys, and DOM event integration while delegating projection and color sampling to the plane contract.
-
-A renderer package should be extracted only when at least one real non-Vue consumer exists and the shared boundary can be expressed without DOM ownership. Extraction evidence should include:
-
-1. two maintained consumers with the same rendering algorithm;
-2. a stable input/output contract for size, pixel ratio, fixed axis, color space, and generated resources;
-3. a proved lifecycle model for cancellation and resource disposal;
-4. tests that exercise the package without mounting the current app;
-5. a measured maintenance or performance benefit greater than the added package and protocol cost.
-
-WebGL, WebGPU, workers, and plugin protocols are not implied by this criterion. Each would require its own evidence and decision.
+`ColorPlane.vue` owns Canvas context negotiation, drawing buffers, invalidation keys and DOM integration, delegating projection and sampling math to core. Field samples, exact membership and editable-plane geometry retain their separate contracts. Packaging does not change sampling resolution or introduce gamut mapping.

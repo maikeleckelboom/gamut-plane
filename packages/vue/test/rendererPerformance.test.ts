@@ -1,3 +1,4 @@
+import { installAnimationFrameController } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, ref } from "vue";
@@ -8,31 +9,8 @@ import {
   type OklchColor,
   type PickerPlaneContract,
 } from "@gamut-plane/core";
-import ColorPlane from "@/components/ColorPlane.vue";
-import PlaneInstrument from "@/components/PlaneInstrument.vue";
-
-function installAnimationFrameController() {
-  let nextId = 1;
-  const callbacks = new Map<number, FrameRequestCallback>();
-  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-    const id = nextId++;
-    callbacks.set(id, callback);
-    return id;
-  });
-  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
-    callbacks.delete(id);
-  });
-  return {
-    get pendingCount(): number {
-      return callbacks.size;
-    },
-    flush(): void {
-      const scheduled = [...callbacks.values()];
-      callbacks.clear();
-      for (const callback of scheduled) callback(0);
-    },
-  };
-}
+import ColorPlane from "../src/components/ColorPlane.vue";
+import PlaneInstrument from "../src/components/GamutPlane.vue";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -96,6 +74,11 @@ describe("renderer invalidation contracts", () => {
     expect(wrapper.get('[data-gamut-boundary="srgb"]').attributes("d")).not.toBe(initialPath);
     frames.flush();
     expect(createLinearGradient.mock.calls.length).toBeGreaterThan(initialGradientBuilds);
+
+    createLinearGradient.mockClear();
+    await wrapper.setProps({ modelValue: { l: 0.74, c: 0.12, h: 235.0001, alpha: 1 } });
+    frames.flush();
+    expect(createLinearGradient).toHaveBeenCalled();
 
     wrapper.unmount();
   });
@@ -287,7 +270,7 @@ describe("renderer invalidation contracts", () => {
     await flushPromises();
     frames.flush();
 
-    const range = wrapper.get("#picker-hue");
+    const range = wrapper.get('[data-picker-control="h"] input[type="range"]');
     const boundary = wrapper.get('[data-gamut-boundary="srgb"]');
     const initialPath = boundary.attributes("d");
     const initialGradientBuilds = createLinearGradient.mock.calls.length;

@@ -10,7 +10,7 @@ The built Gamut Plane application contains code from these direct runtime depend
 | `@vueuse/core` |  14.3.0 | MIT     | Anthony Fu and contributors |
 | `vue`          |  3.5.39 | MIT     | Evan You and contributors   |
 
-`@gamut-plane/core` is first-party workspace code and is not a third-party dependency.
+`@gamut-plane/core` and `@gamut-plane/vue` are first-party packages. Their distributable artifacts keep third-party runtime dependencies external: core depends on `@texel/color`; the Vue package depends on core and VueUse, with Vue as a peer. The standalone app bundles the runtime code it uses.
 
 The resolved production graph in `pnpm-lock.yaml` also includes Vue, VueUse, Babel parser support, CSS tooling, and small utilities under MIT, BSD-2-Clause, BSD-3-Clause, ISC, and Apache-2.0 licenses. Their package metadata and license texts remain available in the installed packages.
 

@@ -18,8 +18,8 @@ import {
   type DisplayGamut,
   type OklabColor,
   type OklchColor,
-} from "./types";
-import { GAMUT_EPSILON } from "../gamut/types";
+} from "./types.js";
+import { GAMUT_EPSILON } from "../gamut/types.js";
 
 export const GAMUT_DEFINITIONS = {
   srgb: { encoded: sRGB, linear: sRGBLinear, gamut: sRGBGamut },
