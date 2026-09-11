@@ -10,21 +10,22 @@ pnpm --filter @gamut-plane/web exec playwright install chromium
 pnpm build:packages
 ```
 
-On Linux, use `playwright install --with-deps chromium` to include browser system dependencies. Browser tests start their own servers on ports 4177, 4178, and 4179; keep those ports free and run the suites sequentially.
+On Linux, use `playwright install --with-deps chromium` to include browser system dependencies. Browser tests start their own servers on ports 4177–4180; keep those ports free and run the suites sequentially.
 
-| Command                   | Coverage                                                         |
-| ------------------------- | ---------------------------------------------------------------- |
-| `pnpm format:check`       | Oxfmt formatting                                                 |
-| `pnpm lint`               | Oxlint checks across packages and app                            |
-| `pnpm typecheck`          | Package declarations and TypeScript/Vue source                   |
-| `pnpm test`               | Core, Vue component, and app unit tests                          |
-| `pnpm check:gamut-tables` | Deterministic regeneration against checked-in tables             |
-| `pnpm build`              | Package artifacts and production app                             |
-| `pnpm check:build`        | Production file inventory, metadata assets, and header rules     |
-| `pnpm test:e2e`           | App behavior, accessibility, and platform visual references      |
-| `pnpm test:production`    | Built app served with the repository's header rules              |
-| `pnpm test:package`       | Isolated tarball installation, types, SSR, and browser embedding |
-| `pnpm audit --prod`       | Advisories in the resolved production dependency graph           |
+| Command                   | Coverage                                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| `pnpm format:check`       | Oxfmt formatting                                                                        |
+| `pnpm lint`               | Oxlint checks across packages and app                                                   |
+| `pnpm typecheck`          | Package declarations and TypeScript/Vue source                                          |
+| `pnpm test`               | Core, Vue component, and app unit tests                                                 |
+| `pnpm check:gamut-tables` | Deterministic regeneration against checked-in tables                                    |
+| `pnpm build`              | Package artifacts and production app                                                    |
+| `pnpm check:build`        | Production file inventory, metadata assets, and header rules                            |
+| `pnpm test:e2e`           | App behavior, accessibility, and platform visual references                             |
+| `pnpm test:production`    | Built app served with the repository's header rules                                     |
+| `pnpm test:package`       | Isolated tarball installation, types, SSR, and browser embedding                        |
+| `pnpm test:nuxt`          | Locked isolated tarballs, Nuxt development, production SSR and generated-page hydration |
+| `pnpm audit --prod`       | Advisories in the resolved production dependency graph                                  |
 
 `typecheck`, `test`, and `test:package` build the packages first. Build the app before running production checks. The [release runbook](release.md#2-run-the-clean-checkout-gate) gives the complete clean-checkout sequence. CI runs static/unit validation followed by browser/accessibility/visual validation on Ubuntu 24.04; the production dependency audit is an additional local release check.
 
@@ -61,6 +62,20 @@ Automation uses the lockfile-pinned Chromium version. Other engines, physical de
 The browser cases cover independent instance state and focus, plane ownership, IDs, numeric drafts, alpha preservation, cancellation, 280–800px containers, the 623/624/625px layout threshold, first reveal, scrolling/resizing during capture, enlarged text, style isolation, gamut guides, and axe accessibility. Screenshots check visible light-to-dark field variation in both instances, since Canvas bitmap pixels alone do not establish that the browser composited the field.
 
 Successful consumers are removed. Failures retain the consumer and Playwright evidence at the printed path. To keep a successful consumer for inspection, run `pnpm --filter @gamut-plane/vue test:package --keep` after building the packages. Run focused browser tests from that directory using its installed tools and production output.
+
+## Packed Nuxt SSR and hydration
+
+`packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
+
+The fixture pins Nuxt 4.5.2, Vue 3.5.42, Vue Router 5.3.1, TypeScript 6.0.3 and Playwright 1.61.1, tested on Node 24.16.0 / pnpm 11.9.0. Registry resolutions and integrity hashes are frozen. Only the local artifact entries omit integrity because the tested artifact changes with the worktree; packing and installing happens in the same isolated directory. To deliberately refresh the fixture graph, use `pnpm --filter @gamut-plane/vue test:nuxt --lock` and review its lockfile diff.
+
+The browser holds script requests while allowing the server document and stylesheet to load. Before releasing scripts it records actual instrument nodes, IDs, input values, focus and square field geometry. After hydration it asserts those same nodes remain connected, IDs/values/focus/geometry match, associations resolve, and no lifecycle edits occurred. Both views then visibly paint and accept keyboard/pointer edits. Screenshot sampling checks composited field variation, not just a nonempty bitmap. Different requests exercise colors whose OKLab projection previously exposed last-bit CSS serialization mismatches.
+
+Static HTML has build-time state: runtime query-dependent narrow/request cases run on both SSR servers; generated pages instead cover their build-time state and resizing after hydration. Canvas unavailable still leaves controls operable. No hydration warnings or browser errors are ignored.
+
+Playwright owns server readiness and teardown, with no reuse of unrelated servers, no retries, 60-second test and 120-second startup limits. The runner bounds each command to ten minutes and terminates its process tree on timeout/interruption. Failures retain the temporary consumer. `--keep` also retains successful consumers. `GAMUT_PLANE_EVIDENCE` copies per-mode HTML reports, traces, server HTML, DOM-reuse records and screenshots into CI artifacts. Development and production reports use distinct directories.
+
+Framework references: [Vue SSR](https://vuejs.org/guide/scaling-up/ssr), [Vue useId](https://vuejs.org/api/composition-api-helpers.html#useid), [Nuxt global CSS](https://nuxt.com/docs/4.x/getting-started/styling), and [Nuxt prerendering](https://nuxt.com/docs/4.x/getting-started/prerendering).
 
 ## Visual references
 

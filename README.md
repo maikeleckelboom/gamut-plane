@@ -101,7 +101,7 @@ The app's inspector copies full-precision CSS values. RGB copy is available only
 - Canvas 2D may grant Display P3, fall back to sRGB, or be unavailable. The component reports the granted context. Visible wide-gamut color also depends on the display; exact membership does not.
 - Modern CSS color support is required. Without container queries, the component keeps its one-column layout.
 - Pointer updates are coalesced per frame. Visible-axis edits reuse the field and contours; fixed-axis edits redraw them. Hue dragging uses a lower-resolution preview. See [performance measurements and limits](docs/performance.md).
-- ESM import and server-rendered shells are tested in Node.js 24. Canvas starts on mount. Hydration and Nuxt integration have not been tested.
+- The normal ESM entry supports SSR and hydration. Controls, authored values, markers, SVG gamut guides and CSS field geometry render on the server; Canvas painting starts after mount. `pnpm test:nuxt` verifies the packed package in Nuxt development, production SSR and generated pages. See [Vue SSR usage](packages/vue/README.md#ssr-and-nuxt).
 - Browser automation uses pinned Chromium with Windows and Linux visual references. Other engines, physical devices, and manual assistive-technology use have not been verified.
 
 ## Repository guide

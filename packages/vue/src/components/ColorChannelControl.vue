@@ -248,9 +248,11 @@ function updateTrackBounds(): void {
   trackLeft.value = bounds.left;
 }
 
-onMounted(updateTrackBounds);
-useResizeObserver(trackElement, ([entry]) => {
-  if (entry) updateTrackWidth(entry.contentRect.width);
+onMounted(() => {
+  updateTrackBounds();
+  useResizeObserver(trackElement, ([entry]) => {
+    if (entry) updateTrackWidth(entry.contentRect.width);
+  });
 });
 
 function clamp(value: number): number {

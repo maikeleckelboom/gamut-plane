@@ -55,8 +55,38 @@ Internal classes and other custom properties are not a theme API. Instances have
 
 Canvas may grant Display P3, fall back to sRGB, or be unavailable. The capability event describes the granted context, not the display hardware. Exact membership is independent of painted output. Modern CSS color support is required; without container queries, the layout stays in one column.
 
-ESM import and server-rendered shells are tested in Node.js 24 without browser globals. Canvas initializes on mount. Hydration and Nuxt integration have not been tested. Browser checks use pinned Chromium; other engines and physical devices need separate verification.
+The normal ESM entry imports in Node without browser globals. Server output includes controls, labels, authored values, markers and SVG gamut guides. The stylesheet reserves the square field before JavaScript. Hydration retains that DOM and the authored color; it does not emit changes, commits or cancellations. Canvas capability stays `pending` until mounted initialization. Canvas painting requires JavaScript; server rasterization and a no-JavaScript interactive picker are not provided.
 
-From the repository, run `pnpm build:packages` to build both packages and `pnpm test:package` to test an isolated tarball consumer. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
+## SSR and Nuxt
+
+Register the stylesheet using Nuxt's normal global CSS configuration:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  css: ["@gamut-plane/vue/style.css"],
+});
+```
+
+Use the component with ordinary Vue state in a page or component:
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { GamutPlane, type OklchColor } from "@gamut-plane/vue";
+
+const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 0.37 });
+</script>
+
+<template>
+  <GamutPlane v-model="color" />
+</template>
+```
+
+The same component supports both views and multiple instances. No client-only wrapper, custom transpilation, alias, hydration suppression or browser polyfill is required. Initialize state identically on server and client, as for any hydratable framework component. Each SSR request owns its state. IDs need to be unique within the document, not across unrelated requests.
+
+Tested environments: Node 24.16.0, pnpm 11.9.0, Vue 3.5.39 in the standalone packed consumer, and Nuxt 4.5.2 with Vue 3.5.42 / Vue Router 5.3.1 in the SSR fixture. The fixture locks its full dependency graph and verifies development diagnostics, production SSR and `nuxt generate`. Browser checks use Playwright 1.61.1 Chromium; other engines and physical devices need separate verification. Nuxt's own runtime minimum is 24.11 within Node 24; the package's Node 24 floor is unchanged.
+
+From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core from its tarball; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
 
 [MIT License](LICENSE).

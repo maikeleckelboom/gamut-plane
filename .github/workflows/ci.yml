@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - main
+      - feat/vue-ssr-hydration
   pull_request:
     branches:
       - dev
@@ -114,5 +115,38 @@ jobs:
             apps/web/playwright-report
             apps/web/test-results
             apps/web/e2e/screenshots/*-linux.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ssr:
+    name: Packed SSR and hydration
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.16.0
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            packages/vue/nuxt-consumer/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @gamut-plane/vue exec playwright install --with-deps chromium
+      - name: Verify packed Nuxt development, SSR and generated hydration
+        run: pnpm test:nuxt
+        env:
+          GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
+      - name: Upload SSR and hydration evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ssr-hydration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/packed
           if-no-files-found: ignore
           retention-days: 7

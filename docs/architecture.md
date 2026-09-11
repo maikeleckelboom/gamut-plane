@@ -32,7 +32,13 @@ Vue `useId()` supplies stable title/control IDs. Multiple instruments in one Vue
 
 ## Server rendering
 
-Importing either ESM entry needs no browser globals. The instrument can server-render its shell and guides; Canvas context work, observers and drawing begin on mount. Packed-consumer tests render both views with two instances in Node 24, checking unique IDs, no emitted edits and preserved authored values. Hydration and Nuxt integration have not been tested.
+Importing either ESM entry needs no browser globals. The instrument server-renders its complete supported UI: controls, accessible labels, authored values, marker, SVG guides and a CSS-reserved field. Vite extracts CSS into the separate stylesheet export; the built JavaScript entry has no CSS import. Consumers load that stylesheet through their framework's ordinary global CSS mechanism.
+
+Canvas context work, measurements, ResizeObserver, DPR tracking, scroll listeners and frame scheduling begin after mount. VueUse retains ownership of observer/listener cleanup. Capability is deterministically `pending` through server rendering and initial client rendering. Lifecycle setup and teardown never publish edits. Mutable color/draft/gesture/sampling/renderer state is per instance; generated lookup tables are shared visualization data.
+
+CSS geometry serializes projected positions to eight decimal places and connector angles to ten. This presentation precision avoids hydration warnings caused by last-bit differences in transcendental math between Node and browser V8 versions. It does not change authored values, core projection/gamut math, SVG contour precision or Canvas sampling.
+
+The independent packed Nuxt fixture verifies development diagnostics, production SSR and generated-page hydration, including retained DOM/IDs/focus/geometry, both views, out-of-gamut values, nondefault alpha, independent requests, narrow/revealed/resized hosts, route remounts, Canvas fallback and visible post-hydration painting. It uses ordinary `v-model` and global CSS; no SSR bypass is part of the package contract.
 
 ## Interaction lifecycle
 

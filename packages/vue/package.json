@@ -31,10 +31,11 @@
     "build": "vite build && vue-tsc -p tsconfig.build.json",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc -p tsconfig.node.json",
     "test": "pnpm check:gamut-tables && vitest run",
-    "lint": "oxlint src test e2e consumer scripts *.config.ts",
+    "lint": "oxlint src test e2e consumer nuxt-consumer scripts *.config.ts",
     "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
     "generate:gamut-tables": "node scripts/generateGamutTables.ts",
-    "test:package": "node scripts/checkPackedConsumer.ts"
+    "test:package": "node scripts/checkPackedConsumer.ts",
+    "test:nuxt": "node scripts/checkPackedNuxt.ts"
   },
   "dependencies": {
     "@gamut-plane/core": "workspace:*",

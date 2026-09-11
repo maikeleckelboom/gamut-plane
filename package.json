@@ -24,7 +24,8 @@
     "generate:release-assets": "pnpm --filter @gamut-plane/web generate:release-assets",
     "preview:production": "pnpm --filter @gamut-plane/web preview:production",
     "build:packages": "pnpm --filter @gamut-plane/core --filter @gamut-plane/vue build",
-    "test:package": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:package"
+    "test:package": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:package",
+    "test:nuxt": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:nuxt"
   },
   "devDependencies": {
     "oxfmt": "catalog:",

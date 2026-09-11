@@ -61,7 +61,7 @@ const marker = ref<HTMLSpanElement | null>(null);
 const warningMarker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<CanvasColorSpaceStatus>("pending");
 const renderedFieldQuality = ref<RenderedFieldQuality>("full");
-const { pixelRatio } = useDevicePixelRatio();
+const pixelRatio = ref(1);
 
 let context: CanvasRenderingContext2D | null = null;
 let discFieldBuffer: HTMLCanvasElement | null = null;
@@ -77,6 +77,7 @@ let latestInteractionColor: OklchColor | null = null;
 let interactionOrigin: OklchColor | null = null;
 let boundsDirty = false;
 let isUnmounted = false;
+let isMounted = false;
 let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
@@ -106,18 +107,16 @@ const boundaryProjectionConnectorStyle = computed(() => {
     const deltaX = guide.x - active.x;
     const deltaY = guide.y - active.y;
     return {
-      left: `${active.x * 100}%`,
-      top: `${active.y * 100}%`,
-      width: `${Math.hypot(deltaX, deltaY) * 100}%`,
-      transform: `translateY(-50%) rotate(${Math.atan2(deltaY, deltaX)}rad)`,
+      ...pointStyle(active),
+      width: `${(Math.hypot(deltaX, deltaY) * 100).toFixed(8)}%`,
+      transform: `translateY(-50%) rotate(${Math.atan2(deltaY, deltaX).toFixed(10)}rad)`,
       transformOrigin: "left center",
     };
   }
   const left = Math.min(active.x, guide.x);
   return {
-    left: `${left * 100}%`,
-    top: `${active.y * 100}%`,
-    width: `${Math.abs(active.x - guide.x) * 100}%`,
+    ...pointStyle({ x: left, y: active.y }),
+    width: `${(Math.abs(active.x - guide.x) * 100).toFixed(8)}%`,
   };
 });
 
@@ -146,7 +145,9 @@ const instrumentStyle = {
 };
 
 function pointStyle(point: PlanePoint): Record<string, string> {
-  return { left: `${point.x * 100}%`, top: `${point.y * 100}%` };
+  // Transcendental math can differ in the last bit between Node and browsers.
+  // Stabilize presentation only; never quantize the authored color or projection math.
+  return { left: `${(point.x * 100).toFixed(8)}%`, top: `${(point.y * 100).toFixed(8)}%` };
 }
 
 function geometryToSvgPath(geometry: Float32Array, closed: boolean): string {
@@ -339,7 +340,7 @@ function drawField(): void {
 }
 
 function scheduleFieldDraw(): void {
-  if (isUnmounted || fieldRaf !== null) return;
+  if (!isMounted || isUnmounted || fieldRaf !== null) return;
   fieldRaf = window.requestAnimationFrame(drawField);
 }
 
@@ -570,20 +571,22 @@ watch(pixelRatio, () => {
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
 watch(boundaryProjectionPoint, () => positionActiveAnnotations(boundedActivePoint.value));
 
-useResizeObserver(surface, () => {
-  measureSurface();
-  positionActiveAnnotations(boundedActivePoint.value);
-  scheduleFieldDraw();
-});
-useEventListener(
-  "scroll",
-  () => {
-    boundsDirty = true;
-  },
-  { capture: true, passive: true },
-);
-
 onMounted(() => {
+  isMounted = true;
+  const device = useDevicePixelRatio();
+  watch(device.pixelRatio, (value) => (pixelRatio.value = value), { immediate: true });
+  useResizeObserver(surface, () => {
+    measureSurface();
+    positionActiveAnnotations(boundedActivePoint.value);
+    scheduleFieldDraw();
+  });
+  useEventListener(
+    "scroll",
+    () => {
+      boundsDirty = true;
+    },
+    { capture: true, passive: true },
+  );
   void nextTick(() => {
     if (isUnmounted) return;
     measureSurface();
