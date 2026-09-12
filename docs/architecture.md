@@ -2,10 +2,10 @@
 
 ## Layer boundaries
 
-The standalone app imports Vue and core. Vue and React import core and the internal rendering package. Core has no dependency on any adapter or browser layer.
+The standalone app imports Vue and core. Vue and React import core and the internal `@gamut-plane/render` package. Core has no dependency on any adapter or browser layer.
 
 - `packages/core` (`@gamut-plane/core`) owns framework-neutral color types, conversion, exact gamut membership, CSS serialization/parsing, plane geometry, keyboard math, boundary search and sampled-table analysis. It has no Vue, DOM or Canvas dependency.
-- `packages/rendering` (`@gamut-plane/rendering`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data and SVG/CSS geometry serializers. It imports core, with no Vue or React dependency.
+- `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data and SVG/CSS geometry serializers. It imports core, with no Vue or React dependency.
 - `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer arbitration, numeric drafts, frame scheduling, local styling and component/consumer tests.
 - `packages/react` (`@gamut-plane/react`) owns a native controlled OKLCH slice, React lifecycle, pointer/keyboard interaction and its stylesheet. It has no Vue dependency. The standalone app remains Vue.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
@@ -14,15 +14,15 @@ The app imports built public package entries. Its `@` alias resolves only app co
 
 ## Distribution and public API
 
-All packages export built ESM JavaScript and declarations from `dist`. Core, rendering and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core and rendering external; `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support adapter types without creating public subpaths.
+All packages export built ESM JavaScript and declarations from `dist`. Core, render and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core and render external; `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support adapter types without creating public subpaths.
 
-Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, rendering and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. React depends on core and rendering, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains ownership of gestures, rollback and frame scheduling.
+Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. React depends on core and render, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains ownership of gestures, rollback and frame scheduling.
 
 Vue exports `GamutPlane`, `OklchColor`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. The component accepts a required color model, an optional plane model and two boundary-visibility props. It emits completed/cancelled edit and capability events and provides a `field-legend` slot. See the [API reference](../packages/vue/README.md#component-api). Renderer constants, table paths, preview flags and IDs are internal.
 
 The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ownership. View changes never convert or republish the authored color. Boundary props default to true. `field-legend` accepts host-owned explanatory or visibility controls without exposing renderer state. Canvas capability describes the granted context, not display hardware; `pending` is the initial shell state.
 
-The artifacts contain built output, package metadata, README and MIT license. Core and rendering declare no side effects; adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned core and rendering dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
+The artifacts contain built output, package metadata, README and MIT license. Core and render declare no side effects; adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned core and render dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
 
 ## Styling and host ownership
 
@@ -75,13 +75,13 @@ Contours, crossing ticks, and the sRGB boundary projection interpolate precomput
 
 ## Generated tables
 
-The rendering package owns checked-in tables at `packages/rendering/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.
+The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.
 
-`pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. After changing the algorithm or settings, run `pnpm --filter @gamut-plane/rendering generate:gamut-tables` and include the generated file and relevant test changes in the same commit.
+`pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. After changing the algorithm or settings, run `pnpm --filter @gamut-plane/render generate:gamut-tables` and include the generated file and relevant test changes in the same commit.
 
 ## Renderer boundary
 
-`packages/rendering/src/fieldRenderer.ts` owns Canvas context negotiation, drawing buffers and field invalidation keys, delegating projection and sampling math to core. Its factory is called only during each adapter's mounted/committed setup, and its synchronous `draw` introduces no extra frame queue. Each adapter owns DOM integration and frame coalescing. Disposal clears renderer references; React Strict Mode's second setup creates a fresh renderer. See [Performance](performance.md) for unchanged sampling dimensions, caching and preview behavior.
+`packages/render/src/fieldRenderer.ts` owns Canvas context negotiation, drawing buffers and field invalidation keys, delegating projection and sampling math to core. Its factory is called only during each adapter's mounted/committed setup, and its synchronous `draw` introduces no extra frame queue. Each adapter owns DOM integration and frame coalescing. Disposal clears renderer references; React Strict Mode's second setup creates a fresh renderer. See [Performance](performance.md) for unchanged sampling dimensions, caching and preview behavior.
 
 ## Native React slice
 

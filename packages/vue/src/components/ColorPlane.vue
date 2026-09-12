@@ -29,7 +29,7 @@ import {
   type FieldRenderer,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
-} from "@gamut-plane/rendering";
+} from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{

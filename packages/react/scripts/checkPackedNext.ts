@@ -20,12 +20,12 @@ let passed = false;
 try {
   await cp(fixture, consumer, { recursive: true });
   await cp(join(fixture, "ssrSmoke.ts"), join(consumer, "ssrSmoke.ts"));
-  for (const name of ["core", "rendering", "react"])
+  for (const name of ["core", "render", "react"])
     await run(
       ["pack", "--pack-destination", join(consumer, "artifacts")],
       resolve(packageRoot, "..", name),
     );
-  for (const name of ["core", "rendering", "react"]) {
+  for (const name of ["core", "render", "react"]) {
     const tarball = join(consumer, "artifacts", `gamut-plane-${name}-0.1.0.tgz`);
     function tar(args: string[]) {
       const result = spawnSync("tar", args, { encoding: "utf8", windowsHide: true });

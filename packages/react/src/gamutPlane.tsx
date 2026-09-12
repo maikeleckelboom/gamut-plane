@@ -12,7 +12,7 @@ import {
   PICKER_GAMUT_TABLES,
   VIEWBOX_SIZE,
   type CanvasColorSpaceStatus,
-} from "@gamut-plane/rendering";
+} from "@gamut-plane/render";
 import { mountPlane, type PlaneBinding } from "./planeInteraction.js";
 
 export interface GamutPlaneProps {

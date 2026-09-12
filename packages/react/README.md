@@ -32,4 +32,4 @@ export default function Page() {
 
 The peer range is deliberately limited to React / React DOM 19.3.x; the tested fixture pins 19.3.0 and Next.js 16.3.4. This slice does not promise OKLab, the complete Vue channel controls, uncontrolled color, slots or expanded theming. Canvas requires client JavaScript; server rasterization and no-JavaScript interaction are not provided.
 
-The package is unpublished. Packed consumers install `@gamut-plane/core`, `@gamut-plane/rendering` and this package from their tarballs. Registry installation is not verified.
+The package is unpublished. Packed consumers install `@gamut-plane/core`, `@gamut-plane/render` and this package from their tarballs. Registry installation is not verified.

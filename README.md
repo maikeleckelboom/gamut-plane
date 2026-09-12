@@ -32,7 +32,7 @@ Open the URL printed by Vite. The app runs entirely in the browser, with no back
 
 ```powershell
 pnpm --filter @gamut-plane/core exec tsc -p tsconfig.build.json --watch
-pnpm --filter @gamut-plane/rendering exec tsc -p tsconfig.build.json --watch
+pnpm --filter @gamut-plane/render exec tsc -p tsconfig.build.json --watch
 pnpm --filter @gamut-plane/vue exec vite build --watch
 ```
 
@@ -69,7 +69,7 @@ $artifacts = Join-Path $env:TEMP "gamut-plane-artifacts"
 New-Item -ItemType Directory -Force -Path $artifacts
 pnpm build:packages
 pnpm --filter @gamut-plane/core pack --pack-destination $artifacts
-pnpm --filter @gamut-plane/rendering pack --pack-destination $artifacts
+pnpm --filter @gamut-plane/render pack --pack-destination $artifacts
 pnpm --filter @gamut-plane/vue pack --pack-destination $artifacts
 ```
 
@@ -78,13 +78,13 @@ Copy the tarballs into an `artifacts` directory in your Vue application. Add thi
 ```yaml
 overrides:
   "@gamut-plane/core": "file:./artifacts/gamut-plane-core-0.1.0.tgz"
-  "@gamut-plane/rendering": "file:./artifacts/gamut-plane-rendering-0.1.0.tgz"
+  "@gamut-plane/render": "file:./artifacts/gamut-plane-render-0.1.0.tgz"
 ```
 
 Then install them from the application root:
 
 ```powershell
-pnpm add ./artifacts/gamut-plane-core-0.1.0.tgz ./artifacts/gamut-plane-rendering-0.1.0.tgz ./artifacts/gamut-plane-vue-0.1.0.tgz
+pnpm add ./artifacts/gamut-plane-core-0.1.0.tgz ./artifacts/gamut-plane-render-0.1.0.tgz ./artifacts/gamut-plane-vue-0.1.0.tgz
 ```
 
 The overrides resolve all unpublished transitive dependencies from their local artifacts. `pnpm test:package` exercises this installation in an isolated consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping both dependency tarballs and overrides. `pnpm test:next` verifies that adapter in Next App Router and a root Strict Mode diagnostic fixture. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
@@ -109,13 +109,13 @@ The app's inspector copies full-precision CSS values. RGB copy is available only
 
 ## Repository guide
 
-| Location             | Contents                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `packages/core`      | Framework-neutral color math, gamut membership, serialization, and plane geometry    |
-| `packages/rendering` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables |
-| `packages/vue`       | Complete Vue component, lifecycle, controls, interactions and styles                 |
-| `packages/react`     | Controlled native React OKLCH slice and Next/Strict Mode packed verification         |
-| `apps/web`           | Standalone app, inspector, clipboard UI, and deployment assets                       |
+| Location          | Contents                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `packages/core`   | Framework-neutral color math, gamut membership, serialization, and plane geometry    |
+| `packages/render` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables |
+| `packages/vue`    | Complete Vue component, lifecycle, controls, interactions and styles                 |
+| `packages/react`  | Controlled native React OKLCH slice and Next/Strict Mode packed verification         |
+| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                       |
 
 [Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Workers Static Assets and Workers Builds.
 

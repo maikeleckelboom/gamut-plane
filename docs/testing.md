@@ -58,7 +58,7 @@ Automation uses the lockfile-pinned Chromium version. Other engines, physical de
 
 `packages/vue/consumer` is an independent Vue application fixture. It imports the component and stylesheet through public entries, without demo CSS, source aliases, shared tsconfig, or generated-file imports. One instance uses a color-only model; another also binds its plane.
 
-`pnpm test:package` builds and packs core, rendering and Vue, checks tarball manifests and file lists, and copies the fixture into an OS temporary directory outside the workspace. It installs every unpublished dependency from its tarball using local overrides, then runs strict typechecking, Node ESM import and server rendering, a production host build, and Chromium tests from `packages/vue/e2e`.
+`pnpm test:package` builds and packs core, render and Vue, checks tarball manifests and file lists, and copies the fixture into an OS temporary directory outside the workspace. It installs every unpublished dependency from its tarball using local overrides, then runs strict typechecking, Node ESM import and server rendering, a production host build, and Chromium tests from `packages/vue/e2e`.
 
 The browser cases cover independent instance state and focus, plane ownership, IDs, numeric drafts, alpha preservation, cancellation, 280–800px containers, the 623/624/625px layout threshold, first reveal, scrolling/resizing during capture, enlarged text, style isolation, gamut guides, and axe accessibility. Screenshots check visible light-to-dark field variation in both instances, since Canvas bitmap pixels alone do not establish that the browser composited the field.
 
@@ -66,7 +66,7 @@ Successful consumers are removed. Failures retain the consumer and Playwright ev
 
 ## Packed Nuxt SSR and hydration
 
-`packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core, rendering and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt/fixture typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
+`packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core, render and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt/fixture typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
 
 The fixture pins Nuxt 4.5.2, Vue 3.5.42, Vue Router 5.3.1, TypeScript 6.0.3 and Playwright 1.61.1, tested on Node 24.16.0 / pnpm 11.9.0. Registry resolutions and integrity hashes are frozen. Only the local artifact entries omit integrity because the tested artifact changes with the worktree; packing and installing happens in the same isolated directory. To deliberately refresh the fixture graph, use `pnpm --filter @gamut-plane/vue test:nuxt --lock` and review its lockfile diff.
 
@@ -80,7 +80,7 @@ Framework references: [Vue SSR](https://vuejs.org/guide/scaling-up/ssr), [Vue us
 
 ## Packed Next and root Strict Mode
 
-`pnpm test:next` copies `packages/react/next-consumer` outside the workspace, packs core/rendering/React, verifies artifact file lists, export targets, CSS side-effect metadata, dependency/peer boundaries and preserved `"use client"` directives, then installs using the fixture's frozen lockfile. All three private packages are installed from their artifacts. The normal Node entry is server-rendered with no browser globals and no lifecycle emissions; independent documents deliberately may reuse IDs.
+`pnpm test:next` copies `packages/react/next-consumer` outside the workspace, packs core/render/React, verifies artifact file lists, export targets, CSS side-effect metadata, dependency/peer boundaries and preserved `"use client"` directives, then installs using the fixture's frozen lockfile. All three private packages are installed from their artifacts. The normal Node entry is server-rendered with no browser globals and no lifecycle emissions; independent documents deliberately may reuse IDs.
 
 The consumer pins React / React DOM / their type packages 19.3.0, Next.js 16.3.4, TypeScript 6.0.3, Vite 8.1.4 (diagnostic fixture) and Playwright 1.61.1. Node 24.16.0 and pnpm 11.9.0 are the tested runtime/toolchain. The Next fixture uses the default Turbopack build. There are no aliases, transpilation exceptions, browser polyfills, hydration suppression or SSR-disabling wrappers.
 

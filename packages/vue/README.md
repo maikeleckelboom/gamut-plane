@@ -2,7 +2,7 @@
 
 A Vue component for editing one OKLCH color in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
 
-This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal rendering package and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
+This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal `@gamut-plane/render` package and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
 
 ## Usage
 
@@ -87,6 +87,6 @@ The same component supports both views and multiple instances. No client-only wr
 
 Tested environments: Node 24.16.0, pnpm 11.9.0, Vue 3.5.39 in the standalone packed consumer, and Nuxt 4.5.2 with Vue 3.5.42 / Vue Router 5.3.1 in the SSR fixture. The fixture locks its full dependency graph and verifies development diagnostics, production SSR and `nuxt generate`. Browser checks use Playwright 1.61.1 Chromium; other engines and physical devices need separate verification. Nuxt's own runtime minimum is 24.11 within Node 24; the package's Node 24 floor is unchanged.
 
-From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core and rendering from their tarballs; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
+From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core and render from their tarballs; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
 
 [MIT License](LICENSE).

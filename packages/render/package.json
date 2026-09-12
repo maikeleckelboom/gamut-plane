@@ -1,8 +1,8 @@
 {
-  "name": "@gamut-plane/rendering",
+  "name": "@gamut-plane/render",
   "version": "0.1.0",
   "private": true,
-  "description": "Internal Canvas rendering and generated gamut guides shared by Gamut Plane adapters.",
+  "description": "Framework-neutral rendering primitives and visual guide data shared by the Vue and React adapters.",
   "license": "MIT",
   "files": [
     "dist",

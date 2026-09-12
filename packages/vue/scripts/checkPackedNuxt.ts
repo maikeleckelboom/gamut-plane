@@ -19,7 +19,7 @@ let passed = false;
 try {
   await cp(fixture, consumer, { recursive: true });
   await cp(join(packageRoot, "consumer/ssrSmoke.ts"), join(consumer, "ssrSmoke.ts"));
-  for (const name of ["core", "rendering", "vue"])
+  for (const name of ["core", "render", "vue"])
     await run(
       ["pack", "--pack-destination", join(consumer, "artifacts")],
       resolve(packageRoot, "..", name),

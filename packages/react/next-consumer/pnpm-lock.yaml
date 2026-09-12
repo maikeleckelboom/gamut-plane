@@ -6,7 +6,7 @@ settings:
 
 overrides:
   '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-  '@gamut-plane/rendering': file:artifacts/gamut-plane-rendering-0.1.0.tgz
+  '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -19,9 +19,9 @@ importers:
       '@gamut-plane/react':
         specifier: file:artifacts/gamut-plane-react-0.1.0.tgz
         version: file:artifacts/gamut-plane-react-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@gamut-plane/rendering':
-        specifier: file:artifacts/gamut-plane-rendering-0.1.0.tgz
-        version: file:artifacts/gamut-plane-rendering-0.1.0.tgz
+      '@gamut-plane/render':
+        specifier: file:artifacts/gamut-plane-render-0.1.0.tgz
+        version: file:artifacts/gamut-plane-render-0.1.0.tgz
       next:
         specifier: 16.3.4
         version: 16.3.4(@playwright/test@1.61.1)(@types/node@24.13.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -75,8 +75,8 @@ packages:
       react: ~19.3.0
       react-dom: ~19.3.0
 
-  '@gamut-plane/rendering@file:artifacts/gamut-plane-rendering-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-rendering-0.1.0.tgz}
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-render-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.0.0'}
 
@@ -719,11 +719,11 @@ snapshots:
   '@gamut-plane/react@file:artifacts/gamut-plane-react-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-      '@gamut-plane/rendering': file:artifacts/gamut-plane-rendering-0.1.0.tgz
+      '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@gamut-plane/rendering@file:artifacts/gamut-plane-rendering-0.1.0.tgz':
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
 

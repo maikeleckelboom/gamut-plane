@@ -4,11 +4,7 @@ import {
   type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@gamut-plane/core";
-import {
-  createFieldRenderer,
-  pointStyle,
-  type CanvasColorSpaceStatus,
-} from "@gamut-plane/rendering";
+import { createFieldRenderer, pointStyle, type CanvasColorSpaceStatus } from "@gamut-plane/render";
 import type { GamutPlaneProps } from "./gamutPlane.js";
 
 export interface PlaneBinding {
