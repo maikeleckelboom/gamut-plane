@@ -1,6 +1,6 @@
 # v0.1.0 release runbook
 
-This release covers the standalone application. The repository is already public. Both npm packages remain private and unpublished.
+This release covers the standalone application, framework-neutral core, and complete Vue package, including verified Vue SSR/hydration and Nuxt development, production SSR, and generated-page hydration. The repository is already public. Both npm packages remain private and unpublished.
 
 The sequence is: validate `dev`, deploy it as the temporary production candidate, record the verified URL, rerun `dev` CI, point Cloudflare production at `main`, merge, verify `main`, then tag and release.
 
@@ -22,7 +22,7 @@ gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,hom
 
 `dev` must equal `origin/dev`, and `origin/main` must be its ancestor: the first count from `rev-list` must be zero. Record both commit IDs. Stop if either branch moves unexpectedly or a `v0.1.0` tag or release already exists.
 
-Confirm both CI jobs succeeded for that exact `dev` commit:
+Confirm all required CI jobs succeeded for that exact `dev` commit:
 
 ```powershell
 gh run list --workflow CI --branch dev --limit 5
@@ -62,6 +62,7 @@ pnpm exec wrangler deploy --dry-run
 pnpm test:e2e
 pnpm test:production
 pnpm test:package
+pnpm test:nuxt
 pnpm audit --prod
 git diff --check
 git status --short --untracked-files=all
@@ -91,7 +92,7 @@ After verification, replace the README's production-demo status with the real li
 gh repo edit maikeleckelboom/gamut-plane --homepage <VERIFIED_PRODUCTION_URL>
 ```
 
-Commit and push the README change. Wait for both `dev` CI jobs and its updated Cloudflare production deployment, then repeat URL and commit verification. Record this final `dev` commit as the promotion candidate. Source, dependency, configuration, or asset changes require the affected validation to be repeated before promotion.
+Commit and push the README change. Wait for all required CI jobs for that exact `dev` commit and its updated Cloudflare production deployment, then repeat URL and commit verification. Record this final `dev` commit as the promotion candidate. Source, dependency, configuration, or asset changes require the affected validation to be repeated before promotion.
 
 ## 5. Promote to `main`
 
@@ -115,7 +116,7 @@ gh run watch <MAIN_RUN_ID> --exit-status
 gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl,licenseInfo
 ```
 
-Both jobs must succeed for the new merge commit. Confirm Cloudflare deployed that commit from `main`, and repeat the production checks from step 4. Verify the public README, its image and documentation links, the homepage, and MIT license detection. Resolve any mismatch before tagging.
+All required CI jobs must succeed for the exact new merge commit, including packed SSR and hydration. Confirm Cloudflare deployed that commit from `main`, and repeat the production checks from step 4. Verify the public README, its image and documentation links, the homepage, and MIT license detection. Resolve any mismatch before tagging.
 
 ## 7. Tag and release
 
