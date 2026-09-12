@@ -1,0 +1,6 @@
+# Standalone installation policy; this fixture is copied outside the repository.
+packages: []
+overrides:
+  postcss: 8.5.25
+minimumReleaseAgeExclude:
+  - vite@8.1.4

@@ -1,0 +1,6 @@
+packages: []
+overrides:
+  "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.1.0.tgz"
+  postcss: 8.5.25
+allowBuilds:
+  esbuild: true
