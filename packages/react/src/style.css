@@ -1,0 +1,84 @@
+.gamut-plane-react,
+.gamut-plane-react * {
+  box-sizing: border-box;
+}
+.gamut-plane-react {
+  color-scheme: dark;
+  color: oklch(0.94 0.008 255);
+  background: oklch(0.15 0.009 255);
+  padding: 16px;
+  min-inline-size: 0;
+  max-inline-size: 560px;
+  font: inherit;
+}
+.gamut-plane-react h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.gamut-plane-react p {
+  margin: 0 0 16px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.gamut-plane-surface {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 1;
+  border: 1px solid oklch(0.36 0.012 255 / 0.72);
+  border-radius: 2px;
+  background: oklch(0.18 0.01 255);
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+.gamut-plane-surface:focus-visible {
+  outline: 2px solid oklch(0.77 0.13 230);
+  outline-offset: 3px;
+}
+.gamut-plane-surface canvas,
+.gamut-plane-guides {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.gamut-plane-guides {
+  pointer-events: none;
+}
+.gamut-plane-guides path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.gamut-plane-p3 {
+  stroke: oklch(0.95 0.006 265 / 0.92);
+  stroke-width: 1.15;
+}
+.gamut-plane-srgb {
+  stroke: oklch(0.25 0.006 265 / 0.96);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+}
+.gamut-plane-marker {
+  position: absolute;
+  inline-size: 18px;
+  block-size: 18px;
+  border: 2px solid oklch(0.98 0 0);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px oklch(0.04 0 0),
+    0 2px 7px oklch(0 0 0 / 0.72);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.gamut-plane-value {
+  display: block;
+  margin-block-start: 12px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.gamut-plane-capability {
+  display: block;
+  margin-block-start: 8px;
+  font-size: 0.75rem;
+}

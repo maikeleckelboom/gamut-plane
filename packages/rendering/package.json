@@ -1,0 +1,40 @@
+{
+  "name": "@gamut-plane/rendering",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internal Canvas rendering and generated gamut guides shared by Gamut Plane adapters.",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/clean.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "pnpm check:gamut-tables && vitest run",
+    "lint": "oxlint src test scripts",
+    "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
+    "generate:gamut-tables": "node scripts/generateGamutTables.ts"
+  },
+  "dependencies": {
+    "@gamut-plane/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.2",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "name": "@gamut-plane/react",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A controlled native React OKLCH plane with server-rendered guides and client-painted Canvas.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maikeleckelboom/gamut-plane.git",
+    "directory": "packages/react"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "build": "node scripts/prepareBuild.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src scripts next-consumer",
+    "test:package": "node scripts/checkPackedNext.ts"
+  },
+  "dependencies": {
+    "@gamut-plane/core": "workspace:*",
+    "@gamut-plane/rendering": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "~19.3.0",
+    "react-dom": "~19.3.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

@@ -135,10 +135,15 @@ jobs:
           cache-dependency-path: |
             pnpm-lock.yaml
             packages/vue/nuxt-consumer/pnpm-lock.yaml
+            packages/react/next-consumer/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @gamut-plane/vue exec playwright install --with-deps chromium
       - name: Verify packed Nuxt development, SSR and generated hydration
         run: pnpm test:nuxt
+        env:
+          GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
+      - name: Verify packed Next SSR, prerendering and root Strict Mode
+        run: pnpm test:next
         env:
           GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
       - name: Upload SSR and hydration evidence

@@ -21,8 +21,7 @@ import ColorChannelControl, {
   type LinearControlMarker,
 } from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
-import type { CanvasColorSpaceStatus } from "../types.js";
-import { PICKER_GAMUT_TABLES } from "../generated/gamutTables";
+import { PICKER_GAMUT_TABLES, type CanvasColorSpaceStatus } from "@gamut-plane/rendering";
 
 const props = withDefaults(
   defineProps<{

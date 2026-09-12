@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
+  '@gamut-plane/rendering': file:artifacts/gamut-plane-rendering-0.1.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -15,6 +16,9 @@ importers:
       '@gamut-plane/core':
         specifier: file:artifacts/gamut-plane-core-0.1.0.tgz
         version: file:artifacts/gamut-plane-core-0.1.0.tgz
+      '@gamut-plane/rendering':
+        specifier: file:artifacts/gamut-plane-rendering-0.1.0.tgz
+        version: file:artifacts/gamut-plane-rendering-0.1.0.tgz
       '@gamut-plane/vue':
         specifier: file:artifacts/gamut-plane-vue-0.1.0.tgz
         version: file:artifacts/gamut-plane-vue-0.1.0.tgz(vue@3.5.42(typescript@6.0.3))
@@ -354,6 +358,11 @@ packages:
 
   '@gamut-plane/core@file:artifacts/gamut-plane-core-0.1.0.tgz':
     resolution: {tarball: file:artifacts/gamut-plane-core-0.1.0.tgz}
+    version: 0.1.0
+    engines: {node: '>=24.0.0'}
+
+  '@gamut-plane/rendering@file:artifacts/gamut-plane-rendering-0.1.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-rendering-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=24.0.0'}
 
@@ -3494,9 +3503,14 @@ snapshots:
     dependencies:
       '@texel/color': 1.1.11
 
+  '@gamut-plane/rendering@file:artifacts/gamut-plane-rendering-0.1.0.tgz':
+    dependencies:
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
+
   '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.1.0.tgz(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
+      '@gamut-plane/rendering': file:artifacts/gamut-plane-rendering-0.1.0.tgz
       '@vueuse/core': 14.3.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 

@@ -3,5 +3,7 @@ overrides:
   "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.1.0.tgz"
   "@gamut-plane/rendering": "file:artifacts/gamut-plane-rendering-0.1.0.tgz"
   postcss: 8.5.25
+minimumReleaseAgeExclude:
+  - vite@8.1.4
 allowBuilds:
-  esbuild: true
+  sharp: true
