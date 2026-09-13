@@ -15,6 +15,7 @@ The synchronous renderer in `packages/render` owns buffers and draw-cache keys. 
 - Canvas backing dimensions use the uncapped device pixel ratio. CSS dimensions remain the interaction coordinate system.
 - The OKLab field is sampled into one reusable 80 × 80 offscreen buffer with 24 color samples per row, then scaled to the visible backing store.
 - After native input begins during an OKLCH Hue pointer interaction, only the colored field uses one reusable 192-column preview buffer. Exact canonical state and contours remain live. Pointer completion immediately disables preview and schedules the ordinary full-width draw; rendered quality becomes full when that draw completes.
+- If the optional Hue preview buffer cannot obtain a context, the field uses the ordinary full-width algorithm. Auxiliary buffers do not change the capability reported for the visible Canvas context.
 - Mutable color vectors, sampling scratch data, the offscreen canvas, Canvas contexts, and generated `Float32Array` tables are reused instead of allocated per sample.
 - Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
 

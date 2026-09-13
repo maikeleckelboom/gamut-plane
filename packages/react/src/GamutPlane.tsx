@@ -10,7 +10,12 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { OKLAB_AB_PLANE, OKLCH_PICKER_MAX_CHROMA, type OklchColor } from "@gamut-plane/core";
+import {
+  OKLAB_AB_PLANE,
+  OKLCH_PICKER_MAX_CHROMA,
+  normalizeHue,
+  type OklchColor,
+} from "@gamut-plane/core";
 import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
 import { useControllableView } from "./hooks/useControllableView.js";
 import {
@@ -167,6 +172,7 @@ export function GamutPlane({
                 gradient={hueGradient}
                 intervals={model.hueIntervals}
                 warningPosition={model.huePosition}
+                normalizeValue={normalizeHue}
                 onInput={(next) => edit(editChannel(value, "h", next), false)}
                 onComplete={(next) => edit(editChannel(value, "h", next), true)}
                 onInteraction={setHuePreview}

@@ -59,6 +59,7 @@ describe("instrument presentation contracts", () => {
       const ui = await host();
       await clock.flush();
       const context = canvasContext(get<HTMLCanvasElement>(ui.element, "canvas"));
+      context.fillRect.mockClear();
       if (unavailable)
         vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => null);
       const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
@@ -68,6 +69,8 @@ describe("instrument presentation contracts", () => {
       await clock.flush();
       expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
       expect(context.drawImage).not.toHaveBeenCalled();
+      expect(context.fillRect).toHaveBeenCalled();
+      expect(get(ui.element, '[role="application"]').dataset.renderColorSpace).toBe("srgb");
     },
   );
 });

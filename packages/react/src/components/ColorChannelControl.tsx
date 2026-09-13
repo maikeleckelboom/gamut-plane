@@ -37,6 +37,7 @@ export interface ColorChannelControlProps {
   help?: string | undefined;
   warningVisible: boolean;
   warningPosition: number;
+  normalizeValue?: (value: number) => number;
   onInput: (value: number) => void;
   onComplete: (value: number) => void;
   onCancel: (() => void) | undefined;

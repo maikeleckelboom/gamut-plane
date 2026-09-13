@@ -47,21 +47,14 @@ export function createFieldRenderer(
         alpha: false,
         colorSpace: "display-p3",
       });
-      if (requested) {
-        const granted = requested.getContextAttributes?.().colorSpace;
-        publishCanvasColorSpace(granted === "display-p3" ? "display-p3" : "srgb");
-        return requested;
-      }
+      if (requested) return requested;
     } catch {
       // The default context below provides deterministic sRGB rendering.
     }
 
     try {
-      const defaultContext = element.getContext("2d", { alpha: false });
-      publishCanvasColorSpace(defaultContext ? "srgb" : "unavailable");
-      return defaultContext;
+      return element.getContext("2d", { alpha: false });
     } catch {
-      publishCanvasColorSpace("unavailable");
       return null;
     }
   }
@@ -143,7 +136,17 @@ export function createFieldRenderer(
   function draw(input: FieldRenderInput): RenderedFieldQuality {
     if (disposed) return quality;
     plane = input.plane;
-    context ??= getCanvasContext(element);
+    if (!context) {
+      context = getCanvasContext(element);
+      // Capability describes the visible canvas, never an auxiliary buffer.
+      publishCanvasColorSpace(
+        context
+          ? context.getContextAttributes?.().colorSpace === "display-p3"
+            ? "display-p3"
+            : "srgb"
+          : "unavailable",
+      );
+    }
     if (!context) return quality;
 
     const { width, height, backingWidth, backingHeight, pixelRatio } = resizeCanvas(
@@ -156,7 +159,12 @@ export function createFieldRenderer(
       sampling.kind === "column-gradient" &&
       input.interactionPreview &&
       width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
-    const fieldQuality: RenderedFieldQuality = usePreview ? "preview" : "full";
+    // Resolve optional preview resources before clearing the field or choosing its cache key.
+    // If allocation fails, the existing full-width algorithm remains available.
+    const previewContext = usePreview
+      ? getColumnPreviewContext(INTERACTION_PREVIEW_COLUMN_SAMPLES, backingHeight)
+      : null;
+    const fieldQuality: RenderedFieldQuality = previewContext ? "preview" : "full";
     const fieldKey = `${plane.id}:${width}:${height}:${pixelRatio}:${fixed}:${canvasColorSpace}:${fieldQuality}`;
     if (fieldKey === lastFieldKey) return quality;
 
@@ -165,12 +173,7 @@ export function createFieldRenderer(
     context.clearRect(0, 0, backingWidth, backingHeight);
 
     if (sampling.kind === "column-gradient") {
-      if (usePreview) {
-        const previewContext = getColumnPreviewContext(
-          INTERACTION_PREVIEW_COLUMN_SAMPLES,
-          backingHeight,
-        );
-        if (!previewContext || !columnPreviewBuffer) return quality;
+      if (previewContext && columnPreviewBuffer) {
         previewContext.setTransform(1, 0, 0, 1, 0, 0);
         previewContext.clearRect(0, 0, INTERACTION_PREVIEW_COLUMN_SAMPLES, backingHeight);
         drawColumnGradientField(

@@ -8,6 +8,69 @@ async function openInstrument(page: Page) {
   );
 }
 
+test("unavailable Hue preview buffer keeps a painted full-quality field and can recover", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      options?: unknown,
+    ) {
+      if (
+        type === "2d" &&
+        !this.isConnected &&
+        this.width === 192 &&
+        document.documentElement.dataset.failPreview === "true"
+      )
+        return null;
+      return Reflect.apply(getContext, this, [type, options]);
+    } as typeof getContext;
+  });
+  await openInstrument(page);
+  const plane = page.locator("[data-picker-plane]");
+  const surface = page.getByRole("application");
+  const canvas = surface.locator("canvas");
+  const capability = await surface.getAttribute("data-render-color-space");
+  const original = await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
+  await page.locator("html").evaluate((element: HTMLElement) => {
+    element.dataset.failPreview = "true";
+  });
+  const hue = page.locator('[data-picker-control="h"] input[type="range"]');
+  await hue.scrollIntoViewIfNeeded();
+  const bounds = (await hue.boundingBox())!;
+  await page.mouse.move(bounds.x + bounds.width * 0.25, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await expect
+    .poll(() => canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL()))
+    .not.toBe(original);
+  await expect(surface).toHaveAttribute("data-render-color-space", capability!);
+  await expect(plane).toHaveAttribute("data-field-quality", "full");
+  const variation = await canvas.evaluate((element: HTMLCanvasElement) => {
+    const context = element.getContext("2d")!;
+    const samples = [0.1, 0.9].map((y) => {
+      const pixel = context.getImageData(element.width / 2, element.height * y, 1, 1).data;
+      return pixel[0]! + pixel[1]! + pixel[2]!;
+    });
+    return Math.abs(samples[0]! - samples[1]!);
+  });
+  expect(variation).toBeGreaterThan(100);
+  const fallback = await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
+  await page.mouse.up();
+  await expect(plane).toHaveAttribute("data-field-quality", "full");
+  expect(await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL())).toBe(fallback);
+  await page.locator("html").evaluate((element: HTMLElement) => {
+    delete element.dataset.failPreview;
+  });
+  await page.mouse.move(bounds.x + bounds.width * 0.75, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await expect(plane).toHaveAttribute("data-field-quality", "preview");
+  await expect(surface).toHaveAttribute("data-render-color-space", capability!);
+  await page.mouse.up();
+  await expect(plane).toHaveAttribute("data-field-quality", "full");
+});
+
 test("switches planes and preserves open and closed contour contracts", async ({ page }) => {
   await openInstrument(page);
   const oklchPaths = await page

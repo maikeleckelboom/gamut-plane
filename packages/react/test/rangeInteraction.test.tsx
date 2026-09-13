@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { normalizeHue } from "@gamut-plane/core";
 import { ColorChannelControl } from "../src/components/ColorChannelControl.js";
 import { event, frames, get, host, input, mount } from "./helpers.js";
 
@@ -39,6 +40,47 @@ async function range() {
   };
 }
 describe("native range lifecycle", () => {
+  it.each([87.1, 360])("retains Hue preview through normalized feedback for %s", async (hue) => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+    const field = get(ui.element, "[data-picker-plane]");
+    await event(range, "pointerdown");
+    for (const next of [hue, 90.1]) {
+      await input(range, String(next));
+      await clock.flush();
+      await clock.flush();
+      expect(ui.changes.mock.calls.at(-1)![0].h).toBe(normalizeHue(next));
+      expect(field.dataset.fieldQuality).toBe("preview");
+    }
+    await event(range, "change");
+    await clock.flush();
+    expect(field.dataset.fieldQuality).toBe("full");
+    expect(ui.commits).toHaveBeenCalledOnce();
+    expect(ui.commits.mock.calls[0]![0]).toEqual(ui.changes.mock.calls.at(-1)![0]);
+    expect(ui.cancels).not.toHaveBeenCalled();
+  });
+
+  it("different external Hue still interrupts normalized feedback and discards pending input", async () => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+    await event(range, "pointerdown");
+    await input(range, "87.1");
+    await clock.flush();
+    await clock.flush();
+    await input(range, "90.1");
+    await ui.replace({ ...ui.changes.mock.calls[0]![0], h: 180 });
+    await clock.flush();
+    expect(range.value).toBe("180");
+    expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
+    expect(ui.changes).toHaveBeenCalledOnce();
+    expect(ui.commits).not.toHaveBeenCalled();
+    expect(ui.cancels).not.toHaveBeenCalled();
+  });
+
   it("coalesces to one latest live publication without committing", async () => {
     const ui = await range();
     for (const value of [110, 120, 130]) await input(ui.range, String(value));

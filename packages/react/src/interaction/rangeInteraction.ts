@@ -2,6 +2,8 @@ export interface RangeInput {
   value: number;
   min: number;
   max: number;
+  /** Maps native range values to the authored scalar returned by parent feedback. */
+  normalizeValue?: (value: number) => number;
   onInput: (value: number) => void;
   onComplete: (value: number) => void;
   onInteraction: ((active: boolean) => void) | undefined;
@@ -80,7 +82,8 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
       const value = current().value;
       if (value === previous) return;
       previous = value;
-      if (value !== published) interrupt();
+      const expected = current().normalizeValue?.(published) ?? published;
+      if (value !== expected) interrupt();
       published = value;
       if (pending === null) element.value = String(clamp(value));
     },
