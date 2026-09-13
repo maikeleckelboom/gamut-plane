@@ -18,10 +18,11 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "./planeInstrumentStyle";
-import { placePlanarWarning } from "./pickerWarningPlacement";
+} from "@gamut-plane/render";
+import { placePlanarWarning } from "@gamut-plane/render";
 
 import {
+  projectionConnectorStyle,
   createFieldRenderer,
   pointStyle,
   geometryToSvgPath,
@@ -100,21 +101,7 @@ const boundaryProjectionConnectorStyle = computed(() => {
   const guide = boundaryProjectionPoint.value;
   if (!guide) return undefined;
   const active = boundedActivePoint.value;
-  if (props.plane.id === "oklab") {
-    const deltaX = guide.x - active.x;
-    const deltaY = guide.y - active.y;
-    return {
-      ...pointStyle(active),
-      width: `${(Math.hypot(deltaX, deltaY) * 100).toFixed(8)}%`,
-      transform: `translateY(-50%) rotate(${Math.atan2(deltaY, deltaX).toFixed(10)}rad)`,
-      transformOrigin: "left center",
-    };
-  }
-  const left = Math.min(active.x, guide.x);
-  return {
-    ...pointStyle({ x: left, y: active.y }),
-    width: `${(Math.abs(active.x - guide.x) * 100).toFixed(8)}%`,
-  };
+  return projectionConnectorStyle(active, guide, props.plane.id === "oklab");
 });
 
 const srgbPath = computed(() =>

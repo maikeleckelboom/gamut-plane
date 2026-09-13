@@ -105,6 +105,11 @@ jobs:
       - name: Validate packed Vue consumption
         run: pnpm test:package
 
+      - name: Validate packed React consumption
+        run: pnpm test:react-vite
+        env:
+          GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
+
       - name: Upload Playwright failure evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v5
@@ -114,6 +119,7 @@ jobs:
             apps/web/playwright-report
             apps/web/test-results
             apps/web/e2e/screenshots/*-linux.png
+            test-results/packed/react-vite
           if-no-files-found: ignore
           retention-days: 7
 

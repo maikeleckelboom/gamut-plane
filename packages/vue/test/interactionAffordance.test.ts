@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
 import GamutWarningGlyph from "../src/components/GamutWarningGlyph.vue";
-import { PICKER_WARNING_GLYPH_SIZE } from "../src/components/planeInstrumentStyle";
+import { PICKER_WARNING_GLYPH_SIZE } from "@gamut-plane/render";
 
 describe("instrument interaction affordances", () => {
   it("renders the warning as the configured decorative diamond status badge", () => {

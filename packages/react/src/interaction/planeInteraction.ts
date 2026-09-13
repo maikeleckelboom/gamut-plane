@@ -1,14 +1,35 @@
 import {
-  OKLCH_LIGHTNESS_CHROMA_PLANE as plane,
+  type PickerPlaneContract,
   type OklchColor,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@gamut-plane/core";
-import { createFieldRenderer, pointStyle, type CanvasColorSpaceStatus } from "@gamut-plane/render";
-import type { GamutPlaneProps } from "./gamutPlane.js";
+import {
+  createFieldRenderer,
+  pointStyle,
+  placePlanarWarning,
+  PICKER_ACTIVE_MARKER_RADIUS,
+  PICKER_PROJECTION_MARKER_RADIUS,
+  PICKER_WARNING_GLYPH_SIZE,
+  PICKER_WARNING_MARKER_CLEARANCE,
+  PICKER_WARNING_PREFERRED_OFFSET,
+  PICKER_WARNING_SURFACE_INSET,
+  type CanvasColorSpaceStatus,
+  type RenderedFieldQuality,
+} from "@gamut-plane/render";
+
+export interface PlaneInput {
+  value: OklchColor;
+  plane: PickerPlaneContract;
+  projectionColor: OklchColor | null;
+  interactionPreview: boolean;
+  onValueChange: (value: OklchColor) => void;
+  onValueCommit: ((value: OklchColor) => void) | undefined;
+  onCancel: (() => void) | undefined;
+}
 
 export interface PlaneBinding {
-  reconcile(value: OklchColor): void;
+  reconcile(): void;
   redraw(): void;
   dispose(): void;
 }
@@ -27,8 +48,10 @@ export function mountPlane(
   surface: HTMLDivElement,
   canvas: HTMLCanvasElement,
   marker: HTMLSpanElement,
-  current: () => GamutPlaneProps,
+  warning: HTMLSpanElement,
+  current: () => PlaneInput,
   onCapability: (status: CanvasColorSpaceStatus) => void,
+  onQuality: (quality: RenderedFieldQuality) => void,
 ): PlaneBinding {
   const renderer = createFieldRenderer(canvas, onCapability);
   let disposed = false;
@@ -43,9 +66,36 @@ export function mountPlane(
   let bounds = { left: 0, top: 0, width: 0, height: 0 };
   let pixelRatio = Math.max(1, window.devicePixelRatio || 1);
   let resolution: MediaQueryList | null = null;
+  let plane = current().plane;
+  let localSize = { width: 0, height: 0 };
+  let fieldInput = `${plane.id}:${plane.project(current().value).fixed}:${current().interactionPreview}`;
 
   function position(point: PlanePoint) {
     Object.assign(marker.style, pointStyle(point));
+    if (localSize.width < PICKER_WARNING_GLYPH_SIZE || localSize.height < PICKER_WARNING_GLYPH_SIZE)
+      return;
+    const projection = current().projectionColor;
+    const guide = projection ? plane.positionActivePoint(projection) : null;
+    const placement = placePlanarWarning({
+      activeCenter: { x: point.x * localSize.width, y: point.y * localSize.height },
+      surfaceSize: localSize,
+      activeRadius: PICKER_ACTIVE_MARKER_RADIUS,
+      warningSize: { width: PICKER_WARNING_GLYPH_SIZE, height: PICKER_WARNING_GLYPH_SIZE },
+      preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
+      surfaceInset: PICKER_WARNING_SURFACE_INSET,
+      markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
+      projectionMarker: guide
+        ? {
+            center: { x: guide.x * localSize.width, y: guide.y * localSize.height },
+            radius: PICKER_PROJECTION_MARKER_RADIUS,
+          }
+        : null,
+    });
+    Object.assign(warning.style, {
+      left: `${placement.left}px`,
+      top: `${placement.top}px`,
+      visibility: "visible",
+    });
   }
   function measure() {
     const box = surface.getBoundingClientRect();
@@ -58,6 +108,7 @@ export function mountPlane(
       height: surface.clientHeight * scaleY,
     };
     boundsDirty = false;
+    localSize = { width: surface.clientWidth, height: surface.clientHeight };
   }
   function point(event: PointerEvent): PlanePoint | null {
     if (boundsDirty) measure();
@@ -70,12 +121,14 @@ export function mountPlane(
   function draw() {
     fieldFrame = null;
     if (disposed) return;
-    renderer.draw({
-      plane,
-      fixed: plane.project(current().value).fixed,
-      pixelRatio,
-      interactionPreview: false,
-    });
+    onQuality(
+      renderer.draw({
+        plane,
+        fixed: plane.project(current().value).fixed,
+        pixelRatio,
+        interactionPreview: current().interactionPreview,
+      }),
+    );
   }
   function redraw() {
     if (!disposed && fieldFrame === null) fieldFrame = window.requestAnimationFrame(draw);
@@ -86,7 +139,7 @@ export function mountPlane(
     const value = current().value;
     const next = plane.unproject(nextPoint, plane.project(value).fixed, value);
     if (activePointer !== null) expected = next;
-    current().onChange(next);
+    current().onValueChange(next);
     return next;
   }
   function schedule(nextPoint: PlanePoint) {
@@ -112,7 +165,7 @@ export function mountPlane(
     if (activePointer === null) return;
     const start = origin;
     end();
-    if (rollback && start) current().onChange(start);
+    if (rollback && start) current().onValueChange(start);
     position(plane.positionActivePoint(rollback && start ? start : current().value));
     current().onCancel?.();
   }
@@ -142,7 +195,7 @@ export function mountPlane(
     end();
     if (next) {
       const finalValue = publish(next);
-      current().onCommit?.(finalValue);
+      current().onValueCommit?.(finalValue);
     }
   }
   function lost(event: PointerEvent) {
@@ -168,11 +221,12 @@ export function mountPlane(
     event.preventDefault();
     cancel(false);
     const next = plane.editFromKeyboard(current().value, action, event.shiftKey);
-    current().onChange(next);
-    current().onCommit?.(next);
+    current().onValueChange(next);
+    current().onValueCommit?.(next);
   }
   function resize() {
     measure();
+    position(plane.positionActivePoint(current().value));
     redraw();
   }
   function scroll() {
@@ -196,12 +250,24 @@ export function mountPlane(
   window.addEventListener("scroll", scroll, { capture: true, passive: true });
   window.addEventListener("resize", resize);
   measure();
+  position(plane.positionActivePoint(current().value));
   draw();
   trackResolution();
   return {
     redraw,
-    reconcile(value) {
+    reconcile() {
+      const value = current().value;
+      if (plane !== current().plane) {
+        plane = current().plane;
+        cancel(false);
+      }
       if (activePointer !== null && !sameColor(value, expected ?? origin!)) cancel(false);
+      if (activePointer === null || pending === null) position(plane.positionActivePoint(value));
+      const nextInput = `${plane.id}:${plane.project(value).fixed}:${current().interactionPreview}`;
+      if (nextInput !== fieldInput) {
+        fieldInput = nextInput;
+        redraw();
+      }
     },
     dispose() {
       disposed = true;

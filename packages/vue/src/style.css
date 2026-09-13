@@ -716,3 +716,10 @@
 .plane-instrument .plane-instrument__active-readout {
   box-shadow: inset 2px 0 0 var(--gp-user-accent);
 }
+
+/* Scientific coordinates retain x-minimum on the left in RTL hosts. */
+.plane-instrument .color-plane__surface,
+.plane-instrument .channel-control__track,
+.plane-instrument input {
+  direction: ltr;
+}

@@ -9,6 +9,7 @@ declare global {
       handlers: number;
       windowHandlers: number;
       resolutionHandlers: number;
+      controlHandlers: number;
     };
   }
 }
@@ -47,12 +48,16 @@ test.beforeEach(async ({ page }) => {
       handlers: 0,
       windowHandlers: 0,
       resolutionHandlers: 0,
+      controlHandlers: 0,
     };
     const active = new Set<ResizeObserver>();
     const NativeObserver = ResizeObserver;
     window.ResizeObserver = class extends NativeObserver {
       override observe(target: Element, options?: ResizeObserverOptions) {
-        if (target.matches(".gamut-plane-surface") && !active.has(this)) {
+        if (
+          target.matches(".gpr-color-plane-surface, .gpr-channel-control-track") &&
+          !active.has(this)
+        ) {
           active.add(this);
           window.planeResources.created++;
           window.planeResources.active++;
@@ -74,7 +79,14 @@ test.beforeEach(async ({ page }) => {
       Map<string, Set<EventListenerOrEventListenerObject>>
     >();
     function category(target: EventTarget, type: string) {
-      if (target instanceof Element && target.matches(".gamut-plane-surface")) return "handlers";
+      if (target instanceof Element && target.matches(".gpr-color-plane-surface"))
+        return "handlers";
+      if (
+        target instanceof Element &&
+        target.matches(".gamut-plane-react input") &&
+        type !== "invalid"
+      )
+        return "controlHandlers";
       if (target === window && (type === "scroll" || type === "resize")) return "windowHandlers";
       if (target instanceof MediaQueryList && target.media.startsWith("(resolution:"))
         return "resolutionHandlers";
@@ -115,10 +127,11 @@ async function open(page: Page) {
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 4,
-      disconnected: 2,
-      active: 2,
+      created: 12,
+      disconnected: 6,
+      active: 6,
       handlers: 12,
+      controlHandlers: 64,
       windowHandlers: 4,
       resolutionHandlers: 2,
     });
@@ -147,10 +160,11 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 4,
-      disconnected: 4,
+      created: 12,
+      disconnected: 12,
       active: 0,
       handlers: 0,
+      controlHandlers: 0,
       windowHandlers: 0,
       resolutionHandlers: 0,
     });
@@ -161,10 +175,11 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 8,
-      disconnected: 6,
-      active: 2,
+      created: 24,
+      disconnected: 18,
+      active: 6,
       handlers: 12,
+      controlHandlers: 64,
       windowHandlers: 4,
       resolutionHandlers: 2,
     });
@@ -303,7 +318,9 @@ for (const cancellation of ["Escape", "capture loss", "external replacement", "u
   });
 }
 
-test("pointer completion delivers the last value when onCommit is omitted", async ({ page }) => {
+test("pointer completion delivers the last value when onValueCommit is omitted", async ({
+  page,
+}) => {
   await open(page);
   await control(page, "Toggle completion callback");
   const surface = page.locator('[data-host="first"] [role="application"]');

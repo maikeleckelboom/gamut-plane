@@ -1,0 +1,28 @@
+{
+  "name": "gamut-plane-react-vite-consumer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "test:ssr": "node ssrSmoke.ts",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.1.0.tgz",
+    "@gamut-plane/react": "file:artifacts/gamut-plane-react-0.1.0.tgz",
+    "@gamut-plane/render": "file:artifacts/gamut-plane-render-0.1.0.tgz",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.13.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "6.0.3",
+    "vite": "8.1.4"
+  },
+  "packageManager": "pnpm@11.9.0"
+}

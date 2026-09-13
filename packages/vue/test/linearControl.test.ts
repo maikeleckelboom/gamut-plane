@@ -12,7 +12,7 @@ import {
   PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
-} from "../src/components/planeInstrumentStyle";
+} from "@gamut-plane/render";
 
 const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
 

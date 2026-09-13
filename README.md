@@ -1,6 +1,6 @@
 # Gamut Plane
 
-Gamut Plane provides an interactive OKLCH and OKLab color plane for Vue, with sRGB and Display P3 gamut boundaries. It includes a standalone app for exploring colors and copying CSS values.
+Gamut Plane provides complete native Vue and React OKLCH and OKLab instruments, with sRGB and Display P3 gamut boundaries. It includes a standalone Vue app for exploring colors and copying CSS values.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
@@ -13,7 +13,7 @@ Switching views preserves the color, including alpha and out-of-gamut values. Ga
 
 ![Gamut Plane showing OKLCH with Display P3 and sRGB boundaries](docs/assets/gamut-plane-desktop.png)
 
-The source is public under the MIT license. All workspace packages are private and **not published to npm**. The [native React slice](packages/react/README.md) supports one controlled OKLCH plane; Vue remains the complete two-view instrument.
+The source is public under the MIT license. All workspace packages are private and **not published to npm**. Both adapters provide the complete two-view instrument with controlled color, numeric editing, gamut guides and normal SSR/hydration.
 
 ## Run the app
 
@@ -60,6 +60,21 @@ Vue 3.5+ is required. The component includes its controls, renderer, styles, and
 
 The view defaults to OKLCH. Bind `v-model:plane` to a `ref<GamutPlaneView>("oklch")` to control it from the parent. Boundary visibility props, edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
 
+## Use the React component
+
+```tsx
+import { useState } from "react";
+import { GamutPlane, type OklchColor } from "@gamut-plane/react";
+import "@gamut-plane/react/style.css";
+
+export function ColorEditor() {
+  const [color, setColor] = useState<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+  return <GamutPlane value={color} onValueChange={setColor} defaultView="oklab" />;
+}
+```
+
+React / React DOM 19.3.x are the pinned peer policy. Color is controlled-only; view can be controlled with `view` / `onViewChange` or initialized with `defaultView`. The [React API](packages/react/README.md) documents native section props/ref, `legend`, boundary visibility, callback ordering, CSS and Next usage. The [parity map](docs/react-parity.md) connects product contracts to tests.
+
 ### Install local packages
 
 From this checkout, build and pack the Vue adapter and its private dependencies into a temporary directory:
@@ -87,7 +102,7 @@ Then install them from the application root:
 pnpm add ./artifacts/gamut-plane-core-0.1.0.tgz ./artifacts/gamut-plane-render-0.1.0.tgz ./artifacts/gamut-plane-vue-0.1.0.tgz
 ```
 
-The overrides resolve all unpublished transitive dependencies from their local artifacts. `pnpm test:package` exercises this installation in an isolated consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping both dependency tarballs and overrides. `pnpm test:next` verifies that adapter in Next App Router and a root Strict Mode diagnostic fixture. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
+The overrides resolve all unpublished transitive dependencies from their local artifacts. `pnpm test:package` exercises this installation in an isolated Vue consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping both dependency tarballs and overrides. `pnpm test:react-vite` verifies ordinary React consumption; `pnpm test:next` verifies Next App Router and root Strict Mode. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
 
 ## Color and editing behavior
 
@@ -109,13 +124,13 @@ The app's inspector copies full-precision CSS values. RGB copy is available only
 
 ## Repository guide
 
-| Location          | Contents                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------ |
-| `packages/core`   | Framework-neutral color math, gamut membership, serialization, and plane geometry    |
-| `packages/render` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables |
-| `packages/vue`    | Complete Vue component, lifecycle, controls, interactions and styles                 |
-| `packages/react`  | Controlled native React OKLCH slice and Next/Strict Mode packed verification         |
-| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                       |
+| Location          | Contents                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `packages/core`   | Framework-neutral color math, gamut membership, serialization, and plane geometry                |
+| `packages/render` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables             |
+| `packages/vue`    | Complete Vue component, lifecycle, controls, interactions and styles                             |
+| `packages/react`  | Complete native React instrument, private controls/controllers and packed Vite/Next verification |
+| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                                   |
 
 [Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Workers Static Assets and Workers Builds.
 

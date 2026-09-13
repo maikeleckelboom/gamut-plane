@@ -87,6 +87,10 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         expect(html).toContain('data-gamut-boundary="srgb"');
         expect(html).toContain('data-gamut-boundary="display-p3"');
         expect(html).toContain("612.123456");
+        expect(html).toContain("OKLab a numeric value");
+        expect(html).toContain("OKLab b numeric value");
+        expect(html).toContain("Boundary details");
+        expect(html).toContain("Host boundary legend");
         await expect(page.locator("[data-plane-instrument]")).toHaveCount(2);
         await expect
           .poll(() =>
@@ -102,7 +106,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
           const nodes = roots.flatMap((root) => [
             root,
             ...root.querySelectorAll(
-              "canvas, svg, path, input, button, [data-active-marker], [role=application]",
+              "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [role=application]",
             ),
           ]);
           window.beforeHydration = {
@@ -134,7 +138,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       const current = [...document.querySelectorAll("[data-plane-instrument]")].flatMap((root) => [
         root,
         ...root.querySelectorAll(
-          "canvas, svg, path, input, button, [data-active-marker], [role=application]",
+          "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [role=application]",
         ),
       ]);
       return {
@@ -171,6 +175,8 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
     expect(reuse.values).toEqual(reuse.before.values);
     expect(reuse.focus).toBe(true);
     expect(reuse.associations).toBe(true);
+    await expect(page.locator('[data-active-plane="oklch"]')).toHaveCount(1);
+    await expect(page.locator('[data-active-plane="oklab"]')).toHaveCount(1);
     expect(reuse.boxes).toEqual(reuse.before.boxes);
     expect(reuse.boxes.every(([width, height]) => width! >= 200 && width === height)).toBe(true);
     await expect(page.locator("[data-events]")).toHaveText(

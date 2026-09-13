@@ -18,8 +18,8 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "../src/components/planeInstrumentStyle";
-import { placePlanarWarning } from "../src/components/pickerWarningPlacement";
+} from "@gamut-plane/render";
+import { placePlanarWarning } from "@gamut-plane/render";
 
 const TABLE_OPTIONS = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
 const tables: PickerGamutBoundaryTables = {

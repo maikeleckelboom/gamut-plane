@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { GamutPlane, type OklchColor } from "@gamut-plane/react";
+import { GamutPlane, type GamutPlaneView, type OklchColor } from "@gamut-plane/react";
 import { useEvents } from "./eventsProvider";
 
 export function InstrumentHost({
@@ -20,6 +20,7 @@ export function InstrumentHost({
   const [completion, setCompletion] = useState(true);
   const [renderCount, rerender] = useState(0);
   const record = useEvents();
+  const [view, setView] = useState<GamutPlaneView>("oklch");
   return (
     <div>
       <button onClick={() => setHidden(!isHidden)}>Toggle visibility</button>
@@ -44,20 +45,22 @@ export function InstrumentHost({
             key={index}
             data-host={index === 0 ? "first" : "second"}
             style={{
-              width: isNarrow ? 280 : 560,
+              width: isNarrow ? 280 : 760,
               maxWidth: "100%",
               display: isHidden ? "none" : undefined,
             }}
           >
             <GamutPlane
+              {...(index === 0 ? { view, onViewChange: setView } : { defaultView: "oklab" })}
+              legend={<p data-legend>Host boundary legend</p>}
               value={color}
-              onChange={(next) => {
+              onValueChange={(next) => {
                 setColors((values) =>
                   values.map((value, position) => (position === index ? { ...next } : value)),
                 );
                 record("changes");
               }}
-              onCommit={completion ? (next) => record("commits", next) : undefined}
+              onValueCommit={completion ? (next) => record("commits", next) : undefined}
               onCancel={() => record("cancels")}
             />
             <output data-color>{JSON.stringify(color)}</output>

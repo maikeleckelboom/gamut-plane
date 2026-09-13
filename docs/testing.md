@@ -10,29 +10,30 @@ pnpm --filter @gamut-plane/web exec playwright install chromium
 pnpm build:packages
 ```
 
-On Linux, use `playwright install --with-deps chromium` to include browser system dependencies. Browser tests start their own servers on ports 4177–4181; keep those ports free and run the suites sequentially.
+On Linux, use `playwright install --with-deps chromium` to include browser system dependencies. Browser tests start their own servers on ports 4177–4182; keep those ports free and run the suites sequentially.
 
-| Command                   | Coverage                                                                                |
-| ------------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm format:check`       | Oxfmt formatting                                                                        |
-| `pnpm lint`               | Oxlint checks across packages and app                                                   |
-| `pnpm typecheck`          | Package declarations and TypeScript/Vue source                                          |
-| `pnpm test`               | Core, Vue component, and app unit tests                                                 |
-| `pnpm check:gamut-tables` | Deterministic regeneration against checked-in tables                                    |
-| `pnpm build`              | Package artifacts and production app                                                    |
-| `pnpm check:build`        | Production file inventory, metadata assets, and header rules                            |
-| `pnpm test:e2e`           | App behavior, accessibility, and platform visual references                             |
-| `pnpm test:production`    | Built app served with the repository's header rules                                     |
-| `pnpm test:package`       | Isolated tarball installation, types, SSR, and browser embedding                        |
-| `pnpm test:nuxt`          | Locked isolated tarballs, Nuxt development, production SSR and generated-page hydration |
-| `pnpm test:next`          | Locked Next SSR/prerendered hydration and root React Strict Mode                        |
-| `pnpm audit --prod`       | Advisories in the resolved production dependency graph                                  |
+| Command                   | Coverage                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm format:check`       | Oxfmt formatting                                                                               |
+| `pnpm lint`               | Oxlint checks across packages and app                                                          |
+| `pnpm typecheck`          | Package declarations and TypeScript/Vue source                                                 |
+| `pnpm test`               | Core/render, Vue/React component, and app unit tests                                           |
+| `pnpm check:gamut-tables` | Deterministic regeneration against checked-in tables                                           |
+| `pnpm build`              | Package artifacts and production app                                                           |
+| `pnpm check:build`        | Production file inventory, metadata assets, and header rules                                   |
+| `pnpm test:e2e`           | App behavior, accessibility, and platform visual references                                    |
+| `pnpm test:production`    | Built app served with the repository's header rules                                            |
+| `pnpm test:package`       | Isolated tarball installation, types, SSR, and browser embedding                               |
+| `pnpm test:nuxt`          | Locked isolated tarballs, Nuxt development, production SSR and generated-page hydration        |
+| `pnpm test:next`          | Locked Next SSR/prerendered hydration and root React Strict Mode                               |
+| `pnpm test:react-vite`    | Locked isolated React tarballs, types, Node SSR, production Vite build and full browser parity |
+| `pnpm audit --prod`       | Advisories in the resolved production dependency graph                                         |
 
 `typecheck`, `test`, and `test:package` build the packages first. Build the app before running production checks. The [release runbook](release.md#2-run-the-clean-checkout-gate) gives the complete clean-checkout sequence. CI runs static/unit validation followed by browser/accessibility/visual validation on Ubuntu 24.04; the production dependency audit is an additional local release check.
 
 ## Unit and component tests
 
-Core tests cover color conversion, direct gamut membership, serialization/parsing, plane projections, keyboard edits, and boundary math. Vue tests cover generated-table accuracy, drawing invalidation, pointer arbitration, device pixel ratio, numeric drafts, and parent feedback. App tests cover inspector presentation and clipboard behavior.
+Core tests cover color conversion, direct gamut membership, serialization/parsing, plane projections, keyboard edits, and boundary math. Render tests cover deterministic geometry, shared warning placement and visual intervals. Vue and React tests cover generated-table accuracy, drawing invalidation, pointer arbitration, device pixel ratio, numeric drafts and parent feedback. React also tests its public props/ref, controlled/uncontrolled view, native range completion, IME, committed callbacks during suspended renders and Strict Mode. App tests cover inspector presentation and clipboard behavior. The [React parity map](react-parity.md) classifies the Vue product oracle by equivalent React coverage or shared ownership.
 
 `packages/vue/test/instrumentHost.test.ts` mounts a reactive parent that feeds updates back, including cloned color objects. It exercises rollback, external replacement, pointer ownership, final-value delivery, view changes during a gesture, and teardown. Fixed-prop tests cover geometry and emissions; reactive-parent tests cover cancellation under normal `v-model` feedback.
 
@@ -64,6 +65,16 @@ The browser cases cover independent instance state and focus, plane ownership, I
 
 Successful consumers are removed. Failures retain the consumer and Playwright evidence at the printed path. To keep a successful consumer for inspection, run `pnpm --filter @gamut-plane/vue test:package --keep` after building the packages. Run focused browser tests from that directory using its installed tools and production output.
 
+## Packed React/Vite consumption
+
+`pnpm test:react-vite` copies `packages/react/consumer` and `packages/react/e2e` outside workspace resolution. It packs core/render/React, verifies ESM/declarations/CSS/README/LICENSE/metadata, installs with the independent frozen lockfile, runs typechecking and Node SSR, builds with Vite and runs Chromium on port 4182. No workspace alias, custom transpilation or registry fallback for private packages is allowed.
+
+The browser suite ports Vue's embedding, rendering and accessibility contracts to the public React API, and adds native ranges in both views, external replacement, boundary/legend/ref/accent behavior, scientific RTL, uncapped DPR and four representative screenshots. It covers 623/624/625px container edges, enlarged text, narrow/revealed/resized hosts, capture during scroll, all numeric controls, negative OKLab drafts, warnings/projection and independent instruments. Axe requires no serious/critical violations in both views. Screenshots cover normal OKLCH, OKLab, narrow and outside-Display-P3 states.
+
+`pnpm --filter @gamut-plane/react test:vite --keep` retains a successful fixture; `--lock` deliberately refreshes its checked-in registry graph. Failures always retain their fixture. `GAMUT_PLANE_EVIDENCE` copies browser evidence into the specified directory, also used by CI.
+
+All packed runners content-address the freshly packed private tarballs in the temporary manifests/lockfile. Registry versions/integrities remain frozen. Each installed private-package file is then compared byte-for-byte with the tarball inventory. This prevents pnpm's same-name/version artifact cache from silently validating older code. The canonical fixture manifests retain readable local artifact paths.
+
 ## Packed Nuxt SSR and hydration
 
 `packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core, render and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt/fixture typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
@@ -86,7 +97,7 @@ The consumer pins React / React DOM / their type packages 19.3.0, Next.js 16.3.4
 
 The Next App Router's dynamic page is a Server Component which supplies serializable initial color to an ordinary Client Component using `useState`. The layout imports the package CSS. Development and production tests hold JavaScript while loading HTML/CSS, then verify node identity, IDs, focus, geometry, authored values, visible Canvas output and edits. `/prerendered` is statically generated by `next build`; the runner verifies its on-disk HTML and browser tests hydrate it. Additional cases cover independent requests/instances, nondefault alpha, authored out-of-gamut values, narrow hosts, hidden/revealed instruments, route remount, resize and Canvas fallback/unavailability.
 
-The separate diagnostic entry calls `createRoot(...).render(<StrictMode>...)` at the root. Resource counters distinguish four observer creations / two disconnects during the initial two-instance replay, two live observers, twelve surface handlers, four window listeners and two resolution listeners. Unmount must reduce all live counts to zero. Tests cover cloned feedback and fresh callbacks, frame coalescing, synchronous final-value commits, an omitted completion callback, Escape rollback, capture loss, differing external replacement, queued-work disposal, resize during capture and uncapped DPR changes. The DPR test asserts an actual media event: changing only CDP's DPR getter without changing viewport geometry did not deliver that event in Chromium.
+The separate diagnostic entry calls `createRoot(...).render(<StrictMode>...)` at the root. The initial two-instance replay creates twelve observers and disconnects six, leaving six live plane/track observers, twelve surface handlers, sixty-four native control handlers, four window listeners and two resolution listeners. Unmount must reduce all live counts to zero. Tests cover cloned feedback and fresh callbacks, frame coalescing, synchronous final-value commits, an omitted completion callback, Escape rollback, capture loss, differing external replacement, queued-work disposal, resize during capture and uncapped DPR changes. The DPR test asserts an actual media event: changing only CDP's DPR getter without changing viewport geometry did not deliver that event in Chromium.
 
 Both SSR runners share native process supervision and evidence cleanup in `scripts/packedConsumer.mts`. Next uses port 4181 for sequential development, production and diagnostic runs. Startup/test/command timeouts and per-mode retained reports follow the Nuxt gate. CI runs both gates in the dedicated SSR job and uploads evidence independently of app visual tests. Use `pnpm --filter @gamut-plane/react test:package --lock` only to deliberately refresh and review the Next fixture lockfile.
 
@@ -94,7 +105,7 @@ Framework references: [Next server/client components](https://nextjs.org/docs/ap
 
 ## Visual references
 
-Snapshots live at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png`. Windows references cover local Chromium runs; Linux references cover Ubuntu 24.04 CI. CI does not update them automatically.
+Snapshots live at `apps/web/e2e/screenshots/<name>-win32.png` / `<name>-linux.png` and `packages/react/e2e/screenshots/react-<state>-<platform>.png`. Windows references cover local Chromium runs; Linux references cover Ubuntu CI. React's initial Linux references were generated and inspected in Ubuntu 26.04 WSL with the same pinned Chromium; the CI runner is Ubuntu 24.04. CI never updates references automatically.
 
 The suite uses one Chromium worker, fixed scenario viewports, DPR 1, `en-US`, dark color scheme, reduced motion, disabled screenshot animations, and a `0.003` maximum differing-pixel ratio. Separate references account for system-font rasterization differences.
 

@@ -1,3 +1,7 @@
+import {
+  addressConsumerArtifacts,
+  verifyInstalledArtifacts,
+} from "../../../scripts/packedConsumer.mts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
@@ -120,7 +124,9 @@ try {
     ),
   );
   console.log(`Isolated consumer: ${consumer}`);
+  await addressConsumerArtifacts(consumer, ["core", "render", "vue"], false);
   console.log(runPnpm(["install", "--frozen-lockfile=false"], consumer));
+  await verifyInstalledArtifacts(consumer, ["core", "render", "vue"]);
   // One physical Vue runtime must serve both host and dependency imports.
   console.log(runPnpm(["list", "--prod", "--depth", "2"], consumer));
   for (const command of ["typecheck", "test:ssr", "build", "test:browser"]) {

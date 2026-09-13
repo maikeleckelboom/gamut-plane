@@ -21,7 +21,11 @@ import ColorChannelControl, {
   type LinearControlMarker,
 } from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
-import { PICKER_GAMUT_TABLES, type CanvasColorSpaceStatus } from "@gamut-plane/render";
+import {
+  colorGradient,
+  PICKER_GAMUT_TABLES,
+  type CanvasColorSpaceStatus,
+} from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
@@ -194,15 +198,6 @@ const oklabDomainHelp = computed(() =>
     ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; your color is unchanged.`
     : undefined,
 );
-
-function colorGradient(segments: number, colorAt: (position: number) => OklchColor): string {
-  const stops: string[] = [];
-  for (let index = 0; index <= segments; index += 1) {
-    const position = index / segments;
-    stops.push(`${serializeColor(colorAt(position))} ${(position * 100).toFixed(3)}%`);
-  }
-  return `linear-gradient(90deg, ${stops.join(", ")})`;
-}
 
 function selectPlane(value: PickerPlaneId): void {
   plane.value = value;

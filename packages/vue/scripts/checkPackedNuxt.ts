@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { createPnpmRunner, finishConsumer } from "../../../scripts/packedConsumer.mts";
+import {
+  addressConsumerArtifacts,
+  verifyInstalledArtifacts,
+  createPnpmRunner,
+  finishConsumer,
+} from "../../../scripts/packedConsumer.mts";
 import { cp, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -34,7 +39,9 @@ try {
     await writeFile(join(fixture, "pnpm-lock.yaml"), lock);
     await writeFile(join(consumer, "pnpm-lock.yaml"), lock);
   }
+  await addressConsumerArtifacts(consumer, ["core", "render", "vue"]);
   await run(["install", "--frozen-lockfile"]);
+  await verifyInstalledArtifacts(consumer, ["core", "render", "vue"]);
   await run(["test:ssr"]);
   await run(["typecheck"]);
   await run(["test:browser"], consumer, { FIXTURE_MODE: "development" });
