@@ -33,7 +33,7 @@ On Linux, use `playwright install --with-deps chromium` to include browser syste
 
 ## Unit and component tests
 
-Core tests cover color conversion, direct gamut membership, serialization/parsing, plane projections, keyboard edits, and boundary math. Render tests cover deterministic geometry, shared warning placement and visual intervals. Vue and React tests cover generated-table accuracy, drawing invalidation, pointer arbitration, device pixel ratio, numeric drafts and parent feedback. React also tests its public props/ref, controlled/uncontrolled view, native range completion, IME, committed callbacks during suspended renders and Strict Mode. App tests cover inspector presentation and clipboard behavior. The [React parity map](react-parity.md) classifies the Vue product oracle by equivalent React coverage or shared ownership.
+Core tests cover color conversion, direct gamut membership, serialization/parsing, plane projections, keyboard edits, and target-aware boundary analysis. Render tests cover deterministic geometry, shared warning placement, visibility-filtered intervals/markers and target projections. Vue and React tests cover generated-table accuracy, target/visibility independence, drawing invalidation, pointer arbitration, device pixel ratio, numeric drafts and parent feedback. React also tests its public props/ref, controlled/uncontrolled view, native range completion, IME, committed callbacks during suspended renders and Strict Mode. App tests cover target controls, inspector presentation and clipboard behavior. The [React parity map](react-parity.md) classifies the Vue product oracle by equivalent React coverage or shared ownership.
 
 `packages/vue/test/instrumentHost.test.ts` mounts a reactive parent that feeds updates back, including cloned color objects. It exercises rollback, external replacement, pointer ownership, final-value delivery, view changes during a gesture, and teardown. Fixed-prop tests cover geometry and emissions; reactive-parent tests cover cancellation under normal `v-model` feedback.
 
@@ -41,7 +41,7 @@ Core tests cover color conversion, direct gamut membership, serialization/parsin
 
 ## Browser and accessibility tests
 
-The app suite covers page integration, inspector updates, boundary checkboxes, clipboard success and failure, and visual references. Successful copy cases grant clipboard permissions and read the value back; failure cases reject the write. Unit tests also cover a false result from the legacy clipboard fallback.
+The app suite covers page integration, target radios, independent boundary checkboxes, compact target results, clipboard success and failure, wide `100svh` root fit, contained workspace overflow, stacked mobile flow, text enlargement and visual references. Successful copy cases grant clipboard permissions and read the value back; failure cases reject the write. Unit tests also cover a false result from the legacy clipboard fallback.
 
 Axe checks fail on serious or critical violations in OKLCH, OKLab, and narrow OKLCH layouts. Semantic tests cover heading order, landmarks, keyboard reachability, visible focus, boundary controls, copy announcements, text gamut status, 200% text, and horizontal overflow.
 

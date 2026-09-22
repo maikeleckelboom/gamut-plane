@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
-import { GamutPlane, type GamutPlaneView, type OklchColor } from "@gamut-plane/react";
+import {
+  GamutPlane,
+  type DisplayGamut,
+  type GamutPlaneView,
+  type OklchColor,
+} from "@gamut-plane/react";
 
 const initial = (): OklchColor => ({ l: 0.5, c: 0.2, h: 0.5, alpha: 0.7 });
 
@@ -9,6 +14,7 @@ export function InstrumentHost() {
   const [first, setFirst] = useState(initial);
   const [second, setSecond] = useState(initial);
   const [view, setView] = useState<GamutPlaneView>("oklch");
+  const [boundaryTarget, setBoundaryTarget] = useState<DisplayGamut>("srgb");
   const [width, setWidth] = useState(single ? 900 : 340);
   const [shown, setShown] = useState(!query.has("hidden"));
   const [dark, setDark] = useState(false);
@@ -44,6 +50,9 @@ export function InstrumentHost() {
       </button>
       <button onClick={() => setView(view === "oklch" ? "oklab" : "oklch")}>Parent view</button>
       <button onClick={() => setAccent(!accent)}>Toggle accent</button>
+      <button onClick={() => setBoundaryTarget(boundaryTarget === "srgb" ? "display-p3" : "srgb")}>
+        Parent boundary target
+      </button>
       <button
         onClick={() => root.current?.querySelector<HTMLElement>('[role="application"]')?.focus()}
       >
@@ -69,6 +78,7 @@ export function InstrumentHost() {
               }}
               onValueCommit={() => countCommit(0)}
               onCancel={() => setCancels((count) => count + 1)}
+              boundaryTarget={boundaryTarget}
               showSrgbBoundary={srgb}
               showDisplayP3Boundary={p3}
               legend={
@@ -95,6 +105,7 @@ export function InstrumentHost() {
           </div>
           <output data-color>{JSON.stringify(first)}</output>
           <output data-commits>{commits[0]}</output>
+          <output data-boundary-target-output>{boundaryTarget}</output>
         </div>
         <div className="host-spacer" />
       </div>
@@ -103,6 +114,7 @@ export function InstrumentHost() {
           <GamutPlane
             value={second}
             onValueChange={setSecond}
+            boundaryTarget="display-p3"
             view={view}
             onViewChange={setView}
             onValueCommit={() => countCommit(1)}

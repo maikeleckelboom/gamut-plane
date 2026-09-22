@@ -23,6 +23,7 @@ const selectedColor = ref<OklchColor>({
   alpha: 1,
 });
 const activePlane = ref<GamutPlaneView>("oklch");
+const boundaryTarget = ref<DisplayGamut>("srgb");
 const boundaries = ref({
   srgb: true,
   displayP3: true,
@@ -127,7 +128,8 @@ async function copyCss(
         <p class="project-kicker">Color-space instrument</p>
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Interactive OKLab and OKLCH planes with precise sRGB and Display P3 gamut boundaries.
+          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
+          membership checks.
         </p>
       </div>
     </header>
@@ -137,31 +139,66 @@ async function copyCss(
         <GamutPlane
           v-model="selectedColor"
           v-model:plane="activePlane"
+          :boundary-target="boundaryTarget"
           :show-srgb-boundary="boundaries.srgb"
           :show-display-p3-boundary="boundaries.displayP3"
           @capability="canvasCapability = $event"
         >
           <template #field-legend>
-            <fieldset class="boundary-legend" data-boundary-legend>
-              <legend>Boundary visibility</legend>
-              <div class="boundary-legend__options">
-                <label>
-                  <input
-                    v-model="boundaries.displayP3"
-                    type="checkbox"
-                    data-boundary-toggle="display-p3"
-                  />
-                  <span class="boundary-key boundary-key--p3" aria-hidden="true" />
-                  <span>Display P3</span>
-                </label>
-                <label>
-                  <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
-                  <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
-                  <span>sRGB</span>
-                </label>
-              </div>
-              <p>Visibility changes the view only; the selected color is unchanged.</p>
-            </fieldset>
+            <section
+              class="gamut-reference"
+              data-gamut-reference
+              aria-labelledby="gamut-reference-title"
+            >
+              <h3 id="gamut-reference-title">Gamut reference</h3>
+              <fieldset>
+                <legend>Target</legend>
+                <div class="gamut-reference__options">
+                  <label>
+                    <input
+                      v-model="boundaryTarget"
+                      type="radio"
+                      value="srgb"
+                      name="boundary-target"
+                      data-boundary-target-option="srgb"
+                    />
+                    <span>sRGB</span>
+                  </label>
+                  <label>
+                    <input
+                      v-model="boundaryTarget"
+                      type="radio"
+                      value="display-p3"
+                      name="boundary-target"
+                      data-boundary-target-option="display-p3"
+                    />
+                    <span>Display P3</span>
+                  </label>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Visible guides</legend>
+                <div class="gamut-reference__options">
+                  <label>
+                    <input
+                      v-model="boundaries.displayP3"
+                      type="checkbox"
+                      data-boundary-toggle="display-p3"
+                    />
+                    <span class="boundary-key boundary-key--p3" aria-hidden="true" />
+                    <span>Display P3</span>
+                  </label>
+                  <label>
+                    <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
+                    <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
+                    <span>sRGB</span>
+                  </label>
+                </div>
+              </fieldset>
+              <p>
+                Target controls projection and reference. Visibility controls sampled guides only.
+              </p>
+            </section>
           </template>
         </GamutPlane>
       </div>

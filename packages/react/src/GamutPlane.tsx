@@ -14,6 +14,7 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   normalizeHue,
+  type DisplayGamut,
   type OklchColor,
 } from "@gamut-plane/core";
 import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
@@ -29,6 +30,7 @@ import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { NumericInput } from "./components/NumericInput.js";
 import { BoundaryDetails } from "./components/BoundaryDetails.js";
+import { BoundaryTargetResult } from "./components/BoundaryTargetResult.js";
 
 export type GamutPlaneView = "oklch" | "oklab";
 type ProtectedRootProp =
@@ -51,6 +53,7 @@ export interface GamutPlaneProps extends Omit<ComponentPropsWithRef<"section">, 
   view?: GamutPlaneView | undefined;
   defaultView?: GamutPlaneView | undefined;
   onViewChange?: ((view: GamutPlaneView) => void) | undefined;
+  boundaryTarget?: DisplayGamut | undefined;
   showSrgbBoundary?: boolean | undefined;
   showDisplayP3Boundary?: boolean | undefined;
   onValueCommit?: ((value: OklchColor) => void) | undefined;
@@ -83,6 +86,7 @@ export function GamutPlane({
   view: controlledView,
   defaultView = "oklch",
   onViewChange,
+  boundaryTarget = "srgb",
   showSrgbBoundary = true,
   showDisplayP3Boundary = true,
   onValueCommit,
@@ -96,7 +100,10 @@ export function GamutPlane({
 }: GamutPlaneProps) {
   const [view, requestView] = useControllableView(controlledView, defaultView, onViewChange);
   const id = useId();
-  const model = instrumentModel(value, view);
+  const model = instrumentModel(value, view, boundaryTarget, {
+    srgb: showSrgbBoundary,
+    displayP3: showDisplayP3Boundary,
+  });
   const [huePreview, setHuePreview] = useState(false);
   // A view transition interrupts temporary preview ownership, never authored state.
   useLayoutEffect(() => {
@@ -139,6 +146,7 @@ export function GamutPlane({
             value={value}
             plane={model.plane}
             projectionColor={model.projectionColor}
+            projectionLabel={model.projectionLabel}
             warningVisible={model.warningVisible}
             interactionPreview={view === "oklch" && huePreview}
             showSrgbBoundary={showSrgbBoundary}
@@ -260,6 +268,7 @@ export function GamutPlane({
               </div>
             </>
           )}
+          <BoundaryTargetResult model={model.targetResult} />
           <BoundaryDetails model={model.details} />
         </div>
       </div>

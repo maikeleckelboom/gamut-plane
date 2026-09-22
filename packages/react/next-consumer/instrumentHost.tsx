@@ -52,6 +52,7 @@ export function InstrumentHost({
           >
             <GamutPlane
               {...(index === 0 ? { view, onViewChange: setView } : { defaultView: "oklab" })}
+              boundaryTarget={index === 0 ? "srgb" : "display-p3"}
               legend={<p data-legend>Host boundary legend</p>}
               value={color}
               onValueChange={(next) => {

@@ -1,6 +1,6 @@
 # Gamut Plane
 
-Gamut Plane provides complete native Vue and React OKLCH and OKLab instruments, with sRGB and Display P3 gamut boundaries. It includes a standalone Vue app for exploring colors and copying CSS values.
+Gamut Plane provides complete native Vue and React OKLCH and OKLab instruments, with sampled sRGB and Display P3 gamut guides and exact membership checks. It includes a standalone Vue app for exploring colors and copying CSS values.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
@@ -45,20 +45,21 @@ After [installing the local packages](#install-local-packages), import the compo
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type OklchColor } from "@gamut-plane/vue";
+import { GamutPlane, type DisplayGamut, type OklchColor } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
 const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+const boundaryTarget = ref<DisplayGamut>("srgb");
 </script>
 
 <template>
-  <GamutPlane v-model="color" />
+  <GamutPlane v-model="color" :boundary-target="boundaryTarget" />
 </template>
 ```
 
 Vue 3.5+ is required. The component includes its controls, renderer, styles, and gamut tables. It inherits the host font and adapts to its available width. Import the stylesheet once; use `--gamut-plane-accent` to customize focus and selection emphasis.
 
-The view defaults to OKLCH. Bind `v-model:plane` to a `ref<GamutPlaneView>("oklch")` to control it from the parent. Boundary visibility props, edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
+The view defaults to OKLCH. Bind `v-model:plane` to a `ref<GamutPlaneView>("oklch")` to control it from the parent. `boundaryTarget` accepts the exported `DisplayGamut` type and defaults to `"srgb"`. Boundary visibility props, edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
 
 ## Use the React component
 
@@ -69,11 +70,18 @@ import "@gamut-plane/react/style.css";
 
 export function ColorEditor() {
   const [color, setColor] = useState<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
-  return <GamutPlane value={color} onValueChange={setColor} defaultView="oklab" />;
+  return (
+    <GamutPlane
+      value={color}
+      onValueChange={setColor}
+      defaultView="oklab"
+      boundaryTarget="display-p3"
+    />
+  );
 }
 ```
 
-React / React DOM 19.3.x are the pinned peer policy. Color is controlled-only; view can be controlled with `view` / `onViewChange` or initialized with `defaultView`. The [React API](packages/react/README.md) documents native section props/ref, `legend`, boundary visibility, callback ordering, CSS and Next usage. The [parity map](docs/react-parity.md) connects product contracts to tests.
+React / React DOM 19.3.x are the pinned peer policy. Color is controlled-only; view can be controlled with `view` / `onViewChange` or initialized with `defaultView`. Boundary target is a controlled prop and defaults to sRGB. The [React API](packages/react/README.md) documents native section props/ref, `legend`, target/visibility, callback ordering, CSS and Next usage. The [parity map](docs/react-parity.md) connects product contracts to tests.
 
 ### Install local packages
 
@@ -106,7 +114,9 @@ The overrides resolve all unpublished transitive dependencies from their local a
 
 ## Color and editing behavior
 
-The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel marks, and the sRGB boundary projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
+The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel marks, boundary-guide colors and the selected target projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
+
+Boundary target selects the projection/reference gamut. Boundary visibility selects which ordinary sampled guide layers are drawn across the plane and channel controls. Neither changes the target automatically or mutates the authored color. Exact membership for both gamuts and the primary Display P3 warning remain independent of both controls. An active target projection can remain visible when that target's ordinary guide layer is hidden.
 
 The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values, with the marker projected to the edge.
 

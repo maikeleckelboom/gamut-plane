@@ -2,77 +2,30 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
-  getChromaSliderMarkers,
-  getHueGamutIntervals,
-  getLightnessGamutIntervals,
-  getPickerGamutStatus,
   normalizeHue,
   serializeColor,
+  type DisplayGamut,
   type OklchColor,
 } from "@gamut-plane/core";
 import {
-  PICKER_GAMUT_TABLES,
   colorGradient,
-  type LinearControlInterval,
-  type LinearControlMarker,
+  displayGamutLabel,
+  getBoundaryPresentation,
+  type BoundaryGuideVisibility,
 } from "@gamut-plane/render";
 import type { GamutPlaneView } from "../GamutPlane.js";
 
-export function instrumentModel(value: OklchColor, view: GamutPlaneView) {
+export function instrumentModel(
+  value: OklchColor,
+  view: GamutPlaneView,
+  boundaryTarget: DisplayGamut,
+  visibility: BoundaryGuideVisibility,
+) {
   const plane = view === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE;
   const projection = plane.project(value);
-  const status = getPickerGamutStatus(value, PICKER_GAMUT_TABLES);
-  const chroma = getChromaSliderMarkers(value, PICKER_GAMUT_TABLES, status);
-  const projectionColor = status.srgb.inGamut
-    ? null
-    : { ...value, c: Math.min(value.c, status.srgb.interpolatedMaximumChroma) };
-  const projectionCss = projectionColor ? serializeColor(projectionColor) : "";
-  const markers: LinearControlMarker[] = [
-    {
-      id: "display-p3-boundary-guide",
-      label: `Display P3 table boundary guide C ${chroma.displayP3BoundaryGuide.chroma.toFixed(4)}`,
-      position: chroma.displayP3BoundaryGuide.position,
-      tone: "display-p3",
-    },
-    {
-      id: "srgb-boundary-guide",
-      label: `sRGB table boundary guide C ${chroma.srgbBoundaryGuide.chroma.toFixed(4)}`,
-      position: chroma.srgbBoundaryGuide.position,
-      tone: "srgb",
-    },
-  ];
-  if (chroma.srgbBoundaryProjection)
-    markers.push({
-      id: "srgb-boundary-projection",
-      label: `sRGB boundary projection C ${chroma.srgbBoundaryProjection.chroma.toFixed(4)}`,
-      position: chroma.srgbBoundaryProjection.position,
-      tone: "projection",
-      cssColor: projectionCss,
-    });
-  function intervals(
-    get: (
-      table: typeof PICKER_GAMUT_TABLES.srgb,
-      color: OklchColor,
-    ) => { start: number; end: number }[],
-  ): LinearControlInterval[] {
-    return [
-      ...get(PICKER_GAMUT_TABLES.displayP3, value).map((interval) => ({
-        ...interval,
-        tone: "display-p3" as const,
-      })),
-      ...get(PICKER_GAMUT_TABLES.srgb, value).map((interval) => ({
-        ...interval,
-        tone: "srgb" as const,
-      })),
-    ];
-  }
-  const hueIntervals = view === "oklch" ? intervals(getHueGamutIntervals) : [];
-  const lightnessIntervals = intervals(getLightnessGamutIntervals);
-  const chromaIntervals: LinearControlInterval[] = [
-    { start: 0, end: chroma.displayP3BoundaryGuide.position, tone: "display-p3" },
-    { start: 0, end: chroma.srgbBoundaryGuide.position, tone: "srgb" },
-  ];
-  const boundaryProjectionChroma = chroma.srgbBoundaryProjection?.chroma ?? null;
+  const boundary = getBoundaryPresentation(value, view, boundaryTarget, visibility);
+  const { status, target } = boundary.analysis;
+  const targetLabel = displayGamutLabel(target.target);
   const details = {
     view,
     p3: status.displayP3.interpolatedMaximumChroma.toFixed(4),
@@ -81,26 +34,40 @@ export function instrumentModel(value: OklchColor, view: GamutPlaneView) {
       view === "oklab"
         ? `OKLCH C ${value.c.toFixed(4)} · H ${value.h.toFixed(2)}°`
         : `C ${value.c.toFixed(4)}`,
+    targetLabel,
     projection:
-      boundaryProjectionChroma === null
+      target.projection === null
         ? "not required"
-        : status.srgb.interpolatedDeltaC > 0
-          ? `table C ${boundaryProjectionChroma.toFixed(4)} · ΔC guide −${status.srgb.interpolatedDeltaC.toFixed(4)}`
+        : target.guideDeltaC > 0
+          ? `table C ${target.projection.chroma.toFixed(4)} · ΔC guide −${target.guideDeltaC.toFixed(4)}`
           : "exact outside · boundary projection overlaps active",
   };
   return {
     plane,
     projection,
-    projectionColor,
-    markers,
-    hueIntervals,
-    lightnessIntervals,
-    chromaIntervals,
+    projectionColor: boundary.projectionColor,
+    projectionLabel: `${targetLabel} target boundary projection`,
+    markers: boundary.markers,
+    hueIntervals: boundary.hueIntervals,
+    lightnessIntervals: boundary.lightnessIntervals,
+    chromaIntervals: boundary.chromaIntervals,
     details,
+    targetResult: {
+      target: target.target,
+      targetLabel,
+      inGamut: target.inGamut,
+      guideChroma: target.boundaryGuide.chroma.toFixed(4),
+      guideDelta: target.guideDeltaC.toFixed(4),
+      showGuideDelta: target.guideDeltaC > 0,
+      swatchCss: serializeColor(target.boundaryGuide.color),
+    },
     warningVisible: !status.displayP3.inGamut,
     huePosition: normalizeHue(value.h) / 360,
-    chromaPosition: chroma.active.position,
-    style: { "--picker-active": serializeColor(value), "--picker-projection": projectionCss },
+    chromaPosition: Math.min(1, Math.max(0, value.c / OKLCH_PICKER_MAX_CHROMA)),
+    style: {
+      "--picker-active": serializeColor(value),
+      "--picker-projection": boundary.projectionCss,
+    },
     lightnessGradient: colorGradient(12, (position) => ({ ...value, l: position, alpha: 1 })),
     chromaGradient: colorGradient(12, (position) => ({
       ...value,

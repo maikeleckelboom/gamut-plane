@@ -5,6 +5,7 @@ export interface BoundaryDetailsModel {
   p3: string;
   srgb: string;
   selected: string;
+  targetLabel: string;
   projection: string;
 }
 
@@ -35,14 +36,14 @@ export function BoundaryDetails({ model }: { model: BoundaryDetailsModel }) {
             <code>{model.selected}</code>
           </div>
           <div className="gpr-plane-instrument-projection-readout">
-            <span>sRGB boundary projection</span>
+            <span>{model.targetLabel} target projection</span>
             <code>{model.projection}</code>
           </div>
         </div>
         <p className="gpr-plane-instrument-method">
           {model.view === "oklab"
-            ? "Contours and the boundary projection are sampled guides, not exact gamut tests. The circular editing limit is separate from both display gamuts."
-            : "Contours, channel marks and the boundary projection are sampled guides. Gamut membership and CSS output use direct color conversion."}
+            ? "Contours and the target projection use sampled guides, not exact boundary solutions. The circular editing limit is separate from both display gamuts."
+            : "Contours, channel marks and the target projection use sampled guides. Gamut membership and CSS output use direct color conversion."}
         </p>
       </div>
     </details>

@@ -9,14 +9,15 @@ This package is private and **not published to npm**. Use the [local tarball ins
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type OklchColor } from "@gamut-plane/vue";
+import { GamutPlane, type DisplayGamut, type OklchColor } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
 const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+const boundaryTarget = ref<DisplayGamut>("srgb");
 </script>
 
 <template>
-  <GamutPlane v-model="color" />
+  <GamutPlane v-model="color" :boundary-target="boundaryTarget" />
 </template>
 ```
 
@@ -26,6 +27,7 @@ const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
 | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `v-model`                    | Required `OklchColor`; receives live color edits                                            |
 | `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
+| `boundaryTarget`             | Controlled `DisplayGamut` projection/reference target; defaults to `"srgb"`                 |
 | `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
 | `showDisplayP3Boundary`      | Boolean prop; defaults to `true`                                                            |
 | `@commit="onCommit"`         | Receives the color when an edit completes, for example to record undo history               |
@@ -33,7 +35,9 @@ const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
 | `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
 | `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
 
-Import `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View changes do not emit color updates or commits. Visibility props affect the field contours; other gamut information remains available.
+Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's ordinary field contour, accessible path, channel intervals and boundary-guide marker. Exact membership and the active target result remain available; a required target projection remains visible even when its ordinary guide is hidden.
+
+Boundary target selects the projection/reference gamut. Boundary visibility selects which sampled guide layers are drawn. Neither mutates the authored color or changes the other setting.
 
 The color model requires finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue. Edits preserve alpha and unedited values. Gamut guides and the bounded editing geometry do not clamp the authored color to a display gamut.
 

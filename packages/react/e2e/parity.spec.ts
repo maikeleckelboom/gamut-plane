@@ -17,9 +17,17 @@ test("legend, boundary props, native root ref and accent work through the public
   await expect(
     root.locator('[data-gamut-boundary="srgb"], [data-gamut-boundary-hit="srgb"]'),
   ).toHaveCount(0);
-  await expect(root.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(1);
+  await expect(root.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
   await page.getByLabel("Display P3 guide", { exact: true }).uncheck();
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(0);
+  await expect(root.locator("[data-gamut-range]")).toHaveCount(0);
+  expect(await page.locator("[data-color]").innerText()).toBe(before);
+  await page.getByRole("button", { name: "Parent boundary target" }).click();
+  await expect(root.locator("[data-boundary-target-result]")).toHaveAttribute(
+    "data-boundary-target",
+    "display-p3",
+  );
+  await expect(page.locator("[data-boundary-target-output]")).toHaveText("display-p3");
   expect(await page.locator("[data-color]").innerText()).toBe(before);
   await page.getByRole("button", { name: "Toggle accent" }).click();
   await page.getByRole("button", { name: "Focus from ref" }).click();

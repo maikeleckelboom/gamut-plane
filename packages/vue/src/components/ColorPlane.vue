@@ -38,7 +38,8 @@ const props = withDefaults(
     plane: PickerPlaneContract;
     srgbTable: GamutBoundaryTable;
     displayP3Table: GamutBoundaryTable;
-    srgbBoundaryGuideColor: OklchColor | null;
+    boundaryProjectionColor: OklchColor | null;
+    boundaryProjectionLabel: string;
     warningVisible: boolean;
     warningLabel: string;
     interactionPreview?: boolean;
@@ -86,8 +87,8 @@ const fixedAxis = computed(() => activeProjection.value.fixed);
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.positionActivePoint(props.modelValue));
 const boundaryProjectionPoint = computed<PlanePoint | null>(() => {
-  if (!props.srgbBoundaryGuideColor) return null;
-  return props.plane.positionActivePoint(props.srgbBoundaryGuideColor);
+  if (!props.boundaryProjectionColor) return null;
+  return props.plane.positionActivePoint(props.boundaryProjectionColor);
 });
 
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
@@ -95,7 +96,7 @@ const boundaryProjectionMarkerStyle = computed(() =>
   boundaryProjectionPoint.value ? pointStyle(boundaryProjectionPoint.value) : undefined,
 );
 const boundaryProjectionCss = computed(() =>
-  props.srgbBoundaryGuideColor ? serializeColor(props.srgbBoundaryGuideColor) : "",
+  props.boundaryProjectionColor ? serializeColor(props.boundaryProjectionColor) : "",
 );
 const boundaryProjectionConnectorStyle = computed(() => {
   const guide = boundaryProjectionPoint.value;
@@ -105,16 +106,20 @@ const boundaryProjectionConnectorStyle = computed(() => {
 });
 
 const srgbPath = computed(() =>
-  geometryToSvgPath(
-    props.plane.buildGamutContour(props.srgbTable, fixedAxis.value),
-    props.plane.gamutContourClosed,
-  ),
+  props.showSrgbBoundary
+    ? geometryToSvgPath(
+        props.plane.buildGamutContour(props.srgbTable, fixedAxis.value),
+        props.plane.gamutContourClosed,
+      )
+    : "",
 );
 const displayP3Path = computed(() =>
-  geometryToSvgPath(
-    props.plane.buildGamutContour(props.displayP3Table, fixedAxis.value),
-    props.plane.gamutContourClosed,
-  ),
+  props.showDisplayP3Boundary
+    ? geometryToSvgPath(
+        props.plane.buildGamutContour(props.displayP3Table, fixedAxis.value),
+        props.plane.gamutContourClosed,
+      )
+    : "",
 );
 const activeCss = computed(() => serializeColor(props.modelValue));
 const planeLabel = computed(() => {
@@ -516,9 +521,9 @@ onBeforeUnmount(() => {
           '--projection-marker-color': boundaryProjectionCss,
         }"
         data-table-boundary-guide-marker
-        data-marker-role="srgb-boundary-projection"
-        title="sRGB boundary projection"
-        aria-label="sRGB boundary projection"
+        data-marker-role="target-boundary-projection"
+        :title="boundaryProjectionLabel"
+        :aria-label="boundaryProjectionLabel"
         role="img"
       />
       <span

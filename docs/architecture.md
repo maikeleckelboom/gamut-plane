@@ -71,7 +71,9 @@ The app checks native `writeText` rejection and the legacy `execCommand` boolean
 
 Exact Display P3 and sRGB membership is calculated directly from the active color. It is not sampled from a contour.
 
-Contours, crossing ticks, and the sRGB boundary projection interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization.
+`getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` selects ordinary contour-adjacent channel intervals and markers from independent visibility booleans for both adapters.
+
+Contours, crossing ticks, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility selects ordinary sampled guide layers. Neither setting changes the other. The exact Display P3 warning is independent of target.
 
 ## Generated tables
 
@@ -85,7 +87,7 @@ The render package owns checked-in tables at `packages/render/src/generated/gamu
 
 ## Native React instrument
 
-`GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides/projection, boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
+`GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides/projection, a controlled `boundaryTarget`, independent boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
 
 React renders pure markup, guides and hydration-safe `useId` associations. A layout effect publishes committed props to the interaction binding; abandoned renders cannot replace its callbacks or color. A separate committed effect creates renderer resources, native surface listeners, ResizeObserver, DPR media tracking and scroll/resize handling. Cleanup cancels pointer/field work, releases capture and disposes resources without emitting edits. Pure contour computation is cached by fixed axis inside the component; consumers do not need memoization.
 

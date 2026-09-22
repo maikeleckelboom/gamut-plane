@@ -44,6 +44,7 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 | `view`                     | `GamutPlaneView`                                            | Optional authoritative view                         |
 | `defaultView`              | `GamutPlaneView`                                            | `"oklch"`; initialization only                      |
 | `onViewChange`             | `(view: GamutPlaneView) => void`                            | User requests for a different view                  |
+| `boundaryTarget`           | `DisplayGamut`                                              | `"srgb"`; controlled projection/reference target    |
 | `showSrgbBoundary`         | `boolean`                                                   | `true`                                              |
 | `showDisplayP3Boundary`    | `boolean`                                                   | `true`                                              |
 | `onValueCommit`            | `(value: OklchColor) => void`                               | Completion, after value delivery                    |
@@ -54,12 +55,13 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 | `style`                    | `React.CSSProperties & { "--gamut-plane-accent"?: string }` | Merged root styles                                  |
 | `ref`                      | Native section ref                                          | Root `<section>`                                    |
 
-`GamutPlaneView` is `"oklch" | "oklab"`. The intended exports are `GamutPlane`, `GamutPlaneProps`, `GamutPlaneView`, `OklchColor` and `CanvasColorSpaceStatus`. Internal components/controllers are private.
+`GamutPlaneView` is `"oklch" | "oklab"`; `DisplayGamut` is `"srgb" | "display-p3"`. Both types are exported with `GamutPlane`, `GamutPlaneProps`, `OklchColor` and `CanvasColorSpaceStatus`. Internal components/controllers are private.
 
 Root props are based on native section props, including `id`, ordinary `data-*`, appropriate ARIA descriptions and ordinary DOM event handlers. React 19's normal ref prop accepts an object or callback ref; there is no imperative handle. Internal labels, roles, reserved state attributes and geometry variables remain component-owned. Children, injected HTML, editable content and hydration suppression are not supported. Use `legend` for composition.
 
 ```tsx
 const instrumentRef = useRef<HTMLElement>(null);
+const [boundaryTarget, setBoundaryTarget] = useState<DisplayGamut>("srgb");
 
 <GamutPlane
   ref={instrumentRef}
@@ -67,6 +69,7 @@ const instrumentRef = useRef<HTMLElement>(null);
   data-editor="brand"
   value={color}
   onValueChange={setColor}
+  boundaryTarget={boundaryTarget}
   showSrgbBoundary={showSrgb}
   showDisplayP3Boundary={showP3}
   legend={<BoundaryControls />}
@@ -75,7 +78,9 @@ const instrumentRef = useRef<HTMLElement>(null);
 />;
 ```
 
-The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour and accessible hit path. Channel intervals/markers, exact warnings and the collapsed **Boundary details** disclosure retain their meaning. Exact membership uses direct core math; contours, guide values and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
+The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its ordinary field contour, accessible hit path, channel intervals and boundary-guide marker. Exact membership, the target result and the collapsed **Boundary details** disclosure retain their meaning. A required active-target projection remains visible even when that target's ordinary guide is hidden. Exact membership uses direct core math; contours, guide values, guide swatch and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
+
+Boundary target selects the projection/reference gamut. Boundary visibility selects which sampled guide layers are drawn. Neither mutates the authored color or changes the other setting. The primary outside-Display-P3 warning remains based on exact Display P3 membership, regardless of target.
 
 Only `--gamut-plane-accent` is a supported theme property. Styles are local, inherit the host font and preserve its document palette, resets and color scheme. Available container width owns the one/two-column layout at 39em, with a usable one-column fallback. Scientific axes and ranges remain left-to-right inside an RTL host; surrounding prose inherits its direction.
 

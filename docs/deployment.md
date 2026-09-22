@@ -73,6 +73,6 @@ To exercise absolute URL metadata locally, set `VITE_PUBLIC_SITE_URL` to `https:
 
 ## Verify the deployed site
 
-Confirm the Workers build and production deployment match the release candidate commit. Check HTTPS, page metadata, the favicon and social image, security and cache headers for HTML and hashed assets, the `/index.html` redirect, and 404 responses for unmatched paths and `/_headers`. Exercise both planes, boundary visibility, pointer and keyboard edits, clipboard success and failure, narrow layout, and 200% text. Inspect the console for errors and blocked resources.
+Confirm the Workers build and production deployment match the release candidate commit. Check HTTPS, page metadata, the favicon and social image, security and cache headers for HTML and hashed assets, the `/index.html` redirect, and 404 responses for unmatched paths and `/_headers`. Exercise both planes, both boundary targets, independent guide visibility, pointer and keyboard edits, clipboard success and failure, wide viewport fit, narrow layout, and 200% text. Inspect the console for errors and blocked resources.
 
 Record the URL, commit, build/deployment identifiers, and results. Repeat these checks after the README URL update and after promotion to `main`.

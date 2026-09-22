@@ -41,17 +41,18 @@ export {
   type GamutBoundaryTable,
 } from "./gamut/types.js";
 export {
-  getChromaSliderMarkers,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
+  getPickerBoundaryAnalysis,
   getPickerGamutStatus,
-  type ChromaSliderMarker,
-  type ChromaSliderMarkers,
+  type BoundaryGuidePoint,
   type HueGamutInterval,
   type LightnessGamutInterval,
+  type PickerBoundaryAnalysis,
   type PickerGamutBoundaryTables,
   type PickerGamutStatus,
   type PickerGamutStatusEntry,
+  type TargetBoundaryAnalysis,
 } from "./picker/analysis.js";
 export {
   buildLightnessChromaBoundaryPath,

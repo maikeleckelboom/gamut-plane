@@ -80,6 +80,14 @@ test("minimal and controlled instances keep independent color, view, IDs and hos
   await second.getByRole("radio", { name: "OKLCH", exact: true }).click();
   await expect(second.locator("[data-plane]")).toHaveText("oklch");
   await expect(first.locator("[data-picker-plane]")).toHaveAttribute("data-plane-id", "oklab");
+  const firstColorBeforeTarget = await color(first);
+  await page.getByRole("button", { name: "Parent boundary target" }).click();
+  await expect(first.locator("[data-boundary-target-result]")).toHaveAttribute(
+    "data-boundary-target",
+    "display-p3",
+  );
+  await expect(first.locator("[data-boundary-target-output]")).toHaveText("display-p3");
+  expect(await color(first)).toEqual(firstColorBeforeTarget);
   await first.getByRole("spinbutton", { name: "OKLab a numeric value" }).fill("-0.1");
   await first.getByRole("spinbutton", { name: "OKLab a numeric value" }).press("Enter");
   expect(await color(first)).not.toEqual(initial);

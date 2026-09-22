@@ -149,10 +149,84 @@ describe("public instrument contract", () => {
         showSrgbBoundary ? 1 : 0,
       );
       expect(ui.element.querySelectorAll('[data-gamut-boundary="display-p3"]')).toHaveLength(0);
-      expect(ui.element.querySelectorAll("[data-gamut-marker]").length).toBeGreaterThanOrEqual(2);
+      expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(
+        showSrgbBoundary ? 1 : 0,
+      );
+      expect(
+        ui.element.querySelectorAll('[data-gamut-marker="srgb-boundary-projection"]'),
+      ).toHaveLength(1);
       expect(ui.element.querySelectorAll("[data-boundary-guide]")).toHaveLength(2);
     }
     expect(changes).not.toHaveBeenCalled();
+  });
+  it("keeps target, visibility, authored color and lifecycle callbacks independent", async () => {
+    const value = { l: 0.62, c: 0.42, h: 30, alpha: 1 };
+    const changes = vi.fn(),
+      commits = vi.fn(),
+      cancels = vi.fn(),
+      views = vi.fn();
+    const ui = await mount(
+      <GamutPlane
+        value={value}
+        onValueChange={changes}
+        onValueCommit={commits}
+        onCancel={cancels}
+        onViewChange={views}
+        boundaryTarget="srgb"
+        showSrgbBoundary={false}
+        showDisplayP3Boundary
+      />,
+    );
+    expect(get(ui.element, "[data-boundary-target-result]").dataset.boundaryTarget).toBe("srgb");
+    expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
+    expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
+    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-guide"]')).toBeNull();
+    expect(get(ui.element, '[data-gamut-marker="srgb-boundary-projection"]')).toBeTruthy();
+
+    await ui.render(
+      <GamutPlane
+        value={value}
+        onValueChange={changes}
+        onValueCommit={commits}
+        onCancel={cancels}
+        onViewChange={views}
+        boundaryTarget="display-p3"
+        showSrgbBoundary
+        showDisplayP3Boundary={false}
+      />,
+    );
+    expect(get(ui.element, "[data-boundary-target-result]").dataset.boundaryTarget).toBe(
+      "display-p3",
+    );
+    expect(ui.element.querySelector('[data-gamut-boundary="display-p3"]')).toBeNull();
+    expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
+    expect(ui.element.querySelector('[data-gamut-marker="display-p3-boundary-guide"]')).toBeNull();
+    expect(get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]')).toBeTruthy();
+    expect(
+      get(ui.element, '[data-marker-role="target-boundary-projection"]').getAttribute("aria-label"),
+    ).toBe("Display P3 target boundary projection");
+
+    await ui.render(
+      <GamutPlane
+        value={value}
+        onValueChange={changes}
+        onValueCommit={commits}
+        onCancel={cancels}
+        onViewChange={views}
+        boundaryTarget="display-p3"
+        showSrgbBoundary={false}
+        showDisplayP3Boundary={false}
+      />,
+    );
+    expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
+    expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
+    expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
+    expect(get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]')).toBeTruthy();
+    expect(value).toEqual({ l: 0.62, c: 0.42, h: 30, alpha: 1 });
+    expect(changes).not.toHaveBeenCalled();
+    expect(commits).not.toHaveBeenCalled();
+    expect(cancels).not.toHaveBeenCalled();
+    expect(views).not.toHaveBeenCalled();
   });
   it("resolves unique relationships in independent instances without lifecycle edits", async () => {
     const changes = vi.fn(),

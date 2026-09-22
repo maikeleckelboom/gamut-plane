@@ -58,9 +58,23 @@ describe("standalone application", () => {
 
     const srgbToggle = wrapper.get('[data-boundary-toggle="srgb"]');
     const field = wrapper.get(".plane-instrument__field");
-    expect(field.get("[data-boundary-legend]").exists()).toBe(true);
+    expect(field.get("[data-gamut-reference]").exists()).toBe(true);
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "srgb",
+    );
     await srgbToggle.setValue(false);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "srgb",
+    );
+    expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
+
+    await wrapper.get('[data-boundary-target-option="display-p3"]').setValue(true);
+    await flushPromises();
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "display-p3",
+    );
+    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Target · Display P3");
     expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
 
     await wrapper.get('[data-plane-option="oklab"]').trigger("click");

@@ -31,7 +31,7 @@ test("hides and restores each gamut boundary as view state", async ({ page }) =>
   const selected = page.locator(".channel-values");
   const originalSelection = await selected.textContent();
 
-  await expect(page.locator(".plane-instrument__field > [data-boundary-legend]")).toBeVisible();
+  await expect(page.locator(".plane-instrument__field > [data-gamut-reference]")).toBeVisible();
 
   await p3.uncheck();
   await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(0);
@@ -44,6 +44,53 @@ test("hides and restores each gamut boundary as view state", async ({ page }) =>
   await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(1);
   await srgb.check();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(selected).toHaveText(originalSelection ?? "");
+});
+
+test("target selection is exclusive, keyboard operable, and independent from visibility", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  const targetResult = page.locator("[data-boundary-target-result]");
+  const srgbTarget = page.getByRole("radio", { name: "sRGB" });
+  const p3Target = page.getByRole("radio", { name: "Display P3" });
+  const selected = page.locator(".channel-values");
+  const originalSelection = await selected.textContent();
+  const srgbSwatch = await page.locator("[data-boundary-guide-swatch]").getAttribute("style");
+
+  await expect(srgbTarget).toBeChecked();
+  await expect(p3Target).not.toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(targetResult).toContainText("Target · sRGB");
+
+  await p3Target.click();
+  await expect(p3Target).toBeChecked();
+  await expect(srgbTarget).not.toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "display-p3");
+  await expect(targetResult).toContainText("Target · Display P3");
+  expect(await page.locator("[data-boundary-guide-swatch]").getAttribute("style")).not.toBe(
+    srgbSwatch,
+  );
+  await expect(selected).toHaveText(originalSelection ?? "");
+
+  await p3Target.focus();
+  await p3Target.press("ArrowLeft");
+  await expect(srgbTarget).toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await page.getByRole("checkbox", { name: "sRGB" }).uncheck();
+  await expect(srgbTarget).toBeChecked();
+  await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(selected).toHaveText(originalSelection ?? "");
+
+  await page.getByRole("checkbox", { name: "Display P3" }).uncheck();
+  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
+  await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker$="boundary-guide"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
   await expect(selected).toHaveText(originalSelection ?? "");
 });
 
@@ -89,21 +136,30 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
   await openInstrument(page);
 
   for (const viewport of [
-    { width: 1280, height: 800 },
+    { width: 1536, height: 864 },
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1280, height: 650 },
     { width: 1024, height: 768 },
-    { width: 768, height: 900 },
+    { width: 768, height: 1024 },
     { width: 390, height: 844 },
+    { width: 320, height: 720 },
   ]) {
     await page.setViewportSize(viewport);
-    await expect(page.locator("[data-boundary-legend]")).toBeVisible();
+    await expect(page.locator("[data-gamut-reference]")).toBeVisible();
     await expect(page.locator(".color-inspector")).toBeVisible();
     const geometry = await page.evaluate(() => {
       const root = document.documentElement;
       const plane = document.querySelector(".color-plane__surface");
+      const workspace = document.querySelector<HTMLElement>(".instrument-layout");
+      if (!workspace) throw new Error("Instrument workspace missing");
       const copyButtons = [...document.querySelectorAll<HTMLElement>("[data-copy-representation]")];
       return {
         clientWidth: root.clientWidth,
         scrollWidth: root.scrollWidth,
+        clientHeight: root.clientHeight,
+        scrollHeight: root.scrollHeight,
+        workspaceScrollable: workspace.scrollHeight > workspace.clientHeight,
         surfaceWidth: plane?.getBoundingClientRect().width ?? 0,
         clippedCopyButtons: copyButtons.some((button) => {
           const bounds = button.getBoundingClientRect();
@@ -116,7 +172,41 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
     );
     expect(geometry.surfaceWidth).toBeGreaterThan(viewport.width <= 390 ? 240 : 300);
     expect(geometry.clippedCopyButtons).toBe(false);
+    if (viewport.width >= 1101) {
+      expect(
+        geometry.scrollHeight,
+        `${viewport.width}x${viewport.height} root height overflow`,
+      ).toBeLessThanOrEqual(geometry.clientHeight + 1);
+      if (viewport.height === 650) expect(geometry.workspaceScrollable).toBe(true);
+    }
   }
+});
+
+test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await openInstrument(page);
+  await page.locator("[data-boundary-details] summary").click();
+  const details = page.locator("[data-boundary-details]");
+  await expect(details).toHaveAttribute("open", "");
+  await details.locator("summary").focus();
+  await details.locator("summary").press("End");
+  await details.scrollIntoViewIfNeeded();
+  const geometry = await page.evaluate(() => {
+    const root = document.documentElement;
+    const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
+    const details = document.querySelector<HTMLElement>("[data-boundary-details]")!;
+    const bounds = details.getBoundingClientRect();
+    return {
+      rootFits: root.scrollHeight <= root.clientHeight + 1,
+      workspaceOverflowY: getComputedStyle(workspace).overflowY,
+      detailsReachable: bounds.top < root.clientHeight && bounds.bottom > 0,
+    };
+  });
+  expect(geometry.rootFits).toBe(true);
+  expect(geometry.workspaceOverflowY).toBe("auto");
+  expect(geometry.detailsReachable).toBe(true);
 });
 
 test("enlarged text, focus visibility, and Canvas capability remain usable and truthful", async ({
@@ -171,6 +261,17 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   );
   expect(clippedOklchValues).toBe(false);
   await expect(page.getByRole("checkbox", { name: "Display P3" })).toBeVisible();
+  const targetP3 = page.getByRole("radio", { name: "Display P3" });
+  await targetP3.focus();
+  await targetP3.scrollIntoViewIfNeeded();
+  await expect(targetP3).toBeInViewport();
+  const zoomedRoot = await page.evaluate(() => ({
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    workspaceOverflowY: getComputedStyle(document.querySelector(".instrument-layout")!).overflowY,
+  }));
+  expect(zoomedRoot.scrollHeight).toBeLessThanOrEqual(zoomedRoot.clientHeight + 1);
+  expect(zoomedRoot.workspaceOverflowY).toBe("auto");
 
   await oklab.click();
   await expect(page.getByRole("application", { name: /OKLab a\/b plane/ })).toBeVisible();
@@ -233,11 +334,14 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
       if (!element) return { marker: "", outlineWidth: 0 };
       const representation = element.dataset.copyRepresentation;
       const boundary = element.dataset.boundaryToggle;
+      const target = element.dataset.boundaryTargetOption;
       const marker = representation
         ? `copy-${representation}`
-        : boundary
-          ? `boundary-${boundary}`
-          : "";
+        : target
+          ? `target-${target}`
+          : boundary
+            ? `boundary-${boundary}`
+            : "";
       return {
         marker,
         outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth),
@@ -263,6 +367,7 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
 
   expect(visited).toContain("boundary-display-p3");
   expect(visited).toContain("boundary-srgb");
+  expect(visited).toContain("target-srgb");
   expect(visited).toContain("copy-oklch");
   expect(boundaryOutlineWidth).toBeGreaterThan(0);
   expect(copyOutlineWidth).toBeGreaterThan(0);

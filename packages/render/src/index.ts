@@ -25,3 +25,9 @@ export type {
   GamutThreshold,
 } from "./channelGeometry.js";
 export { colorGradient, projectionConnectorStyle } from "./presentation.js";
+export {
+  displayGamutLabel,
+  getBoundaryPresentation,
+  type BoundaryGuideVisibility,
+  type BoundaryPresentation,
+} from "./boundaryPresentation.js";

@@ -36,16 +36,16 @@ Both planes show Display P3 and sRGB together:
 - sRGB is the secondary dashed boundary;
 - the active point may cross either boundary;
 - neither boundary clamps or replaces canonical OKLCH;
-- the sRGB boundary projection remains a separate guide and value.
+- the explicit sRGB or Display P3 target projection remains separate from ordinary guide visibility.
 
-Boundary visibility is view state, not an output-policy selector.
+Boundary target is controlled projection/reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
 
 ## Exact facts and interpolated guides
 
 Membership and guides use different calculations:
 
 1. Exact inside/outside membership comes from direct color conversion for the active color.
-2. Boundary contours, crossing ticks, and the sRGB boundary projection come from deterministic interpolation over generated gamut-boundary tables bundled with the Vue package.
+2. Boundary contours, crossing ticks, boundary-guide colors and target projections come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
 
 Interpolated geometry is visualization. It cannot be used as exact membership, silently mutate the active color, or substitute for exact serialization.
 

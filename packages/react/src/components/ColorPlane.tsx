@@ -19,6 +19,7 @@ import { useCommitted } from "../hooks/useCommitted.js";
 import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 
 interface ColorPlaneProps extends PlaneInput {
+  projectionLabel: string;
   warningVisible: boolean;
   showSrgbBoundary: boolean;
   showDisplayP3Boundary: boolean;
@@ -26,8 +27,15 @@ interface ColorPlaneProps extends PlaneInput {
 }
 
 export function ColorPlane(props: ColorPlaneProps) {
-  const { plane, value, projectionColor, warningVisible, showSrgbBoundary, showDisplayP3Boundary } =
-    props;
+  const {
+    plane,
+    value,
+    projectionColor,
+    projectionLabel,
+    warningVisible,
+    showSrgbBoundary,
+    showDisplayP3Boundary,
+  } = props;
   const surface = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
@@ -42,16 +50,20 @@ export function ColorPlane(props: ColorPlaneProps) {
   const guide = projectionColor ? plane.positionActivePoint(projectionColor) : null;
   const paths = useMemo(
     () => ({
-      srgb: geometryToSvgPath(
-        plane.buildGamutContour(PICKER_GAMUT_TABLES.srgb, projection.fixed),
-        plane.gamutContourClosed,
-      ),
-      p3: geometryToSvgPath(
-        plane.buildGamutContour(PICKER_GAMUT_TABLES.displayP3, projection.fixed),
-        plane.gamutContourClosed,
-      ),
+      srgb: showSrgbBoundary
+        ? geometryToSvgPath(
+            plane.buildGamutContour(PICKER_GAMUT_TABLES.srgb, projection.fixed),
+            plane.gamutContourClosed,
+          )
+        : "",
+      p3: showDisplayP3Boundary
+        ? geometryToSvgPath(
+            plane.buildGamutContour(PICKER_GAMUT_TABLES.displayP3, projection.fixed),
+            plane.gamutContourClosed,
+          )
+        : "",
     }),
-    [plane, projection.fixed],
+    [plane, projection.fixed, showDisplayP3Boundary, showSrgbBoundary],
   );
   useLayoutEffect(() => {
     const mounted = mountPlane(
@@ -188,9 +200,9 @@ export function ColorPlane(props: ColorPlaneProps) {
                 "--projection-marker-color": serializeColor(projectionColor!),
               })}
               data-table-boundary-guide-marker=""
-              data-marker-role="srgb-boundary-projection"
-              title="sRGB boundary projection"
-              aria-label="sRGB boundary projection"
+              data-marker-role="target-boundary-projection"
+              title={projectionLabel}
+              aria-label={projectionLabel}
               role="img"
             />
           </>
