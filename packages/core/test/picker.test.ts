@@ -146,6 +146,16 @@ describe("OKLCH picker geometry and analysis", () => {
     expect(oklchToPlanePoint(beyondInstrument).x).toBe(1.25);
   });
 
+  it("treats normalized last-bit noise at the instrument edge as inside", () => {
+    const nearEdge: OklchColor = { l: 0.5, c: 0.4000000000000001, h: 37, alpha: 1 };
+    const outside: OklchColor = { ...nearEdge, c: 0.45 };
+
+    for (const plane of [OKLCH_LIGHTNESS_CHROMA_PLANE, OKLAB_AB_PLANE]) {
+      expect(plane.isPointInInstrumentDomain(plane.project(nearEdge).point)).toBe(true);
+      expect(plane.isPointInInstrumentDomain(plane.project(outside).point)).toBe(false);
+    }
+  });
+
   it("builds deterministic finite fixed-hue boundary geometry into reusable buffers", () => {
     const sampleCount = 33;
     const output = new Float32Array(sampleCount * 2);
@@ -531,6 +541,13 @@ describe("OKLCH picker geometry and analysis", () => {
       expect(end.y).toBeCloseTo(projection.y, 12);
       expect(home.fixed).toBeCloseTo(projection.fixed, 12);
       expect(end.fixed).toBeCloseTo(projection.fixed, 12);
+      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(home.point)).toBe(true);
+      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(end.point)).toBe(true);
+      expect(
+        OKLAB_AB_PLANE.positionActivePoint(
+          OKLAB_AB_PLANE.editFromKeyboard(color, "maximum-x", false),
+        ),
+      ).toEqual(end.point);
     });
 
     it("uses the nearest vertical pole when canonical b is outside the horizontal disc domain", () => {

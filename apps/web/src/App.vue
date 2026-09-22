@@ -152,52 +152,60 @@ async function copyCss(
             >
               <h3 id="gamut-reference-title">Gamut reference</h3>
               <fieldset>
-                <legend>Target</legend>
-                <div class="gamut-reference__options">
-                  <label>
-                    <input
-                      v-model="boundaryTarget"
-                      type="radio"
-                      value="srgb"
-                      name="boundary-target"
-                      data-boundary-target-option="srgb"
-                    />
-                    <span>sRGB</span>
-                  </label>
-                  <label>
-                    <input
-                      v-model="boundaryTarget"
-                      type="radio"
-                      value="display-p3"
-                      name="boundary-target"
-                      data-boundary-target-option="display-p3"
-                    />
-                    <span>Display P3</span>
-                  </label>
+                <legend class="sr-only">Target</legend>
+                <div class="gamut-reference__row">
+                  <span class="gamut-reference__label" aria-hidden="true">Target</span>
+                  <div class="gamut-reference__options">
+                    <label>
+                      <input
+                        v-model="boundaryTarget"
+                        type="radio"
+                        value="srgb"
+                        name="boundary-target"
+                        data-boundary-target-option="srgb"
+                      />
+                      <span>sRGB</span>
+                    </label>
+                    <label>
+                      <input
+                        v-model="boundaryTarget"
+                        type="radio"
+                        value="display-p3"
+                        name="boundary-target"
+                        data-boundary-target-option="display-p3"
+                      />
+                      <span>Display P3</span>
+                    </label>
+                  </div>
                 </div>
               </fieldset>
               <fieldset>
-                <legend>Visible guides</legend>
-                <div class="gamut-reference__options">
-                  <label>
-                    <input
-                      v-model="boundaries.displayP3"
-                      type="checkbox"
-                      data-boundary-toggle="display-p3"
-                    />
-                    <span class="boundary-key boundary-key--p3" aria-hidden="true" />
-                    <span>Display P3</span>
-                  </label>
-                  <label>
-                    <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
-                    <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
-                    <span>sRGB</span>
-                  </label>
+                <legend class="sr-only">Visible guides</legend>
+                <div class="gamut-reference__row">
+                  <span class="gamut-reference__label" aria-hidden="true">Visible guides</span>
+                  <div class="gamut-reference__options">
+                    <label>
+                      <input
+                        v-model="boundaries.srgb"
+                        type="checkbox"
+                        data-boundary-toggle="srgb"
+                      />
+                      <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
+                      <span>sRGB</span>
+                    </label>
+                    <label>
+                      <input
+                        v-model="boundaries.displayP3"
+                        type="checkbox"
+                        data-boundary-toggle="display-p3"
+                      />
+                      <span class="boundary-key boundary-key--p3" aria-hidden="true" />
+                      <span>Display P3</span>
+                    </label>
+                  </div>
                 </div>
               </fieldset>
-              <p>
-                Target controls projection and reference. Visibility controls sampled guides only.
-              </p>
+              <p>Target controls reference and projection. Guides control sampled visualization.</p>
             </section>
           </template>
         </GamutPlane>
@@ -243,16 +251,16 @@ async function copyCss(
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>
           <dl>
-            <div data-exact-gamut-status="display-p3">
-              <dt>Display P3</dt>
-              <dd :data-status="gamutStatus.displayP3.inGamut ? 'inside' : 'outside'">
-                {{ gamutStatus.displayP3.inGamut ? "Inside" : "Outside" }}
-              </dd>
-            </div>
             <div data-exact-gamut-status="srgb">
               <dt>sRGB</dt>
               <dd :data-status="gamutStatus.srgb.inGamut ? 'inside' : 'outside'">
                 {{ gamutStatus.srgb.inGamut ? "Inside" : "Outside" }}
+              </dd>
+            </div>
+            <div data-exact-gamut-status="display-p3">
+              <dt>Display P3</dt>
+              <dd :data-status="gamutStatus.displayP3.inGamut ? 'inside' : 'outside'">
+                {{ gamutStatus.displayP3.inGamut ? "Inside" : "Outside" }}
               </dd>
             </div>
           </dl>
@@ -277,6 +285,27 @@ async function copyCss(
             </button>
             <code>{{ oklchDisplayCss }}</code>
           </div>
+          <div class="css-representation" data-css-representation="srgb">
+            <span>sRGB</span>
+            <button
+              type="button"
+              data-copy-representation="srgb"
+              :data-copied="isCopied('srgb') ? 'true' : 'false'"
+              :disabled="!srgbCanonicalCss"
+              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
+              :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
+              :title="
+                srgbCanonicalCss
+                  ? undefined
+                  : 'Unavailable because the selected color is outside sRGB.'
+              "
+              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
+            >
+              {{ isCopied("srgb") ? "Copied" : "Copy" }}
+            </button>
+            <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
+            <p v-else id="srgb-copy-reason">Outside sRGB. No clipped value emitted.</p>
+          </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>
             <button
@@ -299,27 +328,6 @@ async function copyCss(
             </button>
             <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
             <p v-else id="display-p3-copy-reason">Outside Display P3. No clipped value emitted.</p>
-          </div>
-          <div class="css-representation" data-css-representation="srgb">
-            <span>sRGB</span>
-            <button
-              type="button"
-              data-copy-representation="srgb"
-              :data-copied="isCopied('srgb') ? 'true' : 'false'"
-              :disabled="!srgbCanonicalCss"
-              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
-              :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
-              :title="
-                srgbCanonicalCss
-                  ? undefined
-                  : 'Unavailable because the selected color is outside sRGB.'
-              "
-              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
-            >
-              {{ isCopied("srgb") ? "Copied" : "Copy" }}
-            </button>
-            <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
-            <p v-else id="srgb-copy-reason">Outside sRGB. No clipped value emitted.</p>
           </div>
           <p v-if="!clipboardSupported" class="copy-support">
             Clipboard access is unavailable in this browser.

@@ -23,6 +23,14 @@ export function instrumentModel(
 ) {
   const plane = view === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE;
   const projection = plane.project(value);
+  const oklchProjection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(value);
+  const oklabProjection = OKLAB_AB_PLANE.project(value);
+  const isOutsideOklchInstrumentDomain = !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(
+    oklchProjection.point,
+  );
+  const isOutsideOklabInstrumentDomain = !OKLAB_AB_PLANE.isPointInInstrumentDomain(
+    oklabProjection.point,
+  );
   const boundary = getBoundaryPresentation(value, view, boundaryTarget, visibility);
   const { status, target } = boundary.analysis;
   const targetLabel = displayGamutLabel(target.target);
@@ -77,14 +85,12 @@ export function instrumentModel(
     fixedLightnessGradient: colorGradient(12, (position) =>
       OKLAB_AB_PLANE.editFixedAxis(value, position),
     ),
-    chromaHelp:
-      value.c > OKLCH_PICKER_MAX_CHROMA
-        ? `Chroma ${value.c.toFixed(4)} exceeds the 0.4000 view. Use the numeric field to edit beyond the slider.`
-        : undefined,
-    domainHelp:
-      value.c > OKLCH_PICKER_MAX_CHROMA
-        ? `Chroma ${value.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; your color is unchanged.`
-        : undefined,
+    chromaHelp: isOutsideOklchInstrumentDomain
+      ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
+      : undefined,
+    domainHelp: isOutsideOklabInstrumentDomain
+      ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
+      : undefined,
   };
 }
 export const hueGradient = colorGradient(72, (position) => ({

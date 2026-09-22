@@ -48,6 +48,31 @@ describe("standalone application", () => {
     );
     expect(wrapper.get("#project-description").text()).toContain("Interactive OKLab and OKLCH");
     expect(wrapper.text().match(/Membership uses exact linear-light conversion/g)).toHaveLength(1);
+    expect(
+      wrapper
+        .findAll("[data-boundary-target-option]")
+        .map((option) => option.attributes("data-boundary-target-option")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-boundary-toggle]")
+        .map((option) => option.attributes("data-boundary-toggle")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-exact-gamut-status]")
+        .map((status) => status.attributes("data-exact-gamut-status")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-boundary-guide]")
+        .map((guide) => guide.attributes("data-boundary-guide")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-css-representation]")
+        .map((representation) => representation.attributes("data-css-representation")),
+    ).toEqual(["oklch", "srgb", "display-p3"]);
     wrapper.unmount();
   });
 

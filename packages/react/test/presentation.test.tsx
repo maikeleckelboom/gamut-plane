@@ -12,7 +12,11 @@ describe("instrument presentation contracts", () => {
       );
       const details = get<HTMLDetailsElement>(ui.element, "details");
       expect(details.open).toBe(false);
-      expect(details.querySelectorAll("[data-boundary-guide]")).toHaveLength(2);
+      expect(
+        [...details.querySelectorAll<HTMLElement>("[data-boundary-guide]")].map(
+          (guide) => guide.dataset.boundaryGuide,
+        ),
+      ).toEqual(["srgb", "display-p3"]);
       expect(details.textContent).toContain("sampled guides");
       expect(details.textContent).not.toContain("Outside Display P3");
       if (view === "oklab")

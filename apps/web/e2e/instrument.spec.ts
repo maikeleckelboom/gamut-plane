@@ -111,6 +111,42 @@ test("keyboard and pointer edits update the selected color", async ({ page }) =>
   await expect(channels).not.toHaveText(beforePointer ?? "");
 });
 
+test("OKLab edge interactions stay in-domain while authored overflow is preserved", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.getByRole("radio", { name: "OKLab" }).click();
+
+  const surface = page.locator(".color-plane__surface");
+  const aCoordinate = page.locator('[data-oklab-coordinate="a"]');
+  await aCoordinate.fill("0.4");
+  await aCoordinate.press("Enter");
+  await expect(surface).toHaveAttribute("data-outside-instrument", "false");
+  await expect(page.locator("body")).not.toContainText("outside the OKLab editing disc");
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  const chroma = page.getByLabel("Chroma numeric value");
+  await expect(chroma).toHaveValue("0.4000");
+  await expect(page.locator("body")).not.toContainText("outside the visible editing range");
+
+  await chroma.fill("0.52");
+  await chroma.press("Enter");
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await expect(surface).toHaveAttribute("data-outside-instrument", "true");
+  await expect(page.locator("body")).toContainText(
+    "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved.",
+  );
+  const markerRadius = await page.locator("[data-active-marker]").evaluate((marker) => {
+    const left = Number.parseFloat((marker as HTMLElement).style.left);
+    const top = Number.parseFloat((marker as HTMLElement).style.top);
+    return Math.hypot(left - 50, top - 50);
+  });
+  expect(markerRadius).toBeCloseTo(50, 3);
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  await expect(chroma).toHaveValue("0.5200");
+});
+
 test("resize preserves the represented color and narrow layout does not overflow", async ({
   page,
 }) => {
@@ -159,6 +195,8 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
         scrollWidth: root.scrollWidth,
         clientHeight: root.clientHeight,
         scrollHeight: root.scrollHeight,
+        workspaceClientHeight: workspace.clientHeight,
+        workspaceScrollHeight: workspace.scrollHeight,
         workspaceScrollable: workspace.scrollHeight > workspace.clientHeight,
         surfaceWidth: plane?.getBoundingClientRect().width ?? 0,
         clippedCopyButtons: copyButtons.some((button) => {
@@ -177,9 +215,27 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
         geometry.scrollHeight,
         `${viewport.width}x${viewport.height} root height overflow`,
       ).toBeLessThanOrEqual(geometry.clientHeight + 1);
+      if (
+        (viewport.width === 1536 && viewport.height === 864) ||
+        (viewport.width === 1440 && viewport.height === 900)
+      ) {
+        expect(
+          geometry.workspaceScrollHeight,
+          `${viewport.width}x${viewport.height} workspace height overflow`,
+        ).toBeLessThanOrEqual(geometry.workspaceClientHeight + 1);
+      }
       if (viewport.height === 650) expect(geometry.workspaceScrollable).toBe(true);
     }
   }
+
+  await page.setViewportSize({ width: 1280, height: 650 });
+  const bottomControl = page.getByRole("button", { name: "Copy Display P3 CSS value" });
+  await bottomControl.focus();
+  await expect(bottomControl).toBeFocused();
+  await expect(bottomControl).toBeInViewport();
+  expect(
+    await page.locator(".instrument-layout").evaluate((workspace) => workspace.scrollTop),
+  ).toBeGreaterThan(0);
 });
 
 test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({

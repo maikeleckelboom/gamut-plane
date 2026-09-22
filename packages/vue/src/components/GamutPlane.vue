@@ -122,14 +122,22 @@ const controlHelp = computed(() =>
     ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
     : "Hue fixes this plane. The guides show sampled gamut limits; your color can cross them.",
 );
+const isOutsideOklchInstrumentDomain = computed(() => {
+  const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(props.modelValue);
+  return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(projection.point);
+});
+const isOutsideOklabInstrumentDomain = computed(() => {
+  const projection = OKLAB_AB_PLANE.project(props.modelValue);
+  return !OKLAB_AB_PLANE.isPointInInstrumentDomain(projection.point);
+});
 const chromaHelp = computed(() =>
-  props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 view. Use the numeric field to edit beyond the slider.`
+  isOutsideOklchInstrumentDomain.value
+    ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
     : undefined,
 );
 const oklabDomainHelp = computed(() =>
-  props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; your color is unchanged.`
+  isOutsideOklabInstrumentDomain.value
+    ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
     : undefined,
 );
 
@@ -462,13 +470,13 @@ watch(
             </p>
 
             <div class="plane-instrument__readouts" aria-label="Boundary guide details">
-              <div data-boundary-guide="display-p3">
-                <span>Display P3 table guide</span>
-                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
-              </div>
               <div data-boundary-guide="srgb">
                 <span>sRGB table guide</span>
                 <code> C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }} </code>
+              </div>
+              <div data-boundary-guide="display-p3">
+                <span>Display P3 table guide</span>
+                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
               </div>
               <div class="plane-instrument__active-readout">
                 <span>Selected color</span>

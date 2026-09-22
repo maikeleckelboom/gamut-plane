@@ -23,13 +23,13 @@ export function BoundaryDetails({ model }: { model: BoundaryDetailsModel }) {
             : "The contours show sampled gamut limits at this lightness. Your color can cross either guide."}
         </p>
         <div className="gpr-plane-instrument-readouts" aria-label="Boundary guide details">
-          <div data-boundary-guide="display-p3">
-            <span>Display P3 table guide</span>
-            <code>C {model.p3}</code>
-          </div>
           <div data-boundary-guide="srgb">
             <span>sRGB table guide</span>
             <code>C {model.srgb}</code>
+          </div>
+          <div data-boundary-guide="display-p3">
+            <span>Display P3 table guide</span>
+            <code>C {model.p3}</code>
           </div>
           <div className="gpr-plane-instrument-active-readout">
             <span>Selected color</span>

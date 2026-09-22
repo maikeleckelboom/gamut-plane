@@ -26,7 +26,7 @@ Hue is the fixed axis. Each chroma column contains sampled lightness color rathe
 
 The mapping projects canonical OKLCH through OKLab at fixed OKLab lightness. The square field shows colors outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
 
-Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. The disc is an instrument constraint, not an RGB gamut boundary.
+Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. Canonical colors supplied outside either active plane remain unchanged while their marker is positioned at the visible edge; last-bit normalized-coordinate noise at that edge is treated as in-domain. The disc is an instrument constraint, not an RGB gamut boundary.
 
 ## Gamut boundaries
 
