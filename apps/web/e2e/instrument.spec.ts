@@ -238,6 +238,43 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
   ).toBeGreaterThan(0);
 });
 
+test("wide plane follows the workspace when the header wraps", async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 864 });
+  await openInstrument(page);
+  const description = page.locator("#project-description");
+  const measure = () =>
+    page.evaluate(() => {
+      const root = document.documentElement;
+      const header = document.querySelector<HTMLElement>(".project-header")!;
+      const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
+      const surface = document.querySelector<HTMLElement>(".color-plane__surface")!;
+      return {
+        headerHeight: header.getBoundingClientRect().height,
+        workspaceHeight: workspace.clientHeight,
+        surfaceHeight: surface.getBoundingClientRect().height,
+        rootFits: root.scrollHeight <= root.clientHeight + 1,
+        horizontalFits: root.scrollWidth <= root.clientWidth,
+      };
+    });
+
+  await description.evaluate((element) => {
+    element.textContent = "Short description.";
+  });
+  const shortHeader = await measure();
+  await description.evaluate((element) => {
+    element.textContent =
+      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact membership checks. " +
+      "The instrument remains usable when the project description takes more than one line.";
+  });
+  const wrappedHeader = await measure();
+
+  expect(wrappedHeader.headerHeight).toBeGreaterThan(shortHeader.headerHeight);
+  expect(wrappedHeader.workspaceHeight).toBeLessThan(shortHeader.workspaceHeight);
+  expect(wrappedHeader.surfaceHeight).toBeLessThan(shortHeader.surfaceHeight);
+  expect(wrappedHeader.rootFits).toBe(true);
+  expect(wrappedHeader.horizontalFits).toBe(true);
+});
+
 test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({
   page,
 }) => {

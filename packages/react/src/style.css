@@ -54,14 +54,9 @@
   background: var(--gp-surface-2);
 }
 
-.gamut-plane-react .gpr-plane-instrument-view-control > span,
-.gamut-plane-react .gpr-plane-instrument-view-control > small {
+.gamut-plane-react .gpr-plane-instrument-view-control > span {
   color: var(--gp-quiet);
   font: 0.6875rem/1.4 var(--gp-cv-font-mono);
-}
-
-.gamut-plane-react .gpr-plane-instrument-view-control > small {
-  margin-left: auto;
 }
 
 .gamut-plane-react .gpr-plane-instrument-view-control [role="radiogroup"] {
@@ -278,13 +273,6 @@
   min-width: 0;
 }
 
-.gamut-plane-react .gpr-plane-instrument-control-help {
-  margin: 0 0 -2px;
-  color: var(--gp-quiet);
-  font-size: 0.75rem;
-  line-height: 1.55;
-}
-
 .gamut-plane-react .gpr-plane-instrument-coordinate-readout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -341,15 +329,6 @@
   }
 }
 
-.gamut-plane-react .gpr-plane-instrument-legend-note {
-  margin: 0;
-  flex-basis: 100%;
-  color: var(--gp-quiet);
-  font-size: 0.75rem;
-  line-height: 1.55;
-  opacity: 0.85;
-}
-
 .gamut-plane-react .gpr-plane-instrument-evidence {
   overflow: hidden;
   border: 1px solid var(--gp-hairline);
@@ -402,10 +381,6 @@
   display: grid;
   gap: 12px;
   padding: 12px;
-}
-
-.gamut-plane-react .gpr-plane-instrument-evidence .gpr-plane-instrument-method {
-  display: block;
 }
 
 .gamut-plane-react .gpr-plane-instrument-target-result {
@@ -626,8 +601,7 @@
   transform: translateX(-50%);
 }
 
-.gamut-plane-react .gpr-channel-control-help,
-.gamut-plane-react .gpr-plane-instrument-method {
+.gamut-plane-react .gpr-channel-control-help {
   margin: 0;
   color: var(--gp-quiet);
   font-size: 0.75rem;
@@ -758,10 +732,6 @@
   }
 }
 @container gamut-plane-react (max-width: 30em) {
-  .gamut-plane-react .gpr-plane-instrument-view-control > small {
-    flex-basis: 100%;
-    margin-left: 0;
-  }
   .gamut-plane-react .gpr-plane-instrument-evidence > summary small {
     display: none;
   }

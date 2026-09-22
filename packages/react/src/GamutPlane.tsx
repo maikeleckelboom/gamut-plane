@@ -159,11 +159,6 @@ export function GamutPlane({
           {legend}
         </div>
         <div className="gpr-plane-instrument-controls">
-          <p className="gpr-plane-instrument-control-help">
-            {view === "oklab"
-              ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
-              : "Hue fixes this plane. The guides show sampled gamut limits; your color can cross them."}
-          </p>
           {view === "oklch" ? (
             <>
               <ColorChannelControl

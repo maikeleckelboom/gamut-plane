@@ -17,10 +17,9 @@ describe("instrument presentation contracts", () => {
           (guide) => guide.dataset.boundaryGuide,
         ),
       ).toEqual(["srgb", "display-p3"]);
-      expect(details.textContent).toContain("sampled guides");
+      expect(details.querySelector(".gpr-plane-instrument-active-readout")).not.toBeNull();
+      expect(details.querySelector(".gpr-plane-instrument-projection-readout")).not.toBeNull();
       expect(details.textContent).not.toContain("Outside Display P3");
-      if (view === "oklab")
-        expect(details.textContent).toContain("circular editing limit is separate");
       for (const control of ui.element.querySelectorAll("[data-picker-control] input")) {
         const description = control.getAttribute("aria-describedby");
         expect(description).toBeTruthy();

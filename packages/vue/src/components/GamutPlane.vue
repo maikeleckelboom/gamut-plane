@@ -117,11 +117,6 @@ const boundaryProjectionChroma = computed(() => targetResult.value.projection?.c
 const boundaryGuideCss = computed(() => serializeColor(targetResult.value.boundaryGuide.color));
 const hueRangeDragging = ref(false);
 const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
-const controlHelp = computed(() =>
-  plane.value === "oklab"
-    ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
-    : "Hue fixes this plane. The guides show sampled gamut limits; your color can cross them.",
-);
 const isOutsideOklchInstrumentDomain = computed(() => {
   const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(props.modelValue);
   return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(projection.point);
@@ -273,7 +268,6 @@ watch(
           {{ option === "oklab" ? "OKLab" : "OKLCH" }}
         </button>
       </div>
-      <small>Same color, different coordinates.</small>
     </div>
 
     <div class="plane-instrument__workspace">
@@ -299,7 +293,6 @@ watch(
       </div>
 
       <div class="plane-instrument__controls">
-        <p class="plane-instrument__control-help">{{ controlHelp }}</p>
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
             :id="`${instanceId}-hue`"
@@ -458,17 +451,6 @@ watch(
             <small>Table guides / projection</small>
           </summary>
           <div class="plane-instrument__evidence-body">
-            <p class="plane-instrument__legend-note">
-              <template v-if="plane === 'oklch'">
-                The guides follow the fixed hue. Your color can cross either guide without reducing
-                its chroma.
-              </template>
-              <template v-else>
-                The contours show sampled gamut limits at this lightness. Your color can cross
-                either guide.
-              </template>
-            </p>
-
             <div class="plane-instrument__readouts" aria-label="Boundary guide details">
               <div data-boundary-guide="srgb">
                 <span>sRGB table guide</span>
@@ -498,16 +480,6 @@ watch(
                 <code v-else>not required</code>
               </div>
             </div>
-            <p class="plane-instrument__method">
-              <template v-if="plane === 'oklab'">
-                Contours and the target projection use sampled guides, not exact boundary solutions.
-                The circular editing limit is separate from both display gamuts.
-              </template>
-              <template v-else>
-                Contours, channel marks and the target projection use sampled guides. Gamut
-                membership and CSS output use direct color conversion.
-              </template>
-            </p>
           </div>
         </details>
       </div>

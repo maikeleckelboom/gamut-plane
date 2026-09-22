@@ -216,7 +216,7 @@ describe("PlaneInstrument edit contract", () => {
         .map((guide) => guide.attributes("data-boundary-guide")),
     ).toEqual(["srgb", "display-p3"]);
     expect(details.get(".plane-instrument__projection-readout").exists()).toBe(true);
-    expect(details.get(".plane-instrument__method").exists()).toBe(true);
+    expect(details.get(".plane-instrument__active-readout").exists()).toBe(true);
     expect(details.text()).not.toMatch(/\binside\b|\boutside\b/i);
 
     wrapper.unmount();

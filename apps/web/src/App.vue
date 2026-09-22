@@ -205,7 +205,7 @@ async function copyCss(
                   </div>
                 </div>
               </fieldset>
-              <p>Target controls reference and projection. Guides control sampled visualization.</p>
+              <p>Target sets the reference; guides affect visualization only.</p>
             </section>
           </template>
         </GamutPlane>

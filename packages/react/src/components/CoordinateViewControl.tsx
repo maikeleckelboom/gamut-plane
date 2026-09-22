@@ -42,7 +42,6 @@ export function CoordinateViewControl({
           </button>
         ))}
       </div>
-      <small>Same color, different coordinates.</small>
     </div>
   );
 }

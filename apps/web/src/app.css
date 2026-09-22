@@ -404,6 +404,7 @@ button:disabled {
   }
 
   .instrument-layout {
+    container: standalone-workspace / size;
     contain: layout paint;
     min-block-size: 0;
     overflow-y: auto;
@@ -412,9 +413,16 @@ button:disabled {
     scrollbar-gutter: stable;
   }
 
-  /* Reserve the shell header, workspace padding, view switch, axes, and compact reference rows. */
+  /* The workspace has already accounted for the header and its own padding. */
   .instrument-primary .plane-instrument {
-    --picker-plane-max-size: clamp(460px, calc(100svh - 374px), 520px);
+    --picker-plane-max-size: clamp(460px, calc(100cqh - 223px), 520px);
+  }
+
+  /* The inspector's normal content needs about 730px; compact only its section spacing below that. */
+  @container standalone-workspace (max-height: 730px) {
+    .color-inspector section {
+      padding-block: 12px;
+    }
   }
 }
 

@@ -192,7 +192,6 @@ describe("plane ownership and edits", () => {
     expect(changes).not.toHaveBeenCalled();
     expect(value.c).toBe(0.52);
     expect(get<HTMLDetailsElement>(ui.element, "details").open).toBe(false);
-    expect(ui.element.textContent).toContain("circular editing limit is separate");
   });
   it("does not let an abandoned concurrent render replace committed event callbacks", async () => {
     const clock = frames(),

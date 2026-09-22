@@ -35,7 +35,6 @@ export function instrumentModel(
   const { status, target } = boundary.analysis;
   const targetLabel = displayGamutLabel(target.target);
   const details = {
-    view,
     p3: status.displayP3.interpolatedMaximumChroma.toFixed(4),
     srgb: status.srgb.interpolatedMaximumChroma.toFixed(4),
     selected:
