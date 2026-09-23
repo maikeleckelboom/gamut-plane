@@ -19,6 +19,45 @@ afterEach(() => {
 });
 
 describe("PlaneInstrument edit contract", () => {
+  it.each([
+    ["display-p3", null],
+    ["srgb", "sRGB canvas"],
+    ["unavailable", "canvas unavailable"],
+  ] as const)(
+    "shows a Canvas badge only for the exceptional %s state",
+    async (capability, badge) => {
+      const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
+      const original = getContext.getMockImplementation()!;
+      const context = document.createElement("canvas").getContext("2d")!;
+      if (capability === "display-p3") {
+        getContext.mockImplementation(
+          () =>
+            ({
+              ...context,
+              getContextAttributes: () => ({ colorSpace: "display-p3" }),
+            }) as CanvasRenderingContext2D,
+        );
+      } else if (capability === "unavailable") {
+        getContext.mockImplementation(() => null);
+      }
+      try {
+        const wrapper = mount(PlaneInstrument, {
+          attachTo: document.body,
+          props: { modelValue: parseCssColor("oklch(62% 0.24 270)") },
+        });
+        await flushPromises();
+        expect(wrapper.get("[data-render-color-space]").attributes("data-render-color-space")).toBe(
+          capability,
+        );
+        expect(wrapper.find(".color-plane__render-mode").exists()).toBe(badge !== null);
+        if (badge) expect(wrapper.get(".color-plane__render-mode").text()).toBe(badge);
+        wrapper.unmount();
+      } finally {
+        getContext.mockImplementation(original);
+      }
+    },
+  );
+
   it("forwards linear live and committed values as complete canonical colors", async () => {
     const frames = installAnimationFrameController();
     const canonical = parseCssColor("oklch(62% 0.2 210)");
@@ -208,7 +247,7 @@ describe("PlaneInstrument edit contract", () => {
     const details = wrapper.get("[data-boundary-details]");
     expect(details.attributes("open")).toBeUndefined();
     expect(details.get("summary").text()).toContain("Boundary details");
-    expect(details.get("summary").text()).toContain("Table guides / projection");
+    expect(details.get("summary").text()).toBe("Boundary details");
     expect(details.findAll("[data-picker-gamut-status]")).toHaveLength(0);
     expect(
       details
@@ -469,9 +508,9 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
     expect(wrapper.find('[data-gamut-range="srgb"]').exists()).toBe(false);
     expect(wrapper.find('[data-gamut-marker="srgb-boundary-guide"]').exists()).toBe(false);
-    expect(
-      wrapper.get('[data-gamut-marker="srgb-boundary-projection"]').attributes("data-gamut-lane"),
-    ).toBe("srgb");
+    expect(wrapper.find('[data-gamut-marker="srgb-boundary-projection"]').exists()).toBe(false);
+    expect(plane.find('[data-marker-role="target-boundary-projection"]').exists()).toBe(false);
+    expect(plane.find(".color-plane__projection-connector").exists()).toBe(false);
     expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
       "srgb",
     );
@@ -488,14 +527,11 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.get('[data-gamut-boundary="srgb"]').exists()).toBe(true);
     expect(wrapper.find('[data-gamut-range="display-p3"]').exists()).toBe(false);
     expect(wrapper.find('[data-gamut-marker="display-p3-boundary-guide"]').exists()).toBe(false);
-    expect(
-      wrapper
-        .get('[data-gamut-marker="display-p3-boundary-projection"]')
-        .attributes("data-gamut-lane"),
-    ).toBe("display-p3");
-    expect(
-      plane.get('[data-marker-role="target-boundary-projection"]').attributes("aria-label"),
-    ).toBe("Display P3 target boundary projection");
+    expect(wrapper.find('[data-gamut-marker="display-p3-boundary-projection"]').exists()).toBe(
+      false,
+    );
+    expect(plane.find('[data-marker-role="target-boundary-projection"]').exists()).toBe(false);
+    expect(plane.find(".color-plane__projection-connector").exists()).toBe(false);
     expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
       "display-p3",
     );
@@ -505,11 +541,10 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.findAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(wrapper.findAll("[data-gamut-range]")).toHaveLength(0);
     expect(wrapper.findAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(
-      wrapper
-        .get('[data-gamut-marker="display-p3-boundary-projection"]')
-        .attributes("data-gamut-lane"),
-    ).toBe("display-p3");
+    expect(wrapper.find("[data-gamut-marker]").exists()).toBe(false);
+    expect(plane.find('[data-marker-role="target-boundary-projection"]').exists()).toBe(false);
+    expect(plane.find(".color-plane__projection-connector").exists()).toBe(false);
+    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Boundary guide C");
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
 

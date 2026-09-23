@@ -35,9 +35,9 @@ const boundaryTarget = ref<DisplayGamut>("srgb");
 | `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
 | `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
 
-Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's ordinary field contour, accessible path, channel intervals and boundary-guide marker. Exact membership and the active target result remain available; a required target projection remains visible even when its ordinary guide is hidden.
+Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's field contour, accessible path, channel intervals and projection overlays. Exact membership and the active target result remain available.
 
-Boundary target selects the projection/reference gamut. Boundary visibility selects which sampled guide layers are drawn. Neither mutates the authored color or changes the other setting.
+Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting.
 
 The color model requires finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue. Edits preserve alpha and unedited values. Gamut guides and the bounded editing geometry do not clamp the authored color to a display gamut.
 

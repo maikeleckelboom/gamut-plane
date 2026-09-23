@@ -71,9 +71,9 @@ The app checks native `writeText` rejection and the legacy `execCommand` boolean
 
 Exact Display P3 and sRGB membership is calculated directly from the active color. It is not sampled from a contour.
 
-`getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` selects ordinary contour-adjacent channel intervals and markers from independent visibility booleans for both adapters.
+`getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` filters contour-adjacent channel intervals, projection markers and plane projection color by independent visibility booleans for both adapters.
 
-Contours, channel intervals, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility selects ordinary sampled guide layers. Neither setting changes the other. The exact Display P3 warning is independent of target.
+Contours, channel intervals, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility controls all visual guide/projection overlays for that gamut. Neither setting changes the other. The exact Display P3 warning is independent of target.
 
 ## Generated tables
 

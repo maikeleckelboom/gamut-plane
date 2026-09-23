@@ -290,7 +290,9 @@ async function copyCss(
             >
               {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
-            <code>{{ oklchDisplayCss }}</code>
+            <div class="css-representation__value">
+              <code>{{ oklchDisplayCss }}</code>
+            </div>
           </div>
           <div class="css-representation" data-css-representation="hex">
             <span>Hex · sRGB</span>
@@ -305,7 +307,10 @@ async function copyCss(
             >
               {{ isCopied("hex") ? "Copied" : "Copy" }}
             </button>
-            <code v-if="hexColor">{{ hexColor }}</code>
+            <div class="css-representation__value">
+              <code v-if="hexColor">{{ hexColor }}</code>
+              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+            </div>
           </div>
           <div class="css-representation" data-css-representation="srgb">
             <span>sRGB</span>
@@ -316,19 +321,14 @@ async function copyCss(
               :disabled="!srgbCanonicalCss"
               :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
               :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
-              :title="
-                srgbCanonicalCss
-                  ? undefined
-                  : 'Unavailable because the selected color is outside sRGB.'
-              "
               @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
             >
               {{ isCopied("srgb") ? "Copied" : "Copy" }}
             </button>
-            <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
-            <p v-else id="srgb-copy-reason">
-              Outside sRGB. Hex and sRGB copies unavailable; no clipping.
-            </p>
+            <div class="css-representation__value">
+              <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
+              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+            </div>
           </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>
@@ -341,18 +341,23 @@ async function copyCss(
               :aria-label="
                 isCopied('display-p3') ? 'Copied Display P3 CSS value' : 'Copy Display P3 CSS value'
               "
-              :title="
-                displayP3CanonicalCss
-                  ? undefined
-                  : 'Unavailable because the selected color is outside Display P3.'
-              "
               @click="copyCss('display-p3', 'Display P3', displayP3CanonicalCss)"
             >
               {{ isCopied("display-p3") ? "Copied" : "Copy" }}
             </button>
-            <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
-            <p v-else id="display-p3-copy-reason">Outside Display P3. No clipped value emitted.</p>
+            <div class="css-representation__value">
+              <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
+              <span v-else aria-describedby="display-p3-copy-reason">
+                Unavailable · outside Display P3
+              </span>
+            </div>
           </div>
+          <p v-if="!hexColor" id="srgb-copy-reason" class="sr-only">
+            Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.
+          </p>
+          <p v-if="!displayP3CanonicalCss" id="display-p3-copy-reason" class="sr-only">
+            Selected color is outside Display P3; no clipped value is emitted.
+          </p>
           <p v-if="!clipboardSupported" class="copy-support">
             Clipboard access is unavailable in this browser.
           </p>

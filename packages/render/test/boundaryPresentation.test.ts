@@ -9,21 +9,16 @@ describe("shared boundary presentation", () => {
     ["srgb", { srgb: false, displayP3: true }, "display-p3"],
     ["display-p3", { srgb: true, displayP3: false }, "srgb"],
   ] satisfies [DisplayGamut, { srgb: boolean; displayP3: boolean }, DisplayGamut][])(
-    "keeps the %s target active while filtering ordinary guides",
+    "keeps the %s target active while hiding that target's visual projection",
     (target, visibility, visibleGamut) => {
       const snapshot = structuredClone(outsideBoth);
       const model = getBoundaryPresentation(outsideBoth, "oklch", target, visibility);
 
       expect(model.analysis.target.target).toBe(target);
       expect(model.analysis.target.projection).not.toBeNull();
-      expect(model.projectionColor).toEqual(model.analysis.target.projection?.color);
-      expect(model.markers).toEqual([
-        expect.objectContaining({
-          id: `${target}-boundary-projection`,
-          tone: "projection",
-          lane: target,
-        }),
-      ]);
+      expect(model.projectionColor).toBeNull();
+      expect(model.projectionCss).toBe("");
+      expect(model.markers).toEqual([]);
       expect(new Set(model.hueIntervals.map((interval) => interval.tone))).toEqual(
         new Set([visibleGamut]),
       );
@@ -35,7 +30,7 @@ describe("shared boundary presentation", () => {
     },
   );
 
-  it("removes all ordinary guide layers while retaining target evidence", () => {
+  it("removes all visual guide layers while retaining target evidence", () => {
     const model = getBoundaryPresentation(outsideBoth, "oklab", "display-p3", {
       srgb: false,
       displayP3: false,
@@ -44,18 +39,14 @@ describe("shared boundary presentation", () => {
     expect(model.hueIntervals).toEqual([]);
     expect(model.lightnessIntervals).toEqual([]);
     expect(model.chromaIntervals).toEqual([]);
-    expect(model.markers).toEqual([
-      expect.objectContaining({
-        id: "display-p3-boundary-projection",
-        tone: "projection",
-        lane: "display-p3",
-      }),
-    ]);
+    expect(model.markers).toEqual([]);
+    expect(model.projectionColor).toBeNull();
+    expect(model.analysis.target.projection).not.toBeNull();
     expect(model.analysis.status.srgb.inGamut).toBe(false);
     expect(model.analysis.status.displayP3.inGamut).toBe(false);
   });
 
-  it("keeps the projection marker on the active target lane when that guide is hidden", () => {
+  it("shows the projection only while the target guide is visible", () => {
     for (const target of ["srgb", "display-p3"] as const) {
       const hidden = getBoundaryPresentation(outsideBoth, "oklch", target, {
         srgb: target !== "srgb",
@@ -65,8 +56,11 @@ describe("shared boundary presentation", () => {
         srgb: true,
         displayP3: true,
       });
-      expect(hidden.markers.map((marker) => marker.lane)).toEqual([target]);
+      expect(hidden.markers).toEqual([]);
+      expect(hidden.projectionColor).toBeNull();
+      expect(hidden.analysis.target.projection).toEqual(visible.analysis.target.projection);
       expect(visible.markers.map((marker) => marker.lane)).toEqual([target]);
+      expect(visible.projectionColor).toEqual(visible.analysis.target.projection?.color);
       expect(hidden.chromaIntervals.map((interval) => interval.tone)).not.toContain(target);
     }
   });

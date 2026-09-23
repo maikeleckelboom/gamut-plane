@@ -36,7 +36,7 @@ Both planes show Display P3 and sRGB together:
 - sRGB is the secondary dashed boundary;
 - the active point may cross either boundary;
 - neither boundary clamps or replaces canonical OKLCH;
-- the explicit sRGB or Display P3 target projection remains separate from ordinary guide visibility.
+- the explicit sRGB or Display P3 target remains independent from guide visibility, which controls all visual guide/projection overlays for that gamut.
 
 Boundary target is controlled projection/reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
 

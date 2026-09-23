@@ -53,10 +53,11 @@ export function getBoundaryPresentation(
 ): BoundaryPresentation {
   const analysis = getPickerBoundaryAnalysis(color, target, PICKER_GAMUT_TABLES);
   const gamuts = visibleGamuts(visibility);
-  const projectionColor = analysis.target.projection?.color ?? null;
+  const targetVisible = target === "srgb" ? visibility.srgb : visibility.displayP3;
+  const projectionColor = targetVisible ? (analysis.target.projection?.color ?? null) : null;
   const projectionCss = projectionColor ? serializeColor(projectionColor) : "";
   const markers: LinearControlMarker[] = [];
-  if (analysis.target.projection) {
+  if (analysis.target.projection && targetVisible) {
     markers.push({
       id: `${target}-boundary-projection`,
       label: `${gamutLabel(target)} target boundary projection C ${analysis.target.projection.chroma.toFixed(4)}`,

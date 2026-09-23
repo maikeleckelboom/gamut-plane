@@ -233,15 +233,11 @@ export function ColorPlane(props: ColorPlaneProps) {
           role="img"
         />
       </div>
-      <span className="gpr-color-plane-render-mode">
-        {capability === "display-p3"
-          ? "P3 canvas"
-          : capability === "srgb"
-            ? "sRGB canvas"
-            : capability === "unavailable"
-              ? "canvas unavailable"
-              : "canvas pending"}
-      </span>
+      {(capability === "srgb" || capability === "unavailable") && (
+        <span className="gpr-color-plane-render-mode">
+          {capability === "srgb" ? "sRGB canvas" : "canvas unavailable"}
+        </span>
+      )}
       <span className="gpr-color-plane-axis gpr-color-plane-axis--lightness">
         {plane.yAxis.symbol} · {plane.yAxis.label}
       </span>

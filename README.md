@@ -116,7 +116,7 @@ The overrides resolve all unpublished transitive dependencies from their local a
 
 The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel intervals, boundary-guide colors and the selected target projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
 
-Boundary target selects the projection/reference gamut. Boundary visibility selects which ordinary sampled guide layers are drawn across the plane and channel controls. Neither changes the target automatically or mutates the authored color. Exact membership for both gamuts and the primary Display P3 warning remain independent of both controls. An active target projection can remain visible when that target's ordinary guide layer is hidden.
+Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut across the plane and channel controls. Neither changes the target automatically or mutates the authored color. Exact membership for both gamuts and the primary Display P3 warning remain independent of both controls.
 
 The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values, with the marker projected to the edge.
 

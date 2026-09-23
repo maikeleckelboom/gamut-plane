@@ -556,16 +556,9 @@ onBeforeUnmount(() => {
         role="img"
       />
     </div>
-    <span class="color-plane__render-mode">
-      {{
-        canvasColorSpace === "display-p3"
-          ? "P3 canvas"
-          : canvasColorSpace === "srgb"
-            ? "sRGB canvas"
-            : canvasColorSpace === "unavailable"
-              ? "canvas unavailable"
-              : "canvas pending"
-      }}
+    <span v-if="canvasColorSpace === 'srgb'" class="color-plane__render-mode"> sRGB canvas </span>
+    <span v-else-if="canvasColorSpace === 'unavailable'" class="color-plane__render-mode">
+      canvas unavailable
     </span>
     <span class="color-plane__axis color-plane__axis--lightness">
       {{ plane.yAxis.symbol }} · {{ plane.yAxis.label }}

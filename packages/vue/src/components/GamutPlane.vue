@@ -448,7 +448,6 @@ watch(
         <details class="plane-instrument__evidence" data-boundary-details>
           <summary>
             <span>Boundary details</span>
-            <small>Table guides / projection</small>
           </summary>
           <div class="plane-instrument__evidence-body">
             <div class="plane-instrument__readouts" aria-label="Boundary guide details">

@@ -26,7 +26,7 @@ There is no whole-product context, giant hook, render-time resource allocation o
 
 ## Shared visual extraction
 
-Both adapters consume render's `boundaryPresentation.ts`, `pickerWarningPlacement.ts` and `planeInstrumentStyle.ts`. The boundary model selects one explicit target and filters ordinary intervals/markers from independent visibility state; target branching is not duplicated in framework code. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry. `presentation.ts` consolidates CSS gradient and projection-connector construction. These functions own pure presentation only.
+Both adapters consume render's `boundaryPresentation.ts`, `pickerWarningPlacement.ts` and `planeInstrumentStyle.ts`. The boundary model selects one explicit target and filters its visual projection and guide intervals/markers from independent visibility state; target branching is not duplicated in framework code. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry. `presentation.ts` consolidates CSS gradient and projection-connector construction. These functions own pure presentation only.
 
 Core math, generated table settings/bytes and Canvas sampling algorithms are unchanged. The table digest is `sha256:4c73cef992515b5876e309f7bce90cd418217c7a576f54cfcead380eb416ce15`. Vue changes are limited to these shared helpers and explicit scientific RTL direction, with its existing suites retained and a packed RTL regression added.
 

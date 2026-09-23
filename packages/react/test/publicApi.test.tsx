@@ -6,6 +6,41 @@ import { GamutPlane, type GamutPlaneProps } from "../src/index.js";
 import { event, get, initial, mount } from "./helpers.js";
 
 describe("public instrument contract", () => {
+  it.each([
+    ["display-p3", null],
+    ["srgb", "sRGB canvas"],
+    ["unavailable", "canvas unavailable"],
+  ] as const)(
+    "shows a Canvas badge only for the exceptional %s state",
+    async (capability, badge) => {
+      const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
+      const original = getContext.getMockImplementation()!;
+      const context = document.createElement("canvas").getContext("2d")!;
+      if (capability === "display-p3") {
+        getContext.mockImplementation(
+          () =>
+            ({
+              ...context,
+              getContextAttributes: () => ({ colorSpace: "display-p3" }),
+            }) as CanvasRenderingContext2D,
+        );
+      } else if (capability === "unavailable") {
+        getContext.mockImplementation(() => null);
+      }
+      try {
+        const ui = await mount(<GamutPlane value={initial} onValueChange={vi.fn()} />);
+        expect(
+          get(ui.element, "[data-render-color-space]").getAttribute("data-render-color-space"),
+        ).toBe(capability);
+        expect(ui.element.querySelector(".gpr-color-plane-render-mode")?.textContent ?? null).toBe(
+          badge,
+        );
+      } finally {
+        getContext.mockImplementation(original);
+      }
+    },
+  );
+
   it("exposes only the closed component and intended public types", () => {
     expect(Object.keys(publicApi)).toEqual(["GamutPlane"]);
     expectTypeOf<GamutPlaneProps>()
@@ -151,10 +186,8 @@ describe("public instrument contract", () => {
       expect(ui.element.querySelectorAll('[data-gamut-boundary="display-p3"]')).toHaveLength(0);
       expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
       expect(
-        ui.element
-          .querySelector('[data-gamut-marker="srgb-boundary-projection"]')
-          ?.getAttribute("data-gamut-lane"),
-      ).toBe("srgb");
+        ui.element.querySelectorAll('[data-gamut-marker="srgb-boundary-projection"]'),
+      ).toHaveLength(showSrgbBoundary ? 1 : 0);
       expect(ui.element.querySelectorAll("[data-boundary-guide]")).toHaveLength(2);
     }
     expect(changes).not.toHaveBeenCalled();
@@ -181,11 +214,9 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-guide"]')).toBeNull();
-    expect(
-      get(ui.element, '[data-gamut-marker="srgb-boundary-projection"]').getAttribute(
-        "data-gamut-lane",
-      ),
-    ).toBe("srgb");
+    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -206,13 +237,10 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-marker="display-p3-boundary-guide"]')).toBeNull();
     expect(
-      get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]').getAttribute(
-        "data-gamut-lane",
-      ),
-    ).toBe("display-p3");
-    expect(
-      get(ui.element, '[data-marker-role="target-boundary-projection"]').getAttribute("aria-label"),
-    ).toBe("Display P3 target boundary projection");
+      ui.element.querySelector('[data-gamut-marker="display-p3-boundary-projection"]'),
+    ).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -229,11 +257,12 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
     expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(
-      get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]').getAttribute(
-        "data-gamut-lane",
-      ),
-    ).toBe("display-p3");
+    expect(ui.element.querySelectorAll("[data-gamut-marker]")).toHaveLength(0);
+    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain(
+      "Boundary guide C",
+    );
     expect(value).toEqual({ l: 0.62, c: 0.42, h: 30, alpha: 1 });
     expect(changes).not.toHaveBeenCalled();
     expect(commits).not.toHaveBeenCalled();

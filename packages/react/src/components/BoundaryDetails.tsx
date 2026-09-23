@@ -11,7 +11,6 @@ export function BoundaryDetails({ model }: { model: BoundaryDetailsModel }) {
     <details className="gpr-plane-instrument-evidence" data-boundary-details="">
       <summary>
         <span>Boundary details</span>
-        <small>Table guides / projection</small>
       </summary>
       <div className="gpr-plane-instrument-evidence-body">
         <div className="gpr-plane-instrument-readouts" aria-label="Boundary guide details">

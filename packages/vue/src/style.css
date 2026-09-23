@@ -372,12 +372,6 @@
   outline-offset: -2px;
 }
 
-.plane-instrument .plane-instrument__evidence > summary small {
-  margin-left: auto;
-  color: var(--gp-quiet);
-  font: 0.625rem/1.25 var(--gp-cv-font-mono);
-}
-
 .plane-instrument .plane-instrument__evidence-body {
   display: grid;
   gap: 12px;
@@ -504,7 +498,7 @@
 .plane-instrument .channel-control__track {
   position: relative;
   height: var(--picker-slider-track-height, 32px);
-  border: 1px solid var(--gp-hairline);
+  border: 1px solid transparent;
   border-radius: 2px;
   background: var(--gp-surface-0);
 }
@@ -726,9 +720,6 @@
   }
 }
 @container gamut-plane (max-width: 30em) {
-  .plane-instrument .plane-instrument__evidence > summary small {
-    display: none;
-  }
   .plane-instrument .plane-instrument__workspace {
     --picker-plane-axis-space: 19px;
   }

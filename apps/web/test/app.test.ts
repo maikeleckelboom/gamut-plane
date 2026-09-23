@@ -154,10 +154,20 @@ describe("standalone application", () => {
     wrapper.unmount();
   });
 
-  it("uses real disabled semantics and a visible reason for unavailable sRGB copy", async () => {
+  it("uses one value/status slot per row and concise unavailable output without clipping", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
 
+    for (const representation of wrapper.findAll("[data-css-representation]")) {
+      expect(representation.findAll(".css-representation__value")).toHaveLength(1);
+    }
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toMatch(/^oklch\(/);
+    expect(wrapper.get('[data-css-representation="display-p3"] code').text()).toMatch(
+      /^color\(display-p3 /,
+    );
+    expect(wrapper.get('[data-css-representation="hex"] .css-representation__value').text()).toBe(
+      "Unavailable · outside sRGB",
+    );
     const representation = wrapper.get('[data-css-representation="srgb"]');
     const copyButton = representation.get('[data-copy-representation="srgb"]');
     expect(copyButton.attributes("disabled")).toBeDefined();
@@ -166,13 +176,37 @@ describe("standalone application", () => {
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("aria-describedby")).toBe(
       "srgb-copy-reason",
     );
-    expect(representation.get("#srgb-copy-reason").text()).toBe(
-      "Outside sRGB. Hex and sRGB copies unavailable; no clipping.",
+    expect(representation.get(".css-representation__value").text()).toBe(
+      "Unavailable · outside sRGB",
     );
+    expect(wrapper.get("#srgb-copy-reason").text()).toBe(
+      "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+    );
+    expect(wrapper.findAll("#srgb-copy-reason")).toHaveLength(1);
+    expect(representation.find(".css-representation__value p").exists()).toBe(false);
 
     await copyButton.trigger("click");
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(document.execCommand).not.toHaveBeenCalled();
+
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.52");
+    await flushPromises();
+    expect(
+      wrapper.get('[data-css-representation="display-p3"] .css-representation__value').text(),
+    ).toBe("Unavailable · outside Display P3");
+    expect(
+      wrapper.get('[data-copy-representation="display-p3"]').attributes("disabled"),
+    ).toBeDefined();
+    expect(wrapper.get("#display-p3-copy-reason").text()).toBe(
+      "Selected color is outside Display P3; no clipped value is emitted.",
+    );
+
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0");
+    await flushPromises();
+    expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
+    expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^rgb\(/);
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
+    expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
     wrapper.unmount();
   });

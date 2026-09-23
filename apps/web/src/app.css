@@ -263,13 +263,16 @@ button:disabled {
   font-size: 0.75rem;
 }
 
-.css-output code,
-.css-representation > p {
+.css-representation__value {
   grid-column: 1 / -1;
+  min-width: 0;
   overflow-wrap: anywhere;
-  margin: 0;
   color: var(--foreground);
   font: 0.75rem/1.55 var(--cv-font-mono);
+}
+
+.css-representation__value code {
+  font: inherit;
 }
 
 .css-output button {

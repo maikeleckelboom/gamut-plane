@@ -62,6 +62,8 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(p3Target).not.toBeChecked();
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(targetResult).toContainText("Target · sRGB");
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(1);
 
   await p3Target.click();
   await expect(p3Target).toBeChecked();
@@ -82,7 +84,9 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(selected).toHaveText(originalSelection ?? "");
 
@@ -90,7 +94,15 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
   await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker$="boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "sRGB" }).check();
+  await p3Target.click();
+  await expect(p3Target).toBeChecked();
+  await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(targetResult).toContainText("Boundary guide C");
   await expect(selected).toHaveText(originalSelection ?? "");
 });
 
@@ -476,7 +488,22 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   await expect(srgbCopy).toBeDisabled();
   await expect(srgbCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(page.locator("#srgb-copy-reason")).toHaveText(
-    "Outside sRGB. Hex and sRGB copies unavailable; no clipping.",
+    "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+  );
+  await expect(
+    page.locator('[data-css-representation="hex"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside sRGB");
+  await expect(
+    page.locator('[data-css-representation="srgb"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside sRGB");
+  await page.getByLabel("Chroma numeric value").fill("0.52");
+  await page.getByLabel("Chroma numeric value").press("Enter");
+  await expect(
+    page.locator('[data-css-representation="display-p3"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside Display P3");
+  await expect(p3Copy).toBeDisabled();
+  await expect(page.locator("#display-p3-copy-reason")).toHaveText(
+    "Selected color is outside Display P3; no clipped value is emitted.",
   );
 });
 
@@ -567,6 +594,13 @@ test("header and exact gamut status have one semantic owner", async ({ page }) =
   await expect(page.locator(".instrument-primary [data-exact-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-picker-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-boundary-details] summary")).toContainText("Boundary details");
+  await expect(page.locator("[data-boundary-details] summary")).toHaveText("Boundary details");
+  await page.locator("[data-boundary-details] summary").click();
+  await expect(page.locator("[data-boundary-details]")).toHaveAttribute("open", "");
+  await expect(page.locator("[data-boundary-guide]")).toHaveCount(2);
+  await page.locator("[data-boundary-details] summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("[data-boundary-details]")).not.toHaveAttribute("open", "");
   await expect(page.locator("body")).not.toContainText("Thresholds follow current");
   await expect(page.locator("body")).not.toContainText("Gamut evidence");
 });
