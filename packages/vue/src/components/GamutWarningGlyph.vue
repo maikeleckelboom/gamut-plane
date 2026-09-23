@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PICKER_WARNING_GLYPH_SIZE } from "./planeInstrumentStyle";
+import { PICKER_WARNING_GLYPH_SIZE } from "@gamut-plane/render";
 </script>
 
 <template>

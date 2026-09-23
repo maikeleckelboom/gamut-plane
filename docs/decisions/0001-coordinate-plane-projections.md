@@ -26,7 +26,7 @@ Hue is the fixed axis. Each chroma column contains sampled lightness color rathe
 
 The mapping projects canonical OKLCH through OKLab at fixed OKLab lightness. The square field shows colors outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
 
-Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. The disc is an instrument constraint, not an RGB gamut boundary.
+Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. Canonical colors supplied outside either active plane remain unchanged while their marker is positioned at the visible edge; last-bit normalized-coordinate noise at that edge is treated as in-domain. The disc is an instrument constraint, not an RGB gamut boundary.
 
 ## Gamut boundaries
 
@@ -36,16 +36,16 @@ Both planes show Display P3 and sRGB together:
 - sRGB is the secondary dashed boundary;
 - the active point may cross either boundary;
 - neither boundary clamps or replaces canonical OKLCH;
-- the sRGB boundary projection remains a separate guide and value.
+- the explicit sRGB or Display P3 target remains independent from guide visibility, which controls all visual guide/projection overlays for that gamut.
 
-Boundary visibility is view state, not an output-policy selector.
+Boundary target is controlled projection/reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
 
 ## Exact facts and interpolated guides
 
 Membership and guides use different calculations:
 
 1. Exact inside/outside membership comes from direct color conversion for the active color.
-2. Boundary contours, crossing ticks, and the sRGB boundary projection come from deterministic interpolation over generated gamut-boundary tables bundled with the Vue package.
+2. Boundary contours, channel intervals, boundary-guide colors and target projections come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
 
 Interpolated geometry is visualization. It cannot be used as exact membership, silently mutate the active color, or substitute for exact serialization.
 

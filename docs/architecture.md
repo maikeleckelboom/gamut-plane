@@ -2,37 +2,39 @@
 
 ## Layer boundaries
 
-The app imports the Vue and core packages. Vue imports core; core has no dependency on either layer.
+The standalone app imports Vue and core. Vue and React import core and the internal `@gamut-plane/render` package. Core has no dependency on any adapter or browser layer.
 
 - `packages/core` (`@gamut-plane/core`) owns framework-neutral color types, conversion, exact gamut membership, CSS serialization/parsing, plane geometry, keyboard math, boundary search and sampled-table analysis. It has no Vue, DOM or Canvas dependency.
-- `packages/vue` (`@gamut-plane/vue`) owns `GamutPlane`, its internal controls, Canvas/SVG rendering, pointer arbitration, numeric drafts, invalidation, local styling, generated visualization data and component/consumer tests.
+- `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
+- `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer arbitration, numeric drafts, frame scheduling, local styling and component/consumer tests.
+- `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, numeric drafts, range/pointer lifecycle, scheduling and local styles. It has no Vue dependency. The standalone app remains Vue.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
 
 The app imports built public package entries. Its `@` alias resolves only app code. The Vue component owns its renderer.
 
 ## Distribution and public API
 
-Both packages export built ESM JavaScript and declarations from `dist`. Core uses TypeScript compilation with Node-compatible relative import extensions; Vue uses Vite library mode with `vue`, `@vueuse/core` and `@gamut-plane/core` external. `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support the component type without creating public subpaths.
+All packages export built ESM JavaScript and declarations from `dist`. Core, render and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core and render external; `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support adapter types without creating public subpaths.
 
-Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. The instrument retains ownership of gestures, rollback and rendering invalidation.
+Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. React depends on core and render, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains ownership of gestures, rollback and frame scheduling.
 
 Vue exports `GamutPlane`, `OklchColor`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. The component accepts a required color model, an optional plane model and two boundary-visibility props. It emits completed/cancelled edit and capability events and provides a `field-legend` slot. See the [API reference](../packages/vue/README.md#component-api). Renderer constants, table paths, preview flags and IDs are internal.
 
 The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ownership. View changes never convert or republish the authored color. Boundary props default to true. `field-legend` accepts host-owned explanatory or visibility controls without exposing renderer state. Canvas capability describes the granted context, not display hardware; `pending` is the initial shell state.
 
-The artifacts contain built output, package metadata, README and MIT license. Core declares no side effects; Vue marks CSS as side-effectful so bundlers retain it. Both manifests use `private: true`. Local consumers override the packed Vue package's versioned core dependency with the core tarball, as shown in the [installation instructions](../README.md#install-local-packages).
+The artifacts contain built output, package metadata, README and MIT license. Core and render declare no side effects; adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned core and render dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
 
 ## Styling and host ownership
 
-`packages/vue/src/style.css` supplies local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. No package rule changes document themes, body/html, generic controls or focus outside the instrument. The app's document resets, fonts and page palette stay in `app.css`.
+Each adapter's `src/style.css` supplies local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. React uses separate `gpr-` selectors and a `gamut-plane-react` container to coexist with Vue. No package rule changes document themes, body/html, generic controls or focus outside the instrument. Scientific surfaces/ranges explicitly retain left-to-right coordinate direction in RTL hosts. The app's document resets, fonts and page palette stay in `app.css`.
 
 The root owns the named inline-size container `gamut-plane`. A complete one-column base layout becomes two columns at 39em (320px field + 270px controls + 34px gap at the default font size). Enlarged text raises that threshold. Below 30em, supplementary text/readouts adapt. Host width, not viewport width, owns these decisions; without container queries the one-column layout remains usable.
 
-Vue `useId()` supplies stable title/control IDs. Multiple instruments in one Vue application need no caller-supplied IDs. Separate Vue applications sharing a document should configure distinct `app.config.idPrefix` values.
+Vue and React `useId()` supply stable title/control IDs within their respective roots. Separate Vue applications sharing a document should configure distinct `app.config.idPrefix` values. Separate React roots use distinct `identifierPrefix` values, with the same prefix on the server and during hydration.
 
 ## Server rendering
 
-Importing either ESM entry needs no browser globals. The instrument server-renders its complete supported UI: controls, accessible labels, authored values, marker, SVG guides and a CSS-reserved field. Vite extracts CSS into the separate stylesheet export; the built JavaScript entry has no CSS import. Consumers load that stylesheet through their framework's ordinary global CSS mechanism.
+Importing any ESM entry needs no browser globals. The instrument server-renders its complete supported UI: controls, accessible labels, authored values, marker, SVG guides and a CSS-reserved field. Vite extracts CSS into the separate stylesheet export; the built JavaScript entry has no CSS import. Consumers load that stylesheet through their framework's ordinary global CSS mechanism.
 
 Canvas context work, measurements, ResizeObserver, DPR tracking, scroll listeners and frame scheduling begin after mount. VueUse retains ownership of observer/listener cleanup. Capability is deterministically `pending` through server rendering and initial client rendering. Lifecycle setup and teardown never publish edits. Mutable color/draft/gesture/sampling/renderer state is per instance; generated lookup tables are shared visualization data.
 
@@ -69,14 +71,30 @@ The app checks native `writeText` rejection and the legacy `execCommand` boolean
 
 Exact Display P3 and sRGB membership is calculated directly from the active color. It is not sampled from a contour.
 
-Contours, crossing ticks, and the sRGB boundary projection interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization.
+`getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` filters contour-adjacent channel intervals, projection markers and plane projection color by independent visibility booleans for both adapters.
+
+Contours, channel intervals, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility controls all visual guide/projection overlays for that gamut. Neither setting changes the other. The exact Display P3 warning is independent of target.
 
 ## Generated tables
 
-The Vue package owns checked-in tables at `packages/vue/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Vite embeds those resources in the Vue ESM artifact. Import decodes the payloads; it does not search or generate boundaries at startup.
+The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.
 
-`pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. After changing the algorithm or settings, run `pnpm --filter @gamut-plane/vue generate:gamut-tables` and include the generated file and relevant test changes in the same commit.
+`pnpm check:gamut-tables` regenerates in memory and fails when the checked-in artifact is stale. After changing the algorithm or settings, run `pnpm --filter @gamut-plane/render generate:gamut-tables` and include the generated file and relevant test changes in the same commit.
 
 ## Renderer boundary
 
-`ColorPlane.vue` owns Canvas context negotiation, drawing buffers, invalidation keys and DOM integration, delegating projection and sampling math to core. See [Performance](performance.md) for sampling dimensions, caching, and preview behavior.
+`packages/render/src/fieldRenderer.ts` owns Canvas context negotiation, drawing buffers and field invalidation keys, delegating projection and sampling math to core. Its factory is called only during each adapter's mounted/committed setup, and its synchronous `draw` introduces no extra frame queue. Each adapter owns DOM integration and frame coalescing. Disposal clears renderer references; React Strict Mode's second setup creates a fresh renderer. See [Performance](performance.md) for unchanged sampling dimensions, caching and preview behavior.
+
+## Native React instrument
+
+`GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides/projection, a controlled `boundaryTarget`, independent boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
+
+React renders pure markup, guides and hydration-safe `useId` associations. A layout effect publishes committed props to the interaction binding; abandoned renders cannot replace its callbacks or color. A separate committed effect creates renderer resources, native surface listeners, ResizeObserver, DPR media tracking and scroll/resize handling. Cleanup cancels pointer/field work, releases capture and disposes resources without emitting edits. Pure contour computation is cached by fixed axis inside the component; consumers do not need memoization.
+
+The orchestrator composes private components and a pure instrument model. `ColorPlane` owns DOM/SVG and connects a plane controller to committed props and renderer lifecycle. The controller owns pointer arbitration, expected feedback, coalescing, rollback/interruption and resource cleanup. `ColorChannelControl` composes a range controller and the single numeric-draft implementation. `NumericInput` owns its native draft buffer, IME guards and completion deduplication. No context object or hook contains the complete product. The [source/coverage map](react-parity.md) details these boundaries.
+
+Pointer-up and native range change discard queued work and synchronously publish the actual final value before `onValueCommit`. Native input remains coalesced live delivery. Numeric Enter/change/blur deduplicate one completed draft. Exact four-channel reconciliation preserves cloned feedback/fresh callbacks; different parent values and actual view changes cancel without rollback. Escape/capture loss restore an active plane origin. Teardown never calls consumers. Committed Canvas status notifications avoid unchanged Strict Mode replay duplicates.
+
+Both adapters retain `role="application"` on the focused two-dimensional editor. A native slider represents one scalar and would misdescribe this two-coordinate keyboard surface; a generic group would not express its custom arrow-key interaction. No clearly superior tested replacement was identified. The role stays narrowly scoped with explicit labels/instructions, native controls outside it, and no global Escape interception. Automated keyboard/axe tests cover both views; manual assistive-technology validation remains separate.
+
+The Next App Router fixture supplies serializable initial state from a Server Component to an ordinary Client Component using `useState`. The package's preserved client boundary and ordinary layout CSS import are sufficient for server HTML and hydration. A separate root Strict Mode fixture verifies repeated setup/cleanup, coalescing, external ownership and queued-work disposal through the packed public component.

@@ -5,51 +5,23 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import NumericInput from "./NumericInput.vue";
 import GamutWarningGlyph from "./GamutWarningGlyph.vue";
 import {
-  PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
-  PICKER_SLIDER_EDGE_CLEARANCE,
-  PICKER_SLIDER_PROJECTION_COLLISION_WIDTH,
   PICKER_SLIDER_FIELD_INSET,
-  PICKER_SLIDER_TICK_COLLISION_WIDTH,
   PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_THUMB_WIDTH,
-  PICKER_SLIDER_WARNING_SIDE_GAP,
   PICKER_SLIDER_WARNING_TOP,
   PICKER_WARNING_GLYPH_SIZE,
-} from "./planeInstrumentStyle";
-import { getSliderWarningPosition, type SliderWarningObstacle } from "./pickerWarningPlacement";
-
-export interface LinearControlMarker {
-  id: string;
-  label: string;
-  position: number;
-  tone: "srgb" | "display-p3" | "projection";
-  cssColor?: string;
-}
-
-export interface LinearControlInterval {
-  start: number;
-  end: number;
-  tone: "srgb" | "display-p3";
-}
-
-type GamutTone = LinearControlInterval["tone"];
-
-interface GamutSection {
-  start: number;
-  end: number;
-  tone: GamutTone;
-}
-
-interface GamutThreshold {
-  position: number;
-  tone: GamutTone;
-  insideSide: "left" | "right";
-  label: string;
-}
-
-const GAMUT_TONES = ["display-p3", "srgb"] as const satisfies readonly GamutTone[];
+} from "@gamut-plane/render";
+import {
+  channelSections,
+  channelThresholds,
+  channelWarning,
+  nearestThreshold,
+  type LinearControlInterval,
+  type LinearControlMarker,
+} from "@gamut-plane/render";
+export type { LinearControlInterval, LinearControlMarker } from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
@@ -121,112 +93,24 @@ const instrumentStyle = {
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
-const renderedIntervals = computed(() =>
-  props.intervals
-    .map((interval, index) => {
-      const start = Math.min(1, Math.max(0, interval.start));
-      const end = Math.min(1, Math.max(start, interval.end));
-      return { ...interval, start, end, index };
-    })
-    .filter((interval) => interval.end - interval.start > Number.EPSILON * 16),
-);
 const normalizedModelPosition = computed(() => {
   const span = props.max - props.min;
   return span > 0 ? (boundedModelValue.value - props.min) / span : 0;
 });
-const mergedIntervals = computed<Record<GamutTone, GamutSection[]>>(() => {
-  const result: Record<GamutTone, GamutSection[]> = { "display-p3": [], srgb: [] };
-  for (const tone of GAMUT_TONES) {
-    const sorted = renderedIntervals.value
-      .filter((interval) => interval.tone === tone)
-      .sort((a, b) => a.start - b.start);
-    for (const interval of sorted) {
-      const previous = result[tone].at(-1);
-      if (previous && interval.start <= previous.end + Number.EPSILON * 16) {
-        previous.end = Math.max(previous.end, interval.end);
-      } else {
-        result[tone].push({ start: interval.start, end: interval.end, tone });
-      }
-    }
-  }
-  return result;
-});
-const inGamutSections = computed<GamutSection[]>(() =>
-  GAMUT_TONES.flatMap((tone) => mergedIntervals.value[tone]),
-);
-const gamutThresholds = computed<GamutThreshold[]>(() =>
-  GAMUT_TONES.flatMap((tone) => {
-    const positions = mergedIntervals.value[tone].flatMap(({ start, end }) => [start, end]);
-    const crossings = [...new Set(positions)].filter((position) => position > 0 && position < 1);
-    return crossings.map((position) => {
-      const insideAfterCrossing = mergedIntervals.value[tone].some(
-        (interval) => Math.abs(interval.start - position) <= Number.EPSILON * 16,
-      );
-      const gamutName = tone === "display-p3" ? "Display P3" : "sRGB";
-      return {
-        position,
-        tone,
-        insideSide: insideAfterCrossing ? "right" : "left",
-        label: insideAfterCrossing ? `Inside ${gamutName} gamut →` : `← Inside ${gamutName} gamut`,
-      };
-    });
-  }),
-);
-const contextualThreshold = computed<GamutThreshold | null>(() => {
+const inGamutSections = computed(() => channelSections(props.intervals));
+const gamutThresholds = computed(() => channelThresholds(inGamutSections.value));
+const contextualThreshold = computed(() => {
   const position =
     hoverPosition.value ?? (isRangeFocused.value ? normalizedModelPosition.value : null);
   if (position === null) return null;
-  const nearest = gamutThresholds.value.reduce<GamutThreshold | null>((candidate, threshold) => {
-    if (!candidate) return threshold;
-    return Math.abs(threshold.position - position) < Math.abs(candidate.position - position)
-      ? threshold
-      : candidate;
-  }, null);
-  if (!nearest || Math.abs(nearest.position - position) * trackWidth.value > 14) return null;
-  return nearest;
+  const nearest = nearestThreshold(gamutThresholds.value, position);
+  return nearest && Math.abs(nearest.position - position) * trackWidth.value <= 14 ? nearest : null;
 });
-const warningPreferredSide = computed<"left" | "right">(() => {
-  const position = Number.isFinite(props.warningPosition) ? props.warningPosition : 0;
-  const nearest = gamutThresholds.value
-    .filter((threshold) => threshold.tone === "display-p3")
-    .reduce<GamutThreshold | null>((candidate, threshold) => {
-      if (!candidate) return threshold;
-      return Math.abs(threshold.position - position) < Math.abs(candidate.position - position)
-        ? threshold
-        : candidate;
-    }, null);
-  if (!nearest) return "right";
-  return nearest.insideSide === "right" ? "left" : "right";
-});
-const warningObstacles = computed<SliderWarningObstacle[]>(() => {
-  const width = trackWidth.value;
-  const fieldWidth = Math.max(0, width - PICKER_SLIDER_FIELD_INSET * 2);
-  const markers = props.markers.map((marker) => ({
-    center: Math.min(1, Math.max(0, marker.position)) * width,
-    width:
-      marker.tone === "projection"
-        ? PICKER_SLIDER_PROJECTION_COLLISION_WIDTH
-        : PICKER_SLIDER_TICK_COLLISION_WIDTH,
-  }));
-  const thresholds = gamutThresholds.value.map(({ position }) => ({
-    center: PICKER_SLIDER_FIELD_INSET + position * fieldWidth,
-    width: PICKER_SLIDER_TICK_COLLISION_WIDTH,
-  }));
-  return [...markers, ...thresholds];
-});
-const warningPlacement = computed(() =>
-  getSliderWarningPosition({
-    position: Number.isFinite(props.warningPosition) ? props.warningPosition : 0,
-    trackWidth: trackWidth.value,
-    thumbWidth: PICKER_SLIDER_THUMB_WIDTH,
-    warningWidth: PICKER_WARNING_GLYPH_SIZE,
-    edgeClearance: PICKER_SLIDER_EDGE_CLEARANCE,
-    markerGap: PICKER_SLIDER_WARNING_SIDE_GAP,
-    obstacleClearance: PICKER_SLIDER_ANNOTATION_CLEARANCE,
-    obstacles: warningObstacles.value,
-    preferredSide: warningPreferredSide.value,
-  }),
+const warning = computed(() =>
+  channelWarning(props.warningPosition, trackWidth.value, props.markers, gamutThresholds.value),
 );
+const warningPlacement = computed(() => warning.value.placement);
+const warningObstacles = computed(() => warning.value.obstacles);
 const warningStyle = computed<Record<string, string>>(() => {
   const position = warningPlacement.value;
   return {
@@ -307,6 +191,7 @@ function commitFromRange(event: Event): void {
 function beginRangeInteraction(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   if (activeRangePointerId !== null) return;
+  rangeElement.value?.setAttribute("data-pointer-focus", "");
   activeRangePointerId = event.pointerId;
 }
 
@@ -329,7 +214,12 @@ function cancelRangePointer(event?: PointerEvent): void {
 
 function blurRange(): void {
   isRangeFocused.value = false;
+  rangeElement.value?.removeAttribute("data-pointer-focus");
   cancelRangePointer();
+}
+
+function onRangeKeydown(): void {
+  rangeElement.value?.removeAttribute("data-pointer-focus");
 }
 
 function updateThresholdContext(event: PointerEvent): void {
@@ -349,7 +239,7 @@ function tickStyle(marker: LinearControlMarker): Record<string, string> {
   return style;
 }
 
-function sectionStyle(section: GamutSection): Record<string, string> {
+function sectionStyle(section: LinearControlInterval): Record<string, string> {
   return { left: `${section.start * 100}%`, width: `${(section.end - section.start) * 100}%` };
 }
 
@@ -428,6 +318,7 @@ onBeforeUnmount(() => {
         :title="marker.label"
         :aria-label="marker.label"
         :data-gamut-marker="marker.id"
+        :data-gamut-lane="marker.lane"
         role="img"
       />
       <span
@@ -463,6 +354,7 @@ onBeforeUnmount(() => {
         @lostpointercapture="cancelRangePointer"
         @focus="isRangeFocused = true"
         @blur="blurRange"
+        @keydown="onRangeKeydown"
       />
     </div>
 

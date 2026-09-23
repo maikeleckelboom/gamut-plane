@@ -11,12 +11,12 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "../src/components/planeInstrumentStyle";
+} from "../src/planeInstrumentStyle.js";
 import {
   getSliderWarningPosition,
   placePlanarWarning,
   type PlanarWarningPlacementInput,
-} from "../src/components/pickerWarningPlacement";
+} from "../src/pickerWarningPlacement.js";
 
 const SURFACE_SIZE = { width: 100, height: 100 } as const;
 const WARNING_SIZE = {

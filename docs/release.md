@@ -1,6 +1,6 @@
 # v0.1.0 release runbook
 
-This release covers the standalone application, framework-neutral core, and complete Vue package, including verified Vue SSR/hydration and Nuxt development, production SSR, and generated-page hydration. The repository is already public. Both npm packages remain private and unpublished.
+This is the historical v0.1.0 application-release runbook. That tag already exists: do not replay the promotion/tagging steps or move/recreate it for adapter work. The current development architecture includes core, render and complete Vue/React instruments; all four packages remain private and unpublished. React parity is delivered to `dev` with normal commits and CI, without deployment, promotion or release.
 
 The sequence is: validate `dev`, deploy it as the temporary production candidate, record the verified URL, rerun `dev` CI, point Cloudflare production at `main`, merge, verify `main`, then tag and release.
 
@@ -63,6 +63,8 @@ pnpm test:e2e
 pnpm test:production
 pnpm test:package
 pnpm test:nuxt
+pnpm test:react-vite
+pnpm test:next
 pnpm audit --prod
 git diff --check
 git status --short --untracked-files=all
@@ -135,9 +137,9 @@ In a logged-out browser session, check that the tag, release, source archives, p
 
 ## Package publication
 
-`@gamut-plane/core` and `@gamut-plane/vue` stay at `0.1.0` with `private: true`. Their built artifacts and tarball-consumer tests support local use. This application release does not include npm publication.
+`@gamut-plane/core`, `@gamut-plane/render`, `@gamut-plane/vue` and `@gamut-plane/react` stay at `0.1.0` with `private: true`. Their built artifacts and tarball-consumer tests support local use. Adapter work and this application-release procedure do not authorize npm publication.
 
-A future package release needs a separate decision covering scope/name access, registry metadata, removal of the private guards, core publication before Vue, and a registry-installed consumer check.
+A future package release needs a separate decision covering scope/name access, registry metadata, removal of private guards, core then render publication before the adapters, and registry-installed consumer checks.
 
 ## Recovery
 

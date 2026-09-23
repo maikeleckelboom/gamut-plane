@@ -59,8 +59,8 @@ test("generate reviewed repository and social images", async ({ page }) => {
     const legend = document.createElement("div");
     legend.className = "social-boundaries";
     for (const [label, className] of [
-      ["Display P3", "social-boundary social-boundary--p3"],
       ["sRGB", "social-boundary social-boundary--srgb"],
+      ["Display P3", "social-boundary social-boundary--p3"],
     ]) {
       const item = document.createElement("span");
       const swatch = document.createElement("i");

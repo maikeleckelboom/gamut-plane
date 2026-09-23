@@ -37,7 +37,8 @@ describe("renderer invalidation contracts", () => {
         plane,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
       },
@@ -107,7 +108,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
       },
@@ -177,7 +179,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
       },
@@ -201,7 +204,7 @@ describe("renderer invalidation contracts", () => {
     wrapper.unmount();
   });
 
-  it("does not report preview quality when its Canvas buffer is unavailable", async () => {
+  it("paints at full quality without changing capability when its preview buffer is unavailable", async () => {
     const frames = installAnimationFrameController();
     vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
       x: 0,
@@ -224,7 +227,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
       },
@@ -233,16 +237,26 @@ describe("renderer invalidation contracts", () => {
     frames.flush();
     await flushPromises();
 
+    vi.mocked(context.fillRect).mockClear();
     getContext.mockImplementation(() => null);
-    await wrapper.setProps({ interactionPreview: true });
-    await flushPromises();
-    frames.flush();
-    await flushPromises();
+    try {
+      await wrapper.setProps({
+        interactionPreview: true,
+        modelValue: { l: 0.62, c: 0.2, h: 211, alpha: 1 },
+      });
+      await flushPromises();
+      frames.flush();
+      await flushPromises();
 
-    expect(wrapper.attributes("data-field-quality")).toBe("full");
-    getContext.mockImplementation(() => context);
-
-    wrapper.unmount();
+      expect(wrapper.attributes("data-field-quality")).toBe("full");
+      expect(context.fillRect).toHaveBeenCalled();
+      expect(wrapper.find('[role="application"]').attributes("data-render-color-space")).toBe(
+        "srgb",
+      );
+    } finally {
+      getContext.mockImplementation(() => context);
+      wrapper.unmount();
+    }
   });
 
   it("coalesces rapid hue range input before fixed-axis contours and field redraw", async () => {

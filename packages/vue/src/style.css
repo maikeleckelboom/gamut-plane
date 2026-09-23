@@ -54,14 +54,9 @@
   background: var(--gp-surface-2);
 }
 
-.plane-instrument .plane-instrument__view-control > span,
-.plane-instrument .plane-instrument__view-control > small {
+.plane-instrument .plane-instrument__view-control > span {
   color: var(--gp-quiet);
   font: 0.6875rem/1.4 var(--gp-cv-font-mono);
-}
-
-.plane-instrument .plane-instrument__view-control > small {
-  margin-left: auto;
 }
 
 .plane-instrument .plane-instrument__view-control [role="radiogroup"] {
@@ -121,13 +116,14 @@
   overflow: hidden;
   border: 1px solid var(--gp-hairline);
   border-radius: 2px;
+  outline: 0;
   background: var(--gp-surface-1);
   cursor: crosshair;
   isolation: isolate;
   touch-action: none;
 }
 
-.plane-instrument .color-plane__surface:focus-visible {
+.plane-instrument .color-plane__surface:focus-visible:not([data-pointer-focus]) {
   border-color: var(--gp-user-accent);
   outline: 2px solid var(--gp-user-accent);
   outline-offset: 3px;
@@ -278,13 +274,6 @@
   min-width: 0;
 }
 
-.plane-instrument .plane-instrument__control-help {
-  margin: 0 0 -2px;
-  color: var(--gp-quiet);
-  font-size: 0.75rem;
-  line-height: 1.55;
-}
-
 .plane-instrument .plane-instrument__coordinate-readout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -334,20 +323,11 @@
 }
 
 @media (forced-colors: active) {
-  .plane-instrument .color-plane__surface:focus-visible {
+  .plane-instrument .color-plane__surface:focus-visible:not([data-pointer-focus]) {
     border-color: Highlight;
     outline-color: Highlight;
     box-shadow: none;
   }
-}
-
-.plane-instrument .plane-instrument__legend-note {
-  margin: 0;
-  flex-basis: 100%;
-  color: var(--gp-quiet);
-  font-size: 0.75rem;
-  line-height: 1.55;
-  opacity: 0.85;
 }
 
 .plane-instrument .plane-instrument__evidence {
@@ -392,20 +372,75 @@
   outline-offset: -2px;
 }
 
-.plane-instrument .plane-instrument__evidence > summary small {
-  margin-left: auto;
-  color: var(--gp-quiet);
-  font: 0.625rem/1.25 var(--gp-cv-font-mono);
-}
-
 .plane-instrument .plane-instrument__evidence-body {
   display: grid;
   gap: 12px;
   padding: 12px;
 }
 
-.plane-instrument .plane-instrument__evidence .plane-instrument__method {
-  display: block;
+.plane-instrument .plane-instrument__target-result {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--gp-hairline);
+  background: var(--gp-surface-2);
+}
+
+.plane-instrument .plane-instrument__target-heading {
+  display: flex;
+  grid-column: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font: 0.6875rem/1.35 var(--gp-cv-font-mono);
+}
+
+.plane-instrument .plane-instrument__target-heading > span {
+  color: var(--gp-foreground);
+}
+
+.plane-instrument .plane-instrument__target-heading strong {
+  color: var(--gp-quiet);
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.plane-instrument .plane-instrument__target-heading [data-target-status="outside"] {
+  color: var(--gp-status-outside);
+}
+
+.plane-instrument .plane-instrument__target-result dl {
+  display: flex;
+  grid-column: 1;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+}
+
+.plane-instrument .plane-instrument__target-result dl > div {
+  display: flex;
+  gap: 7px;
+  margin: 0;
+  color: var(--gp-quiet);
+  font: 0.625rem/1.35 var(--gp-cv-font-mono);
+}
+
+.plane-instrument .plane-instrument__target-result dd {
+  margin: 0;
+  color: var(--gp-foreground);
+}
+
+.plane-instrument .plane-instrument__target-swatch {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 34px;
+  height: 34px;
+  align-self: center;
+  border: 1px solid oklch(0.96 0 0 / 0.7);
+  box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);
 }
 
 .plane-instrument .channel-control {
@@ -463,12 +498,13 @@
 .plane-instrument .channel-control__track {
   position: relative;
   height: var(--picker-slider-track-height, 32px);
-  border: 1px solid var(--gp-hairline);
+  border: 1px solid transparent;
   border-radius: 2px;
   background: var(--gp-surface-0);
 }
 
-.plane-instrument .channel-control__track:focus-within {
+.plane-instrument
+  .channel-control__track:has(> .channel-control__range:focus-visible:not([data-pointer-focus])) {
   border-color: var(--gp-user-accent);
 }
 
@@ -553,16 +589,7 @@
   pointer-events: none;
 }
 
-.plane-instrument .channel-control__tick {
-  z-index: 3;
-  top: 3px;
-  bottom: 3px;
-  width: 0;
-  transform: translateX(-50%);
-}
-
-.plane-instrument .channel-control__help,
-.plane-instrument .plane-instrument__method {
+.plane-instrument .channel-control__help {
   margin: 0;
   color: var(--gp-quiet);
   font-size: 0.75rem;
@@ -604,22 +631,23 @@
   box-shadow: inset 2px 0 0 var(--picker-projection, var(--gp-quiet));
 }
 
-.plane-instrument .channel-control__tick--display-p3 {
-  border-left: 1px solid oklch(0.98 0 0 / 0.94);
-}
-
-.plane-instrument .channel-control__tick--srgb {
-  border-left: 1px dashed oklch(0.16 0 0 / 0.95);
-}
-
 .plane-instrument .channel-control__tick--projection {
-  top: 1px;
-  bottom: auto;
+  z-index: 5;
   width: 7px;
   height: 7px;
   border: 1px solid oklch(0.98 0 0 / 0.9);
   background: var(--tick-color, oklch(0.12 0 0 / 0.72));
   transform: translateX(-50%) rotate(45deg);
+}
+
+.plane-instrument .channel-control__tick--projection[data-gamut-lane="display-p3"] {
+  top: 3px;
+  bottom: auto;
+}
+
+.plane-instrument .channel-control__tick--projection[data-gamut-lane="srgb"] {
+  top: auto;
+  bottom: 3px;
 }
 
 .plane-instrument .channel-control__gamut-ranges {
@@ -629,7 +657,6 @@
 
 .plane-instrument .channel-control__gamut-range {
   height: var(--picker-slider-field-inset, 5px);
-  border-inline: 1px solid currentColor;
   color: var(--gp-foreground);
   opacity: 0.78;
 }
@@ -693,13 +720,6 @@
   }
 }
 @container gamut-plane (max-width: 30em) {
-  .plane-instrument .plane-instrument__view-control > small {
-    flex-basis: 100%;
-    margin-left: 0;
-  }
-  .plane-instrument .plane-instrument__evidence > summary small {
-    display: none;
-  }
   .plane-instrument .plane-instrument__workspace {
     --picker-plane-axis-space: 19px;
   }
@@ -715,4 +735,11 @@
 
 .plane-instrument .plane-instrument__active-readout {
   box-shadow: inset 2px 0 0 var(--gp-user-accent);
+}
+
+/* Scientific coordinates retain x-minimum on the left in RTL hosts. */
+.plane-instrument .color-plane__surface,
+.plane-instrument .channel-control__track,
+.plane-instrument input {
+  direction: ltr;
 }

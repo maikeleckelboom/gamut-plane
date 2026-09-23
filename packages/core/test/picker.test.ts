@@ -15,10 +15,10 @@ import {
   constrainOklabPlanePoint,
   convertOklchToOklab,
   getCachedGamutBoundaryTable,
-  getChromaSliderMarkers,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
   getMaximumChromaFromTable,
+  getPickerBoundaryAnalysis,
   getPickerGamutStatus,
   isColorInGamut,
   isPointInOklabInstrumentDomain,
@@ -146,6 +146,16 @@ describe("OKLCH picker geometry and analysis", () => {
     expect(oklchToPlanePoint(beyondInstrument).x).toBe(1.25);
   });
 
+  it("treats normalized last-bit noise at the instrument edge as inside", () => {
+    const nearEdge: OklchColor = { l: 0.5, c: 0.4000000000000001, h: 37, alpha: 1 };
+    const outside: OklchColor = { ...nearEdge, c: 0.45 };
+
+    for (const plane of [OKLCH_LIGHTNESS_CHROMA_PLANE, OKLAB_AB_PLANE]) {
+      expect(plane.isPointInInstrumentDomain(plane.project(nearEdge).point)).toBe(true);
+      expect(plane.isPointInInstrumentDomain(plane.project(outside).point)).toBe(false);
+    }
+  });
+
   it("builds deterministic finite fixed-hue boundary geometry into reusable buffers", () => {
     const sampleCount = 33;
     const output = new Float32Array(sampleCount * 2);
@@ -164,7 +174,7 @@ describe("OKLCH picker geometry and analysis", () => {
     );
   });
 
-  it("derives exact dual gamut status and distinct table guide markers", () => {
+  it("derives exact dual gamut status and target-aware sampled boundary results", () => {
     const l = 0.6;
     const h = 30;
     const srgbMaximum = getMaximumChromaFromTable(tables.srgb, l, h);
@@ -190,20 +200,52 @@ describe("OKLCH picker geometry and analysis", () => {
     expect(status.displayP3.interpolatedMaximumChroma).toBe(displayP3Maximum);
     expect(status.srgb.interpolatedDeltaC).toBeCloseTo(color.c - srgbMaximum, 12);
 
-    const markers = getChromaSliderMarkers(color, tables);
-    expect(markers.active.chroma).toBe(color.c);
-    expect(markers.srgbBoundaryGuide.chroma).toBe(srgbMaximum);
-    expect(markers.displayP3BoundaryGuide.chroma).toBe(displayP3Maximum);
-    expect(markers.srgbBoundaryProjection).not.toBeNull();
-    expect(markers.srgbBoundaryProjection?.kind).toBe("srgb-boundary-projection");
-    expect(markers.srgbBoundaryProjection?.chroma).toBe(srgbMaximum);
-    expect(markers.srgbBoundaryProjection?.position).not.toBe(markers.active.position);
+    const srgb = getPickerBoundaryAnalysis(color, "srgb", tables, status);
+    const displayP3 = getPickerBoundaryAnalysis(color, "display-p3", tables, status);
+    expect(srgb.target.target).toBe("srgb");
+    expect(srgb.target.inGamut).toBe(false);
+    expect(srgb.target.boundaryGuide.chroma).toBe(srgbMaximum);
+    expect(srgb.target.boundaryGuide.color).toEqual({ ...color, c: srgbMaximum });
+    expect(srgb.target.projection?.chroma).toBe(srgbMaximum);
+    expect(srgb.target.projection?.position).not.toBe(color.c / OKLCH_PICKER_MAX_CHROMA);
+    expect(displayP3.target.target).toBe("display-p3");
+    expect(displayP3.target.inGamut).toBe(true);
+    expect(displayP3.target.boundaryGuide.chroma).toBe(displayP3Maximum);
+    expect(displayP3.target.projection).toBeNull();
+    expect(displayP3.status).toBe(status);
+    expect(color).toEqual({ l, c: (srgbMaximum + displayP3Maximum) / 2, h, alpha: 1 });
 
     const sharpBlue: OklchColor = { l: 0.45, c: 0.23, h: 263, alpha: 1 };
     const sharpBlueStatus = getPickerGamutStatus(sharpBlue, tables);
     expect(sharpBlueStatus.srgb.inGamut).toBe(isColorInGamut(sharpBlue, "srgb"));
     expect(sharpBlueStatus.srgb.inGamut).toBe(false);
   });
+
+  it.each([
+    ["inside both", { l: 0.68, c: 0.08, h: 252, alpha: 1 }, true, true],
+    ["outside sRGB only", { l: 0.68, c: 0.18, h: 252, alpha: 1 }, false, true],
+    ["outside both", { l: 0.62, c: 0.42, h: 30, alpha: 1 }, false, false],
+  ] satisfies [string, OklchColor, boolean, boolean][])(
+    "keeps exact membership and authored color independent for a color %s",
+    (_label, color, inSrgb, inDisplayP3) => {
+      const snapshot = structuredClone(color);
+      const srgb = getPickerBoundaryAnalysis(color, "srgb", tables);
+      const displayP3 = getPickerBoundaryAnalysis(color, "display-p3", tables);
+
+      expect(srgb.status.srgb.inGamut).toBe(inSrgb);
+      expect(srgb.status.displayP3.inGamut).toBe(inDisplayP3);
+      expect(displayP3.status).toEqual(srgb.status);
+      expect(srgb.target.boundaryGuide.chroma).toBe(
+        getMaximumChromaFromTable(tables.srgb, color.l, color.h),
+      );
+      expect(displayP3.target.boundaryGuide.chroma).toBe(
+        getMaximumChromaFromTable(tables.displayP3, color.l, color.h),
+      );
+      expect(srgb.target.projection === null).toBe(inSrgb);
+      expect(displayP3.target.projection === null).toBe(inDisplayP3);
+      expect(color).toEqual(snapshot);
+    },
+  );
 
   it("solves lightness-valid intervals from piecewise table interpolation", () => {
     expect(getLightnessGamutIntervals(tables.srgb, { c: 0, h: 30 })).toEqual([
@@ -499,6 +541,13 @@ describe("OKLCH picker geometry and analysis", () => {
       expect(end.y).toBeCloseTo(projection.y, 12);
       expect(home.fixed).toBeCloseTo(projection.fixed, 12);
       expect(end.fixed).toBeCloseTo(projection.fixed, 12);
+      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(home.point)).toBe(true);
+      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(end.point)).toBe(true);
+      expect(
+        OKLAB_AB_PLANE.positionActivePoint(
+          OKLAB_AB_PLANE.editFromKeyboard(color, "maximum-x", false),
+        ),
+      ).toEqual(end.point);
     });
 
     it("uses the nearest vertical pole when canonical b is outside the horizontal disc domain", () => {

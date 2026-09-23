@@ -2,21 +2,22 @@
 
 A Vue component for editing one OKLCH color in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
 
-This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
+This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal `@gamut-plane/render` package and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
 
 ## Usage
 
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type OklchColor } from "@gamut-plane/vue";
+import { GamutPlane, type DisplayGamut, type OklchColor } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
 const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+const boundaryTarget = ref<DisplayGamut>("srgb");
 </script>
 
 <template>
-  <GamutPlane v-model="color" />
+  <GamutPlane v-model="color" :boundary-target="boundaryTarget" />
 </template>
 ```
 
@@ -26,6 +27,7 @@ const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
 | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `v-model`                    | Required `OklchColor`; receives live color edits                                            |
 | `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
+| `boundaryTarget`             | Controlled `DisplayGamut` projection/reference target; defaults to `"srgb"`                 |
 | `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
 | `showDisplayP3Boundary`      | Boolean prop; defaults to `true`                                                            |
 | `@commit="onCommit"`         | Receives the color when an edit completes, for example to record undo history               |
@@ -33,7 +35,9 @@ const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
 | `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
 | `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
 
-Import `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View changes do not emit color updates or commits. Visibility props affect the field contours; other gamut information remains available.
+Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's field contour, accessible path, channel intervals and projection overlays. Exact membership and the active target result remain available.
+
+Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting.
 
 The color model requires finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue. Edits preserve alpha and unedited values. Gamut guides and the bounded editing geometry do not clamp the authored color to a display gamut.
 
@@ -87,6 +91,6 @@ The same component supports both views and multiple instances. No client-only wr
 
 Tested environments: Node 24.16.0, pnpm 11.9.0, Vue 3.5.39 in the standalone packed consumer, and Nuxt 4.5.2 with Vue 3.5.42 / Vue Router 5.3.1 in the SSR fixture. The fixture locks its full dependency graph and verifies development diagnostics, production SSR and `nuxt generate`. Browser checks use Playwright 1.61.1 Chromium; other engines and physical devices need separate verification. Nuxt's own runtime minimum is 24.11 within Node 24; the package's Node 24 floor is unchanged.
 
-From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core from its tarball; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
+From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core and render from their tarballs; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
 
 [MIT License](LICENSE).

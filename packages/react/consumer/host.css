@@ -1,0 +1,38 @@
+:root {
+  --foreground: rebeccapurple;
+  font:
+    16px/1.4 Georgia,
+    serif;
+  color: #202020;
+  background: white;
+}
+body {
+  margin: 16px;
+}
+main > button,
+main > label input {
+  font: inherit;
+  color: rebeccapurple;
+  background: #eee;
+  border: 2px solid rebeccapurple;
+}
+.host-scroll {
+  height: 680px;
+  overflow: auto;
+  background: #f3f3f3;
+}
+.host-spacer {
+  height: 120px;
+}
+.host-instance {
+  margin: 24px;
+  max-width: calc(100% - 48px);
+}
+.dark {
+  background: #101418;
+  color: white;
+}
+.host-instance > output {
+  display: block;
+  overflow-wrap: anywhere;
+}

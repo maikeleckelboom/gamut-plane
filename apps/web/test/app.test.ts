@@ -48,6 +48,31 @@ describe("standalone application", () => {
     );
     expect(wrapper.get("#project-description").text()).toContain("Interactive OKLab and OKLCH");
     expect(wrapper.text().match(/Membership uses exact linear-light conversion/g)).toHaveLength(1);
+    expect(
+      wrapper
+        .findAll("[data-boundary-target-option]")
+        .map((option) => option.attributes("data-boundary-target-option")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-boundary-toggle]")
+        .map((option) => option.attributes("data-boundary-toggle")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-exact-gamut-status]")
+        .map((status) => status.attributes("data-exact-gamut-status")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-boundary-guide]")
+        .map((guide) => guide.attributes("data-boundary-guide")),
+    ).toEqual(["srgb", "display-p3"]);
+    expect(
+      wrapper
+        .findAll("[data-css-representation]")
+        .map((representation) => representation.attributes("data-css-representation")),
+    ).toEqual(["oklch", "hex", "srgb", "display-p3"]);
     wrapper.unmount();
   });
 
@@ -58,9 +83,23 @@ describe("standalone application", () => {
 
     const srgbToggle = wrapper.get('[data-boundary-toggle="srgb"]');
     const field = wrapper.get(".plane-instrument__field");
-    expect(field.get("[data-boundary-legend]").exists()).toBe(true);
+    expect(field.get("[data-gamut-reference]").exists()).toBe(true);
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "srgb",
+    );
     await srgbToggle.setValue(false);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "srgb",
+    );
+    expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
+
+    await wrapper.get('[data-boundary-target-option="display-p3"]').setValue(true);
+    await flushPromises();
+    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
+      "display-p3",
+    );
+    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Target · Display P3");
     expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
 
     await wrapper.get('[data-plane-option="oklab"]').trigger("click");
@@ -115,21 +154,59 @@ describe("standalone application", () => {
     wrapper.unmount();
   });
 
-  it("uses real disabled semantics and a visible reason for unavailable sRGB copy", async () => {
+  it("uses one value/status slot per row and concise unavailable output without clipping", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
 
+    for (const representation of wrapper.findAll("[data-css-representation]")) {
+      expect(representation.findAll(".css-representation__value")).toHaveLength(1);
+    }
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toMatch(/^oklch\(/);
+    expect(wrapper.get('[data-css-representation="display-p3"] code').text()).toMatch(
+      /^color\(display-p3 /,
+    );
+    expect(wrapper.get('[data-css-representation="hex"] .css-representation__value').text()).toBe(
+      "Unavailable · outside sRGB",
+    );
     const representation = wrapper.get('[data-css-representation="srgb"]');
     const copyButton = representation.get('[data-copy-representation="srgb"]');
     expect(copyButton.attributes("disabled")).toBeDefined();
     expect(copyButton.attributes("aria-describedby")).toBe("srgb-copy-reason");
-    expect(representation.get("#srgb-copy-reason").text()).toBe(
-      "Outside sRGB. No clipped value emitted.",
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeDefined();
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("aria-describedby")).toBe(
+      "srgb-copy-reason",
     );
+    expect(representation.get(".css-representation__value").text()).toBe(
+      "Unavailable · outside sRGB",
+    );
+    expect(wrapper.get("#srgb-copy-reason").text()).toBe(
+      "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+    );
+    expect(wrapper.findAll("#srgb-copy-reason")).toHaveLength(1);
+    expect(representation.find(".css-representation__value p").exists()).toBe(false);
 
     await copyButton.trigger("click");
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(document.execCommand).not.toHaveBeenCalled();
+
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.52");
+    await flushPromises();
+    expect(
+      wrapper.get('[data-css-representation="display-p3"] .css-representation__value').text(),
+    ).toBe("Unavailable · outside Display P3");
+    expect(
+      wrapper.get('[data-copy-representation="display-p3"]').attributes("disabled"),
+    ).toBeDefined();
+    expect(wrapper.get("#display-p3-copy-reason").text()).toBe(
+      "Selected color is outside Display P3; no clipped value is emitted.",
+    );
+
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0");
+    await flushPromises();
+    expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
+    expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^rgb\(/);
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
+    expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
     wrapper.unmount();
   });

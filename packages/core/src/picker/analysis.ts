@@ -27,26 +27,32 @@ export interface PickerGamutStatusEntry {
   interpolatedDeltaC: number;
 }
 
-export type ChromaSliderMarkerKind =
-  | "active"
-  | "srgb-boundary-guide"
-  | "display-p3-boundary-guide"
-  | "srgb-boundary-projection";
-
-export interface ChromaSliderMarker {
-  kind: ChromaSliderMarkerKind;
-  /** Unclamped canonical/table chroma represented by this marker. */
+export interface BoundaryGuidePoint {
+  /** Unclamped canonical/table chroma represented by this point. */
   chroma: number;
   /** Normalized position clamped only to the 0..0.4 instrument domain. */
   position: number;
+  color: OklchColor;
 }
 
-export interface ChromaSliderMarkers {
-  active: ChromaSliderMarker;
-  srgbBoundaryGuide: ChromaSliderMarker;
-  displayP3BoundaryGuide: ChromaSliderMarker;
-  /** Present only when the selected color is outside sRGB. */
-  srgbBoundaryProjection: ChromaSliderMarker | null;
+export interface TargetBoundaryAnalysis {
+  target: DisplayGamut;
+  /** Exact membership from direct conversion, independent of sampled guide data. */
+  inGamut: boolean;
+  activeChroma: number;
+  /** Interpolated guide only; this is not an exact gamut boundary solution. */
+  boundaryGuide: BoundaryGuidePoint;
+  /** Positive authored-chroma excursion beyond the interpolated guide. */
+  guideDeltaC: number;
+  /** Present only when exact target membership says the authored color is outside. */
+  projection: BoundaryGuidePoint | null;
+}
+
+export interface PickerBoundaryAnalysis {
+  /** Exact membership and sampled guide values for both display gamuts. */
+  status: PickerGamutStatus;
+  /** Projection/reference result for the explicitly selected target gamut. */
+  target: TargetBoundaryAnalysis;
 }
 
 export interface LightnessGamutInterval {
@@ -108,35 +114,40 @@ export function getPickerGamutStatus(
   };
 }
 
-function marker(kind: ChromaSliderMarkerKind, chroma: number): ChromaSliderMarker {
+function boundaryGuidePoint(color: OklchColor, chroma: number): BoundaryGuidePoint {
   return {
-    kind,
     chroma,
     position: Math.min(1, Math.max(0, chroma / OKLCH_PICKER_MAX_CHROMA)),
+    color: { ...color, c: chroma },
   };
 }
 
-/** Returns active, dual-gamut boundary guides, and an sRGB boundary projection. */
-export function getChromaSliderMarkers(
+/**
+ * Returns exact dual-gamut membership and the sampled guide result for one
+ * explicit projection/reference target. The authored color is never changed.
+ */
+export function getPickerBoundaryAnalysis(
   color: OklchColor,
+  target: DisplayGamut,
   tables: PickerGamutBoundaryTables,
   status: PickerGamutStatus = getPickerGamutStatus(color, tables),
-): ChromaSliderMarkers {
+): PickerBoundaryAnalysis {
   assertOklchColor(color);
   assertPickerTables(tables);
+  const targetStatus = target === "srgb" ? status.srgb : status.displayP3;
+  const boundaryGuide = boundaryGuidePoint(color, targetStatus.interpolatedMaximumChroma);
   return {
-    active: marker("active", color.c),
-    srgbBoundaryGuide: marker("srgb-boundary-guide", status.srgb.interpolatedMaximumChroma),
-    displayP3BoundaryGuide: marker(
-      "display-p3-boundary-guide",
-      status.displayP3.interpolatedMaximumChroma,
-    ),
-    srgbBoundaryProjection: status.srgb.inGamut
-      ? null
-      : marker(
-          "srgb-boundary-projection",
-          Math.min(color.c, status.srgb.interpolatedMaximumChroma),
-        ),
+    status,
+    target: {
+      target,
+      inGamut: targetStatus.inGamut,
+      activeChroma: color.c,
+      boundaryGuide,
+      guideDeltaC: targetStatus.interpolatedDeltaC,
+      projection: targetStatus.inGamut
+        ? null
+        : boundaryGuidePoint(color, Math.min(color.c, targetStatus.interpolatedMaximumChroma)),
+    },
   };
 }
 

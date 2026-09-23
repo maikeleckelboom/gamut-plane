@@ -31,7 +31,7 @@ test("hides and restores each gamut boundary as view state", async ({ page }) =>
   const selected = page.locator(".channel-values");
   const originalSelection = await selected.textContent();
 
-  await expect(page.locator(".plane-instrument__field > [data-boundary-legend]")).toBeVisible();
+  await expect(page.locator(".plane-instrument__field > [data-gamut-reference]")).toBeVisible();
 
   await p3.uncheck();
   await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(0);
@@ -47,9 +47,68 @@ test("hides and restores each gamut boundary as view state", async ({ page }) =>
   await expect(selected).toHaveText(originalSelection ?? "");
 });
 
+test("target selection is exclusive, keyboard operable, and independent from visibility", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  const targetResult = page.locator("[data-boundary-target-result]");
+  const srgbTarget = page.getByRole("radio", { name: "sRGB" });
+  const p3Target = page.getByRole("radio", { name: "Display P3" });
+  const selected = page.locator(".channel-values");
+  const originalSelection = await selected.textContent();
+  const srgbSwatch = await page.locator("[data-boundary-guide-swatch]").getAttribute("style");
+
+  await expect(srgbTarget).toBeChecked();
+  await expect(p3Target).not.toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(targetResult).toContainText("Target · sRGB");
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(1);
+
+  await p3Target.click();
+  await expect(p3Target).toBeChecked();
+  await expect(srgbTarget).not.toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "display-p3");
+  await expect(targetResult).toContainText("Target · Display P3");
+  expect(await page.locator("[data-boundary-guide-swatch]").getAttribute("style")).not.toBe(
+    srgbSwatch,
+  );
+  await expect(selected).toHaveText(originalSelection ?? "");
+
+  await p3Target.focus();
+  await p3Target.press("ArrowLeft");
+  await expect(srgbTarget).toBeChecked();
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await page.getByRole("checkbox", { name: "sRGB" }).uncheck();
+  await expect(srgbTarget).toBeChecked();
+  await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(selected).toHaveText(originalSelection ?? "");
+
+  await page.getByRole("checkbox", { name: "Display P3" }).uncheck();
+  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
+  await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
+  await expect(page.locator('[data-gamut-marker$="boundary-guide"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "sRGB" }).check();
+  await p3Target.click();
+  await expect(p3Target).toBeChecked();
+  await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(targetResult).toContainText("Boundary guide C");
+  await expect(selected).toHaveText(originalSelection ?? "");
+});
+
 test("keyboard and pointer edits update the selected color", async ({ page }) => {
   await openInstrument(page);
-  const surface = page.getByRole("application", { name: /OKLCH plane/ });
+  const surface = page.locator(".color-plane__surface");
   const channels = page.locator(".channel-values");
   const beforeKeyboard = await channels.textContent();
 
@@ -62,6 +121,108 @@ test("keyboard and pointer edits update the selected color", async ({ page }) =>
   expect(bounds).not.toBeNull();
   await page.mouse.click(bounds!.x + bounds!.width * 0.78, bounds!.y + bounds!.height * 0.34);
   await expect(channels).not.toHaveText(beforePointer ?? "");
+});
+
+test("plane focus ring follows keyboard use through repeated pointer interaction", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  const surface = page.locator(".color-plane__surface");
+  const visibleFocus = () =>
+    surface.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.outlineStyle !== "none" && Number.parseFloat(style.outlineWidth) > 0;
+    });
+
+  await surface.click({ position: { x: 40, y: 40 } });
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(false);
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await surface.click({ position: { x: 60, y: 60 } });
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(false);
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  await page.keyboard.press("Tab");
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(true);
+
+  await surface.click({ position: { x: 80, y: 80 } });
+  expect(await visibleFocus()).toBe(false);
+  await surface.press("ArrowRight");
+  expect(await visibleFocus()).toBe(true);
+});
+
+test("slider track focus follows the actual range control", async ({ page }) => {
+  await openInstrument(page);
+  const hue = page.getByRole("slider", { name: /Hue/ });
+  const p3Target = page.getByRole("radio", { name: "Display P3" });
+  const track = page.locator('[data-picker-control="h"] .channel-control__track');
+  const unfocusedBorder = await track.evaluate((element) => getComputedStyle(element).borderColor);
+
+  await hue.click();
+  await expect(hue).toBeFocused();
+  await expect
+    .poll(() => track.evaluate((element) => getComputedStyle(element).borderColor))
+    .toBe(unfocusedBorder);
+  await p3Target.click();
+  await expect(hue).not.toBeFocused();
+  await hue.click();
+  await expect(hue).toBeFocused();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).toBe(
+    unfocusedBorder,
+  );
+  await p3Target.click();
+  await page.keyboard.press("Tab");
+  await hue.focus();
+  await expect(hue).toBeFocused();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
+    unfocusedBorder,
+  );
+  await hue.click();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).toBe(
+    unfocusedBorder,
+  );
+  await hue.press("ArrowRight");
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
+    unfocusedBorder,
+  );
+});
+
+test("OKLab edge interactions stay in-domain while authored overflow is preserved", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.getByRole("radio", { name: "OKLab" }).click();
+
+  const surface = page.locator(".color-plane__surface");
+  const aCoordinate = page.locator('[data-oklab-coordinate="a"]');
+  await aCoordinate.fill("0.4");
+  await aCoordinate.press("Enter");
+  await expect(surface).toHaveAttribute("data-outside-instrument", "false");
+  await expect(page.locator("body")).not.toContainText("outside the OKLab editing disc");
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  const chroma = page.getByLabel("Chroma numeric value");
+  await expect(chroma).toHaveValue("0.4000");
+  await expect(page.locator("body")).not.toContainText("outside the visible editing range");
+
+  await chroma.fill("0.52");
+  await chroma.press("Enter");
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await expect(surface).toHaveAttribute("data-outside-instrument", "true");
+  await expect(page.locator("body")).toContainText(
+    "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved.",
+  );
+  const markerRadius = await page.locator("[data-active-marker]").evaluate((marker) => {
+    const left = Number.parseFloat((marker as HTMLElement).style.left);
+    const top = Number.parseFloat((marker as HTMLElement).style.top);
+    return Math.hypot(left - 50, top - 50);
+  });
+  expect(markerRadius).toBeCloseTo(50, 3);
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  await expect(chroma).toHaveValue("0.5200");
 });
 
 test("resize preserves the represented color and narrow layout does not overflow", async ({
@@ -89,21 +250,32 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
   await openInstrument(page);
 
   for (const viewport of [
-    { width: 1280, height: 800 },
+    { width: 1536, height: 864 },
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1280, height: 650 },
     { width: 1024, height: 768 },
-    { width: 768, height: 900 },
+    { width: 768, height: 1024 },
     { width: 390, height: 844 },
+    { width: 320, height: 720 },
   ]) {
     await page.setViewportSize(viewport);
-    await expect(page.locator("[data-boundary-legend]")).toBeVisible();
+    await expect(page.locator("[data-gamut-reference]")).toBeVisible();
     await expect(page.locator(".color-inspector")).toBeVisible();
     const geometry = await page.evaluate(() => {
       const root = document.documentElement;
       const plane = document.querySelector(".color-plane__surface");
+      const workspace = document.querySelector<HTMLElement>(".instrument-layout");
+      if (!workspace) throw new Error("Instrument workspace missing");
       const copyButtons = [...document.querySelectorAll<HTMLElement>("[data-copy-representation]")];
       return {
         clientWidth: root.clientWidth,
         scrollWidth: root.scrollWidth,
+        clientHeight: root.clientHeight,
+        scrollHeight: root.scrollHeight,
+        workspaceClientHeight: workspace.clientHeight,
+        workspaceScrollHeight: workspace.scrollHeight,
+        workspaceScrollable: workspace.scrollHeight > workspace.clientHeight,
         surfaceWidth: plane?.getBoundingClientRect().width ?? 0,
         clippedCopyButtons: copyButtons.some((button) => {
           const bounds = button.getBoundingClientRect();
@@ -116,7 +288,96 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
     );
     expect(geometry.surfaceWidth).toBeGreaterThan(viewport.width <= 390 ? 240 : 300);
     expect(geometry.clippedCopyButtons).toBe(false);
+    if (viewport.width >= 1101) {
+      expect(
+        geometry.scrollHeight,
+        `${viewport.width}x${viewport.height} root height overflow`,
+      ).toBeLessThanOrEqual(geometry.clientHeight + 1);
+      if (
+        (viewport.width === 1536 && viewport.height === 864) ||
+        (viewport.width === 1440 && viewport.height === 900)
+      ) {
+        expect(
+          geometry.workspaceScrollHeight,
+          `${viewport.width}x${viewport.height} workspace height overflow`,
+        ).toBeLessThanOrEqual(geometry.workspaceClientHeight + 1);
+      }
+      if (viewport.height === 650) expect(geometry.workspaceScrollable).toBe(true);
+    }
   }
+
+  await page.setViewportSize({ width: 1280, height: 650 });
+  const bottomControl = page.getByRole("button", { name: "Copy Display P3 CSS value" });
+  await bottomControl.focus();
+  await expect(bottomControl).toBeFocused();
+  await expect(bottomControl).toBeInViewport();
+  expect(
+    await page.locator(".instrument-layout").evaluate((workspace) => workspace.scrollTop),
+  ).toBeGreaterThan(0);
+});
+
+test("wide plane follows the workspace when the header wraps", async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 864 });
+  await openInstrument(page);
+  const description = page.locator("#project-description");
+  const measure = () =>
+    page.evaluate(() => {
+      const root = document.documentElement;
+      const header = document.querySelector<HTMLElement>(".project-header")!;
+      const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
+      const surface = document.querySelector<HTMLElement>(".color-plane__surface")!;
+      return {
+        headerHeight: header.getBoundingClientRect().height,
+        workspaceHeight: workspace.clientHeight,
+        surfaceHeight: surface.getBoundingClientRect().height,
+        rootFits: root.scrollHeight <= root.clientHeight + 1,
+        horizontalFits: root.scrollWidth <= root.clientWidth,
+      };
+    });
+
+  await description.evaluate((element) => {
+    element.textContent = "Short description.";
+  });
+  const shortHeader = await measure();
+  await description.evaluate((element) => {
+    element.textContent =
+      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact membership checks. " +
+      "The instrument remains usable when the project description takes more than one line.";
+  });
+  const wrappedHeader = await measure();
+
+  expect(wrappedHeader.headerHeight).toBeGreaterThan(shortHeader.headerHeight);
+  expect(wrappedHeader.workspaceHeight).toBeLessThan(shortHeader.workspaceHeight);
+  expect(wrappedHeader.surfaceHeight).toBeLessThan(shortHeader.surfaceHeight);
+  expect(wrappedHeader.rootFits).toBe(true);
+  expect(wrappedHeader.horizontalFits).toBe(true);
+});
+
+test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await openInstrument(page);
+  await page.locator("[data-boundary-details] summary").click();
+  const details = page.locator("[data-boundary-details]");
+  await expect(details).toHaveAttribute("open", "");
+  await details.locator("summary").focus();
+  await details.locator("summary").press("End");
+  await details.scrollIntoViewIfNeeded();
+  const geometry = await page.evaluate(() => {
+    const root = document.documentElement;
+    const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
+    const details = document.querySelector<HTMLElement>("[data-boundary-details]")!;
+    const bounds = details.getBoundingClientRect();
+    return {
+      rootFits: root.scrollHeight <= root.clientHeight + 1,
+      workspaceOverflowY: getComputedStyle(workspace).overflowY,
+      detailsReachable: bounds.top < root.clientHeight && bounds.bottom > 0,
+    };
+  });
+  expect(geometry.rootFits).toBe(true);
+  expect(geometry.workspaceOverflowY).toBe("auto");
+  expect(geometry.detailsReachable).toBe(true);
 });
 
 test("enlarged text, focus visibility, and Canvas capability remain usable and truthful", async ({
@@ -171,6 +432,17 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   );
   expect(clippedOklchValues).toBe(false);
   await expect(page.getByRole("checkbox", { name: "Display P3" })).toBeVisible();
+  const targetP3 = page.getByRole("radio", { name: "Display P3" });
+  await targetP3.focus();
+  await targetP3.scrollIntoViewIfNeeded();
+  await expect(targetP3).toBeInViewport();
+  const zoomedRoot = await page.evaluate(() => ({
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    workspaceOverflowY: getComputedStyle(document.querySelector(".instrument-layout")!).overflowY,
+  }));
+  expect(zoomedRoot.scrollHeight).toBeLessThanOrEqual(zoomedRoot.clientHeight + 1);
+  expect(zoomedRoot.workspaceOverflowY).toBe("auto");
 
   await oklab.click();
   await expect(page.getByRole("application", { name: /OKLab a\/b plane/ })).toBeVisible();
@@ -210,11 +482,48 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^color\(display-p3 /);
 
   const srgbCopy = page.getByRole("button", { name: "Copy sRGB CSS value" });
+  const hexCopy = page.getByRole("button", { name: "Copy Hex value" });
+  await expect(hexCopy).toBeDisabled();
+  await expect(hexCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(srgbCopy).toBeDisabled();
   await expect(srgbCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(page.locator("#srgb-copy-reason")).toHaveText(
-    "Outside sRGB. No clipped value emitted.",
+    "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
   );
+  await expect(
+    page.locator('[data-css-representation="hex"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside sRGB");
+  await expect(
+    page.locator('[data-css-representation="srgb"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside sRGB");
+  await page.getByLabel("Chroma numeric value").fill("0.52");
+  await page.getByLabel("Chroma numeric value").press("Enter");
+  await expect(
+    page.locator('[data-css-representation="display-p3"] .css-representation__value'),
+  ).toHaveText("Unavailable · outside Display P3");
+  await expect(p3Copy).toBeDisabled();
+  await expect(page.locator("#display-p3-copy-reason")).toHaveText(
+    "Selected color is outside Display P3; no clipped value is emitted.",
+  );
+});
+
+test("Hex copies the selected in-sRGB value without changing the canonical color", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.getByLabel("Chroma numeric value").fill("0");
+  await page.getByLabel("Chroma numeric value").press("Enter");
+
+  const canonical = await page.locator('[data-css-representation="oklch"] code').textContent();
+  const hex = page.locator('[data-css-representation="hex"]');
+  const value = await hex.locator("code").textContent();
+  expect(value).toMatch(/^#[0-9A-F]{6}$/);
+  const copy = hex.locator("button");
+  await expect(copy).toBeEnabled();
+  await copy.click();
+  await expect(copy).toHaveAccessibleName("Copied Hex value");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(canonical!);
 });
 
 test("keyboard-only navigation reaches boundary and copy controls with visible focus", async ({
@@ -233,11 +542,14 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
       if (!element) return { marker: "", outlineWidth: 0 };
       const representation = element.dataset.copyRepresentation;
       const boundary = element.dataset.boundaryToggle;
+      const target = element.dataset.boundaryTargetOption;
       const marker = representation
         ? `copy-${representation}`
-        : boundary
-          ? `boundary-${boundary}`
-          : "";
+        : target
+          ? `target-${target}`
+          : boundary
+            ? `boundary-${boundary}`
+            : "";
       return {
         marker,
         outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth),
@@ -263,6 +575,7 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
 
   expect(visited).toContain("boundary-display-p3");
   expect(visited).toContain("boundary-srgb");
+  expect(visited).toContain("target-srgb");
   expect(visited).toContain("copy-oklch");
   expect(boundaryOutlineWidth).toBeGreaterThan(0);
   expect(copyOutlineWidth).toBeGreaterThan(0);
@@ -281,6 +594,13 @@ test("header and exact gamut status have one semantic owner", async ({ page }) =
   await expect(page.locator(".instrument-primary [data-exact-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-picker-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-boundary-details] summary")).toContainText("Boundary details");
+  await expect(page.locator("[data-boundary-details] summary")).toHaveText("Boundary details");
+  await page.locator("[data-boundary-details] summary").click();
+  await expect(page.locator("[data-boundary-details]")).toHaveAttribute("open", "");
+  await expect(page.locator("[data-boundary-guide]")).toHaveCount(2);
+  await page.locator("[data-boundary-details] summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("[data-boundary-details]")).not.toHaveAttribute("open", "");
   await expect(page.locator("body")).not.toContainText("Thresholds follow current");
   await expect(page.locator("body")).not.toContainText("Gamut evidence");
 });

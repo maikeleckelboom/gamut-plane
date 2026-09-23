@@ -36,7 +36,7 @@ html {
 
 body {
   min-width: 280px;
-  min-height: 100vh;
+  min-height: 100svh;
   margin: 0;
   background: var(--surface-0);
 }
@@ -49,7 +49,8 @@ input {
 button,
 label,
 input[type="range"],
-input[type="checkbox"] {
+input[type="checkbox"],
+input[type="radio"] {
   touch-action: manipulation;
 }
 
@@ -84,10 +85,10 @@ button:disabled {
 }
 
 .project-header {
-  min-height: 124px;
+  min-height: 104px;
   display: flex;
   align-items: center;
-  padding: 18px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--hairline);
 }
 
@@ -123,9 +124,9 @@ button:disabled {
 .instrument-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 370px);
-  gap: clamp(34px, 4vw, 68px);
+  gap: clamp(30px, 3.5vw, 56px);
   align-items: start;
-  padding-top: clamp(28px, 3.5vw, 48px);
+  padding-top: clamp(22px, 2.8vw, 36px);
 }
 
 .instrument-primary {
@@ -139,7 +140,7 @@ button:disabled {
 }
 
 .color-inspector > header {
-  padding-bottom: 18px;
+  padding-bottom: 12px;
 }
 
 .color-inspector h2 {
@@ -154,7 +155,7 @@ button:disabled {
   grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
   gap: 12px 18px;
   margin: 0;
-  padding: 0 0 19px;
+  padding: 0 0 12px;
 }
 
 .channel-values > div {
@@ -175,11 +176,12 @@ button:disabled {
 
 .color-inspector section {
   border-top: 1px solid var(--hairline);
-  padding: 18px 0;
+  padding: 11px 0;
 }
 
 .color-inspector h3,
-.boundary-legend legend {
+.gamut-reference h3,
+.gamut-reference legend {
   margin: 0 0 12px;
   color: var(--quiet);
   font: 0.6875rem/1.3 var(--cv-font-mono);
@@ -222,7 +224,7 @@ button:disabled {
 
 .gamut-facts p,
 .canvas-fact p,
-.boundary-legend p,
+.gamut-reference p,
 .css-output p {
   margin: 10px 0 0;
   color: var(--quiet);
@@ -231,7 +233,7 @@ button:disabled {
 }
 
 .inspector-section-heading {
-  margin-bottom: 13px;
+  margin-bottom: 8px;
 }
 
 .inspector-section-heading h3 {
@@ -248,7 +250,7 @@ button:disabled {
   gap: 8px 12px;
   align-items: center;
   border-top: 1px solid oklch(1 0 0 / 0.06);
-  padding: 12px 0;
+  padding: 6px 0;
 }
 
 .css-representation:first-of-type {
@@ -261,13 +263,16 @@ button:disabled {
   font-size: 0.75rem;
 }
 
-.css-output code,
-.css-representation > p {
+.css-representation__value {
   grid-column: 1 / -1;
+  min-width: 0;
   overflow-wrap: anywhere;
-  margin: 0;
   color: var(--foreground);
   font: 0.75rem/1.55 var(--cv-font-mono);
+}
+
+.css-representation__value code {
+  font: inherit;
 }
 
 .css-output button {
@@ -305,29 +310,45 @@ button:disabled {
   border-style: dashed;
 }
 
-.boundary-legend {
+.gamut-reference {
   min-width: 0;
   margin: 8px 0 0;
-  border: 0;
   padding: 0 0 0 var(--picker-plane-axis-space);
 }
 
-.boundary-legend legend {
-  float: none;
-  width: auto;
-  margin-bottom: 2px;
+.gamut-reference h3 {
+  margin-bottom: 6px;
+}
+
+.gamut-reference fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 0;
   padding: 0;
 }
 
-.boundary-legend__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 12px;
+.gamut-reference__row {
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
 }
 
-.boundary-legend label {
+.gamut-reference__label {
+  color: var(--quiet);
+  font: 0.6875rem/1.3 var(--cv-font-mono);
+  letter-spacing: 0;
+}
+
+.gamut-reference__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.gamut-reference label {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 40px;
   align-items: center;
   gap: 9px;
   padding-right: 8px;
@@ -335,15 +356,15 @@ button:disabled {
   cursor: pointer;
 }
 
-.boundary-legend input {
+.gamut-reference input {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
   accent-color: var(--user-accent);
 }
 
-.boundary-legend p {
-  margin: 0;
+.gamut-reference p {
+  margin: 2px 0 0;
 }
 
 .boundary-key {
@@ -377,6 +398,37 @@ button:disabled {
   }
 }
 
+@media (min-width: 1101px) {
+  .app-shell {
+    display: grid;
+    block-size: 100svh;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding-bottom: 0;
+  }
+
+  .instrument-layout {
+    container: standalone-workspace / size;
+    contain: layout paint;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-block: clamp(14px, 2vh, 22px);
+    scrollbar-gutter: stable;
+  }
+
+  /* The workspace has already accounted for the header and its own padding. */
+  .instrument-primary .plane-instrument {
+    --picker-plane-max-size: clamp(460px, calc(100cqh - 223px), 520px);
+  }
+
+  /* The inspector's normal content needs about 730px; compact only its section spacing below that. */
+  @container standalone-workspace (max-height: 730px) {
+    .color-inspector section {
+      padding-block: 9px;
+    }
+  }
+}
+
 @media (max-width: 760px) {
   .project-header {
     min-height: 0;
@@ -391,5 +443,12 @@ button:disabled {
 @media (max-width: 500px) {
   .channel-values dd {
     font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .gamut-reference__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 }

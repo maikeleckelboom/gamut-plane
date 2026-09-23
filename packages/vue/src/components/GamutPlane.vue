@@ -3,12 +3,9 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
-  getChromaSliderMarkers,
-  getHueGamutIntervals,
-  getLightnessGamutIntervals,
-  getPickerGamutStatus,
   normalizeHue,
   serializeColor,
+  type DisplayGamut,
   type OklchColor,
   type PickerPlaneId,
 } from "@gamut-plane/core";
@@ -16,21 +13,25 @@ import { computed, ref, useId, watch } from "vue";
 import NumericInput from "./NumericInput.vue";
 import "../style.css";
 
-import ColorChannelControl, {
-  type LinearControlInterval,
-  type LinearControlMarker,
-} from "./ColorChannelControl.vue";
+import ColorChannelControl from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
-import type { CanvasColorSpaceStatus } from "../types.js";
-import { PICKER_GAMUT_TABLES } from "../generated/gamutTables";
+import {
+  colorGradient,
+  displayGamutLabel,
+  getBoundaryPresentation,
+  PICKER_GAMUT_TABLES,
+  type CanvasColorSpaceStatus,
+} from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
     modelValue: OklchColor;
+    boundaryTarget?: DisplayGamut;
     showSrgbBoundary?: boolean;
     showDisplayP3Boundary?: boolean;
   }>(),
   {
+    boundaryTarget: "srgb",
     showSrgbBoundary: true,
     showDisplayP3Boundary: true,
   },
@@ -56,73 +57,19 @@ const activePlaneContract = computed(() =>
   plane.value === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
 );
 const planeProjection = computed(() => activePlaneContract.value.project(props.modelValue));
-const status = computed(() => getPickerGamutStatus(props.modelValue, tables));
-const chromaMarkers = computed(() =>
-  getChromaSliderMarkers(props.modelValue, tables, status.value),
+const boundary = computed(() =>
+  getBoundaryPresentation(props.modelValue, plane.value, props.boundaryTarget, {
+    srgb: props.showSrgbBoundary,
+    displayP3: props.showDisplayP3Boundary,
+  }),
 );
-
-const hueIntervals = computed<LinearControlInterval[]>(() => [
-  ...getHueGamutIntervals(tables.displayP3, props.modelValue).map((interval) => ({
-    ...interval,
-    tone: "display-p3" as const,
-  })),
-  ...getHueGamutIntervals(tables.srgb, props.modelValue).map((interval) => ({
-    ...interval,
-    tone: "srgb" as const,
-  })),
-]);
-
-const lightnessIntervals = computed<LinearControlInterval[]>(() => [
-  ...getLightnessGamutIntervals(tables.displayP3, props.modelValue).map((interval) => ({
-    ...interval,
-    tone: "display-p3" as const,
-  })),
-  ...getLightnessGamutIntervals(tables.srgb, props.modelValue).map((interval) => ({
-    ...interval,
-    tone: "srgb" as const,
-  })),
-]);
-
-const chromaControlMarkers = computed<LinearControlMarker[]>(() => {
-  const markers: LinearControlMarker[] = [
-    {
-      id: "display-p3-boundary-guide",
-      label: `Display P3 table boundary guide C ${chromaMarkers.value.displayP3BoundaryGuide.chroma.toFixed(4)}`,
-      position: chromaMarkers.value.displayP3BoundaryGuide.position,
-      tone: "display-p3",
-    },
-    {
-      id: "srgb-boundary-guide",
-      label: `sRGB table boundary guide C ${chromaMarkers.value.srgbBoundaryGuide.chroma.toFixed(4)}`,
-      position: chromaMarkers.value.srgbBoundaryGuide.position,
-      tone: "srgb",
-    },
-  ];
-  const projection = chromaMarkers.value.srgbBoundaryProjection;
-  if (projection) {
-    markers.push({
-      id: "srgb-boundary-projection",
-      label: `sRGB boundary projection C ${projection.chroma.toFixed(4)}`,
-      position: projection.position,
-      tone: "projection",
-      cssColor: boundaryProjectionCss.value,
-    });
-  }
-  return markers;
-});
-
-const chromaIntervals = computed<LinearControlInterval[]>(() => [
-  {
-    start: 0,
-    end: chromaMarkers.value.displayP3BoundaryGuide.position,
-    tone: "display-p3",
-  },
-  {
-    start: 0,
-    end: chromaMarkers.value.srgbBoundaryGuide.position,
-    tone: "srgb",
-  },
-]);
+const status = computed(() => boundary.value.analysis.status);
+const targetResult = computed(() => boundary.value.analysis.target);
+const targetLabel = computed(() => displayGamutLabel(props.boundaryTarget));
+const hueIntervals = computed(() => boundary.value.hueIntervals);
+const lightnessIntervals = computed(() => boundary.value.lightnessIntervals);
+const chromaControlMarkers = computed(() => boundary.value.markers);
+const chromaIntervals = computed(() => boundary.value.chromaIntervals);
 
 const hueGradient = computed(() =>
   colorGradient(72, (position) => ({
@@ -156,54 +103,38 @@ const activeCss = computed(() => serializeColor(props.modelValue));
 const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
 const primaryGamutWarning = "Outside Display P3";
 const hueWarningPosition = computed(() => normalizeHue(props.modelValue.h) / 360);
-const chromaWarningPosition = computed(() => chromaMarkers.value.active.position);
-const srgbBoundaryProjectionColor = computed(() =>
-  status.value.srgb.inGamut
-    ? null
-    : {
-        l: props.modelValue.l,
-        c: Math.min(props.modelValue.c, status.value.srgb.interpolatedMaximumChroma),
-        h: props.modelValue.h,
-        alpha: props.modelValue.alpha,
-      },
+const chromaWarningPosition = computed(() =>
+  Math.min(1, Math.max(0, props.modelValue.c / OKLCH_PICKER_MAX_CHROMA)),
 );
-const boundaryProjectionCss = computed(() =>
-  srgbBoundaryProjectionColor.value ? serializeColor(srgbBoundaryProjectionColor.value) : "",
-);
+const boundaryProjectionColor = computed(() => boundary.value.projectionColor);
+const boundaryProjectionCss = computed(() => boundary.value.projectionCss);
 const instrumentStyle = computed<Record<string, string>>(() => {
   const style: Record<string, string> = { "--picker-active": activeCss.value };
   if (boundaryProjectionCss.value) style["--picker-projection"] = boundaryProjectionCss.value;
   return style;
 });
-const boundaryProjectionChroma = computed(
-  () => chromaMarkers.value.srgbBoundaryProjection?.chroma ?? null,
-);
+const boundaryProjectionChroma = computed(() => targetResult.value.projection?.chroma ?? null);
+const boundaryGuideCss = computed(() => serializeColor(targetResult.value.boundaryGuide.color));
 const hueRangeDragging = ref(false);
 const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
-const controlHelp = computed(() =>
-  plane.value === "oklab"
-    ? "Lightness fixes this plane. The disc is an instrument limit, not a gamut boundary."
-    : "Hue fixes this plane. The guides show sampled gamut limits; your color can cross them.",
-);
+const isOutsideOklchInstrumentDomain = computed(() => {
+  const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(props.modelValue);
+  return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(projection.point);
+});
+const isOutsideOklabInstrumentDomain = computed(() => {
+  const projection = OKLAB_AB_PLANE.project(props.modelValue);
+  return !OKLAB_AB_PLANE.isPointInInstrumentDomain(projection.point);
+});
 const chromaHelp = computed(() =>
-  props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 view. Use the numeric field to edit beyond the slider.`
+  isOutsideOklchInstrumentDomain.value
+    ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
     : undefined,
 );
 const oklabDomainHelp = computed(() =>
-  props.modelValue.c > OKLCH_PICKER_MAX_CHROMA
-    ? `Chroma ${props.modelValue.c.toFixed(4)} exceeds the 0.4000 a/b view. The marker sits at the edge; your color is unchanged.`
+  isOutsideOklabInstrumentDomain.value
+    ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
     : undefined,
 );
-
-function colorGradient(segments: number, colorAt: (position: number) => OklchColor): string {
-  const stops: string[] = [];
-  for (let index = 0; index <= segments; index += 1) {
-    const position = index / segments;
-    stops.push(`${serializeColor(colorAt(position))} ${(position * 100).toFixed(3)}%`);
-  }
-  return `linear-gradient(90deg, ${stops.join(", ")})`;
-}
 
 function selectPlane(value: PickerPlaneId): void {
   plane.value = value;
@@ -337,7 +268,6 @@ watch(
           {{ option === "oklab" ? "OKLab" : "OKLCH" }}
         </button>
       </div>
-      <small>Same color, different coordinates.</small>
     </div>
 
     <div class="plane-instrument__workspace">
@@ -347,7 +277,8 @@ watch(
           :plane="activePlaneContract"
           :srgb-table="tables.srgb"
           :display-p3-table="tables.displayP3"
-          :srgb-boundary-guide-color="srgbBoundaryProjectionColor"
+          :boundary-projection-color="boundaryProjectionColor"
+          :boundary-projection-label="`${targetLabel} target boundary projection`"
           :warning-visible="isOutsideDisplayP3"
           :warning-label="primaryGamutWarning"
           :interaction-preview="fixedAxisFieldPreview"
@@ -362,7 +293,6 @@ watch(
       </div>
 
       <div class="plane-instrument__controls">
-        <p class="plane-instrument__control-help">{{ controlHelp }}</p>
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
             :id="`${instanceId}-hue`"
@@ -484,31 +414,50 @@ watch(
           </div>
         </template>
 
+        <section
+          class="plane-instrument__target-result"
+          data-boundary-target-result
+          :data-boundary-target="boundaryTarget"
+          :aria-label="`${targetLabel} target boundary result`"
+        >
+          <div class="plane-instrument__target-heading">
+            <span>Target · {{ targetLabel }}</span>
+            <strong :data-target-status="targetResult.inGamut ? 'inside' : 'outside'">
+              {{ targetResult.inGamut ? "Inside" : "Outside" }}
+            </strong>
+          </div>
+          <dl>
+            <div>
+              <dt>Boundary guide C</dt>
+              <dd>{{ targetResult.boundaryGuide.chroma.toFixed(4) }}</dd>
+            </div>
+            <div v-if="targetResult.guideDeltaC > 0">
+              <dt>Guide delta C</dt>
+              <dd>−{{ targetResult.guideDeltaC.toFixed(4) }}</dd>
+            </div>
+          </dl>
+          <span
+            class="plane-instrument__target-swatch"
+            data-boundary-guide-swatch
+            :style="{ background: boundaryGuideCss }"
+            :aria-label="`${targetLabel} sampled boundary-guide color ${boundaryGuideCss}`"
+            role="img"
+          />
+        </section>
+
         <details class="plane-instrument__evidence" data-boundary-details>
           <summary>
             <span>Boundary details</span>
-            <small>Table guides / projection</small>
           </summary>
           <div class="plane-instrument__evidence-body">
-            <p class="plane-instrument__legend-note">
-              <template v-if="plane === 'oklch'">
-                The guides follow the fixed hue. Your color can cross either guide without reducing
-                its chroma.
-              </template>
-              <template v-else>
-                The contours show sampled gamut limits at this lightness. Your color can cross
-                either guide.
-              </template>
-            </p>
-
             <div class="plane-instrument__readouts" aria-label="Boundary guide details">
-              <div data-boundary-guide="display-p3">
-                <span>Display P3 table guide</span>
-                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
-              </div>
               <div data-boundary-guide="srgb">
                 <span>sRGB table guide</span>
                 <code> C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }} </code>
+              </div>
+              <div data-boundary-guide="display-p3">
+                <span>Display P3 table guide</span>
+                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
               </div>
               <div class="plane-instrument__active-readout">
                 <span>Selected color</span>
@@ -518,12 +467,10 @@ watch(
                 <code v-else>C {{ modelValue.c.toFixed(4) }}</code>
               </div>
               <div class="plane-instrument__projection-readout">
-                <span>sRGB boundary projection</span>
-                <code
-                  v-if="boundaryProjectionChroma !== null && status.srgb.interpolatedDeltaC > 0"
-                >
+                <span>{{ targetLabel }} target projection</span>
+                <code v-if="boundaryProjectionChroma !== null && targetResult.guideDeltaC > 0">
                   table C {{ boundaryProjectionChroma.toFixed(4) }} · ΔC guide −{{
-                    status.srgb.interpolatedDeltaC.toFixed(4)
+                    targetResult.guideDeltaC.toFixed(4)
                   }}
                 </code>
                 <code v-else-if="boundaryProjectionChroma !== null">
@@ -532,16 +479,6 @@ watch(
                 <code v-else>not required</code>
               </div>
             </div>
-            <p class="plane-instrument__method">
-              <template v-if="plane === 'oklab'">
-                Contours and the boundary projection are sampled guides, not exact gamut tests. The
-                circular editing limit is separate from both display gamuts.
-              </template>
-              <template v-else>
-                Contours, channel marks and the boundary projection are sampled guides. Gamut
-                membership and CSS output use direct color conversion.
-              </template>
-            </p>
           </div>
         </details>
       </div>

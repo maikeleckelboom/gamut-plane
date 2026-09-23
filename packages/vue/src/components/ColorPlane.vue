@@ -5,7 +5,6 @@ import {
   type GamutBoundaryTable,
   type PickerPlaneContract,
   type PickerPlaneKeyboardAction,
-  type PickerPlaneSampleScratch,
   type PlanePoint,
 } from "@gamut-plane/core";
 import { useDevicePixelRatio, useEventListener, useResizeObserver } from "@vueuse/core";
@@ -19,11 +18,19 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "./planeInstrumentStyle";
-import { placePlanarWarning } from "./pickerWarningPlacement";
+} from "@gamut-plane/render";
+import { placePlanarWarning } from "@gamut-plane/render";
 
-import type { CanvasColorSpaceStatus } from "../types";
-type RenderedFieldQuality = "full" | "preview";
+import {
+  projectionConnectorStyle,
+  createFieldRenderer,
+  pointStyle,
+  geometryToSvgPath,
+  VIEWBOX_SIZE,
+  type FieldRenderer,
+  type CanvasColorSpaceStatus,
+  type RenderedFieldQuality,
+} from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
@@ -31,7 +38,8 @@ const props = withDefaults(
     plane: PickerPlaneContract;
     srgbTable: GamutBoundaryTable;
     displayP3Table: GamutBoundaryTable;
-    srgbBoundaryGuideColor: OklchColor | null;
+    boundaryProjectionColor: OklchColor | null;
+    boundaryProjectionLabel: string;
     warningVisible: boolean;
     warningLabel: string;
     interactionPreview?: boolean;
@@ -52,9 +60,6 @@ const emit = defineEmits<{
   capability: [status: CanvasColorSpaceStatus];
 }>();
 
-const VIEWBOX_SIZE = 1000;
-const INTERACTION_PREVIEW_COLUMN_SAMPLES = 192;
-
 const surface = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
 const marker = ref<HTMLSpanElement | null>(null);
@@ -63,11 +68,7 @@ const canvasColorSpace = ref<CanvasColorSpaceStatus>("pending");
 const renderedFieldQuality = ref<RenderedFieldQuality>("full");
 const pixelRatio = ref(1);
 
-let context: CanvasRenderingContext2D | null = null;
-let discFieldBuffer: HTMLCanvasElement | null = null;
-let discFieldContext: CanvasRenderingContext2D | null = null;
-let columnPreviewBuffer: HTMLCanvasElement | null = null;
-let columnPreviewContext: CanvasRenderingContext2D | null = null;
+let renderer: FieldRenderer | null = null;
 let fieldRaf: number | null = null;
 let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
@@ -78,18 +79,16 @@ let interactionOrigin: OklchColor | null = null;
 let boundsDirty = false;
 let isUnmounted = false;
 let isMounted = false;
-let lastFieldKey = "";
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
-const fieldScratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] };
 
 const activeProjection = computed(() => props.plane.project(props.modelValue));
 const fixedAxis = computed(() => activeProjection.value.fixed);
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.positionActivePoint(props.modelValue));
 const boundaryProjectionPoint = computed<PlanePoint | null>(() => {
-  if (!props.srgbBoundaryGuideColor) return null;
-  return props.plane.positionActivePoint(props.srgbBoundaryGuideColor);
+  if (!props.boundaryProjectionColor) return null;
+  return props.plane.positionActivePoint(props.boundaryProjectionColor);
 });
 
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
@@ -97,40 +96,30 @@ const boundaryProjectionMarkerStyle = computed(() =>
   boundaryProjectionPoint.value ? pointStyle(boundaryProjectionPoint.value) : undefined,
 );
 const boundaryProjectionCss = computed(() =>
-  props.srgbBoundaryGuideColor ? serializeColor(props.srgbBoundaryGuideColor) : "",
+  props.boundaryProjectionColor ? serializeColor(props.boundaryProjectionColor) : "",
 );
 const boundaryProjectionConnectorStyle = computed(() => {
   const guide = boundaryProjectionPoint.value;
   if (!guide) return undefined;
   const active = boundedActivePoint.value;
-  if (props.plane.id === "oklab") {
-    const deltaX = guide.x - active.x;
-    const deltaY = guide.y - active.y;
-    return {
-      ...pointStyle(active),
-      width: `${(Math.hypot(deltaX, deltaY) * 100).toFixed(8)}%`,
-      transform: `translateY(-50%) rotate(${Math.atan2(deltaY, deltaX).toFixed(10)}rad)`,
-      transformOrigin: "left center",
-    };
-  }
-  const left = Math.min(active.x, guide.x);
-  return {
-    ...pointStyle({ x: left, y: active.y }),
-    width: `${(Math.abs(active.x - guide.x) * 100).toFixed(8)}%`,
-  };
+  return projectionConnectorStyle(active, guide, props.plane.id === "oklab");
 });
 
 const srgbPath = computed(() =>
-  geometryToSvgPath(
-    props.plane.buildGamutContour(props.srgbTable, fixedAxis.value),
-    props.plane.gamutContourClosed,
-  ),
+  props.showSrgbBoundary
+    ? geometryToSvgPath(
+        props.plane.buildGamutContour(props.srgbTable, fixedAxis.value),
+        props.plane.gamutContourClosed,
+      )
+    : "",
 );
 const displayP3Path = computed(() =>
-  geometryToSvgPath(
-    props.plane.buildGamutContour(props.displayP3Table, fixedAxis.value),
-    props.plane.gamutContourClosed,
-  ),
+  props.showDisplayP3Boundary
+    ? geometryToSvgPath(
+        props.plane.buildGamutContour(props.displayP3Table, fixedAxis.value),
+        props.plane.gamutContourClosed,
+      )
+    : "",
 );
 const activeCss = computed(() => serializeColor(props.modelValue));
 const planeLabel = computed(() => {
@@ -144,199 +133,21 @@ const instrumentStyle = {
   "--picker-projection-marker-size": `${PICKER_PROJECTION_MARKER_RADIUS * 2}px`,
 };
 
-function pointStyle(point: PlanePoint): Record<string, string> {
-  // Transcendental math can differ in the last bit between Node and browsers.
-  // Stabilize presentation only; never quantize the authored color or projection math.
-  return { left: `${(point.x * 100).toFixed(8)}%`, top: `${(point.y * 100).toFixed(8)}%` };
-}
-
-function geometryToSvgPath(geometry: Float32Array, closed: boolean): string {
-  let path = "";
-  for (let index = 0; index < geometry.length; index += 2) {
-    const x = (geometry[index] ?? 0) * VIEWBOX_SIZE;
-    const y = (geometry[index + 1] ?? 0) * VIEWBOX_SIZE;
-    path += `${index === 0 ? "M" : " L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-  }
-  return closed ? `${path} Z` : path;
-}
-
 function publishCanvasColorSpace(status: CanvasColorSpaceStatus): void {
   if (canvasColorSpace.value === status) return;
   canvasColorSpace.value = status;
   emit("capability", status);
 }
 
-function getCanvasContext(element: HTMLCanvasElement): CanvasRenderingContext2D | null {
-  try {
-    const requested = element.getContext("2d", {
-      alpha: false,
-      colorSpace: "display-p3",
-    });
-    if (requested) {
-      const granted = requested.getContextAttributes?.().colorSpace;
-      publishCanvasColorSpace(granted === "display-p3" ? "display-p3" : "srgb");
-      return requested;
-    }
-  } catch {
-    // The default context below provides deterministic sRGB rendering.
-  }
-
-  try {
-    const defaultContext = element.getContext("2d", { alpha: false });
-    publishCanvasColorSpace(defaultContext ? "srgb" : "unavailable");
-    return defaultContext;
-  } catch {
-    publishCanvasColorSpace("unavailable");
-    return null;
-  }
-}
-
-function getDiscFieldContext(size: number): CanvasRenderingContext2D | null {
-  discFieldBuffer ??= document.createElement("canvas");
-  if (discFieldBuffer.width !== size || discFieldBuffer.height !== size) {
-    discFieldBuffer.width = size;
-    discFieldBuffer.height = size;
-  }
-  discFieldContext ??= getCanvasContext(discFieldBuffer);
-  return discFieldContext;
-}
-
-function getColumnPreviewContext(width: number, height: number): CanvasRenderingContext2D | null {
-  columnPreviewBuffer ??= document.createElement("canvas");
-  if (columnPreviewBuffer.width !== width || columnPreviewBuffer.height !== height) {
-    columnPreviewBuffer.width = width;
-    columnPreviewBuffer.height = height;
-  }
-  columnPreviewContext ??= getCanvasContext(columnPreviewBuffer);
-  return columnPreviewContext;
-}
-
-function drawColumnGradientField(
-  target: CanvasRenderingContext2D,
-  targetHeight: number,
-  sampleCount: number,
-  sampleScale: number,
-  logicalHeight: number,
-  fixed: number,
-  color: OklchColor,
-): void {
-  const sampling = props.plane.fieldSampling;
-  if (sampling.kind !== "column-gradient") return;
-  const rowCount = Math.ceil(logicalHeight / sampling.rowStep) + 1;
-
-  for (let column = 0; column < sampleCount; column += 1) {
-    const gradient = target.createLinearGradient(0, 0, 0, targetHeight);
-    const x = column / Math.max(1, sampleCount - 1);
-
-    for (let index = 0; index < rowCount; index += 1) {
-      const row = Math.min(index * sampling.rowStep, logicalHeight);
-      props.plane.sampleField({ x, y: row / logicalHeight }, fixed, color, fieldScratch);
-      gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
-    }
-
-    target.fillStyle = gradient;
-    const start = Math.round(column * sampleScale);
-    const end = Math.round((column + 1) * sampleScale);
-    target.fillRect(start, 0, Math.max(1, end - start), targetHeight);
-  }
-}
-
-function resizeCanvas(element: HTMLCanvasElement): {
-  width: number;
-  height: number;
-  backingWidth: number;
-  backingHeight: number;
-  pixelRatio: number;
-} {
-  const bounds = element.getBoundingClientRect();
-  const width = Math.max(1, Math.round(bounds.width));
-  const height = Math.max(1, Math.round(bounds.height));
-  const activePixelRatio = Math.max(1, pixelRatio.value || 1);
-  const backingWidth = Math.round(width * activePixelRatio);
-  const backingHeight = Math.round(height * activePixelRatio);
-
-  if (element.width !== backingWidth || element.height !== backingHeight) {
-    element.width = backingWidth;
-    element.height = backingHeight;
-  }
-  return { width, height, backingWidth, backingHeight, pixelRatio: activePixelRatio };
-}
-
 function drawField(): void {
   fieldRaf = null;
-  if (isUnmounted) return;
-  const element = canvas.value;
-  if (!element) return;
-  context ??= getCanvasContext(element);
-  if (!context) return;
-
-  const { width, height, backingWidth, backingHeight, pixelRatio } = resizeCanvas(element);
-  const fixed = fixedAxis.value;
-  const sampling = props.plane.fieldSampling;
-  const usePreview =
-    sampling.kind === "column-gradient" &&
-    props.interactionPreview &&
-    width > INTERACTION_PREVIEW_COLUMN_SAMPLES;
-  const fieldQuality: RenderedFieldQuality = usePreview ? "preview" : "full";
-  const fieldKey = `${props.plane.id}:${width}:${height}:${pixelRatio}:${fixed}:${canvasColorSpace.value}:${fieldQuality}`;
-  if (fieldKey === lastFieldKey) return;
-
-  const color: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, backingWidth, backingHeight);
-
-  if (sampling.kind === "column-gradient") {
-    if (usePreview) {
-      const previewContext = getColumnPreviewContext(
-        INTERACTION_PREVIEW_COLUMN_SAMPLES,
-        backingHeight,
-      );
-      if (!previewContext || !columnPreviewBuffer) return;
-      previewContext.setTransform(1, 0, 0, 1, 0, 0);
-      previewContext.clearRect(0, 0, INTERACTION_PREVIEW_COLUMN_SAMPLES, backingHeight);
-      drawColumnGradientField(
-        previewContext,
-        backingHeight,
-        INTERACTION_PREVIEW_COLUMN_SAMPLES,
-        1,
-        height,
-        fixed,
-        color,
-      );
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      context.drawImage(columnPreviewBuffer, 0, 0, backingWidth, backingHeight);
-    } else {
-      drawColumnGradientField(context, backingHeight, width, pixelRatio, height, fixed, color);
-    }
-  } else {
-    const { rowCount, columnSamples } = sampling;
-    const bufferContext = getDiscFieldContext(rowCount);
-    if (!bufferContext || !discFieldBuffer) return;
-    bufferContext.setTransform(1, 0, 0, 1, 0, 0);
-    bufferContext.clearRect(0, 0, rowCount, rowCount);
-
-    for (let row = 0; row < rowCount; row += 1) {
-      const y = (row + 0.5) / rowCount;
-      const gradient = bufferContext.createLinearGradient(0, 0, rowCount, 0);
-
-      for (let column = 0; column < columnSamples; column += 1) {
-        const position = column / (columnSamples - 1);
-        props.plane.sampleField({ x: position, y }, fixed, color, fieldScratch);
-        gradient.addColorStop(position, serializeColor(color));
-      }
-
-      bufferContext.fillStyle = gradient;
-      bufferContext.fillRect(0, row, rowCount, 1);
-    }
-
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
-    context.drawImage(discFieldBuffer, 0, 0, backingWidth, backingHeight);
-  }
-
-  lastFieldKey = fieldKey;
-  renderedFieldQuality.value = fieldQuality;
+  if (isUnmounted || !renderer) return;
+  renderedFieldQuality.value = renderer.draw({
+    plane: props.plane,
+    fixed: fixedAxis.value,
+    pixelRatio: pixelRatio.value,
+    interactionPreview: props.interactionPreview,
+  });
 }
 
 function scheduleFieldDraw(): void {
@@ -466,6 +277,7 @@ function onPointerDown(event: PointerEvent): void {
   interactionOrigin = { ...props.modelValue };
   latestInteractionPoint = null;
   latestInteractionColor = null;
+  surface.value.dataset.pointerFocus = "";
   surface.value.focus({ preventScroll: true });
   surface.value.setPointerCapture?.(event.pointerId);
   schedulePoint(point);
@@ -518,6 +330,7 @@ function onPointerCancel(event: PointerEvent): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  surface.value?.removeAttribute("data-pointer-focus");
   if (event.key === "Escape" && activePointerId !== null) {
     event.preventDefault();
     event.stopPropagation();
@@ -538,6 +351,10 @@ function onKeydown(event: KeyboardEvent): void {
   const next = props.plane.editFromKeyboard(props.modelValue, action, event.shiftKey);
   emit("update:modelValue", next);
   emit("commit", next);
+}
+
+function onBlur(): void {
+  surface.value?.removeAttribute("data-pointer-focus");
 }
 
 watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
@@ -565,7 +382,6 @@ watch(
   () => scheduleFieldDraw(),
 );
 watch(pixelRatio, () => {
-  lastFieldKey = "";
   scheduleFieldDraw();
 });
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
@@ -573,6 +389,7 @@ watch(boundaryProjectionPoint, () => positionActiveAnnotations(boundedActivePoin
 
 onMounted(() => {
   isMounted = true;
+  if (canvas.value) renderer = createFieldRenderer(canvas.value, publishCanvasColorSpace);
   const device = useDevicePixelRatio();
   watch(device.pixelRatio, (value) => (pixelRatio.value = value), { immediate: true });
   useResizeObserver(surface, () => {
@@ -600,6 +417,8 @@ onBeforeUnmount(() => {
   if (fieldRaf !== null) window.cancelAnimationFrame(fieldRaf);
   fieldRaf = null;
   endPointer();
+  renderer?.dispose();
+  renderer = null;
 });
 </script>
 
@@ -632,6 +451,7 @@ onBeforeUnmount(() => {
       @pointercancel="onPointerCancel"
       @lostpointercapture="onPointerCancel"
       @keydown="onKeydown"
+      @blur="onBlur"
     >
       <canvas ref="canvas" aria-hidden="true" />
       <span
@@ -708,9 +528,9 @@ onBeforeUnmount(() => {
           '--projection-marker-color': boundaryProjectionCss,
         }"
         data-table-boundary-guide-marker
-        data-marker-role="srgb-boundary-projection"
-        title="sRGB boundary projection"
-        aria-label="sRGB boundary projection"
+        data-marker-role="target-boundary-projection"
+        :title="boundaryProjectionLabel"
+        :aria-label="boundaryProjectionLabel"
         role="img"
       />
       <span
@@ -736,16 +556,9 @@ onBeforeUnmount(() => {
         role="img"
       />
     </div>
-    <span class="color-plane__render-mode">
-      {{
-        canvasColorSpace === "display-p3"
-          ? "P3 canvas"
-          : canvasColorSpace === "srgb"
-            ? "sRGB canvas"
-            : canvasColorSpace === "unavailable"
-              ? "canvas unavailable"
-              : "canvas pending"
-      }}
+    <span v-if="canvasColorSpace === 'srgb'" class="color-plane__render-mode"> sRGB canvas </span>
+    <span v-else-if="canvasColorSpace === 'unavailable'" class="color-plane__render-mode">
+      canvas unavailable
     </span>
     <span class="color-plane__axis color-plane__axis--lightness">
       {{ plane.yAxis.symbol }} · {{ plane.yAxis.label }}

@@ -1,3 +1,7 @@
+import {
+  addressConsumerArtifacts,
+  verifyInstalledArtifacts,
+} from "../../../scripts/packedConsumer.mts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
@@ -45,7 +49,7 @@ interface PackageManifest {
 let passed = false;
 try {
   const tarballs: string[] = [];
-  for (const name of ["core", "vue"]) {
+  for (const name of ["core", "render", "vue"]) {
     const root = resolve(packageRoot, "..", name);
     const result = JSON.parse(runPnpm(["pack", "--pack-destination", packed, "--json"], root)) as {
       filename: string;
@@ -85,7 +89,12 @@ try {
       assert.equal(manifest.dependencies.vue, undefined);
       assert.equal(manifest.dependencies["@gamut-plane/core"], "0.1.0");
       const js = run("tar", ["-xOf", tarball, "package/dist/index.js"], consumer);
-      for (const dependency of ["vue", "@vueuse/core", "@gamut-plane/core"]) {
+      for (const dependency of [
+        "vue",
+        "@vueuse/core",
+        "@gamut-plane/core",
+        "@gamut-plane/render",
+      ]) {
         assert.ok(js.includes(`from "${dependency}"`), `${dependency} must remain external`);
       }
       assert.ok(!js.includes("@/"));
@@ -100,7 +109,7 @@ try {
   await cp(join(packageRoot, "e2e"), join(consumer, "e2e"), { recursive: true });
   const manifestPath = join(consumer, "package.json");
   const hostManifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  for (const [index, name] of ["core", "vue"].entries()) {
+  for (const [index, name] of ["core", "render", "vue"].entries()) {
     hostManifest.dependencies[`@gamut-plane/${name}`] =
       `file:${relative(consumer, tarballs[index]!).split(sep).join("/")}`;
   }
@@ -111,11 +120,13 @@ try {
     installPolicy,
     (await readFile(installPolicy, "utf8")).replace(
       "overrides:\n",
-      `overrides:\n  '@gamut-plane/core': 'file:${coreTarball}'\n`,
+      `overrides:\n  '@gamut-plane/core': 'file:${coreTarball}'\n  '@gamut-plane/render': 'file:${relative(consumer, tarballs[1]!).split(sep).join("/")}'\n`,
     ),
   );
   console.log(`Isolated consumer: ${consumer}`);
+  await addressConsumerArtifacts(consumer, ["core", "render", "vue"], false);
   console.log(runPnpm(["install", "--frozen-lockfile=false"], consumer));
+  await verifyInstalledArtifacts(consumer, ["core", "render", "vue"]);
   // One physical Vue runtime must serve both host and dependency imports.
   console.log(runPnpm(["list", "--prod", "--depth", "2"], consumer));
   for (const command of ["typecheck", "test:ssr", "build", "test:browser"]) {

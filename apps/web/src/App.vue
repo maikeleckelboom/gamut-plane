@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { isColorInGamut, serializeColor, toOklabColor, type DisplayGamut } from "@gamut-plane/core";
+import {
+  isColorInGamut,
+  serializeColor,
+  serializeHexColor,
+  toOklabColor,
+  type DisplayGamut,
+} from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
@@ -10,11 +16,7 @@ import {
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import {
-  CSS_DISPLAY_DECIMALS,
-  formatOklchForDisplay,
-  formatRgbCssForDisplay,
-} from "@/colorPresentation";
+import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
 
 const selectedColor = ref<OklchColor>({
   l: 0.68,
@@ -23,6 +25,7 @@ const selectedColor = ref<OklchColor>({
   alpha: 1,
 });
 const activePlane = ref<GamutPlaneView>("oklch");
+const boundaryTarget = ref<DisplayGamut>("srgb");
 const boundaries = ref({
   srgb: true,
   displayP3: true,
@@ -39,6 +42,9 @@ const oklab = computed(() => toOklabColor(selectedColor.value));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
+const hexColor = computed(() =>
+  gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
+);
 const displayP3CanonicalCss = computed(() => exactCss("display-p3"));
 const srgbDisplayCss = computed(() =>
   srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
@@ -60,7 +66,7 @@ const copyFeedback = useTimeoutFn(
   { immediate: false },
 );
 
-type CssRepresentation = "oklch" | "display-p3" | "srgb";
+type CssRepresentation = "oklch" | "hex" | "display-p3" | "srgb";
 
 const capabilityLabel = computed(() => {
   if (canvasCapability.value === "display-p3") {
@@ -115,7 +121,7 @@ async function copyCss(
     copyAnnouncement.value = `Copied ${label}: ${value}`;
     copyFeedback.start();
   } catch {
-    copyAnnouncement.value = `Could not copy ${label}. Select the CSS value and copy it manually.`;
+    copyAnnouncement.value = `Could not copy ${label}. Select the value and copy it manually.`;
   }
 }
 </script>
@@ -127,7 +133,8 @@ async function copyCss(
         <p class="project-kicker">Color-space instrument</p>
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Interactive OKLab and OKLCH planes with precise sRGB and Display P3 gamut boundaries.
+          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
+          membership checks.
         </p>
       </div>
     </header>
@@ -137,31 +144,74 @@ async function copyCss(
         <GamutPlane
           v-model="selectedColor"
           v-model:plane="activePlane"
+          :boundary-target="boundaryTarget"
           :show-srgb-boundary="boundaries.srgb"
           :show-display-p3-boundary="boundaries.displayP3"
           @capability="canvasCapability = $event"
         >
           <template #field-legend>
-            <fieldset class="boundary-legend" data-boundary-legend>
-              <legend>Boundary visibility</legend>
-              <div class="boundary-legend__options">
-                <label>
-                  <input
-                    v-model="boundaries.displayP3"
-                    type="checkbox"
-                    data-boundary-toggle="display-p3"
-                  />
-                  <span class="boundary-key boundary-key--p3" aria-hidden="true" />
-                  <span>Display P3</span>
-                </label>
-                <label>
-                  <input v-model="boundaries.srgb" type="checkbox" data-boundary-toggle="srgb" />
-                  <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
-                  <span>sRGB</span>
-                </label>
-              </div>
-              <p>Visibility changes the view only; the selected color is unchanged.</p>
-            </fieldset>
+            <section
+              class="gamut-reference"
+              data-gamut-reference
+              aria-labelledby="gamut-reference-title"
+            >
+              <h3 id="gamut-reference-title">Gamut reference</h3>
+              <fieldset>
+                <legend class="sr-only">Target</legend>
+                <div class="gamut-reference__row">
+                  <span class="gamut-reference__label" aria-hidden="true">Target</span>
+                  <div class="gamut-reference__options">
+                    <label>
+                      <input
+                        v-model="boundaryTarget"
+                        type="radio"
+                        value="srgb"
+                        name="boundary-target"
+                        data-boundary-target-option="srgb"
+                      />
+                      <span>sRGB</span>
+                    </label>
+                    <label>
+                      <input
+                        v-model="boundaryTarget"
+                        type="radio"
+                        value="display-p3"
+                        name="boundary-target"
+                        data-boundary-target-option="display-p3"
+                      />
+                      <span>Display P3</span>
+                    </label>
+                  </div>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend class="sr-only">Visible guides</legend>
+                <div class="gamut-reference__row">
+                  <span class="gamut-reference__label" aria-hidden="true">Visible guides</span>
+                  <div class="gamut-reference__options">
+                    <label>
+                      <input
+                        v-model="boundaries.srgb"
+                        type="checkbox"
+                        data-boundary-toggle="srgb"
+                      />
+                      <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
+                      <span>sRGB</span>
+                    </label>
+                    <label>
+                      <input
+                        v-model="boundaries.displayP3"
+                        type="checkbox"
+                        data-boundary-toggle="display-p3"
+                      />
+                      <span class="boundary-key boundary-key--p3" aria-hidden="true" />
+                      <span>Display P3</span>
+                    </label>
+                  </div>
+                </div>
+              </fieldset>
+              <p>Target sets the reference; guides affect visualization only.</p>
+            </section>
           </template>
         </GamutPlane>
       </div>
@@ -206,16 +256,16 @@ async function copyCss(
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>
           <dl>
-            <div data-exact-gamut-status="display-p3">
-              <dt>Display P3</dt>
-              <dd :data-status="gamutStatus.displayP3.inGamut ? 'inside' : 'outside'">
-                {{ gamutStatus.displayP3.inGamut ? "Inside" : "Outside" }}
-              </dd>
-            </div>
             <div data-exact-gamut-status="srgb">
               <dt>sRGB</dt>
               <dd :data-status="gamutStatus.srgb.inGamut ? 'inside' : 'outside'">
                 {{ gamutStatus.srgb.inGamut ? "Inside" : "Outside" }}
+              </dd>
+            </div>
+            <div data-exact-gamut-status="display-p3">
+              <dt>Display P3</dt>
+              <dd :data-status="gamutStatus.displayP3.inGamut ? 'inside' : 'outside'">
+                {{ gamutStatus.displayP3.inGamut ? "Inside" : "Outside" }}
               </dd>
             </div>
           </dl>
@@ -225,7 +275,9 @@ async function copyCss(
         <section class="css-output" aria-labelledby="css-output-title">
           <div class="inspector-section-heading">
             <h3 id="css-output-title">CSS representations</h3>
-            <p>Shown to {{ CSS_DISPLAY_DECIMALS }} decimals. Copy preserves canonical precision.</p>
+            <p>
+              OKLCH and color() copies preserve full serialization precision. Hex uses 8-bit sRGB.
+            </p>
           </div>
           <div class="css-representation" data-css-representation="oklch">
             <span>OKLCH</span>
@@ -238,7 +290,45 @@ async function copyCss(
             >
               {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
-            <code>{{ oklchDisplayCss }}</code>
+            <div class="css-representation__value">
+              <code>{{ oklchDisplayCss }}</code>
+            </div>
+          </div>
+          <div class="css-representation" data-css-representation="hex">
+            <span>Hex · sRGB</span>
+            <button
+              type="button"
+              data-copy-representation="hex"
+              :data-copied="isCopied('hex') ? 'true' : 'false'"
+              :disabled="!hexColor"
+              :aria-describedby="hexColor ? undefined : 'srgb-copy-reason'"
+              :aria-label="isCopied('hex') ? 'Copied Hex value' : 'Copy Hex value'"
+              @click="copyCss('hex', 'Hex', hexColor)"
+            >
+              {{ isCopied("hex") ? "Copied" : "Copy" }}
+            </button>
+            <div class="css-representation__value">
+              <code v-if="hexColor">{{ hexColor }}</code>
+              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+            </div>
+          </div>
+          <div class="css-representation" data-css-representation="srgb">
+            <span>sRGB</span>
+            <button
+              type="button"
+              data-copy-representation="srgb"
+              :data-copied="isCopied('srgb') ? 'true' : 'false'"
+              :disabled="!srgbCanonicalCss"
+              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
+              :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
+              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
+            >
+              {{ isCopied("srgb") ? "Copied" : "Copy" }}
+            </button>
+            <div class="css-representation__value">
+              <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
+              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+            </div>
           </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>
@@ -251,39 +341,23 @@ async function copyCss(
               :aria-label="
                 isCopied('display-p3') ? 'Copied Display P3 CSS value' : 'Copy Display P3 CSS value'
               "
-              :title="
-                displayP3CanonicalCss
-                  ? undefined
-                  : 'Unavailable because the selected color is outside Display P3.'
-              "
               @click="copyCss('display-p3', 'Display P3', displayP3CanonicalCss)"
             >
               {{ isCopied("display-p3") ? "Copied" : "Copy" }}
             </button>
-            <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
-            <p v-else id="display-p3-copy-reason">Outside Display P3. No clipped value emitted.</p>
+            <div class="css-representation__value">
+              <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
+              <span v-else aria-describedby="display-p3-copy-reason">
+                Unavailable · outside Display P3
+              </span>
+            </div>
           </div>
-          <div class="css-representation" data-css-representation="srgb">
-            <span>sRGB</span>
-            <button
-              type="button"
-              data-copy-representation="srgb"
-              :data-copied="isCopied('srgb') ? 'true' : 'false'"
-              :disabled="!srgbCanonicalCss"
-              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
-              :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
-              :title="
-                srgbCanonicalCss
-                  ? undefined
-                  : 'Unavailable because the selected color is outside sRGB.'
-              "
-              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
-            >
-              {{ isCopied("srgb") ? "Copied" : "Copy" }}
-            </button>
-            <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
-            <p v-else id="srgb-copy-reason">Outside sRGB. No clipped value emitted.</p>
-          </div>
+          <p v-if="!hexColor" id="srgb-copy-reason" class="sr-only">
+            Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.
+          </p>
+          <p v-if="!displayP3CanonicalCss" id="display-p3-copy-reason" class="sr-only">
+            Selected color is outside Display P3; no clipped value is emitted.
+          </p>
           <p v-if="!clipboardSupported" class="copy-support">
             Clipboard access is unavailable in this browser.
           </p>

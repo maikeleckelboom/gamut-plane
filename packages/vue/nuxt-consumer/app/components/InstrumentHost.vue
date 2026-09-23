@@ -30,6 +30,7 @@ const narrow = ref(Boolean(route.query.narrow));
       <GamutPlane
         v-model="colors[index]!"
         :plane="view"
+        :boundary-target="index === 0 ? 'srgb' : 'display-p3'"
         @update:model-value="events.changes++"
         @commit="events.commits++"
         @cancel="events.cancels++"

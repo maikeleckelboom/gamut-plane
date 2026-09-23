@@ -18,8 +18,8 @@ import {
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
   PICKER_WARNING_SURFACE_INSET,
-} from "../src/components/planeInstrumentStyle";
-import { placePlanarWarning } from "../src/components/pickerWarningPlacement";
+} from "@gamut-plane/render";
+import { placePlanarWarning } from "@gamut-plane/render";
 
 const TABLE_OPTIONS = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
 const tables: PickerGamutBoundaryTables = {
@@ -83,7 +83,8 @@ describe("ColorPlane pointer interaction", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: true,
         warningLabel: "Outside primary Display P3. Canonical OKLCH is preserved.",
       },
@@ -203,7 +204,8 @@ describe("ColorPlane pointer interaction", () => {
         plane: OKLAB_AB_PLANE,
         srgbTable: tables.srgb,
         displayP3Table: tables.displayP3,
-        srgbBoundaryGuideColor: null,
+        boundaryProjectionColor: null,
+        boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
       },

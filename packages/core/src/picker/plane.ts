@@ -9,6 +9,8 @@ export const OKLAB_NEUTRAL_RADIUS_EPSILON = 1e-7;
 export const OKLAB_FIELD_ROW_COUNT = 80;
 export const OKLAB_FIELD_COLUMN_SAMPLES = 24;
 
+const NORMALIZED_PLANE_DOMAIN_EPSILON = Number.EPSILON * 16;
+
 export type PickerPlaneId = "oklch" | "oklab";
 
 export type PickerPlaneAxisId = "lightness" | "chroma" | "hue" | "oklab-a" | "oklab-b";
@@ -195,7 +197,12 @@ function sampleOklchField(
 
 function isPointInRectangularInstrument(point: PlanePoint): boolean {
   assertFinitePoint(point);
-  return point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+  return (
+    point.x >= -NORMALIZED_PLANE_DOMAIN_EPSILON &&
+    point.x <= 1 + NORMALIZED_PLANE_DOMAIN_EPSILON &&
+    point.y >= -NORMALIZED_PLANE_DOMAIN_EPSILON &&
+    point.y <= 1 + NORMALIZED_PLANE_DOMAIN_EPSILON
+  );
 }
 
 function editOklchFromKeyboard(
@@ -287,7 +294,7 @@ export function constrainOklabPlanePoint(point: PlanePoint): PlanePoint {
 
 export function isPointInOklabInstrumentDomain(point: PlanePoint): boolean {
   assertFinitePoint(point);
-  return Math.hypot(point.x - 0.5, point.y - 0.5) <= 0.5 + Number.EPSILON * 16;
+  return Math.hypot(point.x - 0.5, point.y - 0.5) <= 0.5 + NORMALIZED_PLANE_DOMAIN_EPSILON;
 }
 
 export function oklchToOklabPlanePoint(color: OklchColor): PlanePoint {

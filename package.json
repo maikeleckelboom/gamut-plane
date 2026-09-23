@@ -2,7 +2,7 @@
   "name": "@gamut-plane/workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "Interactive OKLCH and OKLab color planes for Vue, with sRGB and Display P3 gamut boundaries.",
+  "description": "Interactive OKLCH and OKLab color planes for Vue and React, with sampled gamut guides and exact membership.",
   "license": "MIT",
   "author": "Maikel Eckelboom",
   "repository": {
@@ -17,15 +17,17 @@
     "test": "pnpm build:packages && pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @gamut-plane/web test:e2e",
     "test:production": "pnpm --filter @gamut-plane/web test:production",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "oxlint scripts && pnpm -r --if-present lint",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check:gamut-tables": "pnpm --filter @gamut-plane/vue check:gamut-tables",
+    "check:gamut-tables": "pnpm --filter @gamut-plane/render check:gamut-tables",
     "generate:release-assets": "pnpm --filter @gamut-plane/web generate:release-assets",
     "preview:production": "pnpm --filter @gamut-plane/web preview:production",
-    "build:packages": "pnpm --filter @gamut-plane/core --filter @gamut-plane/vue build",
+    "build:packages": "pnpm --filter @gamut-plane/core --filter @gamut-plane/render --filter @gamut-plane/vue --filter @gamut-plane/react build",
     "test:package": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:package",
-    "test:nuxt": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:nuxt"
+    "test:nuxt": "pnpm build:packages && pnpm --filter @gamut-plane/vue test:nuxt",
+    "test:next": "pnpm build:packages && pnpm --filter @gamut-plane/react test:package",
+    "test:react-vite": "pnpm build:packages && pnpm --filter @gamut-plane/react test:vite"
   },
   "devDependencies": {
     "oxfmt": "catalog:",
