@@ -81,7 +81,7 @@ test("the production build preserves both planes, input, and responsive semantic
   await expect(p3Copy).toHaveAccessibleName("Copied Display P3 CSS value");
   await expect(page.getByRole("button", { name: "Copy sRGB CSS value" })).toBeDisabled();
 
-  const channels = page.locator(".channel-values");
+  const channels = page.locator('[data-css-representation="oklch"] code');
   const beforeKeyboard = await channels.textContent();
   await surface.focus();
   await surface.press("ArrowRight");

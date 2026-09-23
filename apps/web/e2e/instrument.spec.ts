@@ -21,14 +21,31 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   await expect(page.getByRole("application", { name: /OKLCH plane/ })).toBeVisible();
   await expect(page.locator('[data-gamut-boundary="display-p3"]')).toBeVisible();
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toBeVisible();
+  await expect(page.locator(".color-inspector .channel-values")).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("the active coordinate view keeps its background as the view changes", async ({ page }) => {
+  await openInstrument(page);
+  const oklch = page.getByRole("radio", { name: "OKLCH" });
+  const oklab = page.getByRole("radio", { name: "OKLab" });
+  const background = (radio: typeof oklch) =>
+    radio.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  const activeBackground = await background(oklch);
+  expect(activeBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(await background(oklab)).toBe("rgba(0, 0, 0, 0)");
+  await oklab.click();
+  await expect(oklab).toHaveAttribute("aria-checked", "true");
+  expect(await background(oklab)).toBe(activeBackground);
+  expect(await background(oklch)).toBe("rgba(0, 0, 0, 0)");
 });
 
 test("hides and restores each gamut boundary as view state", async ({ page }) => {
   await openInstrument(page);
   const p3 = page.getByRole("checkbox", { name: "Display P3" });
   const srgb = page.getByRole("checkbox", { name: "sRGB" });
-  const selected = page.locator(".channel-values");
+  const selected = page.locator('[data-css-representation="oklch"] code');
   const originalSelection = await selected.textContent();
 
   await expect(page.locator(".plane-instrument__field > [data-gamut-reference]")).toBeVisible();
@@ -54,7 +71,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   const targetResult = page.locator("[data-boundary-target-result]");
   const srgbTarget = page.getByRole("radio", { name: "sRGB" });
   const p3Target = page.getByRole("radio", { name: "Display P3" });
-  const selected = page.locator(".channel-values");
+  const selected = page.locator('[data-css-representation="oklch"] code');
   const originalSelection = await selected.textContent();
   const srgbSwatch = await page.locator("[data-boundary-guide-swatch]").getAttribute("style");
 
@@ -109,7 +126,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
 test("keyboard and pointer edits update the selected color", async ({ page }) => {
   await openInstrument(page);
   const surface = page.locator(".color-plane__surface");
-  const channels = page.locator(".channel-values");
+  const channels = page.locator('[data-css-representation="oklch"] code');
   const beforeKeyboard = await channels.textContent();
 
   await surface.focus();
@@ -503,7 +520,7 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
   page,
 }) => {
   await openInstrument(page);
-  const selectedBefore = await page.locator(".channel-values").textContent();
+  const selectedBefore = await page.locator('[data-css-representation="oklch"] code').textContent();
   const visited: string[] = [];
   let boundaryOutlineWidth = 0;
   let copyOutlineWidth = 0;
@@ -535,7 +552,9 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
       boundaryOutlineWidth = active.outlineWidth;
       await page.keyboard.press("Space");
       await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(0);
-      await expect(page.locator(".channel-values")).toHaveText(selectedBefore ?? "");
+      await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(
+        selectedBefore ?? "",
+      );
       await page.keyboard.press("Space");
       await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(1);
     }

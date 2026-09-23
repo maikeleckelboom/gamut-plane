@@ -46,20 +46,20 @@
 .plane-instrument .plane-instrument__view-control {
   width: min(100%, calc(var(--picker-plane-max-size) + var(--picker-plane-axis-space)));
   margin-inline: auto;
-  margin-bottom: 14px;
-  padding-inline-start: var(--picker-plane-axis-space);
+  margin-bottom: 12px;
+  padding-inline-start: calc(var(--picker-plane-axis-space) - 10px);
 }
 
 .plane-instrument .plane-instrument__view-control [role="radiogroup"] {
   display: inline-flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .plane-instrument .plane-instrument__view-control button {
-  width: 5.25em;
+  width: 6em;
   min-height: 30px;
   border: 0;
-  padding: 5px 0;
+  padding: 7px 10px;
   background: transparent;
   color: var(--gp-quiet);
   font-family: ui-sans-serif, system-ui, sans-serif;
@@ -71,6 +71,7 @@
 }
 
 .plane-instrument .plane-instrument__view-control button[aria-checked="true"] {
+  background: var(--gp-surface-3);
   color: var(--gp-foreground);
   font-weight: 600;
 }
@@ -323,18 +324,17 @@
 
 .plane-instrument .plane-instrument__target-result {
   position: relative;
-  display: grid;
-  grid-template-columns: max-content 34px;
-  justify-content: start;
-  gap: 6px 16px;
-  padding: 8px 0 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 0 10px;
 }
 
 .plane-instrument .plane-instrument__target-heading {
   display: flex;
-  grid-column: 1;
   align-items: baseline;
-  gap: 16px;
+  gap: 10px;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-size: 0.75rem;
   line-height: 1.35;
@@ -346,7 +346,7 @@
 
 .plane-instrument .plane-instrument__target-heading strong {
   color: var(--gp-quiet);
-  font: 0.6875rem/1.35 var(--gp-cv-font-mono);
+  font: 0.625rem/1.35 var(--gp-cv-font-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -357,9 +357,10 @@
 
 .plane-instrument .plane-instrument__target-result dl {
   display: flex;
-  grid-column: 1 / -1;
+  order: 2;
+  flex-basis: 100%;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 6px 16px;
   margin: 0;
 }
 
@@ -381,10 +382,9 @@
 }
 
 .plane-instrument .plane-instrument__target-swatch {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  width: 34px;
-  height: 34px;
+  order: 1;
+  width: 20px;
+  height: 20px;
   align-self: center;
   border: 1px solid oklch(0.96 0 0 / 0.7);
   box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);

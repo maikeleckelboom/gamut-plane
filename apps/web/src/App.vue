@@ -4,7 +4,6 @@ import {
   isColorInGamut,
   serializeColor,
   serializeHexColor,
-  toOklabColor,
   type DisplayGamut,
 } from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
@@ -39,7 +38,6 @@ const gamutStatus = computed(() => ({
   srgb: { inGamut: isColorInGamut(selectedColor.value, "srgb") },
   displayP3: { inGamut: isColorInGamut(selectedColor.value, "display-p3") },
 }));
-const oklab = computed(() => toOklabColor(selectedColor.value));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
@@ -233,40 +231,7 @@ async function copyCss(
       </div>
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
-        <header>
-          <h2 id="selected-color-title">
-            {{ activePlane === "oklab" ? "OKLab coordinates" : "OKLCH coordinates" }}
-          </h2>
-        </header>
-
-        <dl v-if="activePlane === 'oklch'" class="channel-values" aria-label="OKLCH channels">
-          <div>
-            <dt>L</dt>
-            <dd>{{ selectedColor.l.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>C</dt>
-            <dd>{{ selectedColor.c.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>H</dt>
-            <dd>{{ selectedColor.h.toFixed(2) }}°</dd>
-          </div>
-        </dl>
-        <dl v-else class="channel-values" aria-label="OKLab channels">
-          <div>
-            <dt>L</dt>
-            <dd>{{ oklab.l.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>a</dt>
-            <dd>{{ oklab.a.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>b</dt>
-            <dd>{{ oklab.b.toFixed(4) }}</dd>
-          </div>
-        </dl>
+        <h2 id="selected-color-title" class="sr-only">Selected color</h2>
 
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>

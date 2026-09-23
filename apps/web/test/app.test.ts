@@ -77,7 +77,7 @@ describe("standalone application", () => {
   it("controls plane and boundary view state without changing the selected color", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
-    const originalOklch = wrapper.get(".channel-values").text();
+    const originalOklch = wrapper.get('[data-css-representation="oklch"] code').text();
 
     const srgbToggle = wrapper.get('[data-boundary-toggle="srgb"]');
     const field = wrapper.get(".plane-instrument__field");
@@ -90,7 +90,7 @@ describe("standalone application", () => {
     expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
       "srgb",
     );
-    expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
 
     await wrapper.get('[data-boundary-target-option="display-p3"]').setValue(true);
     await flushPromises();
@@ -98,12 +98,16 @@ describe("standalone application", () => {
       "display-p3",
     );
     expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Target · Display P3");
-    expect(wrapper.get(".channel-values").text()).toBe(originalOklch);
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
 
     await wrapper.get('[data-plane-option="oklab"]').trigger("click");
     await flushPromises();
     expect(wrapper.get('[data-plane-id="oklab"]').exists()).toBe(true);
-    expect(wrapper.get(".channel-values").attributes("aria-label")).toBe("OKLab channels");
+    expect(wrapper.get(".color-inspector").attributes("aria-labelledby")).toBe(
+      "selected-color-title",
+    );
+    expect(wrapper.get("#selected-color-title").text()).toBe("Selected color");
+    expect(wrapper.find(".channel-values").exists()).toBe(false);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
 
     wrapper.unmount();
@@ -160,7 +164,7 @@ describe("standalone application", () => {
       expect(representation.findAll(".css-representation__value")).toHaveLength(1);
       expect(representation.findAll(".css-representation__swatch")).toHaveLength(1);
     }
-    const originalColor = wrapper.get(".channel-values").text();
+    const originalColor = wrapper.get('[data-css-representation="oklch"] code').text();
     const srgbPreview = serializeColor(
       { l: 0.68, c: findMaximumChroma(0.68, 252, "srgb"), h: 252, alpha: 1 },
       "srgb",
@@ -171,7 +175,7 @@ describe("standalone application", () => {
     expect(hexSwatch.attributes("style")).toContain(srgbPreview);
     expect(srgbSwatch.attributes("style")).toBe(hexSwatch.attributes("style"));
     expect(hexSwatch.attributes("aria-label")).toBe("sRGB boundary color preview");
-    expect(wrapper.get(".channel-values").text()).toBe(originalColor);
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalColor);
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toMatch(/^oklch\(/);
     expect(wrapper.get('[data-css-representation="display-p3"] code').text()).toMatch(
       /^color\(display-p3 /,

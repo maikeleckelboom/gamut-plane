@@ -128,45 +128,14 @@ button:disabled {
   min-width: 0;
 }
 
-.color-inspector > header {
-  padding-bottom: 12px;
-}
-
-.color-inspector h2 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 580;
-  letter-spacing: -0.02em;
-}
-
-.channel-values {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
-  gap: 12px 18px;
-  margin: 0;
-  padding: 0 0 12px;
-}
-
-.channel-values > div {
-  min-width: 0;
-  padding: 0;
-}
-
-.channel-values dt {
-  color: var(--quiet);
-  font-size: 0.6875rem;
-  line-height: 1.25;
-}
-
-.channel-values dd {
-  margin: 6px 0 0;
-  font: 0.875rem/1.25 var(--cv-font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
 .color-inspector section {
   border-top: 1px solid var(--hairline);
   padding: 11px 0;
+}
+
+.color-inspector .gamut-facts {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .color-inspector h3,
@@ -388,8 +357,6 @@ button:disabled {
     padding-top: 30px;
   }
 
-  .color-inspector > header,
-  .channel-values,
   .color-inspector section {
     max-width: 720px;
   }
@@ -434,12 +401,6 @@ button:disabled {
 
   .instrument-layout {
     padding-top: 28px;
-  }
-}
-
-@media (max-width: 500px) {
-  .channel-values dd {
-    font-size: 0.75rem;
   }
 }
 
