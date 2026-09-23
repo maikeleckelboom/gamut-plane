@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { findMaximumChroma, serializeColor } from "@gamut-plane/core";
 
 import App from "@/App.vue";
 
@@ -36,6 +37,8 @@ describe("standalone application", () => {
     await flushPromises();
 
     expect(wrapper.get("h1").text()).toBe("Gamut Plane");
+    expect(wrapper.find(".project-kicker").exists()).toBe(false);
+    expect(wrapper.get(".inspector-kicker").text()).toBe("Selected color");
     expect(wrapper.get('[data-canvas-capability="srgb"]').text()).toContain(
       "P3-only field colors may clip",
     );
@@ -63,11 +66,8 @@ describe("standalone application", () => {
         .findAll("[data-exact-gamut-status]")
         .map((status) => status.attributes("data-exact-gamut-status")),
     ).toEqual(["srgb", "display-p3"]);
-    expect(
-      wrapper
-        .findAll("[data-boundary-guide]")
-        .map((guide) => guide.attributes("data-boundary-guide")),
-    ).toEqual(["srgb", "display-p3"]);
+    expect(wrapper.find("[data-boundary-guide-swatch]").exists()).toBe(true);
+    expect(wrapper.find("details").exists()).toBe(false);
     expect(
       wrapper
         .findAll("[data-css-representation]")
@@ -160,7 +160,20 @@ describe("standalone application", () => {
 
     for (const representation of wrapper.findAll("[data-css-representation]")) {
       expect(representation.findAll(".css-representation__value")).toHaveLength(1);
+      expect(representation.findAll(".css-representation__swatch")).toHaveLength(1);
     }
+    const originalColor = wrapper.get(".channel-values").text();
+    const srgbPreview = serializeColor(
+      { l: 0.68, c: findMaximumChroma(0.68, 252, "srgb"), h: 252, alpha: 1 },
+      "srgb",
+    );
+    const hexSwatch = wrapper.get('[data-css-representation="hex"] .css-representation__swatch');
+    const srgbSwatch = wrapper.get('[data-css-representation="srgb"] .css-representation__swatch');
+    expect(hexSwatch.attributes("data-preview-kind")).toBe("boundary");
+    expect(hexSwatch.attributes("style")).toContain(srgbPreview);
+    expect(srgbSwatch.attributes("style")).toBe(hexSwatch.attributes("style"));
+    expect(hexSwatch.attributes("aria-label")).toBe("sRGB boundary color preview");
+    expect(wrapper.get(".channel-values").text()).toBe(originalColor);
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toMatch(/^oklch\(/);
     expect(wrapper.get('[data-css-representation="display-p3"] code').text()).toMatch(
       /^color\(display-p3 /,
@@ -191,6 +204,18 @@ describe("standalone application", () => {
 
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.52");
     await flushPromises();
+    const p3Preview = serializeColor(
+      { l: 0.68, c: findMaximumChroma(0.68, 252, "display-p3"), h: 252, alpha: 1 },
+      "display-p3",
+    );
+    const p3Swatch = wrapper.get(
+      '[data-css-representation="display-p3"] .css-representation__swatch',
+    );
+    expect(p3Swatch.attributes("data-preview-kind")).toBe("boundary");
+    const normalizedPreview = document.createElement("span");
+    normalizedPreview.style.backgroundColor = p3Preview;
+    expect(p3Swatch.attributes("style")).toContain(normalizedPreview.style.backgroundColor);
+    expect(p3Swatch.attributes("aria-label")).toBe("Display P3 boundary color preview");
     expect(
       wrapper.get('[data-css-representation="display-p3"] .css-representation__value').text(),
     ).toBe("Unavailable · outside Display P3");
@@ -206,6 +231,24 @@ describe("standalone application", () => {
     expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
     expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^rgb\(/);
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
+    normalizedPreview.style.backgroundColor = wrapper
+      .get('[data-css-representation="hex"] code')
+      .text();
+    expect(
+      wrapper
+        .get('[data-css-representation="hex"] .css-representation__swatch')
+        .attributes("style"),
+    ).toContain(normalizedPreview.style.backgroundColor);
+    expect(
+      wrapper
+        .get('[data-css-representation="srgb"] .css-representation__swatch')
+        .attributes("data-preview-kind"),
+    ).toBe("output");
+    expect(
+      wrapper
+        .get('[data-css-representation="display-p3"] .css-representation__swatch')
+        .attributes("data-preview-kind"),
+    ).toBe("output");
     expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
     wrapper.unmount();

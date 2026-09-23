@@ -57,7 +57,7 @@ const [html, second, repeated] = await Promise.all([
 assert.equal(html, repeated);
 assert.notEqual(html, second);
 assert.equal(events, 0);
-assert.ok(html.includes("Boundary details"));
+assert.ok(html.includes("data-boundary-target-result"));
 assert.ok(html.includes("OKLab a numeric value"));
 assert.ok(html.includes("SSR legend"));
 assert.equal(first.c, 0.52345678);

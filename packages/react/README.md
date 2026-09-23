@@ -78,7 +78,7 @@ const [boundaryTarget, setBoundaryTarget] = useState<DisplayGamut>("srgb");
 />;
 ```
 
-The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and projection overlays. Exact membership, the target result and the collapsed **Boundary details** disclosure retain their meaning. Exact membership uses direct core math; contours, guide values, guide swatch and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
+The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and projection overlays. Exact membership and the target result retain their meaning. Exact membership uses direct core math; contours, guide values, guide swatch and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
 
 Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting. The primary outside-Display-P3 warning remains based on exact Display P3 membership, regardless of target.
 

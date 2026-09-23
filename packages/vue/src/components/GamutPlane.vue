@@ -107,13 +107,9 @@ const chromaWarningPosition = computed(() =>
   Math.min(1, Math.max(0, props.modelValue.c / OKLCH_PICKER_MAX_CHROMA)),
 );
 const boundaryProjectionColor = computed(() => boundary.value.projectionColor);
-const boundaryProjectionCss = computed(() => boundary.value.projectionCss);
-const instrumentStyle = computed<Record<string, string>>(() => {
-  const style: Record<string, string> = { "--picker-active": activeCss.value };
-  if (boundaryProjectionCss.value) style["--picker-projection"] = boundaryProjectionCss.value;
-  return style;
-});
-const boundaryProjectionChroma = computed(() => targetResult.value.projection?.chroma ?? null);
+const instrumentStyle = computed<Record<string, string>>(() => ({
+  "--picker-active": activeCss.value,
+}));
 const boundaryGuideCss = computed(() => serializeColor(targetResult.value.boundaryGuide.color));
 const hueRangeDragging = ref(false);
 const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
@@ -444,43 +440,6 @@ watch(
             role="img"
           />
         </section>
-
-        <details class="plane-instrument__evidence" data-boundary-details>
-          <summary>
-            <span>Boundary details</span>
-          </summary>
-          <div class="plane-instrument__evidence-body">
-            <div class="plane-instrument__readouts" aria-label="Boundary guide details">
-              <div data-boundary-guide="srgb">
-                <span>sRGB table guide</span>
-                <code> C {{ status.srgb.interpolatedMaximumChroma.toFixed(4) }} </code>
-              </div>
-              <div data-boundary-guide="display-p3">
-                <span>Display P3 table guide</span>
-                <code> C {{ status.displayP3.interpolatedMaximumChroma.toFixed(4) }} </code>
-              </div>
-              <div class="plane-instrument__active-readout">
-                <span>Selected color</span>
-                <code v-if="plane === 'oklab'">
-                  OKLCH C {{ modelValue.c.toFixed(4) }} · H {{ modelValue.h.toFixed(2) }}°
-                </code>
-                <code v-else>C {{ modelValue.c.toFixed(4) }}</code>
-              </div>
-              <div class="plane-instrument__projection-readout">
-                <span>{{ targetLabel }} target projection</span>
-                <code v-if="boundaryProjectionChroma !== null && targetResult.guideDeltaC > 0">
-                  table C {{ boundaryProjectionChroma.toFixed(4) }} · ΔC guide −{{
-                    targetResult.guideDeltaC.toFixed(4)
-                  }}
-                </code>
-                <code v-else-if="boundaryProjectionChroma !== null">
-                  exact outside · boundary projection overlaps active
-                </code>
-                <code v-else>not required</code>
-              </div>
-            </div>
-          </div>
-        </details>
       </div>
     </div>
   </section>

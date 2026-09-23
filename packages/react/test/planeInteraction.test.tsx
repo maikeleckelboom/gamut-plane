@@ -191,7 +191,7 @@ describe("plane ownership and edits", () => {
     expect(get(ui.element, "[data-picker-plane]").dataset.fieldResolution).toBe("80x24");
     expect(changes).not.toHaveBeenCalled();
     expect(value.c).toBe(0.52);
-    expect(get<HTMLDetailsElement>(ui.element, "details").open).toBe(false);
+    expect(ui.element.querySelector("details")).toBeNull();
   });
   it("does not let an abandoned concurrent render replace committed event callbacks", async () => {
     const clock = frames(),
@@ -316,7 +316,9 @@ describe("field invalidation", () => {
     expect(get(ui.element, "[data-table-boundary-guide-marker]").style.left).toBe(
       get(ui.element, "[data-active-marker]").style.left,
     );
-    expect(ui.element.textContent).toContain("boundary projection overlaps active");
+    expect(get(ui.element, "[data-boundary-target-result]").textContent).not.toContain(
+      "Guide delta C",
+    );
     expect(changes).not.toHaveBeenCalled();
   });
 });

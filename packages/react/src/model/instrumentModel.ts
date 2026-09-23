@@ -34,21 +34,6 @@ export function instrumentModel(
   const boundary = getBoundaryPresentation(value, view, boundaryTarget, visibility);
   const { status, target } = boundary.analysis;
   const targetLabel = displayGamutLabel(target.target);
-  const details = {
-    p3: status.displayP3.interpolatedMaximumChroma.toFixed(4),
-    srgb: status.srgb.interpolatedMaximumChroma.toFixed(4),
-    selected:
-      view === "oklab"
-        ? `OKLCH C ${value.c.toFixed(4)} · H ${value.h.toFixed(2)}°`
-        : `C ${value.c.toFixed(4)}`,
-    targetLabel,
-    projection:
-      target.projection === null
-        ? "not required"
-        : target.guideDeltaC > 0
-          ? `table C ${target.projection.chroma.toFixed(4)} · ΔC guide −${target.guideDeltaC.toFixed(4)}`
-          : "exact outside · boundary projection overlaps active",
-  };
   return {
     plane,
     projection,
@@ -58,7 +43,6 @@ export function instrumentModel(
     hueIntervals: boundary.hueIntervals,
     lightnessIntervals: boundary.lightnessIntervals,
     chromaIntervals: boundary.chromaIntervals,
-    details,
     targetResult: {
       target: target.target,
       targetLabel,
@@ -73,7 +57,6 @@ export function instrumentModel(
     chromaPosition: Math.min(1, Math.max(0, value.c / OKLCH_PICKER_MAX_CHROMA)),
     style: {
       "--picker-active": serializeColor(value),
-      "--picker-projection": boundary.projectionCss,
     },
     lightnessGradient: colorGradient(12, (position) => ({ ...value, l: position, alpha: 1 })),
     chromaGradient: colorGradient(12, (position) => ({

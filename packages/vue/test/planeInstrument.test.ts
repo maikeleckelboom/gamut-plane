@@ -231,7 +231,7 @@ describe("PlaneInstrument edit contract", () => {
     wrapper.unmount();
   });
 
-  it("keeps unique geometry facts in collapsed boundary details without duplicating exact status", async () => {
+  it("keeps the target result visible without a details disclosure or duplicate exact status", async () => {
     const wrapper = mount(PlaneInstrument, {
       attachTo: document.body,
       props: { modelValue: parseCssColor("oklch(62% 0.2 210)") },
@@ -244,19 +244,12 @@ describe("PlaneInstrument edit contract", () => {
     expect(title.classes()).toContain("sr-only");
     expect(title.text()).toBe("Color plane instrument");
 
-    const details = wrapper.get("[data-boundary-details]");
-    expect(details.attributes("open")).toBeUndefined();
-    expect(details.get("summary").text()).toContain("Boundary details");
-    expect(details.get("summary").text()).toBe("Boundary details");
-    expect(details.findAll("[data-picker-gamut-status]")).toHaveLength(0);
-    expect(
-      details
-        .findAll("[data-boundary-guide]")
-        .map((guide) => guide.attributes("data-boundary-guide")),
-    ).toEqual(["srgb", "display-p3"]);
-    expect(details.get(".plane-instrument__projection-readout").exists()).toBe(true);
-    expect(details.get(".plane-instrument__active-readout").exists()).toBe(true);
-    expect(details.text()).not.toMatch(/\binside\b|\boutside\b/i);
+    const target = wrapper.get("[data-boundary-target-result]");
+    expect(target.text()).toContain("Boundary guide C");
+    expect(target.get("[data-target-status]").exists()).toBe(true);
+    expect(target.get("[data-boundary-guide-swatch]").exists()).toBe(true);
+    expect(wrapper.find("details").exists()).toBe(false);
+    expect(wrapper.findAll("[data-picker-gamut-status]")).toHaveLength(0);
 
     wrapper.unmount();
   });
@@ -563,9 +556,7 @@ describe("PlaneInstrument edit contract", () => {
     expect(boundaryProjection.attributes("style")).toContain(
       active.attributes("style").match(/left: [^;]+/)![0],
     );
-    expect(wrapper.get(".plane-instrument__projection-readout").text()).toContain(
-      "boundary projection overlaps active",
-    );
+    expect(wrapper.get("[data-boundary-target-result]").text()).not.toContain("Guide delta C");
 
     wrapper.unmount();
   });

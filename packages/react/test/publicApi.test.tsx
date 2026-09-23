@@ -188,7 +188,7 @@ describe("public instrument contract", () => {
       expect(
         ui.element.querySelectorAll('[data-gamut-marker="srgb-boundary-projection"]'),
       ).toHaveLength(showSrgbBoundary ? 1 : 0);
-      expect(ui.element.querySelectorAll("[data-boundary-guide]")).toHaveLength(2);
+      expect(ui.element.querySelector("[data-boundary-guide-swatch]")).not.toBeNull();
     }
     expect(changes).not.toHaveBeenCalled();
   });
@@ -309,7 +309,7 @@ describe("public instrument contract", () => {
       expect(html).toContain('data-render-color-space="pending"');
       expect(html).toContain('data-active-plane="' + view + '"');
       expect(html).toContain("Boundary legend");
-      expect(html).toContain("Boundary details");
+      expect(html).toContain("data-boundary-target-result");
       expect(html).toContain('type="number"');
       expect(html).toContain('type="range"');
       expect(html).toContain("data-active-marker");

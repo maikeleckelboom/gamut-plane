@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  findMaximumChroma,
   isColorInGamut,
   serializeColor,
   serializeHexColor,
@@ -51,6 +52,29 @@ const srgbDisplayCss = computed(() =>
 );
 const displayP3DisplayCss = computed(() =>
   displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
+);
+// Visual previews only. These values never become selected state or copy output.
+const srgbBoundaryPreviewCss = computed(() =>
+  gamutStatus.value.srgb.inGamut
+    ? null
+    : serializeColor(
+        {
+          ...selectedColor.value,
+          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "srgb"),
+        },
+        "srgb",
+      ),
+);
+const displayP3BoundaryPreviewCss = computed(() =>
+  gamutStatus.value.displayP3.inGamut
+    ? null
+    : serializeColor(
+        {
+          ...selectedColor.value,
+          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "display-p3"),
+        },
+        "display-p3",
+      ),
 );
 
 const clipboardSupported = useSupported(
@@ -130,7 +154,6 @@ async function copyCss(
   <main class="app-shell">
     <header class="project-header" aria-describedby="project-description">
       <div class="project-identity">
-        <p class="project-kicker">Color-space instrument</p>
         <h1>Gamut Plane</h1>
         <p id="project-description">
           Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
@@ -210,7 +233,6 @@ async function copyCss(
                   </div>
                 </div>
               </fieldset>
-              <p>Target sets the reference; guides affect visualization only.</p>
             </section>
           </template>
         </GamutPlane>
@@ -273,14 +295,15 @@ async function copyCss(
         </section>
 
         <section class="css-output" aria-labelledby="css-output-title">
-          <div class="inspector-section-heading">
-            <h3 id="css-output-title">CSS representations</h3>
-            <p>
-              OKLCH and color() copies preserve full serialization precision. Hex uses 8-bit sRGB.
-            </p>
-          </div>
+          <h3 id="css-output-title">CSS representations</h3>
           <div class="css-representation" data-css-representation="oklch">
             <span>OKLCH</span>
+            <span
+              class="css-representation__swatch"
+              :style="{ backgroundColor: oklchCanonicalCss }"
+              role="img"
+              aria-label="Selected OKLCH color preview"
+            />
             <button
               type="button"
               data-copy-representation="oklch"
@@ -296,6 +319,13 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="hex">
             <span>Hex · sRGB</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="hexColor ? 'output' : 'boundary'"
+              :style="{ backgroundColor: hexColor ?? srgbBoundaryPreviewCss ?? undefined }"
+              role="img"
+              :aria-label="hexColor ? 'Hex output color preview' : 'sRGB boundary color preview'"
+            />
             <button
               type="button"
               data-copy-representation="hex"
@@ -314,6 +344,15 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="srgb">
             <span>sRGB</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="srgbCanonicalCss ? 'output' : 'boundary'"
+              :style="{ backgroundColor: srgbCanonicalCss ?? srgbBoundaryPreviewCss ?? undefined }"
+              role="img"
+              :aria-label="
+                srgbCanonicalCss ? 'sRGB output color preview' : 'sRGB boundary color preview'
+              "
+            />
             <button
               type="button"
               data-copy-representation="srgb"
@@ -332,6 +371,19 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="displayP3CanonicalCss ? 'output' : 'boundary'"
+              :style="{
+                backgroundColor: displayP3CanonicalCss ?? displayP3BoundaryPreviewCss ?? undefined,
+              }"
+              role="img"
+              :aria-label="
+                displayP3CanonicalCss
+                  ? 'Display P3 output color preview'
+                  : 'Display P3 boundary color preview'
+              "
+            />
             <button
               type="button"
               data-copy-representation="display-p3"

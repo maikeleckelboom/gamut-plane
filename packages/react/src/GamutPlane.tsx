@@ -29,7 +29,6 @@ import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { NumericInput } from "./components/NumericInput.js";
-import { BoundaryDetails } from "./components/BoundaryDetails.js";
 import { BoundaryTargetResult } from "./components/BoundaryTargetResult.js";
 
 export type GamutPlaneView = "oklch" | "oklab";
@@ -264,7 +263,6 @@ export function GamutPlane({
             </>
           )}
           <BoundaryTargetResult model={model.targetResult} />
-          <BoundaryDetails model={model.details} />
         </div>
       </div>
     </section>

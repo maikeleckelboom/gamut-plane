@@ -311,9 +311,6 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
   await bottomControl.focus();
   await expect(bottomControl).toBeFocused();
   await expect(bottomControl).toBeInViewport();
-  expect(
-    await page.locator(".instrument-layout").evaluate((workspace) => workspace.scrollTop),
-  ).toBeGreaterThan(0);
 });
 
 test("wide plane follows the workspace when the header wraps", async ({ page }) => {
@@ -351,33 +348,6 @@ test("wide plane follows the workspace when the header wraps", async ({ page }) 
   expect(wrappedHeader.surfaceHeight).toBeLessThan(shortHeader.surfaceHeight);
   expect(wrappedHeader.rootFits).toBe(true);
   expect(wrappedHeader.horizontalFits).toBe(true);
-});
-
-test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await openInstrument(page);
-  await page.locator("[data-boundary-details] summary").click();
-  const details = page.locator("[data-boundary-details]");
-  await expect(details).toHaveAttribute("open", "");
-  await details.locator("summary").focus();
-  await details.locator("summary").press("End");
-  await details.scrollIntoViewIfNeeded();
-  const geometry = await page.evaluate(() => {
-    const root = document.documentElement;
-    const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
-    const details = document.querySelector<HTMLElement>("[data-boundary-details]")!;
-    const bounds = details.getBoundingClientRect();
-    return {
-      rootFits: root.scrollHeight <= root.clientHeight + 1,
-      workspaceOverflowY: getComputedStyle(workspace).overflowY,
-      detailsReachable: bounds.top < root.clientHeight && bounds.bottom > 0,
-    };
-  });
-  expect(geometry.rootFits).toBe(true);
-  expect(geometry.workspaceOverflowY).toBe("auto");
-  expect(geometry.detailsReachable).toBe(true);
 });
 
 test("enlarged text, focus visibility, and Canvas capability remain usable and truthful", async ({
@@ -593,14 +563,8 @@ test("header and exact gamut status have one semantic owner", async ({ page }) =
   await expect(page.locator(".color-inspector [data-exact-gamut-status]")).toHaveCount(2);
   await expect(page.locator(".instrument-primary [data-exact-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-picker-gamut-status]")).toHaveCount(0);
-  await expect(page.locator("[data-boundary-details] summary")).toContainText("Boundary details");
-  await expect(page.locator("[data-boundary-details] summary")).toHaveText("Boundary details");
-  await page.locator("[data-boundary-details] summary").click();
-  await expect(page.locator("[data-boundary-details]")).toHaveAttribute("open", "");
-  await expect(page.locator("[data-boundary-guide]")).toHaveCount(2);
-  await page.locator("[data-boundary-details] summary").focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("[data-boundary-details]")).not.toHaveAttribute("open", "");
+  await expect(page.locator("[data-boundary-target-result]")).toBeVisible();
+  await expect(page.locator("details")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("Thresholds follow current");
   await expect(page.locator("body")).not.toContainText("Gamut evidence");
 });
