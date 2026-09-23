@@ -73,7 +73,7 @@ Exact Display P3 and sRGB membership is calculated directly from the active colo
 
 `getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` selects ordinary contour-adjacent channel intervals and markers from independent visibility booleans for both adapters.
 
-Contours, crossing ticks, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility selects ordinary sampled guide layers. Neither setting changes the other. The exact Display P3 warning is independent of target.
+Contours, channel intervals, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility selects ordinary sampled guide layers. Neither setting changes the other. The exact Display P3 warning is independent of target.
 
 ## Generated tables
 

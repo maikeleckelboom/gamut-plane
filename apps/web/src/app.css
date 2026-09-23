@@ -140,7 +140,7 @@ button:disabled {
 }
 
 .color-inspector > header {
-  padding-bottom: 18px;
+  padding-bottom: 12px;
 }
 
 .color-inspector h2 {
@@ -155,7 +155,7 @@ button:disabled {
   grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
   gap: 12px 18px;
   margin: 0;
-  padding: 0 0 19px;
+  padding: 0 0 12px;
 }
 
 .channel-values > div {
@@ -176,7 +176,7 @@ button:disabled {
 
 .color-inspector section {
   border-top: 1px solid var(--hairline);
-  padding: 18px 0;
+  padding: 11px 0;
 }
 
 .color-inspector h3,
@@ -233,7 +233,7 @@ button:disabled {
 }
 
 .inspector-section-heading {
-  margin-bottom: 13px;
+  margin-bottom: 8px;
 }
 
 .inspector-section-heading h3 {
@@ -250,7 +250,7 @@ button:disabled {
   gap: 8px 12px;
   align-items: center;
   border-top: 1px solid oklch(1 0 0 / 0.06);
-  padding: 12px 0;
+  padding: 6px 0;
 }
 
 .css-representation:first-of-type {
@@ -421,7 +421,7 @@ button:disabled {
   /* The inspector's normal content needs about 730px; compact only its section spacing below that. */
   @container standalone-workspace (max-height: 730px) {
     .color-inspector section {
-      padding-block: 12px;
+      padding-block: 9px;
     }
   }
 }

@@ -25,7 +25,7 @@ export {
   OKLCH_FORMAT_HUE_DECIMALS,
   OKLCH_FORMAT_LIGHTNESS_DECIMALS,
 } from "./color/format.js";
-export { serializeColor, type SerializationSpace } from "./color/serialize.js";
+export { serializeColor, serializeHexColor, type SerializationSpace } from "./color/serialize.js";
 export { parseCssColor, UnsupportedColorInputError } from "./input/parseCssColor.js";
 export {
   clearGamutBoundaryTableCache,

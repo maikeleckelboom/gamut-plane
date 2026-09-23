@@ -178,6 +178,7 @@ export function mountPlane(
     activePointer = event.pointerId;
     origin = { ...current().value };
     expected = null;
+    surface.dataset.pointerFocus = "";
     surface.focus({ preventScroll: true });
     surface.setPointerCapture(event.pointerId);
     schedule(next);
@@ -202,6 +203,7 @@ export function mountPlane(
     if (activePointer === event.pointerId) cancel(true);
   }
   function key(event: KeyboardEvent) {
+    surface.removeAttribute("data-pointer-focus");
     if (event.key === "Escape" && activePointer !== null) {
       event.preventDefault();
       event.stopPropagation();

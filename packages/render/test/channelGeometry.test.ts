@@ -33,7 +33,7 @@ describe("shared visual presentation geometry", () => {
     const warning = channelWarning(
       0.29,
       320,
-      [{ id: "projection", tone: "projection", position: 0.9, label: "projection" }],
+      [{ id: "projection", tone: "projection", lane: "srgb", position: 0.9, label: "projection" }],
       thresholds,
     );
     expect(warning.obstacles).toHaveLength(2);

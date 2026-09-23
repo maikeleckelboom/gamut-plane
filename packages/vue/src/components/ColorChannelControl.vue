@@ -191,6 +191,7 @@ function commitFromRange(event: Event): void {
 function beginRangeInteraction(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   if (activeRangePointerId !== null) return;
+  rangeElement.value?.setAttribute("data-pointer-focus", "");
   activeRangePointerId = event.pointerId;
 }
 
@@ -213,7 +214,12 @@ function cancelRangePointer(event?: PointerEvent): void {
 
 function blurRange(): void {
   isRangeFocused.value = false;
+  rangeElement.value?.removeAttribute("data-pointer-focus");
   cancelRangePointer();
+}
+
+function onRangeKeydown(): void {
+  rangeElement.value?.removeAttribute("data-pointer-focus");
 }
 
 function updateThresholdContext(event: PointerEvent): void {
@@ -312,6 +318,7 @@ onBeforeUnmount(() => {
         :title="marker.label"
         :aria-label="marker.label"
         :data-gamut-marker="marker.id"
+        :data-gamut-lane="marker.lane"
         role="img"
       />
       <span
@@ -347,6 +354,7 @@ onBeforeUnmount(() => {
         @lostpointercapture="cancelRangePointer"
         @focus="isRangeFocused = true"
         @blur="blurRange"
+        @keydown="onRangeKeydown"
       />
     </div>
 

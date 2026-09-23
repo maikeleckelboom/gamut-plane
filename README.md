@@ -114,7 +114,7 @@ The overrides resolve all unpublished transitive dependencies from their local a
 
 ## Color and editing behavior
 
-The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel marks, boundary-guide colors and the selected target projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
+The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel intervals, boundary-guide colors and the selected target projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
 
 Boundary target selects the projection/reference gamut. Boundary visibility selects which ordinary sampled guide layers are drawn across the plane and channel controls. Neither changes the target automatically or mutates the authored color. Exact membership for both gamuts and the primary Display P3 warning remain independent of both controls. An active target projection can remain visible when that target's ordinary guide layer is hidden.
 
@@ -122,7 +122,7 @@ The field's chroma limit and OKLab disc radius are both 0.4. These define the ed
 
 Drag the plane or use arrow keys. Shift increases the step; Home and End move to horizontal limits. Numeric fields apply a draft on Enter or blur and discard it on Escape. Escape during a plane drag restores its starting color. Edits preserve alpha and unedited channels. See [the interaction contract](docs/architecture.md#interaction-lifecycle) for cancellation and parent-update behavior.
 
-The app's inspector copies full-precision CSS values. RGB copy is available only when the color is inside that gamut; clipboard failures do not show success.
+The app's inspector copies full-precision OKLCH and `color()` values, plus quantized 8-bit sRGB Hex. Hex and sRGB CSS copy are available only inside sRGB; clipboard failures do not show success.
 
 ## Browser and rendering limits
 

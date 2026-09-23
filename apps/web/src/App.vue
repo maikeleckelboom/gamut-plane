@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { isColorInGamut, serializeColor, toOklabColor, type DisplayGamut } from "@gamut-plane/core";
+import {
+  isColorInGamut,
+  serializeColor,
+  serializeHexColor,
+  toOklabColor,
+  type DisplayGamut,
+} from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
@@ -10,11 +16,7 @@ import {
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import {
-  CSS_DISPLAY_DECIMALS,
-  formatOklchForDisplay,
-  formatRgbCssForDisplay,
-} from "@/colorPresentation";
+import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
 
 const selectedColor = ref<OklchColor>({
   l: 0.68,
@@ -40,6 +42,9 @@ const oklab = computed(() => toOklabColor(selectedColor.value));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
+const hexColor = computed(() =>
+  gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
+);
 const displayP3CanonicalCss = computed(() => exactCss("display-p3"));
 const srgbDisplayCss = computed(() =>
   srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
@@ -61,7 +66,7 @@ const copyFeedback = useTimeoutFn(
   { immediate: false },
 );
 
-type CssRepresentation = "oklch" | "display-p3" | "srgb";
+type CssRepresentation = "oklch" | "hex" | "display-p3" | "srgb";
 
 const capabilityLabel = computed(() => {
   if (canvasCapability.value === "display-p3") {
@@ -116,7 +121,7 @@ async function copyCss(
     copyAnnouncement.value = `Copied ${label}: ${value}`;
     copyFeedback.start();
   } catch {
-    copyAnnouncement.value = `Could not copy ${label}. Select the CSS value and copy it manually.`;
+    copyAnnouncement.value = `Could not copy ${label}. Select the value and copy it manually.`;
   }
 }
 </script>
@@ -270,7 +275,9 @@ async function copyCss(
         <section class="css-output" aria-labelledby="css-output-title">
           <div class="inspector-section-heading">
             <h3 id="css-output-title">CSS representations</h3>
-            <p>Shown to {{ CSS_DISPLAY_DECIMALS }} decimals. Copy preserves canonical precision.</p>
+            <p>
+              OKLCH and color() copies preserve full serialization precision. Hex uses 8-bit sRGB.
+            </p>
           </div>
           <div class="css-representation" data-css-representation="oklch">
             <span>OKLCH</span>
@@ -284,6 +291,21 @@ async function copyCss(
               {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
             <code>{{ oklchDisplayCss }}</code>
+          </div>
+          <div class="css-representation" data-css-representation="hex">
+            <span>Hex · sRGB</span>
+            <button
+              type="button"
+              data-copy-representation="hex"
+              :data-copied="isCopied('hex') ? 'true' : 'false'"
+              :disabled="!hexColor"
+              :aria-describedby="hexColor ? undefined : 'srgb-copy-reason'"
+              :aria-label="isCopied('hex') ? 'Copied Hex value' : 'Copy Hex value'"
+              @click="copyCss('hex', 'Hex', hexColor)"
+            >
+              {{ isCopied("hex") ? "Copied" : "Copy" }}
+            </button>
+            <code v-if="hexColor">{{ hexColor }}</code>
           </div>
           <div class="css-representation" data-css-representation="srgb">
             <span>sRGB</span>
@@ -304,7 +326,9 @@ async function copyCss(
               {{ isCopied("srgb") ? "Copied" : "Copy" }}
             </button>
             <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
-            <p v-else id="srgb-copy-reason">Outside sRGB. No clipped value emitted.</p>
+            <p v-else id="srgb-copy-reason">
+              Outside sRGB. Hex and sRGB copies unavailable; no clipping.
+            </p>
           </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>

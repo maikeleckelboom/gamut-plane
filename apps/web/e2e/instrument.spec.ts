@@ -96,7 +96,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
 
 test("keyboard and pointer edits update the selected color", async ({ page }) => {
   await openInstrument(page);
-  const surface = page.getByRole("application", { name: /OKLCH plane/ });
+  const surface = page.locator(".color-plane__surface");
   const channels = page.locator(".channel-values");
   const beforeKeyboard = await channels.textContent();
 
@@ -109,6 +109,72 @@ test("keyboard and pointer edits update the selected color", async ({ page }) =>
   expect(bounds).not.toBeNull();
   await page.mouse.click(bounds!.x + bounds!.width * 0.78, bounds!.y + bounds!.height * 0.34);
   await expect(channels).not.toHaveText(beforePointer ?? "");
+});
+
+test("plane focus ring follows keyboard use through repeated pointer interaction", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  const surface = page.locator(".color-plane__surface");
+  const visibleFocus = () =>
+    surface.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return style.outlineStyle !== "none" && Number.parseFloat(style.outlineWidth) > 0;
+    });
+
+  await surface.click({ position: { x: 40, y: 40 } });
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(false);
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await surface.click({ position: { x: 60, y: 60 } });
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(false);
+
+  await page.getByRole("radio", { name: "OKLCH" }).click();
+  await page.keyboard.press("Tab");
+  await expect(surface).toBeFocused();
+  expect(await visibleFocus()).toBe(true);
+
+  await surface.click({ position: { x: 80, y: 80 } });
+  expect(await visibleFocus()).toBe(false);
+  await surface.press("ArrowRight");
+  expect(await visibleFocus()).toBe(true);
+});
+
+test("slider track focus follows the actual range control", async ({ page }) => {
+  await openInstrument(page);
+  const hue = page.getByRole("slider", { name: /Hue/ });
+  const p3Target = page.getByRole("radio", { name: "Display P3" });
+  const track = page.locator('[data-picker-control="h"] .channel-control__track');
+  const unfocusedBorder = await track.evaluate((element) => getComputedStyle(element).borderColor);
+
+  await hue.click();
+  await expect(hue).toBeFocused();
+  await expect
+    .poll(() => track.evaluate((element) => getComputedStyle(element).borderColor))
+    .toBe(unfocusedBorder);
+  await p3Target.click();
+  await expect(hue).not.toBeFocused();
+  await hue.click();
+  await expect(hue).toBeFocused();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).toBe(
+    unfocusedBorder,
+  );
+  await p3Target.click();
+  await page.keyboard.press("Tab");
+  await hue.focus();
+  await expect(hue).toBeFocused();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
+    unfocusedBorder,
+  );
+  await hue.click();
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).toBe(
+    unfocusedBorder,
+  );
+  await hue.press("ArrowRight");
+  expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
+    unfocusedBorder,
+  );
 });
 
 test("OKLab edge interactions stay in-domain while authored overflow is preserved", async ({
@@ -404,11 +470,33 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^color\(display-p3 /);
 
   const srgbCopy = page.getByRole("button", { name: "Copy sRGB CSS value" });
+  const hexCopy = page.getByRole("button", { name: "Copy Hex value" });
+  await expect(hexCopy).toBeDisabled();
+  await expect(hexCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(srgbCopy).toBeDisabled();
   await expect(srgbCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(page.locator("#srgb-copy-reason")).toHaveText(
-    "Outside sRGB. No clipped value emitted.",
+    "Outside sRGB. Hex and sRGB copies unavailable; no clipping.",
   );
+});
+
+test("Hex copies the selected in-sRGB value without changing the canonical color", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.getByLabel("Chroma numeric value").fill("0");
+  await page.getByLabel("Chroma numeric value").press("Enter");
+
+  const canonical = await page.locator('[data-css-representation="oklch"] code').textContent();
+  const hex = page.locator('[data-css-representation="hex"]');
+  const value = await hex.locator("code").textContent();
+  expect(value).toMatch(/^#[0-9A-F]{6}$/);
+  const copy = hex.locator("button");
+  await expect(copy).toBeEnabled();
+  await copy.click();
+  await expect(copy).toHaveAccessibleName("Copied Hex value");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(canonical!);
 });
 
 test("keyboard-only navigation reaches boundary and copy controls with visible focus", async ({

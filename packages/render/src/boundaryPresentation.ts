@@ -55,24 +55,14 @@ export function getBoundaryPresentation(
   const gamuts = visibleGamuts(visibility);
   const projectionColor = analysis.target.projection?.color ?? null;
   const projectionCss = projectionColor ? serializeColor(projectionColor) : "";
-  const markers: LinearControlMarker[] = gamuts.map((gamut) => {
-    const status = statusFor(analysis, gamut);
-    return {
-      id: `${gamut}-boundary-guide`,
-      label: `${gamutLabel(gamut)} table boundary guide C ${status.interpolatedMaximumChroma.toFixed(4)}`,
-      position: Math.min(
-        1,
-        Math.max(0, status.interpolatedMaximumChroma / OKLCH_PICKER_MAX_CHROMA),
-      ),
-      tone: gamut,
-    };
-  });
+  const markers: LinearControlMarker[] = [];
   if (analysis.target.projection) {
     markers.push({
       id: `${target}-boundary-projection`,
       label: `${gamutLabel(target)} target boundary projection C ${analysis.target.projection.chroma.toFixed(4)}`,
       position: analysis.target.projection.position,
       tone: "projection",
+      lane: target,
       cssColor: projectionCss,
     });
   }

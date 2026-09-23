@@ -149,12 +149,12 @@ describe("public instrument contract", () => {
         showSrgbBoundary ? 1 : 0,
       );
       expect(ui.element.querySelectorAll('[data-gamut-boundary="display-p3"]')).toHaveLength(0);
-      expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(
-        showSrgbBoundary ? 1 : 0,
-      );
+      expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
       expect(
-        ui.element.querySelectorAll('[data-gamut-marker="srgb-boundary-projection"]'),
-      ).toHaveLength(1);
+        ui.element
+          .querySelector('[data-gamut-marker="srgb-boundary-projection"]')
+          ?.getAttribute("data-gamut-lane"),
+      ).toBe("srgb");
       expect(ui.element.querySelectorAll("[data-boundary-guide]")).toHaveLength(2);
     }
     expect(changes).not.toHaveBeenCalled();
@@ -181,7 +181,11 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-guide"]')).toBeNull();
-    expect(get(ui.element, '[data-gamut-marker="srgb-boundary-projection"]')).toBeTruthy();
+    expect(
+      get(ui.element, '[data-gamut-marker="srgb-boundary-projection"]').getAttribute(
+        "data-gamut-lane",
+      ),
+    ).toBe("srgb");
 
     await ui.render(
       <GamutPlane
@@ -201,7 +205,11 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-boundary="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-marker="display-p3-boundary-guide"]')).toBeNull();
-    expect(get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]')).toBeTruthy();
+    expect(
+      get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]').getAttribute(
+        "data-gamut-lane",
+      ),
+    ).toBe("display-p3");
     expect(
       get(ui.element, '[data-marker-role="target-boundary-projection"]').getAttribute("aria-label"),
     ).toBe("Display P3 target boundary projection");
@@ -221,7 +229,11 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
     expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]')).toBeTruthy();
+    expect(
+      get(ui.element, '[data-gamut-marker="display-p3-boundary-projection"]').getAttribute(
+        "data-gamut-lane",
+      ),
+    ).toBe("display-p3");
     expect(value).toEqual({ l: 0.62, c: 0.42, h: 30, alpha: 1 });
     expect(changes).not.toHaveBeenCalled();
     expect(commits).not.toHaveBeenCalled();

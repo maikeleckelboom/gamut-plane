@@ -277,6 +277,7 @@ function onPointerDown(event: PointerEvent): void {
   interactionOrigin = { ...props.modelValue };
   latestInteractionPoint = null;
   latestInteractionColor = null;
+  surface.value.dataset.pointerFocus = "";
   surface.value.focus({ preventScroll: true });
   surface.value.setPointerCapture?.(event.pointerId);
   schedulePoint(point);
@@ -329,6 +330,7 @@ function onPointerCancel(event: PointerEvent): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  surface.value?.removeAttribute("data-pointer-focus");
   if (event.key === "Escape" && activePointerId !== null) {
     event.preventDefault();
     event.stopPropagation();
@@ -349,6 +351,10 @@ function onKeydown(event: KeyboardEvent): void {
   const next = props.plane.editFromKeyboard(props.modelValue, action, event.shiftKey);
   emit("update:modelValue", next);
   emit("commit", next);
+}
+
+function onBlur(): void {
+  surface.value?.removeAttribute("data-pointer-focus");
 }
 
 watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
@@ -445,6 +451,7 @@ onBeforeUnmount(() => {
       @pointercancel="onPointerCancel"
       @lostpointercapture="onPointerCancel"
       @keydown="onKeydown"
+      @blur="onBlur"
     >
       <canvas ref="canvas" aria-hidden="true" />
       <span

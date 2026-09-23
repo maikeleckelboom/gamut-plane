@@ -469,7 +469,9 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.get('[data-gamut-boundary="display-p3"]').exists()).toBe(true);
     expect(wrapper.find('[data-gamut-range="srgb"]').exists()).toBe(false);
     expect(wrapper.find('[data-gamut-marker="srgb-boundary-guide"]').exists()).toBe(false);
-    expect(wrapper.get('[data-gamut-marker="srgb-boundary-projection"]').exists()).toBe(true);
+    expect(
+      wrapper.get('[data-gamut-marker="srgb-boundary-projection"]').attributes("data-gamut-lane"),
+    ).toBe("srgb");
     expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
       "srgb",
     );
@@ -486,7 +488,11 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.get('[data-gamut-boundary="srgb"]').exists()).toBe(true);
     expect(wrapper.find('[data-gamut-range="display-p3"]').exists()).toBe(false);
     expect(wrapper.find('[data-gamut-marker="display-p3-boundary-guide"]').exists()).toBe(false);
-    expect(wrapper.get('[data-gamut-marker="display-p3-boundary-projection"]').exists()).toBe(true);
+    expect(
+      wrapper
+        .get('[data-gamut-marker="display-p3-boundary-projection"]')
+        .attributes("data-gamut-lane"),
+    ).toBe("display-p3");
     expect(
       plane.get('[data-marker-role="target-boundary-projection"]').attributes("aria-label"),
     ).toBe("Display P3 target boundary projection");
@@ -499,7 +505,11 @@ describe("PlaneInstrument edit contract", () => {
     expect(plane.findAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(wrapper.findAll("[data-gamut-range]")).toHaveLength(0);
     expect(wrapper.findAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(wrapper.get('[data-gamut-marker="display-p3-boundary-projection"]').exists()).toBe(true);
+    expect(
+      wrapper
+        .get('[data-gamut-marker="display-p3-boundary-projection"]')
+        .attributes("data-gamut-lane"),
+    ).toBe("display-p3");
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
 

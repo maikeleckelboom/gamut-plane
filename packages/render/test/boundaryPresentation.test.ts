@@ -17,13 +17,13 @@ describe("shared boundary presentation", () => {
       expect(model.analysis.target.target).toBe(target);
       expect(model.analysis.target.projection).not.toBeNull();
       expect(model.projectionColor).toEqual(model.analysis.target.projection?.color);
-      expect(model.markers.filter((marker) => marker.tone !== "projection")).toHaveLength(1);
-      expect(model.markers).toContainEqual(
-        expect.objectContaining({ id: `${visibleGamut}-boundary-guide`, tone: visibleGamut }),
-      );
-      expect(model.markers).toContainEqual(
-        expect.objectContaining({ id: `${target}-boundary-projection`, tone: "projection" }),
-      );
+      expect(model.markers).toEqual([
+        expect.objectContaining({
+          id: `${target}-boundary-projection`,
+          tone: "projection",
+          lane: target,
+        }),
+      ]);
       expect(new Set(model.hueIntervals.map((interval) => interval.tone))).toEqual(
         new Set([visibleGamut]),
       );
@@ -45,10 +45,41 @@ describe("shared boundary presentation", () => {
     expect(model.lightnessIntervals).toEqual([]);
     expect(model.chromaIntervals).toEqual([]);
     expect(model.markers).toEqual([
-      expect.objectContaining({ id: "display-p3-boundary-projection", tone: "projection" }),
+      expect.objectContaining({
+        id: "display-p3-boundary-projection",
+        tone: "projection",
+        lane: "display-p3",
+      }),
     ]);
     expect(model.analysis.status.srgb.inGamut).toBe(false);
     expect(model.analysis.status.displayP3.inGamut).toBe(false);
+  });
+
+  it("keeps the projection marker on the active target lane when that guide is hidden", () => {
+    for (const target of ["srgb", "display-p3"] as const) {
+      const hidden = getBoundaryPresentation(outsideBoth, "oklch", target, {
+        srgb: target !== "srgb",
+        displayP3: target !== "display-p3",
+      });
+      const visible = getBoundaryPresentation(outsideBoth, "oklch", target, {
+        srgb: true,
+        displayP3: true,
+      });
+      expect(hidden.markers.map((marker) => marker.lane)).toEqual([target]);
+      expect(visible.markers.map((marker) => marker.lane)).toEqual([target]);
+      expect(hidden.chromaIntervals.map((interval) => interval.tone)).not.toContain(target);
+    }
+  });
+
+  it("renders no marker when the selected color needs no target projection", () => {
+    const color: OklchColor = { l: 0.5, c: 0, h: 0, alpha: 1 };
+    const model = getBoundaryPresentation(color, "oklch", "srgb", {
+      srgb: true,
+      displayP3: true,
+    });
+    expect(model.markers).toEqual([]);
+    expect(model.chromaIntervals.map((interval) => interval.tone)).toEqual(["display-p3", "srgb"]);
+    expect(model.analysis.target.target).toBe("srgb");
   });
 
   it("uses the selected target table and its actual guide color", () => {

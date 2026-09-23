@@ -10,7 +10,8 @@ export interface LinearControlMarker {
   id: string;
   label: string;
   position: number;
-  tone: "srgb" | "display-p3" | "projection";
+  tone: "projection";
+  lane: LinearControlInterval["tone"];
   cssColor?: string;
 }
 export interface GamutThreshold {
@@ -89,10 +90,7 @@ export function channelWarning(
   const obstacles = [
     ...markers.map((marker) => ({
       center: Math.min(1, Math.max(0, marker.position)) * width,
-      width:
-        marker.tone === "projection"
-          ? geometry.PICKER_SLIDER_PROJECTION_COLLISION_WIDTH
-          : geometry.PICKER_SLIDER_TICK_COLLISION_WIDTH,
+      width: geometry.PICKER_SLIDER_PROJECTION_COLLISION_WIDTH,
     })),
     ...thresholds.map((threshold) => ({
       center:

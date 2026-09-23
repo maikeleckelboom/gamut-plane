@@ -72,7 +72,7 @@ describe("standalone application", () => {
       wrapper
         .findAll("[data-css-representation]")
         .map((representation) => representation.attributes("data-css-representation")),
-    ).toEqual(["oklch", "srgb", "display-p3"]);
+    ).toEqual(["oklch", "hex", "srgb", "display-p3"]);
     wrapper.unmount();
   });
 
@@ -162,8 +162,12 @@ describe("standalone application", () => {
     const copyButton = representation.get('[data-copy-representation="srgb"]');
     expect(copyButton.attributes("disabled")).toBeDefined();
     expect(copyButton.attributes("aria-describedby")).toBe("srgb-copy-reason");
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeDefined();
+    expect(wrapper.get('[data-copy-representation="hex"]').attributes("aria-describedby")).toBe(
+      "srgb-copy-reason",
+    );
     expect(representation.get("#srgb-copy-reason").text()).toBe(
-      "Outside sRGB. No clipped value emitted.",
+      "Outside sRGB. Hex and sRGB copies unavailable; no clipping.",
     );
 
     await copyButton.trigger("click");

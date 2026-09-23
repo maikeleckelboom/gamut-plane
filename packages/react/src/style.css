@@ -116,13 +116,14 @@
   overflow: hidden;
   border: 1px solid var(--gp-hairline);
   border-radius: 2px;
+  outline: 0;
   background: var(--gp-surface-1);
   cursor: crosshair;
   isolation: isolate;
   touch-action: none;
 }
 
-.gamut-plane-react .gpr-color-plane-surface:focus-visible {
+.gamut-plane-react .gpr-color-plane-surface:focus-visible:not([data-pointer-focus]) {
   border-color: var(--gp-user-accent);
   outline: 2px solid var(--gp-user-accent);
   outline-offset: 3px;
@@ -322,7 +323,7 @@
 }
 
 @media (forced-colors: active) {
-  .gamut-plane-react .gpr-color-plane-surface:focus-visible {
+  .gamut-plane-react .gpr-color-plane-surface:focus-visible:not([data-pointer-focus]) {
     border-color: Highlight;
     outline-color: Highlight;
     box-shadow: none;
@@ -508,7 +509,10 @@
   background: var(--gp-surface-0);
 }
 
-.gamut-plane-react .gpr-channel-control-track:focus-within {
+.gamut-plane-react
+  .gpr-channel-control-track:has(
+    > .gpr-channel-control-range:focus-visible:not([data-pointer-focus])
+  ) {
   border-color: var(--gp-user-accent);
 }
 
@@ -593,14 +597,6 @@
   pointer-events: none;
 }
 
-.gamut-plane-react .gpr-channel-control-tick {
-  z-index: 3;
-  top: 3px;
-  bottom: 3px;
-  width: 0;
-  transform: translateX(-50%);
-}
-
 .gamut-plane-react .gpr-channel-control-help {
   margin: 0;
   color: var(--gp-quiet);
@@ -643,22 +639,23 @@
   box-shadow: inset 2px 0 0 var(--picker-projection, var(--gp-quiet));
 }
 
-.gamut-plane-react .gpr-channel-control-tick--display-p3 {
-  border-left: 1px solid oklch(0.98 0 0 / 0.94);
-}
-
-.gamut-plane-react .gpr-channel-control-tick--srgb {
-  border-left: 1px dashed oklch(0.16 0 0 / 0.95);
-}
-
 .gamut-plane-react .gpr-channel-control-tick--projection {
-  top: 1px;
-  bottom: auto;
+  z-index: 5;
   width: 7px;
   height: 7px;
   border: 1px solid oklch(0.98 0 0 / 0.9);
   background: var(--tick-color, oklch(0.12 0 0 / 0.72));
   transform: translateX(-50%) rotate(45deg);
+}
+
+.gamut-plane-react .gpr-channel-control-tick--projection[data-gamut-lane="display-p3"] {
+  top: 3px;
+  bottom: auto;
+}
+
+.gamut-plane-react .gpr-channel-control-tick--projection[data-gamut-lane="srgb"] {
+  top: auto;
+  bottom: 3px;
 }
 
 .gamut-plane-react .gpr-channel-control-gamut-ranges {
@@ -668,7 +665,6 @@
 
 .gamut-plane-react .gpr-channel-control-gamut-range {
   height: var(--picker-slider-field-inset, 5px);
-  border-inline: 1px solid currentColor;
   color: var(--gp-foreground);
   opacity: 0.78;
 }

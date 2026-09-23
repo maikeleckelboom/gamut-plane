@@ -114,6 +114,7 @@ export function ColorPlane(props: ColorPlaneProps) {
         className="gpr-color-plane-surface"
         role="application"
         tabIndex={0}
+        onBlur={(event) => event.currentTarget.removeAttribute("data-pointer-focus")}
         dir="ltr"
         aria-label={label}
         data-render-color-space={capability}

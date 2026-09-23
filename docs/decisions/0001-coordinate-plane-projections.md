@@ -45,7 +45,7 @@ Boundary target is controlled projection/reference state and defaults to sRGB. B
 Membership and guides use different calculations:
 
 1. Exact inside/outside membership comes from direct color conversion for the active color.
-2. Boundary contours, crossing ticks, boundary-guide colors and target projections come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
+2. Boundary contours, channel intervals, boundary-guide colors and target projections come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
 
 Interpolated geometry is visualization. It cannot be used as exact membership, silently mutate the active color, or substitute for exact serialization.
 

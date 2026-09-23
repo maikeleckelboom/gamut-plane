@@ -17,7 +17,7 @@ const insideSrgb = isColorInGamut(color, "srgb");
 const p3Css = isColorInGamut(color, "display-p3") ? serializeColor(color, "display-p3") : null;
 ```
 
-`OklchColor` uses finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue in degrees. RGB serialization throws for a color outside the requested gamut rather than clipping it. `formatOklch` provides rounded display text; `serializeColor` preserves serialization precision.
+`OklchColor` uses finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue in degrees. RGB serialization throws for a color outside the requested gamut rather than clipping it. `formatOklch` provides rounded display text; `serializeColor` preserves serialization precision. `serializeHexColor` returns uppercase, quantized 8-bit sRGB (`#RRGGBB` or `#RRGGBBAA`) and throws outside sRGB.
 
 ## Math and guides
 

@@ -193,6 +193,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
             aria-label={marker.label}
             role="img"
             data-gamut-marker={marker.id}
+            data-gamut-lane={marker.lane}
           />
         ))}
         <span
@@ -221,7 +222,15 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           max={max}
           step={step}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={(event) => {
+            setFocused(false);
+            event.currentTarget.removeAttribute("data-pointer-focus");
+          }}
+          onPointerDown={(event) => {
+            if (event.pointerType !== "mouse" || event.button === 0)
+              event.currentTarget.dataset.pointerFocus = "";
+          }}
+          onKeyDown={(event) => event.currentTarget.removeAttribute("data-pointer-focus")}
         />
       </div>
       {help && (
