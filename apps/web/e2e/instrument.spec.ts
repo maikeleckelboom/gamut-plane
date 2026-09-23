@@ -34,7 +34,10 @@ test("bundled Geist and inspector rows retain their hierarchy across coordinate 
     sansLoaded: document.fonts.check('600 16px "Geist Variable"'),
     monoLoaded: document.fonts.check('400 16px "Geist Mono Variable"'),
     titleFamily: getComputedStyle(document.querySelector("h1")!).fontFamily,
-    valueFamily: getComputedStyle(document.querySelector(".coordinate-summary__value")!).fontFamily,
+    labelFamily: getComputedStyle(document.querySelector(".coordinate-summary__values dt")!)
+      .fontFamily,
+    valueFamily: getComputedStyle(document.querySelector(".coordinate-summary__values dd")!)
+      .fontFamily,
     copyFamily: getComputedStyle(document.querySelector(".css-output button")!).fontFamily,
     remoteFonts: performance
       .getEntriesByType("resource")
@@ -43,15 +46,21 @@ test("bundled Geist and inspector rows retain their hierarchy across coordinate 
   expect(typography.sansLoaded).toBe(true);
   expect(typography.monoLoaded).toBe(true);
   expect(typography.titleFamily).toContain("Geist Variable");
+  expect(typography.labelFamily).toContain("Geist Variable");
   expect(typography.valueFamily).toContain("Geist Mono Variable");
   expect(typography.copyFamily).toContain("Geist Variable");
   expect(typography.remoteFonts).toBe(0);
 
   await expect(page.getByRole("heading", { name: "OKLCH coordinates" })).toBeVisible();
-  await expect(page.locator(".coordinate-summary__value")).toHaveText("oklch(68% 0.18 252)");
+  await expect(page.locator(".coordinate-summary__values > div")).toHaveText([
+    "L0.6800",
+    "C0.1800",
+    "H252.00°",
+  ]);
   await page.getByRole("radio", { name: "OKLab" }).click();
   await expect(page.getByRole("heading", { name: "OKLab coordinates" })).toBeVisible();
-  await expect(page.locator(".coordinate-summary__value")).toHaveText(/^oklab\(68% /);
+  await expect(page.locator(".coordinate-summary__values dt")).toHaveText(["L", "a", "b"]);
+  await expect(page.locator(".coordinate-summary__values dd").first()).toHaveText("0.6800");
 
   const row = page.locator('[data-css-representation="display-p3"]');
   const aligned = await row.evaluate((element) => {

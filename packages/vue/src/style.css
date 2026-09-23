@@ -598,7 +598,7 @@
 
 .plane-instrument .channel-control__boundary-preview-position {
   position: absolute;
-  z-index: 7;
+  z-index: 5;
   inset: 0 var(--picker-slider-field-inset, 5px);
   pointer-events: none;
 }

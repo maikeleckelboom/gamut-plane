@@ -49,7 +49,9 @@ describe("standalone application", () => {
     );
     expect(wrapper.get("#project-description").text()).toContain("Interactive OKLab and OKLCH");
     expect(wrapper.get("#coordinate-summary-title").text()).toBe("OKLCH coordinates");
-    expect(wrapper.get(".coordinate-summary__value").text()).toBe("oklch(68% 0.18 252)");
+    expect(wrapper.findAll(".coordinate-summary__values > div").map((pair) => pair.text())).toEqual(
+      ["L0.6800", "C0.1800", "H252.00°"],
+    );
     expect(wrapper.text()).not.toContain("Membership uses exact linear-light conversion");
     expect(
       wrapper
@@ -110,7 +112,12 @@ describe("standalone application", () => {
     );
     expect(wrapper.get("#selected-color-title").text()).toBe("Selected color");
     expect(wrapper.get("#coordinate-summary-title").text()).toBe("OKLab coordinates");
-    expect(wrapper.get(".coordinate-summary__value").text()).toMatch(/^oklab\(68% /);
+    expect(wrapper.findAll(".coordinate-summary__values dt").map((label) => label.text())).toEqual([
+      "L",
+      "a",
+      "b",
+    ]);
+    expect(wrapper.get(".coordinate-summary__values dd").text()).toBe("0.6800");
     expect(wrapper.find(".channel-values").exists()).toBe(false);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
 

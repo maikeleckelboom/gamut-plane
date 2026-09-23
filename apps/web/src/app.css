@@ -143,12 +143,32 @@ button:disabled {
   font-weight: 600;
 }
 
-.coordinate-summary__value {
+.coordinate-summary__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
   margin: 0;
-  font-family: var(--cv-font-mono);
+}
+
+.coordinate-summary__values > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.coordinate-summary__values dt,
+.coordinate-summary__values dd {
+  margin: 0;
   font-size: 0.875rem;
+}
+
+.coordinate-summary__values dt {
+  color: var(--quiet);
+}
+
+.coordinate-summary__values dd {
+  font-family: var(--cv-font-mono);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
 
 .gamut-facts dl {

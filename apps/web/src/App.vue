@@ -17,11 +17,7 @@ import {
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import {
-  formatOklabForDisplay,
-  formatOklchForDisplay,
-  formatRgbCssForDisplay,
-} from "@/colorPresentation";
+import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
 
 const selectedColor = ref<OklchColor>({
   l: 0.68,
@@ -45,11 +41,22 @@ const gamutStatus = computed(() => ({
 }));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
-const selectedCoordinates = computed(() =>
-  activePlane.value === "oklch"
-    ? oklchDisplayCss.value
-    : formatOklabForDisplay(toOklabColor(selectedColor.value)),
-);
+const selectedCoordinates = computed(() => {
+  const color = selectedColor.value;
+  if (activePlane.value === "oklch") {
+    return [
+      { label: "L", value: color.l.toFixed(4) },
+      { label: "C", value: color.c.toFixed(4) },
+      { label: "H", value: `${color.h.toFixed(2)}°` },
+    ];
+  }
+  const oklab = toOklabColor(color);
+  return [
+    { label: "L", value: oklab.l.toFixed(4) },
+    { label: "a", value: oklab.a.toFixed(4) },
+    { label: "b", value: oklab.b.toFixed(4) },
+  ];
+});
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
 const hexColor = computed(() =>
   gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
@@ -247,9 +254,12 @@ async function copyCss(
           <h3 id="coordinate-summary-title">
             {{ activePlane === "oklch" ? "OKLCH coordinates" : "OKLab coordinates" }}
           </h3>
-          <p class="coordinate-summary__value">
-            <code>{{ selectedCoordinates }}</code>
-          </p>
+          <dl class="coordinate-summary__values">
+            <div v-for="coordinate in selectedCoordinates" :key="coordinate.label">
+              <dt>{{ coordinate.label }}</dt>
+              <dd>{{ coordinate.value }}</dd>
+            </div>
+          </dl>
         </section>
 
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
@@ -277,8 +287,7 @@ async function copyCss(
             <span
               class="css-representation__swatch"
               :style="{ backgroundColor: oklchCanonicalCss }"
-              role="img"
-              aria-label="Selected OKLCH color preview"
+              aria-hidden="true"
             />
             <button
               type="button"
@@ -299,8 +308,9 @@ async function copyCss(
               class="css-representation__swatch"
               :data-preview-kind="hexColor ? 'output' : 'boundary'"
               :style="{ backgroundColor: hexColor ?? srgbBoundaryPreviewCss ?? undefined }"
-              role="img"
-              :aria-label="hexColor ? 'Hex output color preview' : 'sRGB boundary color preview'"
+              :role="hexColor ? undefined : 'img'"
+              :aria-hidden="hexColor ? 'true' : undefined"
+              :aria-label="hexColor ? undefined : 'sRGB boundary color preview'"
             />
             <button
               type="button"
@@ -324,10 +334,9 @@ async function copyCss(
               class="css-representation__swatch"
               :data-preview-kind="srgbCanonicalCss ? 'output' : 'boundary'"
               :style="{ backgroundColor: srgbCanonicalCss ?? srgbBoundaryPreviewCss ?? undefined }"
-              role="img"
-              :aria-label="
-                srgbCanonicalCss ? 'sRGB output color preview' : 'sRGB boundary color preview'
-              "
+              :role="srgbCanonicalCss ? undefined : 'img'"
+              :aria-hidden="srgbCanonicalCss ? 'true' : undefined"
+              :aria-label="srgbCanonicalCss ? undefined : 'sRGB boundary color preview'"
             />
             <button
               type="button"
@@ -353,12 +362,9 @@ async function copyCss(
               :style="{
                 backgroundColor: displayP3CanonicalCss ?? displayP3BoundaryPreviewCss ?? undefined,
               }"
-              role="img"
-              :aria-label="
-                displayP3CanonicalCss
-                  ? 'Display P3 output color preview'
-                  : 'Display P3 boundary color preview'
-              "
+              :role="displayP3CanonicalCss ? undefined : 'img'"
+              :aria-hidden="displayP3CanonicalCss ? 'true' : undefined"
+              :aria-label="displayP3CanonicalCss ? undefined : 'Display P3 boundary color preview'"
             />
             <button
               type="button"
