@@ -25,6 +25,47 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   expect(errors).toEqual([]);
 });
 
+test("bundled Geist and inspector rows retain their hierarchy across coordinate views", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.evaluate(() => document.fonts.ready);
+  const typography = await page.evaluate(() => ({
+    sansLoaded: document.fonts.check('600 16px "Geist Variable"'),
+    monoLoaded: document.fonts.check('400 16px "Geist Mono Variable"'),
+    titleFamily: getComputedStyle(document.querySelector("h1")!).fontFamily,
+    valueFamily: getComputedStyle(document.querySelector(".coordinate-summary__value")!).fontFamily,
+    copyFamily: getComputedStyle(document.querySelector(".css-output button")!).fontFamily,
+    remoteFonts: performance
+      .getEntriesByType("resource")
+      .filter((entry) => /fonts\.googleapis|fonts\.gstatic|cdn\./.test(entry.name)).length,
+  }));
+  expect(typography.sansLoaded).toBe(true);
+  expect(typography.monoLoaded).toBe(true);
+  expect(typography.titleFamily).toContain("Geist Variable");
+  expect(typography.valueFamily).toContain("Geist Mono Variable");
+  expect(typography.copyFamily).toContain("Geist Variable");
+  expect(typography.remoteFonts).toBe(0);
+
+  await expect(page.getByRole("heading", { name: "OKLCH coordinates" })).toBeVisible();
+  await expect(page.locator(".coordinate-summary__value")).toHaveText("oklch(68% 0.18 252)");
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await expect(page.getByRole("heading", { name: "OKLab coordinates" })).toBeVisible();
+  await expect(page.locator(".coordinate-summary__value")).toHaveText(/^oklab\(68% /);
+
+  const row = page.locator('[data-css-representation="display-p3"]');
+  const aligned = await row.evaluate((element) => {
+    const swatch = element.querySelector(".css-representation__swatch")!.getBoundingClientRect();
+    const button = element.querySelector("button")!.getBoundingClientRect();
+    const text = element.getBoundingClientRect();
+    const middle = text.top + text.height / 2;
+    return [swatch.top + swatch.height / 2, button.top + button.height / 2].every(
+      (center) => Math.abs(center - middle) < 2,
+    );
+  });
+  expect(aligned).toBe(true);
+});
+
 test("the active coordinate view keeps its background as the view changes", async ({ page }) => {
   await openInstrument(page);
   const oklch = page.getByRole("radio", { name: "OKLCH" });
@@ -74,13 +115,20 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   const selected = page.locator('[data-css-representation="oklch"] code');
   const originalSelection = await selected.textContent();
   const srgbSwatch = await page.locator("[data-boundary-guide-swatch]").getAttribute("style");
+  const targetSwatchX = await page
+    .locator("[data-boundary-guide-swatch]")
+    .evaluate((element) => element.getBoundingClientRect().left);
 
   await expect(srgbTarget).toBeChecked();
   await expect(p3Target).not.toBeChecked();
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(targetResult).toContainText("Target · sRGB");
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-gamut-range="srgb"]')).not.toHaveCount(0);
+  await expect(
+    page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
+  ).toHaveCount(1);
+  await expect(page.locator(".channel-control__tick")).toHaveCount(0);
 
   await p3Target.click();
   await expect(p3Target).toBeChecked();
@@ -90,6 +138,14 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   expect(await page.locator("[data-boundary-guide-swatch]").getAttribute("style")).not.toBe(
     srgbSwatch,
   );
+  expect(
+    await page
+      .locator("[data-boundary-guide-swatch]")
+      .evaluate((element) => element.getBoundingClientRect().left),
+  ).toBeCloseTo(targetSwatchX, 0);
+  await expect(
+    page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
+  ).toHaveCount(1);
   await expect(selected).toHaveText(originalSelection ?? "");
 
   await p3Target.focus();
@@ -100,6 +156,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(srgbTarget).toBeChecked();
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
+  await expect(page.locator("[data-slider-boundary-preview]")).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
@@ -204,6 +261,34 @@ test("slider track focus follows the actual range control", async ({ page }) => 
   expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
     unfocusedBorder,
   );
+});
+
+test("slider warning triangle keeps visual space from the native thumb", async ({ page }) => {
+  await openInstrument(page);
+  const chroma = page.getByLabel("Chroma numeric value");
+  await chroma.fill("0.2");
+  await chroma.press("Enter");
+  const control = page.locator('[data-picker-control="c"]');
+  const warning = control.locator('[data-gamut-warning="linear"]');
+  await expect(warning).toBeVisible();
+  const spacing = await control.evaluate((element) => {
+    const range = element.querySelector<HTMLInputElement>('input[type="range"]')!;
+    const triangle = element.querySelector<HTMLElement>('[data-gamut-warning="linear"]')!;
+    const bounds = range.getBoundingClientRect();
+    const warningBounds = triangle.getBoundingClientRect();
+    const position =
+      (range.valueAsNumber - Number(range.min)) / (Number(range.max) - Number(range.min));
+    const thumbCenter = bounds.left + 5 + position * (bounds.width - 10);
+    const warningCenter = warningBounds.left + warningBounds.width / 2;
+    return {
+      gap: Math.abs(warningCenter - thumbCenter) - (10 + warningBounds.width) / 2,
+      side: triangle.dataset.warningSide,
+      warningCenter,
+      thumbCenter,
+    };
+  });
+  expect(spacing.gap).toBeGreaterThan(4);
+  expect(spacing.side).toBe(spacing.warningCenter < spacing.thumbCenter ? "left" : "right");
 });
 
 test("OKLab edge interactions stay in-domain while authored overflow is preserved", async ({

@@ -340,6 +340,8 @@ watch(
             :gradient="chromaGradient"
             :markers="chromaControlMarkers"
             :intervals="chromaIntervals"
+            :boundary-preview-color="boundaryGuideCss"
+            :boundary-preview-tone="boundaryTarget"
             :overflow-max="true"
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
@@ -417,6 +419,13 @@ watch(
         >
           <div class="plane-instrument__target-heading">
             <span>Target · {{ targetLabel }}</span>
+            <span
+              class="plane-instrument__target-swatch"
+              data-boundary-guide-swatch
+              :style="{ background: boundaryGuideCss }"
+              :aria-label="`${targetLabel} sampled boundary-guide color ${boundaryGuideCss}`"
+              role="img"
+            />
             <strong :data-target-status="targetResult.inGamut ? 'inside' : 'outside'">
               {{ targetResult.inGamut ? "Inside" : "Outside" }}
             </strong>
@@ -431,13 +440,6 @@ watch(
               <dd>−{{ targetResult.guideDeltaC.toFixed(4) }}</dd>
             </div>
           </dl>
-          <span
-            class="plane-instrument__target-swatch"
-            data-boundary-guide-swatch
-            :style="{ background: boundaryGuideCss }"
-            :aria-label="`${targetLabel} sampled boundary-guide color ${boundaryGuideCss}`"
-            role="img"
-          />
         </section>
       </div>
     </div>

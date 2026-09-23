@@ -4,6 +4,7 @@ import {
   isColorInGamut,
   serializeColor,
   serializeHexColor,
+  toOklabColor,
   type DisplayGamut,
 } from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
@@ -16,7 +17,11 @@ import {
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
+import {
+  formatOklabForDisplay,
+  formatOklchForDisplay,
+  formatRgbCssForDisplay,
+} from "@/colorPresentation";
 
 const selectedColor = ref<OklchColor>({
   l: 0.68,
@@ -40,6 +45,11 @@ const gamutStatus = computed(() => ({
 }));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
+const selectedCoordinates = computed(() =>
+  activePlane.value === "oklch"
+    ? oklchDisplayCss.value
+    : formatOklabForDisplay(toOklabColor(selectedColor.value)),
+);
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
 const hexColor = computed(() =>
   gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
@@ -232,6 +242,15 @@ async function copyCss(
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
         <h2 id="selected-color-title" class="sr-only">Selected color</h2>
+
+        <section class="coordinate-summary" aria-labelledby="coordinate-summary-title">
+          <h3 id="coordinate-summary-title">
+            {{ activePlane === "oklch" ? "OKLCH coordinates" : "OKLab coordinates" }}
+          </h3>
+          <p class="coordinate-summary__value">
+            <code>{{ selectedCoordinates }}</code>
+          </p>
+        </section>
 
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>

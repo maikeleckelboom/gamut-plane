@@ -20,6 +20,13 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
     >
       <div className="gpr-plane-instrument-target-heading">
         <span>Target · {model.targetLabel}</span>
+        <span
+          className="gpr-plane-instrument-target-swatch"
+          data-boundary-guide-swatch=""
+          style={{ background: model.swatchCss }}
+          aria-label={`${model.targetLabel} sampled boundary-guide color ${model.swatchCss}`}
+          role="img"
+        />
         <strong data-target-status={model.inGamut ? "inside" : "outside"}>
           {model.inGamut ? "Inside" : "Outside"}
         </strong>
@@ -36,13 +43,6 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
           </div>
         )}
       </dl>
-      <span
-        className="gpr-plane-instrument-target-swatch"
-        data-boundary-guide-swatch=""
-        style={{ background: model.swatchCss }}
-        aria-label={`${model.targetLabel} sampled boundary-guide color ${model.swatchCss}`}
-        role="img"
-      />
     </section>
   );
 }

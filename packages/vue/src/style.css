@@ -33,7 +33,7 @@
   --gp-hairline: oklch(0.36 0.012 255 / 0.72);
   --gp-user-accent: var(--gamut-plane-accent, oklch(0.77 0.13 230));
   --gp-status-outside: oklch(0.77 0.15 45);
-  --gp-cv-font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --gp-cv-font-mono: var(--cv-font-mono, ui-monospace, monospace);
   color-scheme: dark;
   color: var(--gp-foreground);
   background: var(--gp-surface-0);
@@ -62,11 +62,11 @@
   padding: 7px 10px;
   background: transparent;
   color: var(--gp-quiet);
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.75rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
   font-weight: 450;
   line-height: 1;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -323,31 +323,32 @@
 }
 
 .plane-instrument .plane-instrument__target-result {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 12px;
+  display: grid;
+  gap: 8px;
   padding: 8px 0 10px;
 }
 
 .plane-instrument .plane-instrument__target-heading {
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: minmax(0, 132px) 24px minmax(0, 1fr);
+  align-items: center;
   gap: 10px;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.75rem;
+  font-family: inherit;
+  font-size: 0.8125rem;
   line-height: 1.35;
 }
 
-.plane-instrument .plane-instrument__target-heading > span {
+.plane-instrument .plane-instrument__target-heading > span:first-child {
   color: var(--gp-foreground);
 }
 
 .plane-instrument .plane-instrument__target-heading strong {
+  justify-self: end;
   color: var(--gp-quiet);
-  font: 0.625rem/1.35 var(--gp-cv-font-mono);
-  letter-spacing: 0.04em;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
@@ -357,8 +358,6 @@
 
 .plane-instrument .plane-instrument__target-result dl {
   display: flex;
-  order: 2;
-  flex-basis: 100%;
   flex-wrap: wrap;
   gap: 6px 16px;
   margin: 0;
@@ -369,8 +368,8 @@
   gap: 7px;
   margin: 0;
   color: var(--gp-quiet);
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.6875rem;
+  font-family: inherit;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -382,9 +381,8 @@
 }
 
 .plane-instrument .plane-instrument__target-swatch {
-  order: 1;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   align-self: center;
   border: 1px solid oklch(0.96 0 0 / 0.7);
   box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);
@@ -528,7 +526,6 @@
   cursor: grabbing;
 }
 
-.plane-instrument .channel-control__tick,
 .plane-instrument .channel-control__gamut-ranges,
 .plane-instrument .channel-control__gamut-range,
 .plane-instrument .channel-control__warning {
@@ -543,67 +540,99 @@
   line-height: 1.55;
 }
 
-.plane-instrument .channel-control__tick--projection {
-  z-index: 5;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border: 1px solid oklch(0.98 0 0 / 0.9);
-  border-radius: 50%;
-  background: var(--tick-color, oklch(0.12 0 0 / 0.72));
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 1px oklch(0 0 0 / 0.6);
-}
-
 .plane-instrument .channel-control__gamut-ranges {
   z-index: 4;
   inset: 0 var(--picker-slider-field-inset, 5px);
 }
 
 .plane-instrument .channel-control__gamut-range {
-  height: var(--picker-slider-field-inset, 5px);
+  height: 11px;
   color: var(--gp-foreground);
   opacity: 0.78;
 }
 
 .plane-instrument .channel-control__gamut-range::before {
   position: absolute;
-  right: 0;
-  left: 0;
-  top: 2px;
-  border-top: 1px solid currentColor;
+  inset-inline-start: 0;
+  width: 1px;
+  height: 9px;
+  background: currentColor;
   content: "";
 }
 
+.plane-instrument .channel-control__gamut-range::after {
+  position: absolute;
+  inset-inline-end: 0;
+  width: 1px;
+  height: 9px;
+  background: currentColor;
+  content: "";
+}
+
+.plane-instrument .channel-control__gamut-range[data-start-internal="false"]::before,
+.plane-instrument .channel-control__gamut-range[data-end-internal="false"]::after {
+  display: none;
+}
+
 .plane-instrument .channel-control__gamut-range--display-p3 {
-  top: 0;
+  top: 2px;
+  border-top: 1px solid currentColor;
 }
 
 .plane-instrument .channel-control__gamut-range--srgb {
-  bottom: 0;
+  bottom: 2px;
+  border-bottom: 1px dashed currentColor;
   opacity: 0.56;
 }
 
-.plane-instrument .channel-control__gamut-range--srgb::before {
-  top: auto;
-  bottom: 2px;
-  border-top-style: dashed;
+.plane-instrument .channel-control__gamut-range--display-p3::before,
+.plane-instrument .channel-control__gamut-range--display-p3::after {
+  top: 0;
+}
+
+.plane-instrument .channel-control__gamut-range--srgb::before,
+.plane-instrument .channel-control__gamut-range--srgb::after {
+  bottom: 0;
+  background: repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 3px);
+}
+
+.plane-instrument .channel-control__boundary-preview-position {
+  position: absolute;
+  z-index: 7;
+  inset: 0 var(--picker-slider-field-inset, 5px);
+  pointer-events: none;
+}
+
+.plane-instrument .channel-control__boundary-preview {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid oklch(0.98 0 0 / 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);
+  transform: translate(-50%, -50%);
 }
 
 .plane-instrument .channel-control__warning {
   z-index: 4;
+  --slider-warning-optical-offset: 3px;
   top: var(--picker-slider-warning-top, -5px);
   left: clamp(
     var(--picker-slider-warning-edge, 9px),
     calc(
       var(--picker-slider-warning-position, 0%) + var(--picker-slider-warning-thumb-offset, 5px) +
-        var(--picker-slider-warning-side-offset, 14px)
+        var(--picker-slider-warning-side-offset, 14px) + var(--slider-warning-optical-offset)
     ),
     calc(100% - var(--picker-slider-warning-edge, 9px))
   );
   width: 11px;
   height: 11px;
   transform: translateX(-50%);
+}
+
+.plane-instrument .channel-control__warning[data-warning-side="left"] {
+  --slider-warning-optical-offset: -3px;
 }
 
 /* 320px field + 270px controls + 34px gap; em keeps text enlargement in the decision. */

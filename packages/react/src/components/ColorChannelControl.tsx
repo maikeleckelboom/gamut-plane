@@ -32,6 +32,8 @@ export interface ColorChannelControlProps {
   gradient: string;
   intervals: readonly LinearControlInterval[];
   markers?: readonly LinearControlMarker[];
+  boundaryPreviewColor?: string;
+  boundaryPreviewTone?: LinearControlInterval["tone"];
   overflowMax?: boolean;
   help?: string | undefined;
   warningVisible: boolean;
@@ -65,6 +67,8 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     gradient,
     intervals,
     markers = [],
+    boundaryPreviewColor,
+    boundaryPreviewTone,
     overflowMax,
     help,
     warningVisible,
@@ -79,6 +83,9 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
   const [width, setWidth] = useState(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
   const bounded = Math.min(max, Math.max(min, value));
   const sections = channelSections(intervals);
+  const boundaryPreviewSection = sections.find(
+    (section) => section.tone === boundaryPreviewTone && section.end < 1,
+  );
   const thresholds = channelThresholds(sections);
   const { placement, obstacles } = channelWarning(warningPosition, width, markers, thresholds);
   const helpId = help ? `${id}-help` : undefined;
@@ -151,23 +158,15 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
               data-gamut-range={section.tone}
               data-range-start={section.start}
               data-range-end={section.end}
+              data-start-internal={section.start > 0}
+              data-end-internal={section.end < 1}
             />
           ))}
         </span>
         {markers.map((marker) => (
-          <span
-            key={marker.id}
-            className={`gpr-channel-control-tick gpr-channel-control-tick--${marker.tone}`}
-            style={presentationStyle({
-              left: `${Math.min(1, Math.max(0, marker.position)) * 100}%`,
-              "--tick-color": marker.cssColor,
-            })}
-            title={marker.label}
-            aria-label={marker.label}
-            role="img"
-            data-gamut-marker={marker.id}
-            data-gamut-lane={marker.lane}
-          />
+          <span key={marker.id} className="gpr-sr-only">
+            {marker.label}
+          </span>
         ))}
         <span
           className="gpr-channel-control-warning"
@@ -203,6 +202,18 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           }}
           onKeyDown={(event) => event.currentTarget.removeAttribute("data-pointer-focus")}
         />
+        {boundaryPreviewSection && boundaryPreviewColor && (
+          <span className="gpr-channel-control-boundary-preview-position" aria-hidden="true">
+            <span
+              className="gpr-channel-control-boundary-preview"
+              style={{
+                left: `${boundaryPreviewSection.end * 100}%`,
+                background: boundaryPreviewColor,
+              }}
+              data-slider-boundary-preview=""
+            />
+          </span>
+        )}
       </div>
       {help && (
         <p id={helpId} className="gpr-channel-control-help">

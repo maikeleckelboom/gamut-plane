@@ -35,6 +35,8 @@ const props = withDefaults(
     precision?: number;
     markers?: LinearControlMarker[];
     intervals?: LinearControlInterval[];
+    boundaryPreviewColor?: string;
+    boundaryPreviewTone?: LinearControlInterval["tone"];
     overflowMax?: boolean;
     help?: string;
     warningVisible?: boolean;
@@ -90,6 +92,11 @@ const instrumentStyle = {
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
 const inGamutSections = computed(() => channelSections(props.intervals));
+const boundaryPreviewSection = computed(() =>
+  inGamutSections.value.find(
+    (section) => section.tone === props.boundaryPreviewTone && section.end < 1,
+  ),
+);
 const gamutThresholds = computed(() => channelThresholds(inGamutSections.value));
 const warning = computed(() =>
   channelWarning(props.warningPosition, trackWidth.value, props.markers, gamutThresholds.value),
@@ -205,16 +212,6 @@ function onRangeKeydown(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
 }
 
-function positionStyle(position: number): Record<string, string> {
-  return { left: `${Math.min(1, Math.max(0, position)) * 100}%` };
-}
-
-function tickStyle(marker: LinearControlMarker): Record<string, string> {
-  const style: Record<string, string> = positionStyle(marker.position);
-  if (marker.cssColor) style["--tick-color"] = marker.cssColor;
-  return style;
-}
-
 function sectionStyle(section: LinearControlInterval): Record<string, string> {
   return { left: `${section.start * 100}%`, width: `${(section.end - section.start) * 100}%` };
 }
@@ -270,20 +267,11 @@ onBeforeUnmount(() => {
           :data-gamut-range="section.tone"
           :data-range-start="section.start"
           :data-range-end="section.end"
+          :data-start-internal="section.start > 0 ? 'true' : 'false'"
+          :data-end-internal="section.end < 1 ? 'true' : 'false'"
         />
       </span>
-      <span
-        v-for="marker in markers"
-        :key="marker.id"
-        class="channel-control__tick"
-        :class="`channel-control__tick--${marker.tone}`"
-        :style="tickStyle(marker)"
-        :title="marker.label"
-        :aria-label="marker.label"
-        :data-gamut-marker="marker.id"
-        :data-gamut-lane="marker.lane"
-        role="img"
-      />
+      <span v-for="marker in markers" :key="marker.id" class="sr-only">{{ marker.label }}</span>
       <span
         v-show="warningVisible"
         class="channel-control__warning"
@@ -318,6 +306,20 @@ onBeforeUnmount(() => {
         @blur="blurRange"
         @keydown="onRangeKeydown"
       />
+      <span
+        v-if="boundaryPreviewSection && boundaryPreviewColor"
+        class="channel-control__boundary-preview-position"
+        aria-hidden="true"
+      >
+        <span
+          class="channel-control__boundary-preview"
+          :style="{
+            left: `${boundaryPreviewSection.end * 100}%`,
+            background: boundaryPreviewColor,
+          }"
+          data-slider-boundary-preview
+        />
+      </span>
     </div>
 
     <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>

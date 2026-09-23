@@ -1,4 +1,4 @@
-import type { OklchColor } from "@gamut-plane/core";
+import type { OklabColor, OklchColor } from "@gamut-plane/core";
 
 export const CSS_DISPLAY_DECIMALS = 6;
 
@@ -18,6 +18,13 @@ export function formatOklchForDisplay(color: OklchColor): string {
   )} ${formatDecimal(color.h)}`;
   const alpha = color.alpha < 1 ? ` / ${formatDecimal(color.alpha)}` : "";
   return `oklch(${coordinates}${alpha})`;
+}
+
+/** Shows the active OKLab coordinates as a CSS value without changing copy serialization. */
+export function formatOklabForDisplay(color: OklabColor): string {
+  const coordinates = `${formatDecimal(color.l * 100, 3)}% ${formatDecimal(color.a)} ${formatDecimal(color.b)}`;
+  const alpha = color.alpha < 1 ? ` / ${formatDecimal(color.alpha)}` : "";
+  return `oklab(${coordinates}${alpha})`;
 }
 
 /** Rounds color() channels for display while preserving its color-space identifier. */

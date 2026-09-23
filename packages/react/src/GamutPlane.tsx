@@ -210,6 +210,8 @@ export function GamutPlane({
                 gradient={model.chromaGradient}
                 intervals={model.chromaIntervals}
                 markers={model.markers}
+                boundaryPreviewColor={model.targetResult.swatchCss}
+                boundaryPreviewTone={boundaryTarget}
                 overflowMax
                 help={model.chromaHelp}
                 warningPosition={model.chromaPosition}

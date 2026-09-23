@@ -185,9 +185,13 @@ describe("public instrument contract", () => {
       );
       expect(ui.element.querySelectorAll('[data-gamut-boundary="display-p3"]')).toHaveLength(0);
       expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-      expect(
-        ui.element.querySelectorAll('[data-gamut-marker="srgb-boundary-projection"]'),
-      ).toHaveLength(showSrgbBoundary ? 1 : 0);
+      expect(ui.element.querySelectorAll('[data-gamut-range="srgb"]').length > 0).toBe(
+        showSrgbBoundary,
+      );
+      expect(ui.element.querySelectorAll("[data-slider-boundary-preview]")).toHaveLength(
+        showSrgbBoundary ? 1 : 0,
+      );
+      expect(ui.element.querySelectorAll(".gpr-channel-control-tick")).toHaveLength(0);
       expect(ui.element.querySelector("[data-boundary-guide-swatch]")).not.toBeNull();
     }
     expect(changes).not.toHaveBeenCalled();
