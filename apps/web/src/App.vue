@@ -93,16 +93,10 @@ const copyFeedback = useTimeoutFn(
 type CssRepresentation = "oklch" | "hex" | "display-p3" | "srgb";
 
 const capabilityLabel = computed(() => {
-  if (canvasCapability.value === "display-p3") {
-    return "Display P3 Canvas granted. The field may paint P3 colors.";
-  }
-  if (canvasCapability.value === "srgb") {
-    return "sRGB Canvas granted. P3 contours remain mathematical; P3-only field colors may clip.";
-  }
-  if (canvasCapability.value === "unavailable") {
-    return "Canvas 2D is unavailable. Exact gamut facts remain mathematical.";
-  }
-  return "Detecting the browser Canvas color space.";
+  if (canvasCapability.value === "display-p3") return "Display P3";
+  if (canvasCapability.value === "srgb") return "sRGB";
+  if (canvasCapability.value === "unavailable") return "Unavailable";
+  return "Detecting";
 });
 
 function exactCss(gamut: DisplayGamut): string | null {
@@ -240,7 +234,6 @@ async function copyCss(
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
         <header>
-          <p class="inspector-kicker">Selected color</p>
           <h2 id="selected-color-title">
             {{ activePlane === "oklab" ? "OKLab coordinates" : "OKLCH coordinates" }}
           </h2>
@@ -291,7 +284,6 @@ async function copyCss(
               </dd>
             </div>
           </dl>
-          <p>Membership uses exact linear-light conversion, not the sampled contours.</p>
         </section>
 
         <section class="css-output" aria-labelledby="css-output-title">
@@ -417,7 +409,7 @@ async function copyCss(
         </section>
 
         <section class="canvas-fact" aria-labelledby="canvas-capability-title">
-          <h3 id="canvas-capability-title">Canvas capability</h3>
+          <h3 id="canvas-capability-title">Canvas</h3>
           <p :data-canvas-capability="canvasCapability">{{ capabilityLabel }}</p>
         </section>
       </aside>

@@ -102,7 +102,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
-  await expect(targetResult).toContainText("Boundary guide C");
+  await expect(targetResult).toContainText("Guide C");
   await expect(selected).toHaveText(originalSelection ?? "");
 });
 
@@ -387,9 +387,12 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   const capability = page.locator("[data-canvas-capability]");
   const status = await capability.getAttribute("data-canvas-capability");
   const text = await capability.textContent();
-  if (status === "display-p3") expect(text).toContain("may paint P3 colors");
-  else if (status === "srgb") expect(text).toContain("P3-only field colors may clip");
-  else expect(status).toBe("unavailable");
+  if (status === "display-p3") expect(text).toBe("Display P3");
+  else if (status === "srgb") expect(text).toBe("sRGB");
+  else {
+    expect(status).toBe("unavailable");
+    expect(text).toBe("Unavailable");
+  }
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

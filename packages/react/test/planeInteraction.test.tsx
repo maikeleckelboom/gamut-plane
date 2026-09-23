@@ -316,9 +316,7 @@ describe("field invalidation", () => {
     expect(get(ui.element, "[data-table-boundary-guide-marker]").style.left).toBe(
       get(ui.element, "[data-active-marker]").style.left,
     );
-    expect(get(ui.element, "[data-boundary-target-result]").textContent).not.toContain(
-      "Guide delta C",
-    );
+    expect(get(ui.element, "[data-boundary-target-result]").textContent).not.toContain("ΔC");
     expect(changes).not.toHaveBeenCalled();
   });
 });

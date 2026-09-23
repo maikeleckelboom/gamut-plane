@@ -38,10 +38,8 @@ describe("standalone application", () => {
 
     expect(wrapper.get("h1").text()).toBe("Gamut Plane");
     expect(wrapper.find(".project-kicker").exists()).toBe(false);
-    expect(wrapper.get(".inspector-kicker").text()).toBe("Selected color");
-    expect(wrapper.get('[data-canvas-capability="srgb"]').text()).toContain(
-      "P3-only field colors may clip",
-    );
+    expect(wrapper.find(".inspector-kicker").exists()).toBe(false);
+    expect(wrapper.get('[data-canvas-capability="srgb"]').text()).toBe("sRGB");
     expect(wrapper.findAll("[data-exact-gamut-status]")).toHaveLength(2);
     expect(wrapper.findAll("[data-picker-gamut-status]")).toHaveLength(0);
     expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(2);
@@ -50,7 +48,7 @@ describe("standalone application", () => {
       "project-description",
     );
     expect(wrapper.get("#project-description").text()).toContain("Interactive OKLab and OKLCH");
-    expect(wrapper.text().match(/Membership uses exact linear-light conversion/g)).toHaveLength(1);
+    expect(wrapper.text()).not.toContain("Membership uses exact linear-light conversion");
     expect(
       wrapper
         .findAll("[data-boundary-target-option]")

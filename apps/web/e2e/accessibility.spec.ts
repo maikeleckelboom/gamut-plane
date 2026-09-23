@@ -61,7 +61,6 @@ test("heading, landmark, and text-status semantics remain explicit", async ({ pa
     /Inside|Outside/,
   );
   await expect(page.locator('[data-exact-gamut-status="srgb"]')).toContainText(/Inside|Outside/);
-  await expect(page.locator(".gamut-facts")).toContainText(
-    "Membership uses exact linear-light conversion",
-  );
+  await expect(page.locator(".gamut-facts")).toContainText("Exact gamut status");
+  await expect(page.getByRole("radiogroup", { name: "Coordinate view" })).toHaveCount(1);
 });

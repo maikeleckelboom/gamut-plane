@@ -260,9 +260,7 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelectorAll("[data-gamut-marker]")).toHaveLength(0);
     expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
     expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
-    expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain(
-      "Boundary guide C",
-    );
+    expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain("Guide C");
     expect(value).toEqual({ l: 0.62, c: 0.42, h: 30, alpha: 1 });
     expect(changes).not.toHaveBeenCalled();
     expect(commits).not.toHaveBeenCalled();

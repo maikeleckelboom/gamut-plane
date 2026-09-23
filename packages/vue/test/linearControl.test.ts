@@ -556,7 +556,7 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("marks in-gamut ranges without veiling the sampled field and reveals nearby crossings", async () => {
+  it("marks in-gamut ranges without a transient threshold hint", async () => {
     const intervals: LinearControlInterval[] = [
       { start: 0, end: 0.12, tone: "display-p3" },
       { start: 0.78, end: 1, tone: "display-p3" },
@@ -587,19 +587,12 @@ describe("ColorChannelControl gamut annotations", () => {
       new MouseEvent("pointermove", { bubbles: true, clientX: 0.12 * 320 }),
     );
     await nextTick();
-    expect(wrapper.get('[data-contextual-gamut-label="← Inside Display P3 gamut"]').text()).toBe(
-      "← Inside Display P3 gamut",
-    );
+    expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
 
     track.element.dispatchEvent(
       new MouseEvent("pointermove", { bubbles: true, clientX: 0.05 * 320 }),
     );
     await nextTick();
-    expect(wrapper.get('[data-contextual-gamut-label="Inside sRGB gamut →"]').text()).toBe(
-      "Inside sRGB gamut →",
-    );
-
-    await track.trigger("pointerleave");
     expect(wrapper.find("[data-contextual-gamut-label]").exists()).toBe(false);
 
     wrapper.unmount();

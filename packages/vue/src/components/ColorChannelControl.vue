@@ -17,7 +17,6 @@ import {
   channelSections,
   channelThresholds,
   channelWarning,
-  nearestThreshold,
   type LinearControlInterval,
   type LinearControlMarker,
 } from "@gamut-plane/render";
@@ -76,9 +75,6 @@ const numericMax = computed<number | undefined>(() => (props.overflowMax ? undef
 const trackElement = ref<HTMLElement>();
 const rangeElement = ref<HTMLInputElement>();
 const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
-const trackLeft = ref(0);
-const hoverPosition = ref<number | null>(null);
-const isRangeFocused = ref(false);
 let pendingRangeValue: number | null = null;
 let rangeRaf: number | null = null;
 let isUnmounted = false;
@@ -93,19 +89,8 @@ const instrumentStyle = {
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
-const normalizedModelPosition = computed(() => {
-  const span = props.max - props.min;
-  return span > 0 ? (boundedModelValue.value - props.min) / span : 0;
-});
 const inGamutSections = computed(() => channelSections(props.intervals));
 const gamutThresholds = computed(() => channelThresholds(inGamutSections.value));
-const contextualThreshold = computed(() => {
-  const position =
-    hoverPosition.value ?? (isRangeFocused.value ? normalizedModelPosition.value : null);
-  if (position === null) return null;
-  const nearest = nearestThreshold(gamutThresholds.value, position);
-  return nearest && Math.abs(nearest.position - position) * trackWidth.value <= 14 ? nearest : null;
-});
 const warning = computed(() =>
   channelWarning(props.warningPosition, trackWidth.value, props.markers, gamutThresholds.value),
 );
@@ -129,7 +114,6 @@ function updateTrackBounds(): void {
   const bounds = trackElement.value?.getBoundingClientRect();
   if (!bounds) return;
   updateTrackWidth(bounds.width);
-  trackLeft.value = bounds.left;
 }
 
 onMounted(() => {
@@ -213,20 +197,12 @@ function cancelRangePointer(event?: PointerEvent): void {
 }
 
 function blurRange(): void {
-  isRangeFocused.value = false;
   rangeElement.value?.removeAttribute("data-pointer-focus");
   cancelRangePointer();
 }
 
 function onRangeKeydown(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
-}
-
-function updateThresholdContext(event: PointerEvent): void {
-  hoverPosition.value = Math.min(
-    1,
-    Math.max(0, (event.clientX - trackLeft.value) / trackWidth.value),
-  );
 }
 
 function positionStyle(position: number): Record<string, string> {
@@ -267,13 +243,6 @@ onBeforeUnmount(() => {
         <span>{{ channel }}</span>
         {{ label }}
       </label>
-      <span
-        v-if="contextualThreshold"
-        class="channel-control__threshold-context"
-        :data-contextual-gamut-label="contextualThreshold.label"
-      >
-        {{ contextualThreshold.label }}
-      </span>
       <NumericInput
         class="channel-control__number"
         :aria-label="`${label} numeric value`"
@@ -289,13 +258,7 @@ onBeforeUnmount(() => {
       />
     </header>
 
-    <div
-      ref="trackElement"
-      class="channel-control__track"
-      @pointerenter="updateTrackBounds"
-      @pointermove="updateThresholdContext"
-      @pointerleave="hoverPosition = null"
-    >
+    <div ref="trackElement" class="channel-control__track" @pointerenter="updateTrackBounds">
       <span class="channel-control__field" :style="{ backgroundImage: gradient }" />
       <span class="channel-control__gamut-ranges" aria-hidden="true">
         <span
@@ -352,7 +315,6 @@ onBeforeUnmount(() => {
         @pointerup="finishRangePointer"
         @pointercancel="cancelRangePointer"
         @lostpointercapture="cancelRangePointer"
-        @focus="isRangeFocused = true"
         @blur="blurRange"
         @keydown="onRangeKeydown"
       />

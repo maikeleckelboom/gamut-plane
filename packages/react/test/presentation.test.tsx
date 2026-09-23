@@ -11,10 +11,11 @@ describe("instrument presentation contracts", () => {
         <GamutPlane value={{ ...initial, c: 0.52 }} onValueChange={vi.fn()} defaultView={view} />,
       );
       const target = get<HTMLElement>(ui.element, "[data-boundary-target-result]");
-      expect(target.textContent).toContain("Boundary guide C");
+      expect(target.textContent).toContain("Guide C");
       expect(target.querySelector("[data-target-status]")).not.toBeNull();
       expect(target.querySelector("[data-boundary-guide-swatch]")).not.toBeNull();
       expect(ui.element.querySelector("details")).toBeNull();
+      expect(ui.element.querySelector("[data-contextual-gamut-label]")).toBeNull();
       for (const control of ui.element.querySelectorAll("[data-picker-control] input")) {
         const description = control.getAttribute("aria-describedby");
         expect(description).toBeTruthy();

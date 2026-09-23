@@ -26,12 +26,12 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
       </div>
       <dl>
         <div>
-          <dt>Boundary guide C</dt>
+          <dt>Guide C</dt>
           <dd>{model.guideChroma}</dd>
         </div>
         {model.showGuideDelta && (
           <div>
-            <dt>Guide delta C</dt>
+            <dt>ΔC</dt>
             <dd>−{model.guideDelta}</dd>
           </div>
         )}

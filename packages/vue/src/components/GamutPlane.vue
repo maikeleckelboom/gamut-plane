@@ -247,7 +247,6 @@ watch(
     <h2 :id="titleId" class="sr-only">Color plane instrument</h2>
 
     <div class="plane-instrument__view-control">
-      <span>Coordinate view</span>
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
         <button
           v-for="option in PLANE_OPTIONS"
@@ -424,11 +423,11 @@ watch(
           </div>
           <dl>
             <div>
-              <dt>Boundary guide C</dt>
+              <dt>Guide C</dt>
               <dd>{{ targetResult.boundaryGuide.chroma.toFixed(4) }}</dd>
             </div>
             <div v-if="targetResult.guideDeltaC > 0">
-              <dt>Guide delta C</dt>
+              <dt>ΔC</dt>
               <dd>−{{ targetResult.guideDeltaC.toFixed(4) }}</dd>
             </div>
           </dl>

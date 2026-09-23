@@ -5,7 +5,6 @@ import {
   channelSections,
   channelThresholds,
   channelWarning,
-  nearestThreshold,
   PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
   PICKER_SLIDER_FIELD_INSET,
   PICKER_SLIDER_TRACK_HEIGHT,
@@ -78,18 +77,10 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
   const track = useRef<HTMLDivElement>(null);
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
   const [width, setWidth] = useState(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
-  const [hover, setHover] = useState<number | null>(null);
-  const [focused, setFocused] = useState(false);
   const bounded = Math.min(max, Math.max(min, value));
   const sections = channelSections(intervals);
   const thresholds = channelThresholds(sections);
   const { placement, obstacles } = channelWarning(warningPosition, width, markers, thresholds);
-  const position = hover ?? (focused ? (bounded - min) / (max - min) : null);
-  const nearest = position === null ? null : nearestThreshold(thresholds, position);
-  const context =
-    nearest && position !== null && Math.abs(nearest.position - position) * width <= 14
-      ? nearest
-      : null;
   const helpId = help ? `${id}-help` : undefined;
   const warningId = warningVisible ? `${id}-gamut-warning` : undefined;
   const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
@@ -133,15 +124,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           <span>{channel}</span>
           {label}
         </label>
-        {context && (
-          <span
-            className="gpr-channel-control-threshold-context"
-            dir="ltr"
-            data-contextual-gamut-label={context.label}
-          >
-            {context.label}
-          </span>
-        )}
         <NumericInput
           className="gpr-channel-control-number"
           aria-label={`${label} numeric value`}
@@ -155,16 +137,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           onCancel={onCancel}
         />
       </header>
-      <div
-        ref={track}
-        className="gpr-channel-control-track"
-        dir="ltr"
-        onPointerMove={(event) => {
-          const box = event.currentTarget.getBoundingClientRect();
-          setHover(Math.min(1, Math.max(0, (event.clientX - box.left) / (box.width || width))));
-        }}
-        onPointerLeave={() => setHover(null)}
-      >
+      <div ref={track} className="gpr-channel-control-track" dir="ltr">
         <span className="gpr-channel-control-field" style={{ backgroundImage: gradient }} />
         <span className="gpr-channel-control-gamut-ranges" aria-hidden="true">
           {sections.map((section, index) => (
@@ -221,9 +194,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           min={min}
           max={max}
           step={step}
-          onFocus={() => setFocused(true)}
           onBlur={(event) => {
-            setFocused(false);
             event.currentTarget.removeAttribute("data-pointer-focus");
           }}
           onPointerDown={(event) => {

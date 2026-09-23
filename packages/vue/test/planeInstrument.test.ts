@@ -245,7 +245,7 @@ describe("PlaneInstrument edit contract", () => {
     expect(title.text()).toBe("Color plane instrument");
 
     const target = wrapper.get("[data-boundary-target-result]");
-    expect(target.text()).toContain("Boundary guide C");
+    expect(target.text()).toContain("Guide C");
     expect(target.get("[data-target-status]").exists()).toBe(true);
     expect(target.get("[data-boundary-guide-swatch]").exists()).toBe(true);
     expect(wrapper.find("details").exists()).toBe(false);
@@ -537,7 +537,7 @@ describe("PlaneInstrument edit contract", () => {
     expect(wrapper.find("[data-gamut-marker]").exists()).toBe(false);
     expect(plane.find('[data-marker-role="target-boundary-projection"]').exists()).toBe(false);
     expect(plane.find(".color-plane__projection-connector").exists()).toBe(false);
-    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Boundary guide C");
+    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Guide C");
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     expect(wrapper.emitted("commit")).toBeUndefined();
 
@@ -556,7 +556,7 @@ describe("PlaneInstrument edit contract", () => {
     expect(boundaryProjection.attributes("style")).toContain(
       active.attributes("style").match(/left: [^;]+/)![0],
     );
-    expect(wrapper.get("[data-boundary-target-result]").text()).not.toContain("Guide delta C");
+    expect(wrapper.get("[data-boundary-target-result]").text()).not.toContain("ΔC");
 
     wrapper.unmount();
   });
