@@ -47,6 +47,28 @@ test("both installed instruments paint visible fields", async ({ page }) => {
   }
 });
 
+test("plane markers cover guides while the slider preview keeps authored alpha", async ({
+  page,
+}) => {
+  const { first } = await openHost(page);
+  await page.getByRole("button", { name: "Replace first color" }).click();
+  const paintedAlpha = (selector: string) =>
+    first.locator(selector).evaluate((element) => {
+      const probe = document.createElement("canvas");
+      probe.width = probe.height = 1;
+      const context = probe.getContext("2d")!;
+      context.fillStyle = getComputedStyle(element).backgroundColor;
+      context.fillRect(0, 0, 1, 1);
+      return context.getImageData(0, 0, 1, 1).data[3] ?? 0;
+    });
+
+  await expect(first.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  expect(await paintedAlpha('[data-marker-role="target-boundary-projection"]')).toBe(255);
+  expect(await paintedAlpha('[data-marker-role="active-color"]')).toBe(255);
+  expect((await paintedAlpha("[data-slider-boundary-preview]")) / 255).toBeCloseTo(0.3, 2);
+  expect((await color(first)).alpha).toBe(0.3);
+});
+
 test("minimal and controlled instances keep independent color, view, IDs and host styling", async ({
   page,
 }) => {

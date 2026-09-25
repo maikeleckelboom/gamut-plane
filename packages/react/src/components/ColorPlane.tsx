@@ -48,6 +48,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const projection = plane.project(value);
   const activePoint = plane.positionActivePoint(value);
   const guide = projectionColor ? plane.positionActivePoint(projectionColor) : null;
+  // Plane markers must occlude guides even when the authored color has transparency.
   const paths = useMemo(
     () => ({
       srgb: showSrgbBoundary
@@ -198,7 +199,7 @@ export function ColorPlane(props: ColorPlaneProps) {
               className="gpr-color-plane-marker gpr-color-plane-marker--projection"
               style={presentationStyle({
                 ...pointStyle(guide),
-                "--projection-marker-color": serializeColor(projectionColor!),
+                "--projection-marker-color": serializeColor({ ...projectionColor!, alpha: 1 }),
               })}
               data-table-boundary-guide-marker=""
               data-marker-role="target-boundary-projection"
@@ -223,7 +224,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
           style={presentationStyle({
             ...pointStyle(activePoint),
-            "--marker-color": serializeColor(value),
+            "--marker-color": serializeColor({ ...value, alpha: 1 }),
           })}
           data-outside-display-p3={String(warningVisible)}
           data-active-marker=""

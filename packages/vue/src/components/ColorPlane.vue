@@ -95,8 +95,11 @@ const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
 const boundaryProjectionMarkerStyle = computed(() =>
   boundaryProjectionPoint.value ? pointStyle(boundaryProjectionPoint.value) : undefined,
 );
+// Plane markers must occlude guides even when the authored color has transparency.
 const boundaryProjectionCss = computed(() =>
-  props.boundaryProjectionColor ? serializeColor(props.boundaryProjectionColor) : "",
+  props.boundaryProjectionColor
+    ? serializeColor({ ...props.boundaryProjectionColor, alpha: 1 })
+    : "",
 );
 const boundaryProjectionConnectorStyle = computed(() => {
   const guide = boundaryProjectionPoint.value;
@@ -121,7 +124,7 @@ const displayP3Path = computed(() =>
       )
     : "",
 );
-const activeCss = computed(() => serializeColor(props.modelValue));
+const activeCss = computed(() => serializeColor({ ...props.modelValue, alpha: 1 }));
 const planeLabel = computed(() => {
   const projection = activeProjection.value;
   const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point.`;
