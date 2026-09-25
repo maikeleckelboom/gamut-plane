@@ -1,7 +1,7 @@
 import { createApp } from "vue";
 
 import App from "./App.vue";
-import "@fontsource-variable/geist";
+import "@fontsource-variable/inter/wght.css";
 import "@fontsource-variable/geist-mono";
 import "./app.css";
 

@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  font-family: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --foreground: oklch(0.94 0.008 255);
@@ -86,7 +86,7 @@ button:disabled {
 
 .project-identity {
   display: grid;
-  max-width: 780px;
+  max-width: 850px;
   gap: 4px;
 }
 
@@ -282,7 +282,7 @@ button:disabled {
   background: var(--surface-2);
   color: var(--foreground);
   font:
-    500 0.75rem/1.2 "Geist Variable",
+    500 0.75rem/1.2 "Inter Variable",
     ui-sans-serif,
     system-ui,
     sans-serif;

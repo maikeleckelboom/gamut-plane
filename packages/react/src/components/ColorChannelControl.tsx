@@ -158,8 +158,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
               data-gamut-range={section.tone}
               data-range-start={section.start}
               data-range-end={section.end}
-              data-start-internal={section.start > 0}
-              data-end-internal={section.end < 1}
             />
           ))}
         </span>

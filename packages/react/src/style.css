@@ -553,29 +553,6 @@
   opacity: 0.78;
 }
 
-.gamut-plane-react .gpr-channel-control-gamut-range::before {
-  position: absolute;
-  inset-inline-start: 0;
-  width: 1px;
-  height: 9px;
-  background: currentColor;
-  content: "";
-}
-
-.gamut-plane-react .gpr-channel-control-gamut-range::after {
-  position: absolute;
-  inset-inline-end: 0;
-  width: 1px;
-  height: 9px;
-  background: currentColor;
-  content: "";
-}
-
-.gamut-plane-react .gpr-channel-control-gamut-range[data-start-internal="false"]::before,
-.gamut-plane-react .gpr-channel-control-gamut-range[data-end-internal="false"]::after {
-  display: none;
-}
-
 .gamut-plane-react .gpr-channel-control-gamut-range--display-p3 {
   top: 2px;
   border-top: 1px solid currentColor;
@@ -585,17 +562,6 @@
   bottom: 2px;
   border-bottom: 1px dashed currentColor;
   opacity: 0.56;
-}
-
-.gamut-plane-react .gpr-channel-control-gamut-range--display-p3::before,
-.gamut-plane-react .gpr-channel-control-gamut-range--display-p3::after {
-  top: 0;
-}
-
-.gamut-plane-react .gpr-channel-control-gamut-range--srgb::before,
-.gamut-plane-react .gpr-channel-control-gamut-range--srgb::after {
-  bottom: 0;
-  background: repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 3px);
 }
 
 .gamut-plane-react .gpr-channel-control-boundary-preview-position {

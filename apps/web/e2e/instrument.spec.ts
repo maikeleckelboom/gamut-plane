@@ -25,13 +25,13 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   expect(errors).toEqual([]);
 });
 
-test("bundled Geist and inspector rows retain their hierarchy across coordinate views", async ({
+test("bundled Inter and inspector rows retain their hierarchy across coordinate views", async ({
   page,
 }) => {
   await openInstrument(page);
   await page.evaluate(() => document.fonts.ready);
   const typography = await page.evaluate(() => ({
-    sansLoaded: document.fonts.check('600 16px "Geist Variable"'),
+    sansLoaded: document.fonts.check('600 16px "Inter Variable"'),
     monoLoaded: document.fonts.check('400 16px "Geist Mono Variable"'),
     titleFamily: getComputedStyle(document.querySelector("h1")!).fontFamily,
     labelFamily: getComputedStyle(document.querySelector(".coordinate-summary__values dt")!)
@@ -45,10 +45,10 @@ test("bundled Geist and inspector rows retain their hierarchy across coordinate 
   }));
   expect(typography.sansLoaded).toBe(true);
   expect(typography.monoLoaded).toBe(true);
-  expect(typography.titleFamily).toContain("Geist Variable");
-  expect(typography.labelFamily).toContain("Geist Variable");
+  expect(typography.titleFamily).toContain("Inter Variable");
+  expect(typography.labelFamily).toContain("Inter Variable");
   expect(typography.valueFamily).toContain("Geist Mono Variable");
-  expect(typography.copyFamily).toContain("Geist Variable");
+  expect(typography.copyFamily).toContain("Inter Variable");
   expect(typography.remoteFonts).toBe(0);
 
   await expect(page.getByRole("heading", { name: "OKLCH coordinates" })).toBeVisible();
