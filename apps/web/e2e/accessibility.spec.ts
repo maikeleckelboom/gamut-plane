@@ -47,7 +47,7 @@ test("heading, landmark, and text-status semantics remain explicit", async ({ pa
 
   await expect(page.getByRole("main")).toHaveCount(1);
   await expect(page.getByRole("region", { name: "Gamut Plane instrument" })).toHaveCount(1);
-  await expect(page.getByRole("complementary", { name: "OKLCH coordinates" })).toHaveCount(1);
+  await expect(page.getByRole("complementary", { name: "Selected color" })).toHaveCount(1);
 
   const headingLevels = await page
     .locator("h1, h2, h3, h4, h5, h6")
@@ -61,7 +61,6 @@ test("heading, landmark, and text-status semantics remain explicit", async ({ pa
     /Inside|Outside/,
   );
   await expect(page.locator('[data-exact-gamut-status="srgb"]')).toContainText(/Inside|Outside/);
-  await expect(page.locator(".gamut-facts")).toContainText(
-    "Membership uses exact linear-light conversion",
-  );
+  await expect(page.locator(".gamut-facts")).toContainText("Exact gamut status");
+  await expect(page.getByRole("radiogroup", { name: "Coordinate view" })).toHaveCount(1);
 });

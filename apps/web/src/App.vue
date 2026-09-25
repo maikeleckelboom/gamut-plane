@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  findMaximumChroma,
   isColorInGamut,
   serializeColor,
   serializeHexColor,
@@ -38,9 +39,24 @@ const gamutStatus = computed(() => ({
   srgb: { inGamut: isColorInGamut(selectedColor.value, "srgb") },
   displayP3: { inGamut: isColorInGamut(selectedColor.value, "display-p3") },
 }));
-const oklab = computed(() => toOklabColor(selectedColor.value));
 const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
 const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
+const selectedCoordinates = computed(() => {
+  const color = selectedColor.value;
+  if (activePlane.value === "oklch") {
+    return [
+      { label: "L", value: color.l.toFixed(4) },
+      { label: "C", value: color.c.toFixed(4) },
+      { label: "H", value: `${color.h.toFixed(2)}°` },
+    ];
+  }
+  const oklab = toOklabColor(color);
+  return [
+    { label: "L", value: oklab.l.toFixed(4) },
+    { label: "a", value: oklab.a.toFixed(4) },
+    { label: "b", value: oklab.b.toFixed(4) },
+  ];
+});
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
 const hexColor = computed(() =>
   gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
@@ -51,6 +67,29 @@ const srgbDisplayCss = computed(() =>
 );
 const displayP3DisplayCss = computed(() =>
   displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
+);
+// Visual previews only. These values never become selected state or copy output.
+const srgbBoundaryPreviewCss = computed(() =>
+  gamutStatus.value.srgb.inGamut
+    ? null
+    : serializeColor(
+        {
+          ...selectedColor.value,
+          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "srgb"),
+        },
+        "srgb",
+      ),
+);
+const displayP3BoundaryPreviewCss = computed(() =>
+  gamutStatus.value.displayP3.inGamut
+    ? null
+    : serializeColor(
+        {
+          ...selectedColor.value,
+          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "display-p3"),
+        },
+        "display-p3",
+      ),
 );
 
 const clipboardSupported = useSupported(
@@ -69,16 +108,10 @@ const copyFeedback = useTimeoutFn(
 type CssRepresentation = "oklch" | "hex" | "display-p3" | "srgb";
 
 const capabilityLabel = computed(() => {
-  if (canvasCapability.value === "display-p3") {
-    return "Display P3 Canvas granted. The field may paint P3 colors.";
-  }
-  if (canvasCapability.value === "srgb") {
-    return "sRGB Canvas granted. P3 contours remain mathematical; P3-only field colors may clip.";
-  }
-  if (canvasCapability.value === "unavailable") {
-    return "Canvas 2D is unavailable. Exact gamut facts remain mathematical.";
-  }
-  return "Detecting the browser Canvas color space.";
+  if (canvasCapability.value === "display-p3") return "Display P3";
+  if (canvasCapability.value === "srgb") return "sRGB";
+  if (canvasCapability.value === "unavailable") return "Unavailable";
+  return "Detecting";
 });
 
 function exactCss(gamut: DisplayGamut): string | null {
@@ -130,7 +163,6 @@ async function copyCss(
   <main class="app-shell">
     <header class="project-header" aria-describedby="project-description">
       <div class="project-identity">
-        <p class="project-kicker">Color-space instrument</p>
         <h1>Gamut Plane</h1>
         <p id="project-description">
           Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
@@ -210,48 +242,25 @@ async function copyCss(
                   </div>
                 </div>
               </fieldset>
-              <p>Target sets the reference; guides affect visualization only.</p>
             </section>
           </template>
         </GamutPlane>
       </div>
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
-        <header>
-          <p class="inspector-kicker">Selected color</p>
-          <h2 id="selected-color-title">
-            {{ activePlane === "oklab" ? "OKLab coordinates" : "OKLCH coordinates" }}
-          </h2>
-        </header>
+        <h2 id="selected-color-title" class="sr-only">Selected color</h2>
 
-        <dl v-if="activePlane === 'oklch'" class="channel-values" aria-label="OKLCH channels">
-          <div>
-            <dt>L</dt>
-            <dd>{{ selectedColor.l.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>C</dt>
-            <dd>{{ selectedColor.c.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>H</dt>
-            <dd>{{ selectedColor.h.toFixed(2) }}°</dd>
-          </div>
-        </dl>
-        <dl v-else class="channel-values" aria-label="OKLab channels">
-          <div>
-            <dt>L</dt>
-            <dd>{{ oklab.l.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>a</dt>
-            <dd>{{ oklab.a.toFixed(4) }}</dd>
-          </div>
-          <div>
-            <dt>b</dt>
-            <dd>{{ oklab.b.toFixed(4) }}</dd>
-          </div>
-        </dl>
+        <section class="coordinate-summary" aria-labelledby="coordinate-summary-title">
+          <h3 id="coordinate-summary-title">
+            {{ activePlane === "oklch" ? "OKLCH coordinates" : "OKLab coordinates" }}
+          </h3>
+          <dl class="coordinate-summary__values">
+            <div v-for="coordinate in selectedCoordinates" :key="coordinate.label">
+              <dt>{{ coordinate.label }}</dt>
+              <dd>{{ coordinate.value }}</dd>
+            </div>
+          </dl>
+        </section>
 
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>
@@ -269,18 +278,17 @@ async function copyCss(
               </dd>
             </div>
           </dl>
-          <p>Membership uses exact linear-light conversion, not the sampled contours.</p>
         </section>
 
         <section class="css-output" aria-labelledby="css-output-title">
-          <div class="inspector-section-heading">
-            <h3 id="css-output-title">CSS representations</h3>
-            <p>
-              OKLCH and color() copies preserve full serialization precision. Hex uses 8-bit sRGB.
-            </p>
-          </div>
+          <h3 id="css-output-title">CSS representations</h3>
           <div class="css-representation" data-css-representation="oklch">
             <span>OKLCH</span>
+            <span
+              class="css-representation__swatch"
+              :style="{ backgroundColor: oklchCanonicalCss }"
+              aria-hidden="true"
+            />
             <button
               type="button"
               data-copy-representation="oklch"
@@ -296,6 +304,14 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="hex">
             <span>Hex · sRGB</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="hexColor ? 'output' : 'boundary'"
+              :style="{ backgroundColor: hexColor ?? srgbBoundaryPreviewCss ?? undefined }"
+              :role="hexColor ? undefined : 'img'"
+              :aria-hidden="hexColor ? 'true' : undefined"
+              :aria-label="hexColor ? undefined : 'sRGB boundary color preview'"
+            />
             <button
               type="button"
               data-copy-representation="hex"
@@ -314,6 +330,14 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="srgb">
             <span>sRGB</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="srgbCanonicalCss ? 'output' : 'boundary'"
+              :style="{ backgroundColor: srgbCanonicalCss ?? srgbBoundaryPreviewCss ?? undefined }"
+              :role="srgbCanonicalCss ? undefined : 'img'"
+              :aria-hidden="srgbCanonicalCss ? 'true' : undefined"
+              :aria-label="srgbCanonicalCss ? undefined : 'sRGB boundary color preview'"
+            />
             <button
               type="button"
               data-copy-representation="srgb"
@@ -332,6 +356,16 @@ async function copyCss(
           </div>
           <div class="css-representation" data-css-representation="display-p3">
             <span>Display P3</span>
+            <span
+              class="css-representation__swatch"
+              :data-preview-kind="displayP3CanonicalCss ? 'output' : 'boundary'"
+              :style="{
+                backgroundColor: displayP3CanonicalCss ?? displayP3BoundaryPreviewCss ?? undefined,
+              }"
+              :role="displayP3CanonicalCss ? undefined : 'img'"
+              :aria-hidden="displayP3CanonicalCss ? 'true' : undefined"
+              :aria-label="displayP3CanonicalCss ? undefined : 'Display P3 boundary color preview'"
+            />
             <button
               type="button"
               data-copy-representation="display-p3"
@@ -365,7 +399,7 @@ async function copyCss(
         </section>
 
         <section class="canvas-fact" aria-labelledby="canvas-capability-title">
-          <h3 id="canvas-capability-title">Canvas capability</h3>
+          <h3 id="canvas-capability-title">Canvas</h3>
           <p :data-canvas-capability="canvasCapability">{{ capabilityLabel }}</p>
         </section>
       </aside>

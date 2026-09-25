@@ -89,7 +89,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         expect(html).toContain("612.123456");
         expect(html).toContain("OKLab a numeric value");
         expect(html).toContain("OKLab b numeric value");
-        expect(html).toContain("Boundary details");
+        expect(html).toContain("data-boundary-target-result");
         expect(html).toContain("Host boundary legend");
         await expect(page.locator("[data-plane-instrument]")).toHaveCount(2);
         await expect

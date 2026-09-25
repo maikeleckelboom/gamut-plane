@@ -94,6 +94,28 @@ test("all scientific ranges retain native input/change order and preserve alpha"
   }
 });
 
+test("plane markers cover guides while the slider preview keeps authored alpha", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Replace first color" }).click();
+  const root = page.locator("[data-plane-instrument]");
+  const paintedAlpha = (selector: string) =>
+    root.locator(selector).evaluate((element) => {
+      const probe = document.createElement("canvas");
+      probe.width = probe.height = 1;
+      const context = probe.getContext("2d")!;
+      context.fillStyle = getComputedStyle(element).backgroundColor;
+      context.fillRect(0, 0, 1, 1);
+      return context.getImageData(0, 0, 1, 1).data[3] ?? 0;
+    });
+
+  await expect(root.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  expect(await paintedAlpha('[data-marker-role="target-boundary-projection"]')).toBe(255);
+  expect(await paintedAlpha('[data-marker-role="active-color"]')).toBe(255);
+  expect((await paintedAlpha("[data-slider-boundary-preview]")) / 255).toBeCloseTo(0.3, 2);
+  expect(JSON.parse(await page.locator("[data-color]").innerText()).alpha).toBe(0.3);
+});
+
 test("RTL host keeps scientific x and native ranges increasing to the right", async ({ page }) => {
   await page.locator("html").evaluate((element) => element.setAttribute("dir", "rtl"));
   for (const view of ["OKLCH", "OKLab"]) {

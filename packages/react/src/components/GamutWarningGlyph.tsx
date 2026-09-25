@@ -12,8 +12,7 @@ export function GamutWarningGlyph() {
       focusable="false"
       data-gamut-warning-glyph=""
     >
-      <path className="gpr-gamut-warning-glyph-keyline" d="M8 1.75 14.25 8 8 14.25 1.75 8Z" />
-      <path className="gpr-gamut-warning-glyph-core" d="M8 5.15v4.15m0 2.15v.05" />
+      <path d="M8 1.5 14.25 13.5H1.75Z" />
     </svg>
   );
 }

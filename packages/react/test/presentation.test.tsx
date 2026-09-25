@@ -5,21 +5,17 @@ import { canvasContext } from "./setup.js";
 
 describe("instrument presentation contracts", () => {
   it.each(["oklch", "oklab"] as const)(
-    "keeps %s guide details collapsed and distinguishes sampled data from exact warnings",
+    "keeps %s target result visible and distinguishes sampled data from exact warnings",
     async (view) => {
       const ui = await mount(
         <GamutPlane value={{ ...initial, c: 0.52 }} onValueChange={vi.fn()} defaultView={view} />,
       );
-      const details = get<HTMLDetailsElement>(ui.element, "details");
-      expect(details.open).toBe(false);
-      expect(
-        [...details.querySelectorAll<HTMLElement>("[data-boundary-guide]")].map(
-          (guide) => guide.dataset.boundaryGuide,
-        ),
-      ).toEqual(["srgb", "display-p3"]);
-      expect(details.querySelector(".gpr-plane-instrument-active-readout")).not.toBeNull();
-      expect(details.querySelector(".gpr-plane-instrument-projection-readout")).not.toBeNull();
-      expect(details.textContent).not.toContain("Outside Display P3");
+      const target = get<HTMLElement>(ui.element, "[data-boundary-target-result]");
+      expect(target.textContent).toContain("Guide C");
+      expect(target.querySelector("[data-target-status]")).not.toBeNull();
+      expect(target.querySelector("[data-boundary-guide-swatch]")).not.toBeNull();
+      expect(ui.element.querySelector("details")).toBeNull();
+      expect(ui.element.querySelector("[data-contextual-gamut-label]")).toBeNull();
       for (const control of ui.element.querySelectorAll("[data-picker-control] input")) {
         const description = control.getAttribute("aria-describedby");
         expect(description).toBeTruthy();

@@ -17,7 +17,6 @@ import {
   channelSections,
   channelThresholds,
   channelWarning,
-  nearestThreshold,
   type LinearControlInterval,
   type LinearControlMarker,
 } from "@gamut-plane/render";
@@ -36,6 +35,8 @@ const props = withDefaults(
     precision?: number;
     markers?: LinearControlMarker[];
     intervals?: LinearControlInterval[];
+    boundaryPreviewColor?: string;
+    boundaryPreviewTone?: LinearControlInterval["tone"];
     overflowMax?: boolean;
     help?: string;
     warningVisible?: boolean;
@@ -76,9 +77,6 @@ const numericMax = computed<number | undefined>(() => (props.overflowMax ? undef
 const trackElement = ref<HTMLElement>();
 const rangeElement = ref<HTMLInputElement>();
 const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
-const trackLeft = ref(0);
-const hoverPosition = ref<number | null>(null);
-const isRangeFocused = ref(false);
 let pendingRangeValue: number | null = null;
 let rangeRaf: number | null = null;
 let isUnmounted = false;
@@ -93,19 +91,13 @@ const instrumentStyle = {
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
-const normalizedModelPosition = computed(() => {
-  const span = props.max - props.min;
-  return span > 0 ? (boundedModelValue.value - props.min) / span : 0;
-});
 const inGamutSections = computed(() => channelSections(props.intervals));
+const boundaryPreviewSection = computed(() =>
+  inGamutSections.value.find(
+    (section) => section.tone === props.boundaryPreviewTone && section.end < 1,
+  ),
+);
 const gamutThresholds = computed(() => channelThresholds(inGamutSections.value));
-const contextualThreshold = computed(() => {
-  const position =
-    hoverPosition.value ?? (isRangeFocused.value ? normalizedModelPosition.value : null);
-  if (position === null) return null;
-  const nearest = nearestThreshold(gamutThresholds.value, position);
-  return nearest && Math.abs(nearest.position - position) * trackWidth.value <= 14 ? nearest : null;
-});
 const warning = computed(() =>
   channelWarning(props.warningPosition, trackWidth.value, props.markers, gamutThresholds.value),
 );
@@ -129,7 +121,6 @@ function updateTrackBounds(): void {
   const bounds = trackElement.value?.getBoundingClientRect();
   if (!bounds) return;
   updateTrackWidth(bounds.width);
-  trackLeft.value = bounds.left;
 }
 
 onMounted(() => {
@@ -213,30 +204,12 @@ function cancelRangePointer(event?: PointerEvent): void {
 }
 
 function blurRange(): void {
-  isRangeFocused.value = false;
   rangeElement.value?.removeAttribute("data-pointer-focus");
   cancelRangePointer();
 }
 
 function onRangeKeydown(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
-}
-
-function updateThresholdContext(event: PointerEvent): void {
-  hoverPosition.value = Math.min(
-    1,
-    Math.max(0, (event.clientX - trackLeft.value) / trackWidth.value),
-  );
-}
-
-function positionStyle(position: number): Record<string, string> {
-  return { left: `${Math.min(1, Math.max(0, position)) * 100}%` };
-}
-
-function tickStyle(marker: LinearControlMarker): Record<string, string> {
-  const style: Record<string, string> = positionStyle(marker.position);
-  if (marker.cssColor) style["--tick-color"] = marker.cssColor;
-  return style;
 }
 
 function sectionStyle(section: LinearControlInterval): Record<string, string> {
@@ -267,13 +240,6 @@ onBeforeUnmount(() => {
         <span>{{ channel }}</span>
         {{ label }}
       </label>
-      <span
-        v-if="contextualThreshold"
-        class="channel-control__threshold-context"
-        :data-contextual-gamut-label="contextualThreshold.label"
-      >
-        {{ contextualThreshold.label }}
-      </span>
       <NumericInput
         class="channel-control__number"
         :aria-label="`${label} numeric value`"
@@ -289,13 +255,7 @@ onBeforeUnmount(() => {
       />
     </header>
 
-    <div
-      ref="trackElement"
-      class="channel-control__track"
-      @pointerenter="updateTrackBounds"
-      @pointermove="updateThresholdContext"
-      @pointerleave="hoverPosition = null"
-    >
+    <div ref="trackElement" class="channel-control__track" @pointerenter="updateTrackBounds">
       <span class="channel-control__field" :style="{ backgroundImage: gradient }" />
       <span class="channel-control__gamut-ranges" aria-hidden="true">
         <span
@@ -309,18 +269,7 @@ onBeforeUnmount(() => {
           :data-range-end="section.end"
         />
       </span>
-      <span
-        v-for="marker in markers"
-        :key="marker.id"
-        class="channel-control__tick"
-        :class="`channel-control__tick--${marker.tone}`"
-        :style="tickStyle(marker)"
-        :title="marker.label"
-        :aria-label="marker.label"
-        :data-gamut-marker="marker.id"
-        :data-gamut-lane="marker.lane"
-        role="img"
-      />
+      <span v-for="marker in markers" :key="marker.id" class="sr-only">{{ marker.label }}</span>
       <span
         v-show="warningVisible"
         class="channel-control__warning"
@@ -352,10 +301,23 @@ onBeforeUnmount(() => {
         @pointerup="finishRangePointer"
         @pointercancel="cancelRangePointer"
         @lostpointercapture="cancelRangePointer"
-        @focus="isRangeFocused = true"
         @blur="blurRange"
         @keydown="onRangeKeydown"
       />
+      <span
+        v-if="boundaryPreviewSection && boundaryPreviewColor"
+        class="channel-control__boundary-preview-position"
+        aria-hidden="true"
+      >
+        <span
+          class="channel-control__boundary-preview"
+          :style="{
+            left: `${boundaryPreviewSection.end * 100}%`,
+            background: boundaryPreviewColor,
+          }"
+          data-slider-boundary-preview
+        />
+      </span>
     </div>
 
     <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>

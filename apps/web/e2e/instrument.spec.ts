@@ -21,14 +21,81 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   await expect(page.getByRole("application", { name: /OKLCH plane/ })).toBeVisible();
   await expect(page.locator('[data-gamut-boundary="display-p3"]')).toBeVisible();
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toBeVisible();
+  await expect(page.locator(".color-inspector .channel-values")).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("bundled Inter and inspector rows retain their hierarchy across coordinate views", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  await page.evaluate(() => document.fonts.ready);
+  const typography = await page.evaluate(() => ({
+    sansLoaded: document.fonts.check('600 16px "Inter Variable"'),
+    monoLoaded: document.fonts.check('400 16px "Geist Mono Variable"'),
+    titleFamily: getComputedStyle(document.querySelector("h1")!).fontFamily,
+    labelFamily: getComputedStyle(document.querySelector(".coordinate-summary__values dt")!)
+      .fontFamily,
+    valueFamily: getComputedStyle(document.querySelector(".coordinate-summary__values dd")!)
+      .fontFamily,
+    copyFamily: getComputedStyle(document.querySelector(".css-output button")!).fontFamily,
+    remoteFonts: performance
+      .getEntriesByType("resource")
+      .filter((entry) => /fonts\.googleapis|fonts\.gstatic|cdn\./.test(entry.name)).length,
+  }));
+  expect(typography.sansLoaded).toBe(true);
+  expect(typography.monoLoaded).toBe(true);
+  expect(typography.titleFamily).toContain("Inter Variable");
+  expect(typography.labelFamily).toContain("Inter Variable");
+  expect(typography.valueFamily).toContain("Geist Mono Variable");
+  expect(typography.copyFamily).toContain("Inter Variable");
+  expect(typography.remoteFonts).toBe(0);
+
+  await expect(page.getByRole("heading", { name: "OKLCH coordinates" })).toBeVisible();
+  await expect(page.locator(".coordinate-summary__values > div")).toHaveText([
+    "L0.6800",
+    "C0.1800",
+    "H252.00°",
+  ]);
+  await page.getByRole("radio", { name: "OKLab" }).click();
+  await expect(page.getByRole("heading", { name: "OKLab coordinates" })).toBeVisible();
+  await expect(page.locator(".coordinate-summary__values dt")).toHaveText(["L", "a", "b"]);
+  await expect(page.locator(".coordinate-summary__values dd").first()).toHaveText("0.6800");
+
+  const row = page.locator('[data-css-representation="display-p3"]');
+  const aligned = await row.evaluate((element) => {
+    const swatch = element.querySelector(".css-representation__swatch")!.getBoundingClientRect();
+    const button = element.querySelector("button")!.getBoundingClientRect();
+    const text = element.getBoundingClientRect();
+    const middle = text.top + text.height / 2;
+    return [swatch.top + swatch.height / 2, button.top + button.height / 2].every(
+      (center) => Math.abs(center - middle) < 2,
+    );
+  });
+  expect(aligned).toBe(true);
+});
+
+test("the active coordinate view keeps its background as the view changes", async ({ page }) => {
+  await openInstrument(page);
+  const oklch = page.getByRole("radio", { name: "OKLCH" });
+  const oklab = page.getByRole("radio", { name: "OKLab" });
+  const background = (radio: typeof oklch) =>
+    radio.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  const activeBackground = await background(oklch);
+  expect(activeBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(await background(oklab)).toBe("rgba(0, 0, 0, 0)");
+  await oklab.click();
+  await expect(oklab).toHaveAttribute("aria-checked", "true");
+  expect(await background(oklab)).toBe(activeBackground);
+  expect(await background(oklch)).toBe("rgba(0, 0, 0, 0)");
 });
 
 test("hides and restores each gamut boundary as view state", async ({ page }) => {
   await openInstrument(page);
   const p3 = page.getByRole("checkbox", { name: "Display P3" });
   const srgb = page.getByRole("checkbox", { name: "sRGB" });
-  const selected = page.locator(".channel-values");
+  const selected = page.locator('[data-css-representation="oklch"] code');
   const originalSelection = await selected.textContent();
 
   await expect(page.locator(".plane-instrument__field > [data-gamut-reference]")).toBeVisible();
@@ -54,16 +121,23 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   const targetResult = page.locator("[data-boundary-target-result]");
   const srgbTarget = page.getByRole("radio", { name: "sRGB" });
   const p3Target = page.getByRole("radio", { name: "Display P3" });
-  const selected = page.locator(".channel-values");
+  const selected = page.locator('[data-css-representation="oklch"] code');
   const originalSelection = await selected.textContent();
   const srgbSwatch = await page.locator("[data-boundary-guide-swatch]").getAttribute("style");
+  const targetSwatchX = await page
+    .locator("[data-boundary-guide-swatch]")
+    .evaluate((element) => element.getBoundingClientRect().left);
 
   await expect(srgbTarget).toBeChecked();
   await expect(p3Target).not.toBeChecked();
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(targetResult).toContainText("Target · sRGB");
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-gamut-range="srgb"]')).not.toHaveCount(0);
+  await expect(
+    page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
+  ).toHaveCount(1);
+  await expect(page.locator(".channel-control__tick")).toHaveCount(0);
 
   await p3Target.click();
   await expect(p3Target).toBeChecked();
@@ -73,6 +147,14 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   expect(await page.locator("[data-boundary-guide-swatch]").getAttribute("style")).not.toBe(
     srgbSwatch,
   );
+  expect(
+    await page
+      .locator("[data-boundary-guide-swatch]")
+      .evaluate((element) => element.getBoundingClientRect().left),
+  ).toBeCloseTo(targetSwatchX, 0);
+  await expect(
+    page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
+  ).toHaveCount(1);
   await expect(selected).toHaveText(originalSelection ?? "");
 
   await p3Target.focus();
@@ -83,6 +165,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(srgbTarget).toBeChecked();
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
+  await expect(page.locator("[data-slider-boundary-preview]")).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
@@ -102,14 +185,14 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
   await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
-  await expect(targetResult).toContainText("Boundary guide C");
+  await expect(targetResult).toContainText("Guide C");
   await expect(selected).toHaveText(originalSelection ?? "");
 });
 
 test("keyboard and pointer edits update the selected color", async ({ page }) => {
   await openInstrument(page);
   const surface = page.locator(".color-plane__surface");
-  const channels = page.locator(".channel-values");
+  const channels = page.locator('[data-css-representation="oklch"] code');
   const beforeKeyboard = await channels.textContent();
 
   await surface.focus();
@@ -187,6 +270,34 @@ test("slider track focus follows the actual range control", async ({ page }) => 
   expect(await track.evaluate((element) => getComputedStyle(element).borderColor)).not.toBe(
     unfocusedBorder,
   );
+});
+
+test("slider warning triangle keeps visual space from the native thumb", async ({ page }) => {
+  await openInstrument(page);
+  const chroma = page.getByLabel("Chroma numeric value");
+  await chroma.fill("0.2");
+  await chroma.press("Enter");
+  const control = page.locator('[data-picker-control="c"]');
+  const warning = control.locator('[data-gamut-warning="linear"]');
+  await expect(warning).toBeVisible();
+  const spacing = await control.evaluate((element) => {
+    const range = element.querySelector<HTMLInputElement>('input[type="range"]')!;
+    const triangle = element.querySelector<HTMLElement>('[data-gamut-warning="linear"]')!;
+    const bounds = range.getBoundingClientRect();
+    const warningBounds = triangle.getBoundingClientRect();
+    const position =
+      (range.valueAsNumber - Number(range.min)) / (Number(range.max) - Number(range.min));
+    const thumbCenter = bounds.left + 5 + position * (bounds.width - 10);
+    const warningCenter = warningBounds.left + warningBounds.width / 2;
+    return {
+      gap: Math.abs(warningCenter - thumbCenter) - (10 + warningBounds.width) / 2,
+      side: triangle.dataset.warningSide,
+      warningCenter,
+      thumbCenter,
+    };
+  });
+  expect(spacing.gap).toBeGreaterThan(4);
+  expect(spacing.side).toBe(spacing.warningCenter < spacing.thumbCenter ? "left" : "right");
 });
 
 test("OKLab edge interactions stay in-domain while authored overflow is preserved", async ({
@@ -311,9 +422,6 @@ test("relationship viewports keep the field, legend, rail, and CSS output in bou
   await bottomControl.focus();
   await expect(bottomControl).toBeFocused();
   await expect(bottomControl).toBeInViewport();
-  expect(
-    await page.locator(".instrument-layout").evaluate((workspace) => workspace.scrollTop),
-  ).toBeGreaterThan(0);
 });
 
 test("wide plane follows the workspace when the header wraps", async ({ page }) => {
@@ -353,33 +461,6 @@ test("wide plane follows the workspace when the header wraps", async ({ page }) 
   expect(wrappedHeader.horizontalFits).toBe(true);
 });
 
-test("wide workspace contains genuine overflow and keeps expanded details reachable", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await openInstrument(page);
-  await page.locator("[data-boundary-details] summary").click();
-  const details = page.locator("[data-boundary-details]");
-  await expect(details).toHaveAttribute("open", "");
-  await details.locator("summary").focus();
-  await details.locator("summary").press("End");
-  await details.scrollIntoViewIfNeeded();
-  const geometry = await page.evaluate(() => {
-    const root = document.documentElement;
-    const workspace = document.querySelector<HTMLElement>(".instrument-layout")!;
-    const details = document.querySelector<HTMLElement>("[data-boundary-details]")!;
-    const bounds = details.getBoundingClientRect();
-    return {
-      rootFits: root.scrollHeight <= root.clientHeight + 1,
-      workspaceOverflowY: getComputedStyle(workspace).overflowY,
-      detailsReachable: bounds.top < root.clientHeight && bounds.bottom > 0,
-    };
-  });
-  expect(geometry.rootFits).toBe(true);
-  expect(geometry.workspaceOverflowY).toBe("auto");
-  expect(geometry.detailsReachable).toBe(true);
-});
-
 test("enlarged text, focus visibility, and Canvas capability remain usable and truthful", async ({
   page,
 }) => {
@@ -417,9 +498,12 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   const capability = page.locator("[data-canvas-capability]");
   const status = await capability.getAttribute("data-canvas-capability");
   const text = await capability.textContent();
-  if (status === "display-p3") expect(text).toContain("may paint P3 colors");
-  else if (status === "srgb") expect(text).toContain("P3-only field colors may clip");
-  else expect(status).toBe("unavailable");
+  if (status === "display-p3") expect(text).toBe("Display P3");
+  else if (status === "srgb") expect(text).toBe("sRGB");
+  else {
+    expect(status).toBe("unavailable");
+    expect(text).toBe("Unavailable");
+  }
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -530,7 +614,7 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
   page,
 }) => {
   await openInstrument(page);
-  const selectedBefore = await page.locator(".channel-values").textContent();
+  const selectedBefore = await page.locator('[data-css-representation="oklch"] code').textContent();
   const visited: string[] = [];
   let boundaryOutlineWidth = 0;
   let copyOutlineWidth = 0;
@@ -562,7 +646,9 @@ test("keyboard-only navigation reaches boundary and copy controls with visible f
       boundaryOutlineWidth = active.outlineWidth;
       await page.keyboard.press("Space");
       await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(0);
-      await expect(page.locator(".channel-values")).toHaveText(selectedBefore ?? "");
+      await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(
+        selectedBefore ?? "",
+      );
       await page.keyboard.press("Space");
       await expect(page.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(1);
     }
@@ -593,14 +679,8 @@ test("header and exact gamut status have one semantic owner", async ({ page }) =
   await expect(page.locator(".color-inspector [data-exact-gamut-status]")).toHaveCount(2);
   await expect(page.locator(".instrument-primary [data-exact-gamut-status]")).toHaveCount(0);
   await expect(page.locator("[data-picker-gamut-status]")).toHaveCount(0);
-  await expect(page.locator("[data-boundary-details] summary")).toContainText("Boundary details");
-  await expect(page.locator("[data-boundary-details] summary")).toHaveText("Boundary details");
-  await page.locator("[data-boundary-details] summary").click();
-  await expect(page.locator("[data-boundary-details]")).toHaveAttribute("open", "");
-  await expect(page.locator("[data-boundary-guide]")).toHaveCount(2);
-  await page.locator("[data-boundary-details] summary").focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("[data-boundary-details]")).not.toHaveAttribute("open", "");
+  await expect(page.locator("[data-boundary-target-result]")).toBeVisible();
+  await expect(page.locator("details")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("Thresholds follow current");
   await expect(page.locator("body")).not.toContainText("Gamut evidence");
 });

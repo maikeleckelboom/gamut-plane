@@ -33,7 +33,7 @@
   --gp-hairline: oklch(0.36 0.012 255 / 0.72);
   --gp-user-accent: var(--gamut-plane-accent, oklch(0.77 0.13 230));
   --gp-status-outside: oklch(0.77 0.15 45);
-  --gp-cv-font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --gp-cv-font-mono: var(--cv-font-mono, ui-monospace, monospace);
   color-scheme: dark;
   color: var(--gp-foreground);
   background: var(--gp-surface-0);
@@ -44,46 +44,40 @@
 }
 
 .plane-instrument .plane-instrument__view-control {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 8px 10px;
-  border: 1px solid var(--gp-hairline);
-  background: var(--gp-surface-2);
-}
-
-.plane-instrument .plane-instrument__view-control > span {
-  color: var(--gp-quiet);
-  font: 0.6875rem/1.4 var(--gp-cv-font-mono);
+  width: min(100%, calc(var(--picker-plane-max-size) + var(--picker-plane-axis-space)));
+  margin-inline: auto;
+  margin-bottom: 12px;
+  padding-inline-start: calc(var(--picker-plane-axis-space) - 10px);
 }
 
 .plane-instrument .plane-instrument__view-control [role="radiogroup"] {
   display: inline-flex;
-  border: 1px solid var(--gp-hairline);
+  gap: 4px;
 }
 
 .plane-instrument .plane-instrument__view-control button {
-  min-width: 64px;
+  width: 6em;
   min-height: 30px;
   border: 0;
-  border-right: 1px solid var(--gp-hairline);
-  padding: 5px 9px;
+  padding: 7px 10px;
   background: transparent;
   color: var(--gp-quiet);
-  font: 0.6875rem/1 var(--gp-cv-font-mono);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 450;
+  line-height: 1;
+  text-align: center;
   cursor: pointer;
-}
-
-.plane-instrument .plane-instrument__view-control button:last-child {
-  border-right: 0;
 }
 
 .plane-instrument .plane-instrument__view-control button[aria-checked="true"] {
   background: var(--gp-surface-3);
   color: var(--gp-foreground);
-  box-shadow: inset 0 -1px 0 var(--gp-user-accent);
+  font-weight: 600;
+}
+
+.plane-instrument .plane-instrument__view-control button:hover {
+  color: var(--gp-foreground);
 }
 
 .plane-instrument .plane-instrument__view-control button:focus-visible {
@@ -222,9 +216,7 @@
   border: 1px solid oklch(0.98 0 0 / 0.9);
   border-radius: 50%;
   background: var(--projection-marker-color, oklch(0.12 0 0 / 0.72));
-  box-shadow:
-    0 0 0 1px oklch(0 0 0 / 0.55),
-    0 1px 4px oklch(0 0 0 / 0.5);
+  box-shadow: 0 0 0 1px oklch(0 0 0 / 0.6);
 }
 
 .plane-instrument .color-plane__projection-connector {
@@ -330,81 +322,33 @@
   }
 }
 
-.plane-instrument .plane-instrument__evidence {
-  overflow: hidden;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 3px;
-  background: var(--gp-surface-2);
-}
-
-.plane-instrument .plane-instrument__evidence > summary {
-  display: flex;
-  min-height: 38px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 0 10px;
-  color: var(--gp-foreground);
-  font: 0.6875rem/1.25 var(--gp-cv-font-mono);
-  cursor: pointer;
-  list-style: none;
-}
-
-.plane-instrument .plane-instrument__evidence > summary::-webkit-details-marker {
-  display: none;
-}
-
-.plane-instrument .plane-instrument__evidence > summary::after {
-  color: var(--gp-quiet);
-  content: "+";
-}
-
-.plane-instrument .plane-instrument__evidence[open] > summary {
-  border-bottom: 1px solid var(--gp-hairline);
-}
-
-.plane-instrument .plane-instrument__evidence[open] > summary::after {
-  content: "−";
-}
-
-.plane-instrument .plane-instrument__evidence > summary:focus-visible {
-  outline: 2px solid var(--gp-user-accent);
-  outline-offset: -2px;
-}
-
-.plane-instrument .plane-instrument__evidence-body {
-  display: grid;
-  gap: 12px;
-  padding: 12px;
-}
-
 .plane-instrument .plane-instrument__target-result {
-  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 9px 14px;
-  padding: 11px 12px;
-  border: 1px solid var(--gp-hairline);
-  background: var(--gp-surface-2);
+  gap: 8px;
+  padding: 8px 0 10px;
 }
 
 .plane-instrument .plane-instrument__target-heading {
-  display: flex;
-  grid-column: 1;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  font: 0.6875rem/1.35 var(--gp-cv-font-mono);
+  display: grid;
+  grid-template-columns: minmax(0, 132px) 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.35;
 }
 
-.plane-instrument .plane-instrument__target-heading > span {
+.plane-instrument .plane-instrument__target-heading > span:first-child {
   color: var(--gp-foreground);
 }
 
 .plane-instrument .plane-instrument__target-heading strong {
+  justify-self: end;
   color: var(--gp-quiet);
-  font: inherit;
-  letter-spacing: 0.04em;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 
@@ -414,9 +358,8 @@
 
 .plane-instrument .plane-instrument__target-result dl {
   display: flex;
-  grid-column: 1;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 6px 16px;
   margin: 0;
 }
 
@@ -425,19 +368,21 @@
   gap: 7px;
   margin: 0;
   color: var(--gp-quiet);
-  font: 0.625rem/1.35 var(--gp-cv-font-mono);
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .plane-instrument .plane-instrument__target-result dd {
   margin: 0;
   color: var(--gp-foreground);
+  font-family: var(--gp-cv-font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .plane-instrument .plane-instrument__target-swatch {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   align-self: center;
   border: 1px solid oklch(0.96 0 0 / 0.7);
   box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);
@@ -581,7 +526,6 @@
   cursor: grabbing;
 }
 
-.plane-instrument .channel-control__tick,
 .plane-instrument .channel-control__gamut-ranges,
 .plane-instrument .channel-control__gamut-range,
 .plane-instrument .channel-control__warning {
@@ -596,121 +540,73 @@
   line-height: 1.55;
 }
 
-.plane-instrument .plane-instrument__readouts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  border: 1px solid var(--gp-hairline);
-  background: var(--gp-hairline);
-}
-
-.plane-instrument .plane-instrument__readouts > div {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 10px;
-  min-width: 0;
-  padding: 10px;
-  background: var(--gp-surface-2);
-}
-
-.plane-instrument .plane-instrument__readouts span {
-  color: var(--gp-quiet);
-  font-size: 0.6875rem;
-}
-
-.plane-instrument .plane-instrument__readouts code {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  color: var(--gp-foreground);
-  font-size: 0.6875rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plane-instrument .plane-instrument__projection-readout {
-  box-shadow: inset 2px 0 0 var(--picker-projection, var(--gp-quiet));
-}
-
-.plane-instrument .channel-control__tick--projection {
-  z-index: 5;
-  width: 7px;
-  height: 7px;
-  border: 1px solid oklch(0.98 0 0 / 0.9);
-  background: var(--tick-color, oklch(0.12 0 0 / 0.72));
-  transform: translateX(-50%) rotate(45deg);
-}
-
-.plane-instrument .channel-control__tick--projection[data-gamut-lane="display-p3"] {
-  top: 3px;
-  bottom: auto;
-}
-
-.plane-instrument .channel-control__tick--projection[data-gamut-lane="srgb"] {
-  top: auto;
-  bottom: 3px;
-}
-
 .plane-instrument .channel-control__gamut-ranges {
   z-index: 4;
   inset: 0 var(--picker-slider-field-inset, 5px);
 }
 
 .plane-instrument .channel-control__gamut-range {
-  height: var(--picker-slider-field-inset, 5px);
+  height: 11px;
   color: var(--gp-foreground);
   opacity: 0.78;
 }
 
-.plane-instrument .channel-control__gamut-range::before {
-  position: absolute;
-  right: 0;
-  left: 0;
+.plane-instrument .channel-control__gamut-range--display-p3 {
   top: 2px;
   border-top: 1px solid currentColor;
-  content: "";
-}
-
-.plane-instrument .channel-control__gamut-range--display-p3 {
-  top: 0;
 }
 
 .plane-instrument .channel-control__gamut-range--srgb {
-  bottom: 0;
+  bottom: 2px;
+  border-bottom: 1px dashed currentColor;
   opacity: 0.56;
 }
 
-.plane-instrument .channel-control__gamut-range--srgb::before {
-  top: auto;
-  bottom: 2px;
-  border-top-style: dashed;
+.plane-instrument .channel-control__boundary-preview-position {
+  position: absolute;
+  z-index: 5;
+  inset: 0 var(--picker-slider-field-inset, 5px);
+  pointer-events: none;
 }
 
-.plane-instrument .channel-control__threshold-context {
-  grid-column: 2;
-  justify-self: end;
-  color: oklch(0.72 0 0 / 0.86);
-  font: 8px/1 var(--gp-cv-font-mono);
-  letter-spacing: 0.03em;
+.plane-instrument .channel-control__boundary-preview {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 1px solid oklch(0.98 0 0 / 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px oklch(0 0 0 / 0.72);
+  transform: translate(-50%, -50%);
 }
 
 .plane-instrument .channel-control__warning {
   z-index: 4;
+  --slider-warning-optical-offset: 3px;
   top: var(--picker-slider-warning-top, -5px);
   left: clamp(
     var(--picker-slider-warning-edge, 9px),
     calc(
       var(--picker-slider-warning-position, 0%) + var(--picker-slider-warning-thumb-offset, 5px) +
-        var(--picker-slider-warning-side-offset, 14px)
+        var(--picker-slider-warning-side-offset, 14px) + var(--slider-warning-optical-offset)
     ),
     calc(100% - var(--picker-slider-warning-edge, 9px))
   );
-  width: var(--picker-warning-size, 14px);
-  height: var(--picker-warning-size, 14px);
+  width: 11px;
+  height: 11px;
   transform: translateX(-50%);
+}
+
+.plane-instrument .channel-control__warning[data-warning-side="left"] {
+  --slider-warning-optical-offset: -3px;
 }
 
 /* 320px field + 270px controls + 34px gap; em keeps text enlargement in the decision. */
 @container gamut-plane (min-width: 39em) {
+  .plane-instrument .plane-instrument__view-control {
+    margin-inline: 0;
+  }
+
   .plane-instrument .plane-instrument__workspace {
     gap: 34px;
     grid-template-columns: minmax(
@@ -720,23 +616,11 @@
   }
 }
 @container gamut-plane (max-width: 30em) {
+  .plane-instrument .plane-instrument__view-control,
   .plane-instrument .plane-instrument__workspace {
     --picker-plane-axis-space: 19px;
   }
-  .plane-instrument .plane-instrument__readouts {
-    grid-template-columns: 1fr;
-  }
 }
-@media (pointer: coarse) {
-  .plane-instrument .plane-instrument__evidence > summary {
-    min-height: 44px;
-  }
-}
-
-.plane-instrument .plane-instrument__active-readout {
-  box-shadow: inset 2px 0 0 var(--gp-user-accent);
-}
-
 /* Scientific coordinates retain x-minimum on the left in RTL hosts. */
 .plane-instrument .color-plane__surface,
 .plane-instrument .channel-control__track,

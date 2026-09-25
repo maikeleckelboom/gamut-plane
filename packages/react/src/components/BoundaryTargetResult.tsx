@@ -20,29 +20,29 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
     >
       <div className="gpr-plane-instrument-target-heading">
         <span>Target · {model.targetLabel}</span>
+        <span
+          className="gpr-plane-instrument-target-swatch"
+          data-boundary-guide-swatch=""
+          style={{ background: model.swatchCss }}
+          aria-label={`${model.targetLabel} sampled boundary-guide color ${model.swatchCss}`}
+          role="img"
+        />
         <strong data-target-status={model.inGamut ? "inside" : "outside"}>
           {model.inGamut ? "Inside" : "Outside"}
         </strong>
       </div>
       <dl>
         <div>
-          <dt>Boundary guide C</dt>
+          <dt>Guide C</dt>
           <dd>{model.guideChroma}</dd>
         </div>
         {model.showGuideDelta && (
           <div>
-            <dt>Guide delta C</dt>
+            <dt>ΔC</dt>
             <dd>−{model.guideDelta}</dd>
           </div>
         )}
       </dl>
-      <span
-        className="gpr-plane-instrument-target-swatch"
-        data-boundary-guide-swatch=""
-        style={{ background: model.swatchCss }}
-        aria-label={`${model.targetLabel} sampled boundary-guide color ${model.swatchCss}`}
-        role="img"
-      />
     </section>
   );
 }

@@ -21,7 +21,6 @@ export function CoordinateViewControl({
   }
   return (
     <div className="gpr-plane-instrument-view-control">
-      <span>Coordinate view</span>
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
         {options.map((option) => (
           <button
