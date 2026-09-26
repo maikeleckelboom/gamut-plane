@@ -27,6 +27,8 @@
   "scripts": {
     "build": "node scripts/clean.ts && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
+    "typecheck:domain-nodom": "tsc -p tsconfig.domain-nodom.json",
+    "test:packed-domain": "node scripts/checkPackedDomain.ts",
     "test": "vitest run",
     "lint": "oxlint src test scripts"
   },

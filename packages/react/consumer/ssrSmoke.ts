@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { createElement as h, StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { GamutPlane, type OklchColor } from "@gamut-plane/react";
+import { createColorValue, definingEquals, restoreColor, snapshotColor } from "@gamut-plane/core";
 
 for (const key of [
   "window",
@@ -13,6 +14,13 @@ for (const key of [
   "HTMLCanvasElement",
 ])
   assert.equal(typeof Reflect.get(globalThis, key), "undefined", `${key} must be absent`);
+const domain = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
+assert.equal(domain.ok, true);
+if (!domain.ok) throw new Error("Packed ColorValue construction failed");
+const transported = restoreColor(JSON.parse(JSON.stringify(snapshotColor(domain.value))));
+assert.equal(transported.ok, true);
+if (!transported.ok) throw new Error("Packed ColorValue transport failed");
+assert.equal(definingEquals(domain.value, transported.value), true);
 const hostRequire = createRequire(import.meta.url);
 const packageRequire = createRequire(import.meta.resolve("@gamut-plane/react"));
 assert.equal(

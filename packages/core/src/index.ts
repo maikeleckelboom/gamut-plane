@@ -81,3 +81,52 @@ export {
   type PlaneColorReference,
   type PlanePoint,
 } from "./picker/plane.js";
+
+export type { ColorResult } from "./result.js";
+export type {
+  ChannelsBySpace,
+  ColorRepresentation,
+  ColorSpaceId,
+  GamutId,
+} from "./color/representation.js";
+export {
+  createColorValue,
+  definitionOf,
+  definingEquals,
+  isColorValue,
+  type ColorValue,
+  type DefinitionError,
+} from "./color/value.js";
+export { represent, type ConversionError } from "./color/represent.js";
+export {
+  restoreColor,
+  snapshotColor,
+  type ColorSnapshotV1,
+  type SnapshotError,
+  type SnapshotNumberV1,
+} from "./color/snapshot.js";
+export {
+  analyzeGamut,
+  type GamutAnalysis,
+  type GamutAnalysisError,
+  type GamutStatus,
+} from "./gamut/analyze.js";
+export {
+  mapToGamut,
+  type GamutMappingError,
+  type GamutMappingMethod,
+  type GamutMappingResult,
+} from "./gamut/map.js";
+export {
+  parseCssValue,
+  type CssColorSource,
+  type CssInputError,
+  type ParsedCssColor,
+} from "./input/parseCssValue.js";
+export {
+  serializeCss,
+  type CssOutput,
+  type CssOutputError,
+  type CssOutputPolicy,
+} from "./output/css.js";
+export { serializeHex, type HexOutput, type HexOutputError } from "./output/hex.js";
