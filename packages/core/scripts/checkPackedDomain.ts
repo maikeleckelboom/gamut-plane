@@ -66,7 +66,7 @@ try {
   await writeFile(
     join(consumer, "consumer.mts"),
     `
-import { createColorValue, definitionOf, represent, snapshotColor, restoreColor, definingEquals } from "@gamut-plane/core";
+import { authorPlaneEdit, createColorValue, definitionOf, projectColorToPlane, represent, snapshotColor, restoreColor, definingEquals } from "@gamut-plane/core";
 import type { ColorValue, ColorRepresentation } from "@gamut-plane/core";
 
 const source = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
@@ -76,6 +76,11 @@ const definition: ColorRepresentation = definitionOf(value);
 if (definition.space !== "oklch" || !Object.is(definition.channels[1], -0)) throw new Error("Packed defining coordinates changed");
 const observed = represent(value, "srgb");
 if (!observed.ok) throw new Error("Packed conversion failed");
+const projection = projectColorToPlane(value, "oklab");
+if (!projection.ok) throw new Error("Packed plane projection failed");
+const reauthored = authorPlaneEdit(value, { plane: "oklab", kind: "channels", channels: { a: projection.value.representation.channels[1] + 0.01 } });
+if (!reauthored.ok || definitionOf(reauthored.value).space !== "oklab" || definitionOf(reauthored.value).channels[1] !== projection.value.representation.channels[1] + 0.01 || !Object.is(definitionOf(reauthored.value).alpha, 0.372913)) throw new Error("Packed plane authorship failed");
+if (definitionOf(value).space !== "oklch") throw new Error("Packed observation changed authority");
 const restored = restoreColor(JSON.parse(JSON.stringify(snapshotColor(value))));
 if (!restored.ok || !definingEquals(value, restored.value)) throw new Error("Packed transport failed");
 `,

@@ -1,6 +1,8 @@
 import {
+  authorPlaneEdit,
   createColorValue,
   definitionOf,
+  projectColorToPlane,
   represent,
   serializeHex,
   type ColorRepresentation,
@@ -28,6 +30,19 @@ serializeHex(srgb, { alpha: "omit" });
 createColorValue(representation);
 definitionOf(value);
 represent(value, "oklch");
+const projected = projectColorToPlane(value, "oklab");
+if (projected.ok) {
+  const axes: readonly [number, number, number] = projected.value.representation.channels;
+  const reauthored = authorPlaneEdit(value, {
+    plane: "oklab",
+    kind: "channels",
+    channels: { a: axes[1] + 0.01 },
+  });
+  if (reauthored.ok) {
+    const defined: ColorValue = reauthored.value;
+    void defined;
+  }
+}
 
 // @ts-expect-error closed space IDs
 const unsupported: ColorSpaceId = "rec2020";
@@ -42,3 +57,5 @@ void invalidRgb;
 representation.alpha = 0;
 // @ts-expect-error Hex accepts explicit sRGB coordinates only
 serializeHex({ space: "display-p3", channels: [0, 0, 0], alpha: 1 }, { alpha: "omit" });
+// @ts-expect-error OKLab edits cannot carry an OKLCH hue
+authorPlaneEdit(value, { plane: "oklab", kind: "channels", channels: { h: 20 } });

@@ -8,8 +8,9 @@ import {
 /** The context actually granted by the browser, not the display hardware. */
 export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
 export type RenderedFieldQuality = "full" | "preview";
+type PlaneFieldSampler = Pick<PickerPlaneContract, "id" | "fieldSampling" | "sampleField">;
 export interface FieldRenderInput {
-  plane: PickerPlaneContract;
+  plane: PlaneFieldSampler;
   fixed: number;
   pixelRatio: number;
   interactionPreview: boolean;
@@ -30,7 +31,7 @@ export function createFieldRenderer(
   let discFieldContext: CanvasRenderingContext2D | null = null;
   let columnPreviewBuffer: HTMLCanvasElement | null = null;
   let columnPreviewContext: CanvasRenderingContext2D | null = null;
-  let plane: PickerPlaneContract;
+  let plane: PlaneFieldSampler;
   let canvasColorSpace: CanvasColorSpaceStatus = "pending";
   let lastFieldKey = "";
   let quality: RenderedFieldQuality = "full";

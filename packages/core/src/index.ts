@@ -81,6 +81,14 @@ export {
   type PlaneColorReference,
   type PlanePoint,
 } from "./picker/plane.js";
+export {
+  authorPlaneEdit,
+  projectColorToPlane,
+  type ColorPlaneEdit,
+  type ColorPlaneProjection,
+  type PlaneEditError,
+  type PlaneEditReference,
+} from "./picker/edit.js";
 
 export type { ColorResult } from "./result.js";
 export type {
