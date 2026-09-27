@@ -65,8 +65,34 @@ for (const state of states) {
     await expect(part("field").locator("[data-legend]")).toHaveCount(1);
     await expect(root.locator('[data-gp-part="marker"][data-gp-marker="active"]')).toHaveCount(1);
     await expect(part("target-result")).toHaveAttribute("data-gp-status", state.srgb);
-    await expect(root.locator('[data-gp-part="warning"][data-gp-warning]')).not.toHaveCount(0);
-    await expect(root.locator('[data-gp-part="channel"][data-gp-channel]')).not.toHaveCount(0);
+    await expect(part("plane").locator('[data-gp-part="warning"]')).toHaveAttribute(
+      "data-gp-warning",
+      String(state.p3 === "outside"),
+    );
+    await expect(root.locator('[data-gp-part="channel"][data-gp-channel="h"]')).toHaveCount(
+      state.name === "oklab" ? 0 : 1,
+    );
+    for (const channel of ["l", "c"]) {
+      await expect(
+        root.locator(`[data-gp-part="channel"][data-gp-channel="${channel}"]`),
+      ).toHaveCount(state.name === "oklab" && channel === "c" ? 0 : 1);
+    }
+    if (state.name !== "oklab") {
+      for (const channel of ["h", "l", "c"])
+        await expect(
+          root.locator(`[data-gp-part="channel"][data-gp-channel="${channel}"]`),
+        ).toHaveAttribute(
+          "data-gp-overflow",
+          String(state.name === "outside" || state.name === "target-p3" ? channel === "c" : false),
+        );
+    }
+    expect(
+      await part("gamut-interval").evaluateAll((elements) =>
+        elements.every((element) =>
+          ["srgb", "display-p3"].includes(element.getAttribute("data-gp-gamut") ?? ""),
+        ),
+      ),
+    ).toBe(true);
     await expect(root.locator("[data-gp-visually-hidden]")).not.toHaveCount(0);
     const titleId = await root.getAttribute("aria-labelledby");
     expect(titleId).toBeTruthy();
@@ -93,12 +119,12 @@ for (const state of states) {
       "data-active-plane",
       state.name === "oklab" ? "oklab" : "oklch",
     );
-    await expect(host.locator('[data-gamut-boundary="srgb"]')).toHaveCount(
+    await expect(root.locator('[data-gp-part="gamut-boundary"][data-gp-gamut="srgb"]')).toHaveCount(
       state.name.includes("hidden") ? 0 : 1,
     );
-    await expect(host.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(
-      state.name === "guides-hidden" ? 0 : 1,
-    );
+    await expect(
+      root.locator('[data-gp-part="gamut-boundary"][data-gp-gamut="display-p3"]'),
+    ).toHaveCount(state.name === "guides-hidden" ? 0 : 1);
     await expect(root.locator("canvas")).toHaveCount(1);
     await expect
       .poll(() => root.locator("canvas").evaluate((canvas: HTMLCanvasElement) => canvas.width))
@@ -107,6 +133,36 @@ for (const state of states) {
     if (process.platform === "win32") await expect(root).toHaveScreenshot(`ui-${state.name}.png`);
   });
 }
+
+test("Display P3 target uses P3 status for a P3-only color", async ({ page }) => {
+  await page.goto("/?parity&l=0.68&c=0.18&h=252&target=display-p3");
+  const host = page.locator(".parity-instance");
+  await expect(host).toHaveAttribute("data-srgb-status", "outside");
+  await expect(host).toHaveAttribute("data-p3-status", "inside");
+  await expect(host.locator('[data-gp-part="target-result"]')).toHaveAttribute(
+    "data-gp-status",
+    "inside",
+  );
+  await expect(host.locator('[data-gp-part="target-result"]')).toHaveAttribute(
+    "data-boundary-target",
+    "display-p3",
+  );
+  await expect(host.locator('[data-gp-part="plane"] [data-gp-part="warning"]')).toHaveAttribute(
+    "data-gp-warning",
+    "false",
+  );
+});
+
+test("native range pointer focus hook yields to keyboard use", async ({ page }) => {
+  await page.goto("/?parity");
+  const range = page.locator(
+    '.parity-instance [data-gp-part="channel"][data-gp-channel="h"] input[type="range"]',
+  );
+  await range.dispatchEvent("pointerdown", { pointerId: 7, pointerType: "mouse", button: 0 });
+  await expect(range).toHaveAttribute("data-gp-pointer-focus", "");
+  await range.dispatchEvent("keydown", { key: "ArrowRight" });
+  await expect(range).not.toHaveAttribute("data-gp-pointer-focus");
+});
 
 test("React numeric change during composition waits for composition end", async ({ page }) => {
   await page.goto("/?single");
