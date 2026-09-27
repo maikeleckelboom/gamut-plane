@@ -14,6 +14,7 @@ import {
 import { computed, ref, useId, watch } from "vue";
 import { gpPart, editorUi, currentViewOptions, representationUi } from "@gamut-plane/ui";
 import NumericInput from "./NumericInput.vue";
+import { legacyViewState, resolveAcceptedRevision } from "../model/acceptedResolution.js";
 
 import ColorChannelControl from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
@@ -54,8 +55,15 @@ const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
 const [fixedLightness, a, b] = editorUi["oklab-ab"].companions;
 const planeOptionButtons = new Map<PickerPlaneId, HTMLButtonElement>();
 const tables = PICKER_GAMUT_TABLES;
+const revision = computed(() =>
+  resolveAcceptedRevision(
+    props.modelValue,
+    legacyViewState(plane.value, props.showSrgbBoundary, props.showDisplayP3Boundary),
+  ),
+);
+// The v0.3 visual derivation remains independent; its exact rows never enter the revision.
 const presentation = computed(() =>
-  createPickerPresentation(props.modelValue, plane.value, props.boundaryTarget, {
+  createPickerPresentation(revision.value.source, plane.value, props.boundaryTarget, {
     srgb: props.showSrgbBoundary,
     displayP3: props.showDisplayP3Boundary,
   }),
@@ -64,8 +72,8 @@ const primaryGamutWarning = "Outside Display P3";
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
 watch(
-  () => props.modelValue,
-  (value) => {
+  [() => props.modelValue, () => revision.value.contextKey],
+  ([value]) => {
     const observed = represent(value, "oklch");
     if (!observed.ok) throw new RangeError("Selected hue cannot be observed");
     const hue = observed.value.channels[2];
@@ -112,7 +120,7 @@ function publish(result: ColorResult<ColorValue, PlaneEditError>, complete: bool
 
 function editOklch(channel: "l" | "c" | "h", value: number, complete: boolean): void {
   publish(
-    authorPlaneEdit(props.modelValue, {
+    authorPlaneEdit(revision.value.source, {
       plane: "oklch",
       kind: "channels",
       channels: { [channel]: channel === "h" ? normalizeHue(value) : value },
@@ -131,11 +139,11 @@ function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): 
           kind: "point" as const,
           point: oklabCoordinatePlanePoint(presentation.value.oklab, channel, value),
         };
-  publish(authorPlaneEdit(props.modelValue, edit), complete);
+  publish(authorPlaneEdit(revision.value.source, edit), complete);
 }
 
 watch(
-  () => plane.value,
+  () => revision.value.contextKey,
   () => {
     hueRangeDragging.value = false;
   },
@@ -177,7 +185,8 @@ watch(
     <div class="plane-instrument__workspace" :data-gp-part="gpPart.workspace">
       <div class="plane-instrument__field" :data-gp-part="gpPart.field">
         <ColorPlane
-          :model-value="modelValue"
+          :model-value="revision.source"
+          :semantic-context-key="revision.contextKey"
           :field-hue="presentation.fieldHue"
           :marker-css="presentation.markerCss"
           :edit-reference="hueReference"
@@ -203,7 +212,7 @@ watch(
       <div class="plane-instrument__controls" :data-gp-part="gpPart.controls">
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
-            :key="`${hue.channelId}:${hue.operationId}`"
+            :key="`${revision.contextKey}:${hue.channelId}:${hue.operationId}`"
             :id="`${instanceId}-hue`"
             :channel="hue.symbol"
             :label="hue.label"
@@ -226,7 +235,7 @@ watch(
           />
 
           <ColorChannelControl
-            :key="`${lightness.channelId}:${lightness.operationId}`"
+            :key="`${revision.contextKey}:${lightness.channelId}:${lightness.operationId}`"
             :id="`${instanceId}-lightness`"
             :channel="lightness.symbol"
             :label="lightness.label"
@@ -246,7 +255,7 @@ watch(
           />
 
           <ColorChannelControl
-            :key="`${chroma.channelId}:${chroma.operationId}`"
+            :key="`${revision.contextKey}:${chroma.channelId}:${chroma.operationId}`"
             :id="`${instanceId}-chroma`"
             :channel="chroma.symbol"
             :label="chroma.label"
@@ -273,7 +282,7 @@ watch(
 
         <template v-else>
           <ColorChannelControl
-            :key="`${fixedLightness.channelId}:${fixedLightness.operationId}`"
+            :key="`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`"
             :id="`${instanceId}-oklab-lightness`"
             :channel="fixedLightness.symbol"
             :label="fixedLightness.label"
@@ -301,7 +310,7 @@ watch(
             <label>
               <span>{{ a.label }}</span>
               <NumericInput
-                :key="`${a.channelId}:${a.operationId}`"
+                :key="`${revision.contextKey}:${a.channelId}:${a.operationId}`"
                 :model-value="presentation.projection.x"
                 :precision="a.precision"
                 :min="a.numericBounds.min"
@@ -318,7 +327,7 @@ watch(
             <label>
               <span>{{ b.label }}</span>
               <NumericInput
-                :key="`${b.channelId}:${b.operationId}`"
+                :key="`${revision.contextKey}:${b.channelId}:${b.operationId}`"
                 :model-value="presentation.projection.y"
                 :precision="b.precision"
                 :min="b.numericBounds.min"

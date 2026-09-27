@@ -37,6 +37,7 @@ function mountPlane(value: ColorValue, plane: PickerPlaneGeometry & PickerPlaneF
       modelValue: value,
       ...presentation(value, plane),
       plane,
+      semanticContextKey: plane.id === "oklch" ? "oklch:oklch-lc" : "oklab:oklab-ab",
       srgbTable: PICKER_GAMUT_TABLES.srgb,
       displayP3Table: PICKER_GAMUT_TABLES.displayP3,
       targetGuidePoint: null,

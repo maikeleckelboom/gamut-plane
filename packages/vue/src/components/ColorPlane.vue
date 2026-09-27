@@ -49,6 +49,7 @@ import {
 const props = withDefaults(
   defineProps<{
     modelValue: ColorValue;
+    semanticContextKey: string;
     fieldHue: number;
     markerCss: string;
     editReference?: PlaneEditReference;
@@ -299,7 +300,7 @@ function onBlur(): void {
 
 watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
 watch(
-  () => props.plane,
+  () => props.semanticContextKey,
   () => gesture?.reconcile(),
   { flush: "sync" },
 );
@@ -327,7 +328,7 @@ onMounted(() => {
     const element = surface.value;
     gesture = mountPlaneGesture<ColorValue, PlanePoint>(element, () => ({
       value: props.modelValue,
-      viewKey: props.plane.id,
+      viewKey: props.semanticContextKey,
       pointFromPointer: (event) => {
         if (event.type === "pointerdown") measureSurface();
         return pointFromPointer(event);

@@ -37,6 +37,7 @@ describe("planar canvas backing store", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
+        semanticContextKey: "oklch:oklch-lc",
         srgbTable: generateGamutBoundaryTable("srgb", options),
         displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
@@ -102,6 +103,7 @@ describe("planar canvas backing store", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
+        semanticContextKey: "oklch:oklch-lc",
         srgbTable: generateGamutBoundaryTable("srgb", options),
         displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
