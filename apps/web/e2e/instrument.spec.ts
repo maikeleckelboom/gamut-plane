@@ -556,6 +556,23 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   }));
   expect(oklabGeometry.overflow).toBeLessThanOrEqual(0);
   expect(oklabGeometry.clippedCoordinates).toBe(false);
+
+  await page.setViewportSize({ width: 320, height: 720 });
+  const instrument = page.locator("[data-plane-instrument]");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  expect(await instrument.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  );
+  for (const name of ["OKLCH", "OKLab"]) {
+    const option = instrument.getByRole("radio", { name, exact: true });
+    await expect(option).toBeInViewport();
+    await option.click();
+    await expect(option).toHaveAttribute("aria-checked", "true");
+  }
 });
 
 test("CSS copy controls expose precision, success feedback, and disabled semantics", async ({

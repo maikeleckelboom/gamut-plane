@@ -52,11 +52,13 @@
 
 .plane-instrument .plane-instrument__view-control [role="radiogroup"] {
   display: inline-flex;
+  max-inline-size: 100%;
   gap: 4px;
 }
 
 .plane-instrument .plane-instrument__view-control button {
   width: 6em;
+  min-inline-size: 0;
   min-height: 30px;
   border: 0;
   padding: 7px 10px;
