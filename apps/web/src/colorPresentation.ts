@@ -40,6 +40,8 @@ export function formatRgbCssForDisplay(serialized: string): string {
         const value = Number(token);
         return Number.isFinite(value) ? formatDecimal(value) : token;
       });
+    // Alpha 1 is optional in color(); keep the displayed line compact without changing copy output.
+    if (channels.at(-2) === "/" && channels.at(-1) === "1") channels.splice(-2);
     return `color(${space} ${channels.join(" ")})`;
   }
 

@@ -13,6 +13,12 @@ describe("CSS presentation formatting", () => {
         "color(display-p3 0.31650380404936257 0.5973245576847196 0.9835484146109986)",
       ),
     ).toBe("color(display-p3 0.316504 0.597325 0.983548)");
+    expect(formatRgbCssForDisplay("color(display-p3 0.3 0.6 0.9 / 1)")).toBe(
+      "color(display-p3 0.3 0.6 0.9)",
+    );
+    expect(formatRgbCssForDisplay("color(display-p3 0.3 0.6 0.9 / 0.5)")).toBe(
+      "color(display-p3 0.3 0.6 0.9 / 0.5)",
+    );
     expect(CSS_DISPLAY_DECIMALS).toBe(6);
   });
 

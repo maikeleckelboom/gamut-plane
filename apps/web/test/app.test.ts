@@ -150,7 +150,7 @@ describe("standalone application", () => {
 
     const representation = wrapper.get('[data-css-representation="display-p3"]');
     const displayed = representation.get("code").text();
-    expect(displayed).toBe("color(display-p3 0.316504 0.597325 0.983548 / 1)");
+    expect(displayed).toBe("color(display-p3 0.316504 0.597325 0.983548)");
 
     const copyButton = representation.get('[data-copy-representation="display-p3"]');
     await copyButton.trigger("click");
