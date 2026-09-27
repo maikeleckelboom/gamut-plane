@@ -76,6 +76,14 @@ import * as root from "@gamut-plane/core";
 import * as capabilities from "@gamut-plane/core/internal/capabilities";
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
 import type { EditorId, EditorDefinition, GeometryId, GeometryDefinition, ChannelDefinition, ChannelId, RepresentationDefinition, EditOperationDefinition, EditOperationId } from "@gamut-plane/core/internal/capabilities";
+import type { GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
+
+const checked: GamutCheckResult = { gamutId: "srgb-gamut", result: { ok: false, error: { code: "numerical-range", from: "oklch", to: "srgb" } } };
+// @ts-expect-error the collection row uses core gamut IDs, not representation IDs
+const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
+// @ts-expect-error derived collection types are internal, not public root API
+type RootCheck = import("@gamut-plane/core").GamutCheckResult;
+void wrongCheck;
 
 if (Object.keys(capabilities).sort().join() !== "editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface expanded");
 if ("editorDefinitions" in root || "geometryDefinitions" in root) throw new Error("Internal capabilities leaked into root");
