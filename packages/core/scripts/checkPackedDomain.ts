@@ -75,7 +75,7 @@ import type { ColorValue, ColorRepresentation } from "@gamut-plane/core";
 import * as root from "@gamut-plane/core";
 import * as capabilities from "@gamut-plane/core/internal/capabilities";
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
-import type { EditorId, EditorDefinition, GeometryId, GeometryDefinition } from "@gamut-plane/core/internal/capabilities";
+import type { EditorId, EditorDefinition, GeometryId, GeometryDefinition, ChannelDefinition, ChannelId, RepresentationDefinition, EditOperationDefinition, EditOperationId } from "@gamut-plane/core/internal/capabilities";
 
 if (Object.keys(capabilities).sort().join() !== "editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface expanded");
 if ("editorDefinitions" in root || "geometryDefinitions" in root) throw new Error("Internal capabilities leaked into root");
@@ -90,6 +90,20 @@ const unsupportedEditor: EditorId = "srgb-channels";
 // @ts-expect-error internal capabilities are deliberately absent from the root type surface
 type RootEditor = import("@gamut-plane/core").EditorId;
 void unsupportedEditor;
+
+const channel: ChannelId = "oklch.h";
+const operation: EditOperationId = "oklch-hue-edit";
+const representation: RepresentationDefinition["id"] = "display-p3";
+type HueOperation = Extract<EditOperationDefinition, { id: typeof operation }>;
+const hueChannel: HueOperation["channelId"] = channel;
+const labChannel: ChannelDefinition<"oklab">["id"] = "oklab.a";
+// @ts-expect-error operation/channel correspondence crosses the packed type boundary
+const wrongHueChannel: HueOperation["channelId"] = labChannel;
+// @ts-expect-error representation identity is technical, not a display label
+const displayLabel: RepresentationDefinition["id"] = "Display P3";
+// @ts-expect-error UI's new identity types must not leak into core's public root
+type RootChannel = import("@gamut-plane/core").ChannelId;
+void [representation, hueChannel, wrongHueChannel, displayLabel];
 
 const source = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
 if (!source.ok) throw new Error("Packed construction failed");

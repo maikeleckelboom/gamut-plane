@@ -6,4 +6,11 @@ export type {
   EditorId,
   GeometryDefinition,
   GeometryId,
+  EditOperationDefinition,
+  EditOperationId,
 } from "./types/editingDefinitions.js";
+export type {
+  ChannelDefinition,
+  ChannelId,
+  RepresentationDefinition,
+} from "./types/representationDefinitions.js";
