@@ -30,7 +30,7 @@ const boundaryTarget = ref<DisplayGamut>("srgb");
 | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `v-model`                    | Required `ColorValue`; receives live color edits                                            |
 | `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
-| `boundaryTarget`             | Controlled `DisplayGamut` projection/reference target; defaults to `"srgb"`                 |
+| `boundaryTarget`             | Controlled `DisplayGamut` sampled-guide target; defaults to `"srgb"`                        |
 | `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
 | `showDisplayP3Boundary`      | Boolean prop; defaults to `true`                                                            |
 | `@commit="onCommit"`         | Receives the color when an edit completes, for example to record undo history               |
@@ -38,9 +38,9 @@ const boundaryTarget = ref<DisplayGamut>("srgb");
 | `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
 | `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
 
-Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's field contour, accessible path, channel intervals and projection overlays. Exact membership and the active target result remain available.
+Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's field contour, accessible path, channel intervals and target-guide overlays. Exact status and the active target result remain available.
 
-Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting.
+Boundary target selects the sampled-guide reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut. Neither mutates the authored color or changes the other setting. The picker treats `within-tolerance` as visually contained; strict output policy remains separate.
 
 The `ColorValue` definition is authoritative. Changing coordinate view only observes it; real edits produce a new value defined in the edited plane. An absent neutral hue stays absent until a Hue edit establishes a direction. The field uses a presentation-only hue slice while direction is absent; chromatic OKLCH edits wait for a real Hue edit. Edits preserve alpha, and gamut guides do not clamp the authored color to a display gamut. Use `snapshotColor` and `restoreColor` from core at serialization boundaries.
 

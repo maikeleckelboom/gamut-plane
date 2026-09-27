@@ -1,6 +1,6 @@
 # @gamut-plane/react
 
-A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, boundary projection and exact Display P3 warnings. Private, version `0.1.0`, and unpublished.
+A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, a target guide and exact Display P3 status. Private, version `0.1.0`, and unpublished.
 
 ## Controlled color
 
@@ -44,7 +44,7 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 | `view`                     | `GamutPlaneView`                                            | Optional authoritative view                         |
 | `defaultView`              | `GamutPlaneView`                                            | `"oklch"`; initialization only                      |
 | `onViewChange`             | `(view: GamutPlaneView) => void`                            | User requests for a different view                  |
-| `boundaryTarget`           | `DisplayGamut`                                              | `"srgb"`; controlled projection/reference target    |
+| `boundaryTarget`           | `DisplayGamut`                                              | `"srgb"`; controlled sampled-guide target           |
 | `showSrgbBoundary`         | `boolean`                                                   | `true`                                              |
 | `showDisplayP3Boundary`    | `boolean`                                                   | `true`                                              |
 | `onValueCommit`            | `(value: ColorValue) => void`                               | Completion, after value delivery                    |
@@ -78,9 +78,9 @@ const [boundaryTarget, setBoundaryTarget] = useState<DisplayGamut>("srgb");
 />;
 ```
 
-The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and projection overlays. Exact membership and the target result retain their meaning. Exact membership uses direct core math; contours, guide values, guide swatch and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
+The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and target-guide overlays. Exact status and the target result retain their meaning. `analyzeGamut` receives the original `ColorValue`; contours, guide values, guide swatch and target guide are sampled visualization data. The OKLab circular edit limit is not a display gamut.
 
-Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting. The primary outside-Display-P3 warning remains based on exact Display P3 membership, regardless of target.
+Boundary target selects the sampled-guide reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut. Neither mutates the authored color or changes the other setting. The primary Display P3 warning appears only for exact `outside` status, regardless of target; `within-tolerance` is visually contained while strict output may reject it.
 
 Only `--gamut-plane-accent` is a supported theme property. Styles are local, inherit the host font and preserve its document palette, resets and color scheme. Available container width owns the one/two-column layout at 39em, with a usable one-column fallback. Scientific axes and ranges remain left-to-right inside an RTL host; surrounding prose inherits its direction.
 

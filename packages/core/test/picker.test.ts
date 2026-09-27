@@ -16,16 +16,13 @@ import {
   getHueGamutIntervals,
   getLightnessGamutIntervals,
   getMaximumChromaFromTable,
-  getPickerBoundaryAnalysis,
-  getPickerGamutStatus,
-  isColorInGamut,
+  getPickerGuide,
   isPointInOklabInstrumentDomain,
   oklabCoordinatesToPlanePoint,
   oklchCoordinatesToPlanePoint,
   type DisplayGamut,
   type GamutBoundaryTable,
   type OklchColor,
-  type PickerGamutBoundaryTables,
 } from "../src/index";
 
 function syntheticHueTable(
@@ -57,7 +54,7 @@ function syntheticLightnessTable(
 
 describe("OKLCH picker geometry and analysis", () => {
   const options = { hueSteps: 24, lightnessSteps: 17, searchIterations: 10 };
-  let tables: PickerGamutBoundaryTables;
+  let tables: { srgb: GamutBoundaryTable; displayP3: GamutBoundaryTable };
 
   beforeAll(() => {
     clearGamutBoundaryTableCache();
@@ -125,78 +122,25 @@ describe("OKLCH picker geometry and analysis", () => {
     );
   });
 
-  it("derives exact dual gamut status and target-aware sampled boundary results", () => {
-    const l = 0.6;
-    const h = 30;
-    const srgbMaximum = getMaximumChromaFromTable(tables.srgb, l, h);
-    const displayP3Maximum = getMaximumChromaFromTable(tables.displayP3, l, h);
-    expect(displayP3Maximum).toBeGreaterThan(srgbMaximum);
+  it("derives distinct sampled guide facts without mutating the observed coordinates", () => {
+    const color: OklchColor = { l: 0.6, c: 0.2, h: 30, alpha: 0.45 };
+    const snapshot = structuredClone(color);
+    const srgb = getPickerGuide(color, tables.srgb);
+    const displayP3 = getPickerGuide(color, tables.displayP3);
 
-    const color: OklchColor = {
-      l,
-      c: (srgbMaximum + displayP3Maximum) / 2,
-      h,
-      alpha: 1,
-    };
-    const status = getPickerGamutStatus(color, tables);
-    const statusWithoutSource = getPickerGamutStatus(
-      { l: color.l, c: color.c, h: color.h, alpha: color.alpha },
-      tables,
-    );
-
-    expect(status).toEqual(statusWithoutSource);
-    expect(status.srgb.inGamut).toBe(false);
-    expect(status.displayP3.inGamut).toBe(true);
-    expect(status.srgb.interpolatedMaximumChroma).toBe(srgbMaximum);
-    expect(status.displayP3.interpolatedMaximumChroma).toBe(displayP3Maximum);
-    expect(status.srgb.interpolatedDeltaC).toBeCloseTo(color.c - srgbMaximum, 12);
-
-    const srgb = getPickerBoundaryAnalysis(color, "srgb", tables, status);
-    const displayP3 = getPickerBoundaryAnalysis(color, "display-p3", tables, status);
-    expect(srgb.target.target).toBe("srgb");
-    expect(srgb.target.inGamut).toBe(false);
-    expect(srgb.target.boundaryGuide.chroma).toBe(srgbMaximum);
-    expect(srgb.target.boundaryGuide.color).toEqual({ ...color, c: srgbMaximum });
-    expect(srgb.target.projection?.chroma).toBe(srgbMaximum);
-    expect(srgb.target.projection?.position).not.toBe(color.c / OKLCH_PICKER_MAX_CHROMA);
-    expect(displayP3.target.target).toBe("display-p3");
-    expect(displayP3.target.inGamut).toBe(true);
-    expect(displayP3.target.boundaryGuide.chroma).toBe(displayP3Maximum);
-    expect(displayP3.target.projection).toBeNull();
-    expect(displayP3.status).toBe(status);
-    expect(color).toEqual({ l, c: (srgbMaximum + displayP3Maximum) / 2, h, alpha: 1 });
-
-    const sharpBlue: OklchColor = { l: 0.45, c: 0.23, h: 263, alpha: 1 };
-    const sharpBlueStatus = getPickerGamutStatus(sharpBlue, tables);
-    expect(sharpBlueStatus.srgb.inGamut).toBe(isColorInGamut(sharpBlue, "srgb"));
-    expect(sharpBlueStatus.srgb.inGamut).toBe(false);
+    for (const [guide, table] of [
+      [srgb, tables.srgb],
+      [displayP3, tables.displayP3],
+    ] as const) {
+      const maximum = getMaximumChromaFromTable(table, color.l, color.h);
+      expect(guide.gamut).toBe(table.gamut);
+      expect(guide.maximumChroma).toBe(maximum);
+      expect(guide.deltaC).toBeCloseTo(Math.max(0, color.c - maximum), 6);
+      expect(guide.color).toEqual({ ...color, c: maximum });
+    }
+    expect(displayP3.maximumChroma).toBeGreaterThan(srgb.maximumChroma);
+    expect(color).toEqual(snapshot);
   });
-
-  it.each([
-    ["inside both", { l: 0.68, c: 0.08, h: 252, alpha: 1 }, true, true],
-    ["outside sRGB only", { l: 0.68, c: 0.18, h: 252, alpha: 1 }, false, true],
-    ["outside both", { l: 0.62, c: 0.42, h: 30, alpha: 1 }, false, false],
-  ] satisfies [string, OklchColor, boolean, boolean][])(
-    "keeps exact membership and authored color independent for a color %s",
-    (_label, color, inSrgb, inDisplayP3) => {
-      const snapshot = structuredClone(color);
-      const srgb = getPickerBoundaryAnalysis(color, "srgb", tables);
-      const displayP3 = getPickerBoundaryAnalysis(color, "display-p3", tables);
-
-      expect(srgb.status.srgb.inGamut).toBe(inSrgb);
-      expect(srgb.status.displayP3.inGamut).toBe(inDisplayP3);
-      expect(displayP3.status).toEqual(srgb.status);
-      expect(srgb.target.boundaryGuide.chroma).toBe(
-        getMaximumChromaFromTable(tables.srgb, color.l, color.h),
-      );
-      expect(displayP3.target.boundaryGuide.chroma).toBe(
-        getMaximumChromaFromTable(tables.displayP3, color.l, color.h),
-      );
-      expect(srgb.target.projection === null).toBe(inSrgb);
-      expect(displayP3.target.projection === null).toBe(inDisplayP3);
-      expect(color).toEqual(snapshot);
-    },
-  );
 
   it("solves lightness-valid intervals from piecewise table interpolation", () => {
     expect(getLightnessGamutIntervals(tables.srgb, { c: 0, h: 30 })).toEqual([

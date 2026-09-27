@@ -1,9 +1,9 @@
-import type { DisplayGamut } from "@gamut-plane/core";
+import type { DisplayGamut, GamutStatus } from "@gamut-plane/core";
 
 export interface BoundaryTargetResultModel {
   target: DisplayGamut;
   targetLabel: string;
-  inGamut: boolean;
+  status: GamutStatus;
   guideChroma: string;
   guideDelta: string;
   showGuideDelta: boolean;
@@ -16,6 +16,7 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
       className="gpr-plane-instrument-target-result"
       data-boundary-target-result=""
       data-boundary-target={model.target}
+      data-target-exact-status={model.status}
       aria-label={`${model.targetLabel} target boundary result`}
     >
       <div className="gpr-plane-instrument-target-heading">
@@ -27,8 +28,8 @@ export function BoundaryTargetResult({ model }: { model: BoundaryTargetResultMod
           aria-label={`${model.targetLabel} sampled boundary-guide color ${model.swatchCss}`}
           role="img"
         />
-        <strong data-target-status={model.inGamut ? "inside" : "outside"}>
-          {model.inGamut ? "Inside" : "Outside"}
+        <strong data-target-status={model.status === "outside" ? "outside" : "inside"}>
+          {model.status === "outside" ? "Outside" : "Inside"}
         </strong>
       </div>
       <dl>

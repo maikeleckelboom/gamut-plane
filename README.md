@@ -122,9 +122,9 @@ The overrides resolve all unpublished transitive dependencies from their local a
 
 ## Color and editing behavior
 
-The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel intervals, boundary-guide colors and the selected target projection interpolate generated tables. Exact inside/outside status uses direct conversion to linear-light RGB with a small numerical tolerance.
+The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel intervals, boundary-guide colors and the selected target guide interpolate generated tables. `analyzeGamut(ColorValue)` supplies exact `inside`, `within-tolerance` or `outside` status independently of those guides.
 
-Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut across the plane and channel controls. Neither changes the target automatically or mutates the authored color. Exact membership for both gamuts and the primary Display P3 warning remain independent of both controls.
+Boundary target selects the reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut across the plane and channel controls. Neither changes the target automatically or mutates the authored color. The picker treats `within-tolerance` as visually contained: it shows no outside-only target guide or Display P3 warning. Strict CSS and Hex output may reject that status. Mapping is available only through explicit `mapToGamut`.
 
 The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values, with the marker projected to the edge.
 

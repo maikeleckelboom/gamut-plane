@@ -61,7 +61,7 @@ There is one authored color in the parent. The component has temporary gesture s
 
 Plane feedback uses `definingEquals`, so a separately constructed value with the same defining space, channels and alpha acknowledges the gesture. A different definition supersedes it even if its observed color matches. Parents should feed accepted updates back promptly rather than replaying delayed stale values.
 
-`NumericInput.vue` owns drafts, validation and completion deduplication for channel and OKLab fields. `GamutPlane.vue` calls `authorPlaneEdit` for channel and constrained a/b edits. Numeric values are not round-tripped through hex or a sampled projection.
+`NumericInput.vue` owns drafts, validation and completion deduplication for channel and OKLab fields. `GamutPlane.vue` calls `authorPlaneEdit` for channel and constrained a/b edits. Numeric values are not round-tripped through hex or a sampled guide.
 
 `ColorPlane.vue` owns pointer capture and geometry. ResizeObserver updates its local size; a scoped VueUse scroll listener marks pointer bounds dirty, and the next pointer event measures them again. Mount/reveal and DPR changes schedule rendering. Escape is handled on the focused input/surface only, not by a global key listener.
 
@@ -73,9 +73,9 @@ Exact Display P3 and sRGB membership is calculated directly from the active colo
 
 `ColorValue` owns authored identity. `projectColorToPlane` observes it; `authorPlaneEdit` creates a new definition in the selected edit space. Plane geometry owns axes, constraints and contour coordinates. `packages/render/src/pickerPresentation.ts` derives observed OKLCH/OKLab representations, active and guide positions, field hue, gradients, status, intervals, markers, CSS and help text without storing state or authoring a color. A hue-less observation remains `h: null`; the field receives a separate numeric hue of `0`. Vue and React own lifecycle and temporary edit references.
 
-`getPickerBoundaryAnalysis` owns one explicit `DisplayGamut` target and returns exact dual-gamut status plus the target's sampled guide chroma/color, guide delta, normalized position and outside-only projection. It never changes the authored color. `packages/render/src/boundaryPresentation.ts` filters contour-adjacent channel intervals and projection markers by independent visibility booleans, and positions the visual projection for either plane.
+`analyzeGamut` receives the original selected `ColorValue` for both sRGB and Display P3 and returns the full `inside | within-tolerance | outside` status. `getPickerGuide` interpolates observed numeric OKLCH coordinates against one table for maximum chroma, guide delta and guide color. `packages/render/src/boundaryPresentation.ts` combines those separate inputs only for visual derivation: it filters contour-adjacent channel intervals by visibility and positions the sampled target guide for either plane. No table lookup or reconstructed OKLCH value decides exact status.
 
-Contours, channel intervals, boundary-guide swatches and target projections interpolate precomputed `Float32Array` data. They approximate boundaries and must not replace direct membership checks or serialization. Target selects projection/reference semantics; visibility controls all visual guide/projection overlays for that gamut. Neither setting changes the other. The exact Display P3 warning is independent of target.
+Contours, channel intervals, boundary-guide swatches and target guides interpolate precomputed `Float32Array` data. They are approximate reference geometry and never map the selected color. Target selects the reference gamut; visibility controls its visual overlays without erasing exact status. An outside-only target guide appears only for exact `outside` status when that gamut's guides are visible. The picker treats `within-tolerance` as visually contained, so the Display P3 warning appears only for `outside`. `mapToGamut` alone maps a color; strict `serializeCss` and `serializeHex` may reject `within-tolerance` through `boundary-tolerance`.
 
 ## Generated tables
 
@@ -89,7 +89,7 @@ The render package owns checked-in tables at `packages/render/src/generated/gamu
 
 ## Native React instrument
 
-`GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides/projection, a controlled `boundaryTarget`, independent boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
+`GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides, a controlled `boundaryTarget`, independent boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
 
 React renders pure markup, guides and hydration-safe `useId` associations. A layout effect publishes committed props to the interaction binding; abandoned renders cannot replace its callbacks or color. A separate committed effect creates renderer resources, native surface listeners, ResizeObserver, DPR media tracking and scroll/resize handling. Cleanup cancels pointer/field work, releases capture and disposes resources without emitting edits. Pure contour computation is cached by fixed axis inside the component; consumers do not need memoization.
 

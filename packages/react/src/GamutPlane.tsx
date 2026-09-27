@@ -164,9 +164,9 @@ export function GamutPlane({
             markerCss={model.markerCss}
             getEditReference={() => hueReference.current}
             plane={model.plane}
-            projectionPoint={model.projectionPoint}
-            projectionCss={model.projectionCss}
-            projectionLabel={model.projectionLabel}
+            targetGuidePoint={model.targetGuidePoint}
+            targetGuideCss={model.targetGuideCss}
+            targetGuideLabel={model.targetGuideLabel}
             warningVisible={model.warningVisible}
             interactionPreview={view === "oklch" && huePreview}
             showSrgbBoundary={showSrgbBoundary}

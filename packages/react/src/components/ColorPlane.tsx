@@ -5,12 +5,12 @@ import { projectColorToPlane } from "@gamut-plane/core";
 import {
   geometryToSvgPath,
   pointStyle,
-  projectionConnectorStyle,
+  guideConnectorStyle,
   PICKER_GAMUT_TABLES,
   VIEWBOX_SIZE,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_PROJECTION_MARKER_RADIUS,
+  PICKER_TARGET_GUIDE_MARKER_RADIUS,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
@@ -19,7 +19,7 @@ import { useCommitted } from "../hooks/useCommitted.js";
 import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 
 interface ColorPlaneProps extends PlaneInput {
-  projectionLabel: string;
+  targetGuideLabel: string;
   warningVisible: boolean;
   showSrgbBoundary: boolean;
   showDisplayP3Boundary: boolean;
@@ -32,9 +32,9 @@ export function ColorPlane(props: ColorPlaneProps) {
     value,
     fieldHue,
     markerCss,
-    projectionPoint,
-    projectionCss,
-    projectionLabel,
+    targetGuidePoint,
+    targetGuideCss,
+    targetGuideLabel,
     warningVisible,
     showSrgbBoundary,
     showDisplayP3Boundary,
@@ -58,7 +58,7 @@ export function ColorPlane(props: ColorPlaneProps) {
       ? projection.representation.channels[0]
       : projection.representation.channels[2];
   const activePoint = plane.constrainPoint(projected.value.point);
-  const guide = projectionPoint;
+  const guide = targetGuidePoint;
   // Plane markers must occlude guides even when the authored color has transparency.
   const paths = useMemo(
     () => ({
@@ -106,7 +106,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const geometryStyle = {
     "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
-    "--picker-projection-marker-size": `${PICKER_PROJECTION_MARKER_RADIUS * 2}px`,
+    "--picker-projection-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
   };
   return (
     <div
@@ -202,7 +202,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           <>
             <span
               className="gpr-color-plane-projection-connector"
-              style={projectionConnectorStyle(activePoint, guide, plane.id === "oklab")}
+              style={guideConnectorStyle(activePoint, guide, plane.id === "oklab")}
               data-table-boundary-guide-connector=""
               aria-hidden="true"
             />
@@ -210,12 +210,12 @@ export function ColorPlane(props: ColorPlaneProps) {
               className="gpr-color-plane-marker gpr-color-plane-marker--projection"
               style={presentationStyle({
                 ...pointStyle(guide),
-                "--projection-marker-color": projectionCss,
+                "--projection-marker-color": targetGuideCss,
               })}
               data-table-boundary-guide-marker=""
-              data-marker-role="target-boundary-projection"
-              title={projectionLabel}
-              aria-label={projectionLabel}
+              data-marker-role="target-guide"
+              title={targetGuideLabel}
+              aria-label={targetGuideLabel}
               role="img"
             />
           </>

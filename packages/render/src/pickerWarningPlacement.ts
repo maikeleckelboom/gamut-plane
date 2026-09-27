@@ -21,7 +21,7 @@ export interface PlanarWarningPlacementInput {
   preferredOffset: PickerCssPoint;
   surfaceInset: number;
   markerClearance: number;
-  projectionMarker?: PickerMarkerGeometry | null;
+  targetGuideMarker?: PickerMarkerGeometry | null;
 }
 
 export interface PlanarWarningPlacement {
@@ -155,16 +155,16 @@ function overlapsMarker(
 function isClearOfMarkers(
   placement: PlanarWarningPlacement,
   input: PlanarWarningPlacementInput,
-  includeProjection: boolean,
+  includeTargetGuide: boolean,
 ): boolean {
   const activeMarker = { center: input.activeCenter, radius: input.activeRadius };
   if (overlapsMarker(placement, input.warningSize, activeMarker, input.markerClearance)) {
     return false;
   }
   return (
-    !includeProjection ||
-    !input.projectionMarker ||
-    !overlapsMarker(placement, input.warningSize, input.projectionMarker, input.markerClearance)
+    !includeTargetGuide ||
+    !input.targetGuideMarker ||
+    !overlapsMarker(placement, input.warningSize, input.targetGuideMarker, input.markerClearance)
   );
 }
 
@@ -175,10 +175,10 @@ export function placePlanarWarning(input: PlanarWarningPlacementInput): PlanarWa
   assertFinite("preferred offset y", input.preferredOffset.y);
   assertNonNegative("active radius", input.activeRadius);
   assertNonNegative("marker clearance", input.markerClearance);
-  if (input.projectionMarker) {
-    assertFinite("projection center x", input.projectionMarker.center.x);
-    assertFinite("projection center y", input.projectionMarker.center.y);
-    assertNonNegative("projection radius", input.projectionMarker.radius);
+  if (input.targetGuideMarker) {
+    assertFinite("target guide center x", input.targetGuideMarker.center.x);
+    assertFinite("target guide center y", input.targetGuideMarker.center.y);
+    assertNonNegative("target guide radius", input.targetGuideMarker.radius);
   }
 
   const bounds = placementBounds(input.surfaceSize, input.warningSize, input.surfaceInset);

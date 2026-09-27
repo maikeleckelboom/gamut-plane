@@ -1,58 +1,17 @@
-import { isColorInGamut } from "../color/convert.js";
 import { assertOklchColor, type DisplayGamut, type OklchColor } from "../color/types.js";
 import { getMaximumChromaFromTable } from "../gamut/boundary.js";
 import type { GamutBoundaryTable } from "../gamut/types.js";
-import { OKLCH_PICKER_MAX_CHROMA } from "./plane.js";
 
 const PICKER_CHROMA_EPSILON = 1e-6;
 
-export interface PickerGamutBoundaryTables {
-  srgb: GamutBoundaryTable;
-  displayP3: GamutBoundaryTable;
-}
-
-export interface PickerGamutStatus {
-  srgb: PickerGamutStatusEntry;
-  displayP3: PickerGamutStatusEntry;
-}
-
-/** Exact membership plus table-interpolated interaction guides. */
-export interface PickerGamutStatusEntry {
+/** Sampled visual guide facts for one table; exact status belongs to analyzeGamut(ColorValue). */
+export interface PickerGuide {
   gamut: DisplayGamut;
-  /** Exact membership from one RGB conversion, not table interpolation. */
-  inGamut: boolean;
-  activeChroma: number;
-  /** Interpolated guide only. Exact membership and serialization stay separate. */
-  interpolatedMaximumChroma: number;
-  interpolatedDeltaC: number;
-}
-
-export interface BoundaryGuidePoint {
-  /** Unclamped observed/table chroma represented by this point. */
-  chroma: number;
-  /** Normalized position clamped only to the 0..0.4 instrument domain. */
-  position: number;
+  maximumChroma: number;
+  /** Positive observed-chroma excursion beyond the interpolated guide. */
+  deltaC: number;
+  /** Observed L/H/alpha with table-derived C; never a mapped ColorValue. */
   color: OklchColor;
-}
-
-export interface TargetBoundaryAnalysis {
-  target: DisplayGamut;
-  /** Exact membership from direct conversion, independent of sampled guide data. */
-  inGamut: boolean;
-  activeChroma: number;
-  /** Interpolated guide only; this is not an exact gamut boundary solution. */
-  boundaryGuide: BoundaryGuidePoint;
-  /** Positive authored-chroma excursion beyond the interpolated guide. */
-  guideDeltaC: number;
-  /** Present only when exact target membership says the authored color is outside. */
-  projection: BoundaryGuidePoint | null;
-}
-
-export interface PickerBoundaryAnalysis {
-  /** Exact membership and sampled guide values for both display gamuts. */
-  status: PickerGamutStatus;
-  /** Projection/reference result for the explicitly selected target gamut. */
-  target: TargetBoundaryAnalysis;
 }
 
 export interface LightnessGamutInterval {
@@ -72,15 +31,6 @@ export interface HueGamutInterval {
 type LightnessAnalysisColor = Pick<OklchColor, "c" | "h">;
 type HueAnalysisColor = Pick<OklchColor, "l" | "c">;
 
-function assertPickerTables(tables: PickerGamutBoundaryTables): void {
-  if (tables.srgb.gamut !== "srgb") {
-    throw new TypeError("Picker sRGB table must describe the srgb gamut");
-  }
-  if (tables.displayP3.gamut !== "display-p3") {
-    throw new TypeError("Picker Display P3 table must describe the display-p3 gamut");
-  }
-}
-
 function readMaximumChroma(table: GamutBoundaryTable, l: number, h: number): number {
   const maximumChroma = getMaximumChromaFromTable(table, l, h);
   if (!Number.isFinite(maximumChroma) || maximumChroma < 0) {
@@ -89,65 +39,16 @@ function readMaximumChroma(table: GamutBoundaryTable, l: number, h: number): num
   return maximumChroma;
 }
 
-function statusFromTable(color: OklchColor, table: GamutBoundaryTable): PickerGamutStatusEntry {
-  const interpolatedMaximumChroma = readMaximumChroma(table, color.l, color.h);
-  const excursion = Math.max(0, color.c - interpolatedMaximumChroma);
+/** Interpolates one OKLCH table without claiming exact membership. */
+export function getPickerGuide(color: OklchColor, table: GamutBoundaryTable): PickerGuide {
+  assertOklchColor(color);
+  const maximumChroma = readMaximumChroma(table, color.l, color.h);
+  const excursion = Math.max(0, color.c - maximumChroma);
   return {
     gamut: table.gamut,
-    inGamut: isColorInGamut(color, table.gamut),
-    activeChroma: color.c,
-    interpolatedMaximumChroma,
-    interpolatedDeltaC: excursion <= PICKER_CHROMA_EPSILON ? 0 : excursion,
-  };
-}
-
-/** Derives exact membership while keeping boundary guides interpolation-only. */
-export function getPickerGamutStatus(
-  color: OklchColor,
-  tables: PickerGamutBoundaryTables,
-): PickerGamutStatus {
-  assertOklchColor(color);
-  assertPickerTables(tables);
-  return {
-    srgb: statusFromTable(color, tables.srgb),
-    displayP3: statusFromTable(color, tables.displayP3),
-  };
-}
-
-function boundaryGuidePoint(color: OklchColor, chroma: number): BoundaryGuidePoint {
-  return {
-    chroma,
-    position: Math.min(1, Math.max(0, chroma / OKLCH_PICKER_MAX_CHROMA)),
-    color: { ...color, c: chroma },
-  };
-}
-
-/**
- * Returns exact dual-gamut membership and the sampled guide result for one
- * explicit projection/reference target. The authored color is never changed.
- */
-export function getPickerBoundaryAnalysis(
-  color: OklchColor,
-  target: DisplayGamut,
-  tables: PickerGamutBoundaryTables,
-  status: PickerGamutStatus = getPickerGamutStatus(color, tables),
-): PickerBoundaryAnalysis {
-  assertOklchColor(color);
-  assertPickerTables(tables);
-  const targetStatus = target === "srgb" ? status.srgb : status.displayP3;
-  const boundaryGuide = boundaryGuidePoint(color, targetStatus.interpolatedMaximumChroma);
-  return {
-    status,
-    target: {
-      target,
-      inGamut: targetStatus.inGamut,
-      activeChroma: color.c,
-      boundaryGuide,
-      guideDeltaC: targetStatus.interpolatedDeltaC,
-      projection: targetStatus.inGamut
-        ? null
-        : boundaryGuidePoint(color, Math.min(color.c, targetStatus.interpolatedMaximumChroma)),
-    },
+    maximumChroma,
+    deltaC: excursion <= PICKER_CHROMA_EPSILON ? 0 : excursion,
+    color: { ...color, c: maximumChroma },
   };
 }
 

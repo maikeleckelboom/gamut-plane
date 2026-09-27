@@ -181,9 +181,9 @@ watch(
           :plane="presentation.plane"
           :srgb-table="tables.srgb"
           :display-p3-table="tables.displayP3"
-          :boundary-projection-point="presentation.projectionPoint"
-          :boundary-projection-css="presentation.projectionCss"
-          :boundary-projection-label="presentation.projectionLabel"
+          :target-guide-point="presentation.targetGuidePoint"
+          :target-guide-css="presentation.targetGuideCss"
+          :target-guide-label="presentation.targetGuideLabel"
           :warning-visible="presentation.warningVisible"
           :warning-label="primaryGamutWarning"
           :interaction-preview="fixedAxisFieldPreview"
@@ -327,6 +327,7 @@ watch(
           data-boundary-target-result
           :data-boundary-target="boundaryTarget"
           :aria-label="`${presentation.targetResult.targetLabel} target boundary result`"
+          :data-target-exact-status="presentation.targetResult.status"
         >
           <div class="plane-instrument__target-heading">
             <span>Target · {{ presentation.targetResult.targetLabel }}</span>
@@ -337,8 +338,12 @@ watch(
               :aria-label="`${presentation.targetResult.targetLabel} sampled boundary-guide color ${presentation.targetResult.swatchCss}`"
               role="img"
             />
-            <strong :data-target-status="presentation.targetResult.inGamut ? 'inside' : 'outside'">
-              {{ presentation.targetResult.inGamut ? "Inside" : "Outside" }}
+            <strong
+              :data-target-status="
+                presentation.targetResult.status === 'outside' ? 'outside' : 'inside'
+              "
+            >
+              {{ presentation.targetResult.status === "outside" ? "Outside" : "Inside" }}
             </strong>
           </div>
           <dl>

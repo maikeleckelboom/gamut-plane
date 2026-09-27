@@ -223,9 +223,7 @@ describe("public instrument contract", () => {
     expect(get(ui.element, "[data-boundary-target-result]").dataset.boundaryTarget).toBe("srgb");
     expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-guide"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-projection"]')).toBeNull();
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
     expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
 
     await ui.render(
@@ -245,11 +243,7 @@ describe("public instrument contract", () => {
     );
     expect(ui.element.querySelector('[data-gamut-boundary="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="display-p3-boundary-guide"]')).toBeNull();
-    expect(
-      ui.element.querySelector('[data-gamut-marker="display-p3-boundary-projection"]'),
-    ).toBeNull();
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
     expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
 
     await ui.render(
@@ -266,9 +260,7 @@ describe("public instrument contract", () => {
     );
     expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
-    expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(ui.element.querySelectorAll("[data-gamut-marker]")).toHaveLength(0);
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
     expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
     expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain("Guide C");
     expect(snapshotColor(value).channels).toEqual([0.62, 0.42, 30]);

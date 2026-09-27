@@ -16,7 +16,7 @@ import {
   pointStyle,
   placePlanarWarning,
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_PROJECTION_MARKER_RADIUS,
+  PICKER_TARGET_GUIDE_MARKER_RADIUS,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
@@ -31,8 +31,8 @@ export interface PlaneInput {
   fieldHue: number;
   markerCss: string;
   getEditReference: () => PlaneEditReference | undefined;
-  projectionPoint: PlanePoint | null;
-  projectionCss: string;
+  targetGuidePoint: PlanePoint | null;
+  targetGuideCss: string;
   interactionPreview: boolean;
   onValueChange: (value: ColorValue) => void;
   onValueCommit: ((value: ColorValue) => void) | undefined;
@@ -89,7 +89,7 @@ export function mountPlane(
     Object.assign(marker.style, pointStyle(point));
     if (localSize.width < PICKER_WARNING_GLYPH_SIZE || localSize.height < PICKER_WARNING_GLYPH_SIZE)
       return;
-    const guide = current().projectionPoint;
+    const guide = current().targetGuidePoint;
     const placement = placePlanarWarning({
       activeCenter: { x: point.x * localSize.width, y: point.y * localSize.height },
       surfaceSize: localSize,
@@ -98,10 +98,10 @@ export function mountPlane(
       preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
       surfaceInset: PICKER_WARNING_SURFACE_INSET,
       markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
-      projectionMarker: guide
+      targetGuideMarker: guide
         ? {
             center: { x: guide.x * localSize.width, y: guide.y * localSize.height },
-            radius: PICKER_PROJECTION_MARKER_RADIUS,
+            radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
           }
         : null,
     });

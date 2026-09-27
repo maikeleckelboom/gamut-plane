@@ -16,6 +16,7 @@ describe("instrument presentation contracts", () => {
       );
       const target = get<HTMLElement>(ui.element, "[data-boundary-target-result]");
       expect(target.textContent).toContain("Guide C");
+      expect(target.dataset.targetExactStatus).toBe("outside");
       expect(target.querySelector("[data-target-status]")).not.toBeNull();
       expect(target.querySelector("[data-boundary-guide-swatch]")).not.toBeNull();
       expect(ui.element.querySelector("details")).toBeNull();

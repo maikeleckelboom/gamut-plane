@@ -10,7 +10,7 @@ export function colorGradient(segments: number, colorAt: (position: number) => O
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
 
-export function projectionConnectorStyle(
+export function guideConnectorStyle(
   active: PlanePoint,
   guide: PlanePoint,
   radial: boolean,

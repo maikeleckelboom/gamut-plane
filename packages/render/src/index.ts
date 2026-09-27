@@ -24,7 +24,7 @@ export type {
   LinearControlMarker,
   GamutThreshold,
 } from "./channelGeometry.js";
-export { colorGradient, projectionConnectorStyle } from "./presentation.js";
+export { colorGradient, guideConnectorStyle } from "./presentation.js";
 export { createPickerPresentation, hueGradient } from "./pickerPresentation.js";
 export {
   displayGamutLabel,

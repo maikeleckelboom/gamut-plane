@@ -62,8 +62,8 @@ test("plane markers cover guides while the slider preview keeps authored alpha",
       return context.getImageData(0, 0, 1, 1).data[3] ?? 0;
     });
 
-  await expect(first.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
-  expect(await paintedAlpha('[data-marker-role="target-boundary-projection"]')).toBe(255);
+  await expect(first.locator('[data-marker-role="target-guide"]')).toHaveCount(1);
+  expect(await paintedAlpha('[data-marker-role="target-guide"]')).toBe(255);
   expect(await paintedAlpha('[data-marker-role="active-color"]')).toBe(255);
   expect((await paintedAlpha("[data-slider-boundary-preview]")) / 255).toBeCloseTo(0.3, 2);
   expect((await color(first)).alpha).toBe(0.3);

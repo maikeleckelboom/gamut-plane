@@ -2,11 +2,14 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
+  analyzeGamut,
+  convertOklabToOklch,
   normalizeHue,
   projectColorToPlane,
   serializeColor,
   type ColorValue,
   type DisplayGamut,
+  type GamutStatus,
   type OklchColor,
   type PickerPlaneId,
 } from "@gamut-plane/core";
@@ -39,12 +42,24 @@ export function createPickerPresentation(
   const plane = view === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE;
   const active = view === "oklab" ? oklab.value : oklch.value;
   const [l, c, observedHue] = oklch.value.representation.channels;
+  const [, observedA, observedB] = oklab.value.representation.channels;
   // A hue-less observation stays hue-less. Only visual sampling needs a numeric slice.
   const fieldHue = observedHue ?? 0;
   const sample: OklchColor = { l, c, h: fieldHue, alpha: oklch.value.representation.alpha };
-  const boundary = getBoundaryPresentation(sample, view, boundaryTarget, visibility);
-  const { status, target } = boundary.analysis;
-  const targetLabel = displayGamutLabel(target.target);
+  const srgbAnalysis = analyzeGamut(value, "srgb-gamut");
+  const displayP3Analysis = analyzeGamut(value, "display-p3-gamut");
+  if (!srgbAnalysis.ok || !displayP3Analysis.ok) {
+    throw new RangeError("Selected color cannot be analyzed for picker gamut status");
+  }
+  const gamutStatus = {
+    srgb: srgbAnalysis.value.status,
+    displayP3: displayP3Analysis.value.status,
+  };
+  const boundary = getBoundaryPresentation(sample, view, boundaryTarget, visibility, gamutStatus);
+  const targetGuide = boundary.targetGuide;
+  const targetStatus: GamutStatus =
+    boundaryTarget === "srgb" ? gamutStatus.srgb : gamutStatus.displayP3;
+  const targetLabel = displayGamutLabel(boundaryTarget);
   const projection =
     view === "oklch"
       ? { point: active.point, x: c, y: l, fixed: fieldHue }
@@ -61,26 +76,29 @@ export function createPickerPresentation(
     projection,
     oklch: oklch.value.representation,
     oklab: oklab.value,
+    gamutStatus,
     fieldHue,
     activeCss,
     markerCss: serializeColor({ ...sample, alpha: 1 }),
-    projectionPoint: boundary.projectionPoint,
-    projectionCss: boundary.projectionCss,
-    projectionLabel: `${targetLabel} target boundary projection`,
+    targetGuidePoint: boundary.targetGuidePoint,
+    targetGuideCss: boundary.targetGuideCss,
+    targetGuideLabel: `${targetLabel} sampled target guide`,
     markers: boundary.markers,
     hueIntervals: boundary.hueIntervals,
     lightnessIntervals: boundary.lightnessIntervals,
     chromaIntervals: boundary.chromaIntervals,
+    // The two-label picker UI treats inside and within-tolerance as visually contained.
     targetResult: {
-      target: target.target,
+      target: boundaryTarget,
       targetLabel,
-      inGamut: target.inGamut,
-      guideChroma: target.boundaryGuide.chroma.toFixed(4),
-      guideDelta: target.guideDeltaC.toFixed(4),
-      showGuideDelta: target.guideDeltaC > 0,
-      swatchCss: serializeColor(target.boundaryGuide.color),
+      status: targetStatus,
+      guideChroma: targetGuide.maximumChroma.toFixed(4),
+      guideDelta: targetGuide.deltaC.toFixed(4),
+      showGuideDelta: targetGuide.deltaC > 0,
+      swatchCss: serializeColor(targetGuide.color),
     },
-    warningVisible: !status.displayP3.inGamut,
+    // Tolerance fringe is visually contained, matching the former epsilon-based warning policy.
+    warningVisible: gamutStatus.displayP3 === "outside",
     huePosition: normalizeHue(fieldHue) / 360,
     chromaPosition: Math.min(1, Math.max(0, c / OKLCH_PICKER_MAX_CHROMA)),
     lightnessGradient: colorGradient(12, (position) => ({ ...sample, l: position, alpha: 1 })),
@@ -89,7 +107,16 @@ export function createPickerPresentation(
       c: position * OKLCH_PICKER_MAX_CHROMA,
       alpha: 1,
     })),
-    fixedLightnessGradient: colorGradient(12, (position) => ({ ...sample, l: position })),
+    fixedLightnessGradient: colorGradient(12, (position) => {
+      const [stopL, stopC, stopH] = convertOklabToOklch([position, observedA, observedB]);
+      // Stabilize CSS-only polar coordinates across server and browser last-bit math.
+      return {
+        l: stopL!,
+        c: Number(stopC!.toPrecision(12)),
+        h: Number(stopH!.toPrecision(12)),
+        alpha: oklab.value.representation.alpha,
+      };
+    }),
     hueHelp: observedHue === null ? "Hue is unset. Edit Hue to choose a direction." : undefined,
     chromaHelp:
       observedHue === null

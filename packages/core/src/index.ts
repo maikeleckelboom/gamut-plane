@@ -42,16 +42,10 @@ export {
 export {
   getHueGamutIntervals,
   getLightnessGamutIntervals,
-  getPickerBoundaryAnalysis,
-  getPickerGamutStatus,
-  type BoundaryGuidePoint,
+  getPickerGuide,
   type HueGamutInterval,
   type LightnessGamutInterval,
-  type PickerBoundaryAnalysis,
-  type PickerGamutBoundaryTables,
-  type PickerGamutStatus,
-  type PickerGamutStatusEntry,
-  type TargetBoundaryAnalysis,
+  type PickerGuide,
 } from "./picker/analysis.js";
 export {
   buildLightnessChromaBoundaryPath,

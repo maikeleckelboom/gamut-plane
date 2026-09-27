@@ -36,18 +36,18 @@ Both planes show Display P3 and sRGB together:
 - sRGB is the secondary dashed boundary;
 - the active point may cross either boundary;
 - neither boundary clamps or replaces the selected `ColorValue`;
-- the explicit sRGB or Display P3 target remains independent from guide visibility, which controls all visual guide/projection overlays for that gamut.
+- the explicit sRGB or Display P3 target remains independent from guide visibility, which controls all sampled visual guide overlays for that gamut.
 
-Boundary target is controlled projection/reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
+Boundary target is controlled sampled-guide reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
 
 ## Exact facts and interpolated guides
 
 Membership and guides use different calculations:
 
-1. Exact inside/outside membership comes from direct color conversion for the active color.
-2. Boundary contours, channel intervals, boundary-guide colors and target projections come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
+1. Exact `inside | within-tolerance | outside` status comes from `analyzeGamut` on the original selected `ColorValue`.
+2. Boundary contours, channel intervals, boundary-guide colors and target guides come from deterministic interpolation over generated gamut-boundary tables bundled with the render package.
 
-Interpolated geometry is visualization. It cannot be used as exact membership, silently mutate the active color, or substitute for exact serialization.
+Interpolated geometry is visualization. It cannot be used as exact status, silently mutate the active color, or substitute for exact serialization. The picker treats `within-tolerance` as visually contained for warnings and outside-only target guides; strict output may reject it.
 
 ## Interaction consequences
 

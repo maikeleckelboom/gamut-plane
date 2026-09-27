@@ -131,8 +131,9 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(srgbTarget).toBeChecked();
   await expect(p3Target).not.toBeChecked();
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(targetResult).toHaveAttribute("data-target-exact-status", "outside");
   await expect(targetResult).toContainText("Target · sRGB");
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(1);
   await expect(page.locator('[data-gamut-range="srgb"]')).not.toHaveCount(0);
   await expect(
     page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
@@ -166,9 +167,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
   await expect(page.locator("[data-slider-boundary-preview]")).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
   await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(selected).toHaveText(originalSelection ?? "");
@@ -176,14 +175,12 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await page.getByRole("checkbox", { name: "Display P3" }).uncheck();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
   await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker$="boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
   await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "sRGB" }).check();
   await p3Target.click();
   await expect(p3Target).toBeChecked();
-  await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
   await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
   await expect(targetResult).toContainText("Guide C");
   await expect(selected).toHaveText(originalSelection ?? "");

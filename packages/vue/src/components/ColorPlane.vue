@@ -18,7 +18,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import GamutWarningGlyph from "./GamutWarningGlyph.vue";
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_PROJECTION_MARKER_RADIUS,
+  PICKER_TARGET_GUIDE_MARKER_RADIUS,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_WARNING_MARKER_CLEARANCE,
   PICKER_WARNING_PREFERRED_OFFSET,
@@ -27,7 +27,7 @@ import {
 import { placePlanarWarning } from "@gamut-plane/render";
 
 import {
-  projectionConnectorStyle,
+  guideConnectorStyle,
   createFieldRenderer,
   pointStyle,
   geometryToSvgPath,
@@ -46,9 +46,9 @@ const props = withDefaults(
     plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
     srgbTable: GamutBoundaryTable;
     displayP3Table: GamutBoundaryTable;
-    boundaryProjectionPoint: PlanePoint | null;
-    boundaryProjectionCss: string;
-    boundaryProjectionLabel: string;
+    targetGuidePoint: PlanePoint | null;
+    targetGuideCss: string;
+    targetGuideLabel: string;
     warningVisible: boolean;
     warningLabel: string;
     interactionPreview?: boolean;
@@ -102,15 +102,15 @@ const fixedAxis = computed(() =>
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.constrainPoint(activePoint.value));
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
-const boundaryProjectionMarkerStyle = computed(() =>
-  props.boundaryProjectionPoint ? pointStyle(props.boundaryProjectionPoint) : undefined,
+const targetGuideMarkerStyle = computed(() =>
+  props.targetGuidePoint ? pointStyle(props.targetGuidePoint) : undefined,
 );
 // Plane markers must occlude guides even when the authored color has transparency.
-const boundaryProjectionConnectorStyle = computed(() => {
-  const guide = props.boundaryProjectionPoint;
+const targetGuideConnectorStyle = computed(() => {
+  const guide = props.targetGuidePoint;
   if (!guide) return undefined;
   const active = boundedActivePoint.value;
-  return projectionConnectorStyle(active, guide, props.plane.id === "oklab");
+  return guideConnectorStyle(active, guide, props.plane.id === "oklab");
 });
 
 const srgbPath = computed(() =>
@@ -137,7 +137,7 @@ const planeLabel = computed(() => {
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
-  "--picker-projection-marker-size": `${PICKER_PROJECTION_MARKER_RADIUS * 2}px`,
+  "--picker-projection-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
 };
 
 function publishCanvasColorSpace(status: CanvasColorSpaceStatus): void {
@@ -214,7 +214,7 @@ function positionActiveAnnotations(point: PlanePoint): void {
     return;
   }
 
-  const boundaryProjection = props.boundaryProjectionPoint;
+  const targetGuide = props.targetGuidePoint;
   const placement = placePlanarWarning({
     activeCenter: {
       x: point.x * surfaceLocalSize.width,
@@ -229,13 +229,13 @@ function positionActiveAnnotations(point: PlanePoint): void {
     preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
     surfaceInset: PICKER_WARNING_SURFACE_INSET,
     markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
-    projectionMarker: boundaryProjection
+    targetGuideMarker: targetGuide
       ? {
           center: {
-            x: boundaryProjection.x * surfaceLocalSize.width,
-            y: boundaryProjection.y * surfaceLocalSize.height,
+            x: targetGuide.x * surfaceLocalSize.width,
+            y: targetGuide.y * surfaceLocalSize.height,
           },
-          radius: PICKER_PROJECTION_MARKER_RADIUS,
+          radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
         }
       : undefined,
   });
@@ -411,7 +411,7 @@ watch(pixelRatio, () => {
 });
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
 watch(
-  () => props.boundaryProjectionPoint,
+  () => props.targetGuidePoint,
   () => positionActiveAnnotations(boundedActivePoint.value),
 );
 
@@ -542,23 +542,23 @@ onBeforeUnmount(() => {
         />
       </svg>
       <span
-        v-if="boundaryProjectionPoint"
+        v-if="targetGuidePoint"
         class="color-plane__projection-connector"
-        :style="boundaryProjectionConnectorStyle"
+        :style="targetGuideConnectorStyle"
         data-table-boundary-guide-connector
         aria-hidden="true"
       />
       <span
-        v-if="boundaryProjectionPoint"
+        v-if="targetGuidePoint"
         class="color-plane__marker color-plane__marker--projection"
         :style="{
-          ...boundaryProjectionMarkerStyle,
-          '--projection-marker-color': boundaryProjectionCss,
+          ...targetGuideMarkerStyle,
+          '--projection-marker-color': targetGuideCss,
         }"
         data-table-boundary-guide-marker
-        data-marker-role="target-boundary-projection"
-        :title="boundaryProjectionLabel"
-        :aria-label="boundaryProjectionLabel"
+        data-marker-role="target-guide"
+        :title="targetGuideLabel"
+        :aria-label="targetGuideLabel"
         role="img"
       />
       <span

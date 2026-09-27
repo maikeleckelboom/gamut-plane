@@ -5,12 +5,14 @@ import {
   convertOklchToOklab,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
-  getPickerBoundaryAnalysis,
+  getPickerGuide,
   oklabCoordinatesToPlanePoint,
   oklchCoordinatesToPlanePoint,
   serializeColor,
   type DisplayGamut,
+  type GamutStatus,
   type OklchColor,
+  type PickerGuide,
   type PickerPlaneId,
   type PlanePoint,
 } from "@gamut-plane/core";
@@ -23,9 +25,10 @@ export interface BoundaryGuideVisibility {
 }
 
 export interface BoundaryPresentation {
-  analysis: ReturnType<typeof getPickerBoundaryAnalysis>;
-  projectionPoint: PlanePoint | null;
-  projectionCss: string;
+  guides: Readonly<{ srgb: PickerGuide; displayP3: PickerGuide }>;
+  targetGuide: PickerGuide;
+  targetGuidePoint: PlanePoint | null;
+  targetGuideCss: string;
   markers: LinearControlMarker[];
   hueIntervals: LinearControlInterval[];
   lightnessIntervals: LinearControlInterval[];
@@ -42,15 +45,15 @@ function tableFor(gamut: DisplayGamut) {
   return gamut === "srgb" ? PICKER_GAMUT_TABLES.srgb : PICKER_GAMUT_TABLES.displayP3;
 }
 
-function statusFor(analysis: BoundaryPresentation["analysis"], gamut: DisplayGamut) {
-  return gamut === "srgb" ? analysis.status.srgb : analysis.status.displayP3;
+function guideFor(guides: BoundaryPresentation["guides"], gamut: DisplayGamut): PickerGuide {
+  return gamut === "srgb" ? guides.srgb : guides.displayP3;
 }
 
 function gamutLabel(gamut: DisplayGamut): string {
   return gamut === "srgb" ? "sRGB" : "Display P3";
 }
 
-function positionProjection(color: OklchColor, view: PickerPlaneId): PlanePoint {
+function positionGuide(color: OklchColor, view: PickerPlaneId): PlanePoint {
   if (view === "oklch") {
     return OKLCH_LIGHTNESS_CHROMA_PLANE.constrainPoint(
       oklchCoordinatesToPlanePoint(color.l, color.c),
@@ -68,22 +71,32 @@ export function getBoundaryPresentation(
   view: PickerPlaneId,
   target: DisplayGamut,
   visibility: BoundaryGuideVisibility,
+  exactStatus: Readonly<{ srgb: GamutStatus; displayP3: GamutStatus }>,
 ): BoundaryPresentation {
-  const analysis = getPickerBoundaryAnalysis(color, target, PICKER_GAMUT_TABLES);
+  const guides = {
+    srgb: getPickerGuide(color, PICKER_GAMUT_TABLES.srgb),
+    displayP3: getPickerGuide(color, PICKER_GAMUT_TABLES.displayP3),
+  };
+  const targetGuide = guideFor(guides, target);
   const gamuts = visibleGamuts(visibility);
   const targetVisible = target === "srgb" ? visibility.srgb : visibility.displayP3;
-  const projectionColor = targetVisible ? (analysis.target.projection?.color ?? null) : null;
-  const projectionCss = projectionColor ? serializeColor({ ...projectionColor, alpha: 1 }) : "";
-  const projectionPoint = projectionColor ? positionProjection(projectionColor, view) : null;
+  // Only exact outside status creates a marker. The table supplies its visual coordinate.
+  const showTargetGuide =
+    targetVisible && exactStatus[target === "srgb" ? "srgb" : "displayP3"] === "outside";
+  const markerColor = showTargetGuide
+    ? { ...color, c: Math.min(color.c, targetGuide.maximumChroma) }
+    : null;
+  const targetGuideCss = markerColor ? serializeColor({ ...markerColor, alpha: 1 }) : "";
+  const targetGuidePoint = markerColor ? positionGuide(markerColor, view) : null;
   const markers: LinearControlMarker[] = [];
-  if (analysis.target.projection && targetVisible) {
+  if (markerColor) {
     markers.push({
-      id: `${target}-boundary-projection`,
-      label: `${gamutLabel(target)} target boundary projection C ${analysis.target.projection.chroma.toFixed(4)}`,
-      position: analysis.target.projection.position,
-      tone: "projection",
+      id: `${target}-target-guide`,
+      label: `${gamutLabel(target)} sampled target guide C ${markerColor.c.toFixed(4)}`,
+      position: Math.min(1, Math.max(0, markerColor.c / OKLCH_PICKER_MAX_CHROMA)),
+      tone: "guide",
       lane: target,
-      cssColor: projectionCss,
+      cssColor: targetGuideCss,
     });
   }
 
@@ -96,9 +109,10 @@ export function getBoundaryPresentation(
   }
 
   return {
-    analysis,
-    projectionPoint,
-    projectionCss,
+    guides,
+    targetGuide,
+    targetGuidePoint,
+    targetGuideCss,
     markers,
     hueIntervals: view === "oklch" ? intervals(getHueGamutIntervals) : [],
     lightnessIntervals: intervals(getLightnessGamutIntervals),
@@ -106,7 +120,7 @@ export function getBoundaryPresentation(
       start: 0,
       end: Math.min(
         1,
-        Math.max(0, statusFor(analysis, gamut).interpolatedMaximumChroma / OKLCH_PICKER_MAX_CHROMA),
+        Math.max(0, guideFor(guides, gamut).maximumChroma / OKLCH_PICKER_MAX_CHROMA),
       ),
       tone: gamut,
     })),
