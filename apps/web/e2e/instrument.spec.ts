@@ -573,6 +573,20 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
     await option.click();
     await expect(option).toHaveAttribute("aria-checked", "true");
   }
+  const coordinates = ["a", "b"].map((coordinate) =>
+    instrument.locator(`[data-oklab-coordinate="${coordinate}"]`),
+  );
+  const values = [];
+  for (const input of coordinates) {
+    await expect(input).toBeVisible();
+    const value = await input.inputValue();
+    expect(value).toMatch(/^-?\d\.\d{4}$/);
+    values.push(value);
+    expect(await input.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
+      true,
+    );
+  }
+  expect(values.some((value) => value.startsWith("-"))).toBe(true);
 });
 
 test("CSS copy controls expose precision, success feedback, and disabled semantics", async ({
