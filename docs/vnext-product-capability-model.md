@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Shared UI metadata, product admission and public selection APIs remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Generalized public selection/check/guide state and scoped availability remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -1183,3 +1183,67 @@ Structural absence is represented only where real today: OKLab has no Hue interv
 [visualSupport.test.ts](../packages/render/test/visualSupport.test.ts) proves exact field/guide inventories, frozen relations, geometry/sampler correspondence and actual form outputs. [visualSupport.types.ts](../packages/render/test/visualSupport.types.ts) rejects unknown/hypothetical editors, incompatible geometry bindings and invalid gamut IDs across the declared package boundary. [presentationEquivalence.test.ts](../packages/render/test/presentationEquivalence.test.ts) compares every returned property, all gradient strings and shared plane identity against frozen pre-migration composition from the certified Phase 2B commit: 192 picker combinations, 432 independently varied boundary combinations and existing failure cases. The frozen test-only references are not another production implementation. No screenshots, generated payload/settings/digest, render root exports, adapter APIs, output/mapping semantics or color science change.
 
 The next slice still needs deliberate UI metadata and scoped value-availability design. Existing throws, singular target policy, eagerly produced but unused OKLab data, and the broad legacy combined plane type are recorded migration boundaries, not authorization to change them here. Dynamic semantic rebinding remains subject to section 10's paired adapter evidence when that work begins.
+
+## 32. Phase 2D: shared current product composition
+
+**Implemented as a migration of current product facts.**
+[UI metadata](../packages/ui/src/instrumentMetadata.ts) now owns four keyed representation labels
+(`oklch`: OKLCH, `oklab`: OKLab, `srgb`: sRGB, `display-p3`: Display P3), two editor composition
+rows and explicit current primary exposure. No search aliases, grouping system or generalized
+selector is needed. Current choices remain `oklch-lc` then `oklab-ab`, exposed through the unchanged
+`oklch`/`oklab` view API. RGB metadata grants no current primary admission.
+
+Each editor contains a deeply frozen ordered companion tuple. The rows have qualified channel
+and semantic operation IDs, a range-and-number or number-only mechanism, current labels, numeric
+completion bounds, step and display precision; compound controls additionally have a slider span.
+Companions have no EditorIds. Ordinary bounds remain UI policy, separate from authored validity.
+
+| Primary editor | Ordered channel | Operation               | Slider | Numeric completion    | Step / precision |
+| -------------- | --------------- | ----------------------- | ------ | --------------------- | ---------------- |
+| `oklch-lc`     | `oklch.h`       | `oklch-hue-edit`        | 0–360  | 0–360                 | 0.1 / 1          |
+| `oklch-lc`     | `oklch.l`       | `oklch-channel-patch`   | 0–1    | 0–1                   | 0.001 / 4        |
+| `oklch-lc`     | `oklch.c`       | `oklch-channel-patch`   | 0–0.4  | minimum 0; no maximum | 0.001 / 4        |
+| `oklab-ab`     | `oklab.l`       | `oklab-channel-patch`   | 0–1    | 0–1                   | 0.001 / 4        |
+| `oklab-ab`     | `oklab.a`       | `oklab-disc-coordinate` | none   | −0.4–0.4              | 0.001 / 4        |
+| `oklab-ab`     | `oklab.b`       | `oklab-disc-coordinate` | none   | −0.4–0.4              | 0.001 / 4        |
+
+The UI-to-core relationship is **type-only Option A**. The declared internal capability entry
+adds only `RepresentationDefinition`, `ChannelDefinition`, `ChannelId`, `EditOperationDefinition`
+and `EditOperationId` types. Its runtime exports remain the two Phase 2C catalogs; core's public
+root is unchanged. UI derives channel/operation compatibility and editor/representation correlation
+from these contracts instead of maintaining a second technical identity catalog. UI declares core
+in `dependencies` because emitted declarations reference that subpath. No core/render runtime
+import, conversion, geometry or executor enters UI. Packed checks inspect every UI JavaScript
+module, the metadata declaration import and the manifest, then compile the installed graph with
+`skipLibCheck: false` and execute a browser-free Node import in all four adapter consumers.
+
+Both orchestrators destructure the static tuples while retaining framework-native branches,
+DOM order, IDs, attributes, roles, callbacks and existing authoring paths. The selector uses shared
+order and representation labels. The Chroma row supplies the absence of a numeric upper bound to
+the existing overflow policy. OKLab numeric controls consume explicit UI bounds instead of reading
+them from the legacy plane geometry. Semantic keys combine channel and operation. No controller,
+Canvas hookup, gradient, interval, warning or Hue-reference policy changes. Existing Vue/React
+Hue-reference differences are intentionally retained. No new generic browser mechanic requires
+VueUse; existing resize/DPR/listener integration stays in place.
+
+UI owns `currentEditorByView` for product composition. Render's old internal bridge remains because
+its current presentation signatures still take `PickerPlaneId`; the React-hosted cross-package
+contract test proves agreement and technical primary compatibility. Render gains no UI dependency.
+No descriptor graph is resolved on pointer, numeric or range input. Structural existence does not
+assert value-dependent operation availability; all current errors/help remain unchanged.
+
+Direct UI tests cover exact inventories/order, bounds, semantic bindings and deep freezing.
+Compile-time negative cases reject cross-representation bindings, wrong Hue channels, point
+operations used as scalar companions, invented IDs, mismatched editor composition and RGB admission.
+One shared native behavior suite runs through both real adapters: selector/control order, bounds,
+steps, precision, all six authoring paths through number and available range controls, Hue endpoint
+feedback, unclamped Chroma, untouched missing Hue and disposal of equal-valued Lightness drafts and
+queued ranges in both view-switch directions. Existing plane interruption, SSR/hydration,
+accessibility, responsive and frozen visual suites remain mandatory; no baseline updates are part
+of this phase.
+
+Generalized atomic selection, checked-gamut/visible-guide arrays and scoped unavailability remain
+future work. The current raw OKLab patch capability is still not exposed for a/b. Render's unused
+OKLab Chroma presentation fields and broad legacy plane/sampler type remain unchanged migration
+boundaries. No CSS, geometry, ColorValue, operation definition, output/mapping UI or public adapter
+API change is included.

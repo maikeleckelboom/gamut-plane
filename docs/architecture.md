@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the future capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support while preserving the v0.3 presentation and public root APIs. Shared UI metadata, generalized public selection and visual redesign remain future work.
+This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters, preserving v0.3 presentation and public root APIs. Generalized selection/check/guide state, scoped availability and visual redesign remain future work.
 
 ## Layer boundaries
 
@@ -8,7 +8,7 @@ The standalone app imports Vue and core. Vue and React import core, the internal
 
 - `packages/core` (`@gamut-plane/core`) owns ColorValue authorship and observation, exact gamut analysis, CSS input/output policy, plane geometry, keyboard math, boundary search and sampled-guide interpolation. It has no Vue, DOM or Canvas dependency.
 - `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
-- `packages/ui` (`@gamut-plane/ui`) owns the canonical semantic instrument parts/states, authored v0.3 stylesheet, shared warning glyph geometry, native range/numeric policies and one plane pointer gesture controller. Its controllers are DOM-specific but have no module-evaluation DOM access. UI has no framework, core or renderer dependency and is not a supported consumer API.
+- `packages/ui` (`@gamut-plane/ui`) owns current representation labels, primary admission/order, editor companion composition, ordinary control labels/bounds/steps/precision, canonical semantic instrument parts/states, authored v0.3 stylesheet, shared warning glyph geometry, native range/numeric policies and one plane pointer gesture controller. Its controllers are DOM-specific but have no module-evaluation DOM access. UI has a declared core dependency for type-only capability relationships; emitted runtime JavaScript has no core, render or framework import. It is not a supported consumer API.
 - `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas resources, numeric markup and product events.
 - `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas/environment resources and committed-prop integration. It has no Vue dependency. The standalone app remains Vue.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
@@ -19,7 +19,7 @@ The app imports built public package entries. Its `@` alias resolves only app co
 
 All packages export built ESM JavaScript and declarations from `dist`. Core, render, UI and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core, render and UI external; `vue-tsc` emits declarations. Public adapter exports restrict module access; internal declarations support adapter types without creating public subpaths.
 
-Core additionally declares `@gamut-plane/core/internal/capabilities`, built from `packages/core/src/capabilities/index.ts`. This is an **unsupported internal sibling-package contract**, not a consumer API or installation entry. It exposes only `editorDefinitions`, `geometryDefinitions`, and their `EditorDefinition`, `EditorId`, `GeometryDefinition`, `GeometryId` types. Render imports this declared package subpath; core's root remains unchanged. The entry and its declarations require no DOM types or browser globals and are checked in an isolated packed core consumer. Adapter tarball tests resolve the transitive core artifact through ordinary package exports. Representation/channel and edit-operation catalogs remain owner-local.
+Core additionally declares `@gamut-plane/core/internal/capabilities`, built from `packages/core/src/capabilities/index.ts`. This is an **unsupported internal sibling-package contract**, not a consumer API or installation entry. Runtime exports remain only `editorDefinitions` and `geometryDefinitions`, with their `EditorDefinition`, `EditorId`, `GeometryDefinition`, `GeometryId` types. Phase 2D adds only the types `RepresentationDefinition`, `ChannelDefinition`, `ChannelId`, `EditOperationDefinition` and `EditOperationId` for UI's correlated metadata contracts. Render imports this declared package subpath at runtime; UI uses `import type`; core's root remains unchanged. The entry and its declarations require no DOM types or browser globals and are checked in an isolated packed core consumer. Adapter tarball tests resolve the transitive core artifact through ordinary package exports. Representation/channel and edit-operation runtime catalogs remain owner-local.
 
 Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render, UI and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped scroll-listener cleanup outside the shared gesture. React depends on core, render and UI, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains lifecycle and resource integration; UI owns native range, numeric-draft and plane pointer policy.
 
@@ -30,6 +30,23 @@ The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ow
 The artifacts contain built output, package metadata, README and MIT license. Core and render declare no side effects; UI and adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned private dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
 
 ## Styling and host ownership
+
+`packages/ui/src/instrumentMetadata.ts` describes four representation labels and exactly two
+current primary choices, ordered OKLCH then OKLab. `editorUi` contains frozen ordered companion
+tuples: Hue/Lightness/Chroma for `oklch-lc`, fixed Lightness/a/b for `oklab-ab`. Both adapters bind
+these rows to their existing native markup; no generic renderer or executor is introduced.
+Hue range and number reference `oklch-hue-edit`; OKLCH L/C reference `oklch-channel-patch`;
+OKLab L references `oklab-channel-patch`; a/b reference `oklab-disc-coordinate`. Numeric Chroma
+has no maximum, while its slider spans 0–0.4. These are UI policies, not ColorValue validity.
+The adapters retain their existing normalization, coordinate-helper/point authorship, Hue
+references, dynamic render facts and lifecycle. Channel/operation keys preserve semantic identity.
+
+UI's `currentEditorByView` is the current product bridge. Render retains its bounded internal
+bridge to avoid a reverse UI dependency or signature churn; a cross-package test requires the
+two to agree. Metadata existence does not admit RGB to the selector. There is no new selection,
+checked-gamut or guide-array authority and no availability behavior change. Direct metadata/type
+tests, the same native composition suite in both adapters, and packed declaration/runtime checks
+cover this boundary; existing structural, screenshot, accessibility and hydration gates remain.
 
 `packages/ui/src/style.css` is the only authored instrument stylesheet. Adapter builds copy its built bytes to their own `dist/style.css`; consumers retain `@gamut-plane/vue/style.css` or `@gamut-plane/react/style.css`. It supplies the accepted local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. Shared selectors are scoped to `[data-gp-root]`. No package rule changes document themes, body/html, generic controls or focus outside the instrument. Scientific surfaces/ranges explicitly retain left-to-right coordinate direction in RTL hosts. The app's document resets, fonts and page palette stay in `app.css`.
 
