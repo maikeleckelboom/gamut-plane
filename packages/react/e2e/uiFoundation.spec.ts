@@ -164,7 +164,7 @@ test("native range pointer focus hook yields to keyboard use", async ({ page }) 
   await expect(range).not.toHaveAttribute("data-gp-pointer-focus");
 });
 
-test("React numeric change during composition waits for composition end", async ({ page }) => {
+test("numeric change waits for ordinary completion after composition", async ({ page }) => {
   await page.goto("/?single");
   const field = page.getByRole("spinbutton", { name: "Hue numeric value" });
   await field.evaluate((input: HTMLInputElement) => {
@@ -178,8 +178,10 @@ test("React numeric change during composition waits for composition end", async 
   await field.evaluate((input) =>
     input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true })),
   );
+  await expect(page.locator("[data-commits]")).toHaveText("0");
   await field.dispatchEvent("change");
   await expect(page.locator("[data-commits]")).toHaveText("1");
+  await expect(field).toHaveValue("120.0");
 });
 
 test("React differing parent feedback interrupts queued range input", async ({ page }) => {

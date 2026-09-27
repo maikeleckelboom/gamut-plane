@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
-import { gpPart } from "@gamut-plane/ui";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { gpPart, mountNumericInput } from "@gamut-plane/ui";
 
 const props = defineProps<{
   modelValue: number;
@@ -15,68 +15,52 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 const input = ref<HTMLInputElement>();
-const draft = ref(props.modelValue.toFixed(props.precision));
-let dirty = false;
-let revision = 0;
+let binding: ReturnType<typeof mountNumericInput> | undefined;
+// Emit the initial value for SSR, then leave the live native value to the controller.
+const vInitialValue = {
+  mounted(element: HTMLInputElement) {
+    element.value = props.modelValue.toFixed(props.precision);
+  },
+  getSSRProps() {
+    return { value: props.modelValue.toFixed(props.precision) };
+  },
+};
 
-function reset(): void {
-  dirty = false;
-  draft.value = props.modelValue.toFixed(props.precision);
-  // Also clear the browser's internal bad-input buffer (e.g. a lone minus sign).
-  if (input.value) input.value.value = draft.value;
-}
+onMounted(() => {
+  binding = mountNumericInput(input.value!, () => ({
+    value: props.modelValue,
+    precision: props.precision,
+    min: props.min,
+    max: props.max,
+    onComplete: (value) => {
+      emit("update:modelValue", value);
+      emit("commit", value);
+    },
+    onCancel: () => emit("cancel"),
+  }));
+});
 
-function edit(event: Event): void {
-  revision += 1;
-  dirty = true;
-  draft.value = (event.currentTarget as HTMLInputElement).value;
-}
+watch(
+  () => [props.modelValue, props.precision],
+  () => binding?.reconcile(),
+  { flush: "sync" },
+);
 
-function complete(): void {
-  if (!dirty) return;
-  const value = input.value?.valueAsNumber;
-  dirty = false;
-  const completedRevision = revision;
-  if (value !== undefined && Number.isFinite(value)) {
-    const next = Math.min(props.max ?? Infinity, Math.max(props.min, value));
-    emit("update:modelValue", next);
-    emit("commit", next);
-  }
-  void nextTick(() => {
-    if (revision === completedRevision) reset();
-  });
-}
-
-function keydown(event: KeyboardEvent): void {
-  if (event.isComposing) return;
-  if (event.key === "Enter") {
-    event.preventDefault();
-    complete();
-  } else if (event.key === "Escape" && dirty) {
-    event.preventDefault();
-    event.stopPropagation();
-    revision += 1;
-    reset();
-    emit("cancel");
-  }
-}
-
-watch(() => props.modelValue, reset);
+onBeforeUnmount(() => {
+  binding?.dispose();
+  binding = undefined;
+});
 </script>
 
 <template>
   <input
     ref="input"
+    v-initial-value
     type="number"
     :data-gp-part="gpPart.numericInput"
     inputmode="decimal"
-    :value="draft"
     :min="min"
     :max="max"
     :step="step"
-    @input="edit"
-    @change="complete"
-    @blur="complete"
-    @keydown="keydown"
   />
 </template>

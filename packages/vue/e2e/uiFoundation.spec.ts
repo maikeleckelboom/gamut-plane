@@ -165,7 +165,7 @@ test("native range pointer focus hook yields to keyboard use", async ({ page }) 
   await expect(range).not.toHaveAttribute("data-gp-pointer-focus");
 });
 
-test("Vue numeric change during composition completes the draft", async ({ page }) => {
+test("numeric change waits for ordinary completion after composition", async ({ page }) => {
   await page.goto("/?single");
   const field = page.getByRole("spinbutton", { name: "Hue numeric value" });
   await field.evaluate((input: HTMLInputElement) => {
@@ -174,13 +174,15 @@ test("Vue numeric change during composition completes the draft", async ({ page 
     input.dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await expect(page.locator("[data-commits]")).toHaveText("1");
-  await expect(field).toHaveValue("120.0");
+  await expect(page.locator("[data-commits]")).toHaveText("0");
+  await expect(field).toHaveValue("120");
   await field.evaluate((input) =>
     input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true })),
   );
+  await expect(page.locator("[data-commits]")).toHaveText("0");
   await field.dispatchEvent("change");
   await expect(page.locator("[data-commits]")).toHaveText("1");
+  await expect(field).toHaveValue("120.0");
 });
 
 test("Vue differing parent feedback interrupts queued range input", async ({ page }) => {

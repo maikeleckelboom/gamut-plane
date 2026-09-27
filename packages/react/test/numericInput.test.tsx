@@ -80,6 +80,23 @@ describe("numeric draft lifecycle", () => {
     expect(ui.complete).not.toHaveBeenCalled();
     expect(ui.cancel).not.toHaveBeenCalled();
   });
+  it("keeps a native draft across bound-only changes", async () => {
+    const ui = await numeric();
+    await input(ui.input, "0.3");
+    await ui.render(<NumericInput {...ui.props} min={-0.2} max={0.3} step={0.01} />);
+    expect(ui.input.value).toBe("0.3");
+    expect(ui.complete).not.toHaveBeenCalled();
+  });
+  it("does not let queued restoration overwrite a newer draft", async () => {
+    const ui = await numeric();
+    await input(ui.input, "0.3");
+    await act(async () => {
+      ui.input.dispatchEvent(new Event("change", { bubbles: true }));
+      ui.input.value = "0.1";
+      ui.input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(ui.input.value).toBe("0.1");
+  });
   it.each([
     ["-0.25", -0.25],
     ["-1", -0.4],
@@ -136,27 +153,48 @@ describe("numeric draft lifecycle", () => {
     expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(projection.value.point)).toBe(true);
     expect(ui.element.textContent).not.toContain("outside the OKLab editing disc");
   });
-  it("does not intercept Enter or Escape during IME composition", async () => {
+  it.each(["change", "blur"])("retains an active composition through %s", async (action) => {
     const ui = await numeric();
     await event(ui.input, "compositionstart");
     await input(ui.input, "-0.3");
     await event(ui.input, "keydown", { key: "Enter", isComposing: true });
+    await event(ui.input, "keydown", { key: "Enter" });
     await event(ui.input, "keydown", { key: "Escape" });
-    await event(ui.input, "change");
+    await event(ui.input, action);
+    expect(ui.input.value).toBe("-0.3");
     expect(ui.complete).not.toHaveBeenCalled();
     expect(ui.cancel).not.toHaveBeenCalled();
     await event(ui.input, "compositionend");
-    await event(ui.input, "keydown", { key: "Enter" });
-    expect(ui.complete).toHaveBeenCalledExactlyOnceWith(-0.3);
-  });
-  it("unmount discards dirty input and queued restoration silently", async () => {
-    const ui = await numeric();
-    await input(ui.input, "0.1");
-    await ui.unmount();
-    await act(async () => {
-      ui.input.dispatchEvent(new Event("change"));
-    });
     expect(ui.complete).not.toHaveBeenCalled();
-    expect(ui.cancel).not.toHaveBeenCalled();
+    await event(ui.input, action);
+    expect(ui.complete).toHaveBeenCalledExactlyOnceWith(-0.3);
+    await event(ui.input, "blur");
+    expect(ui.complete).toHaveBeenCalledOnce();
   });
+  it("cancels dirty input normally after compositionend", async () => {
+    const ui = await numeric();
+    await event(ui.input, "compositionstart");
+    await input(ui.input, "-0.3");
+    await event(ui.input, "compositionend");
+    await event(ui.input, "keydown", { key: "Escape" });
+    expect(ui.input.value).toBe("0.2000");
+    expect(ui.cancel).toHaveBeenCalledOnce();
+    expect(ui.complete).not.toHaveBeenCalled();
+  });
+  it.each([false, true])(
+    "unmount discards dirty input silently (composing: %s)",
+    async (composing) => {
+      const ui = await numeric();
+      if (composing) await event(ui.input, "compositionstart");
+      await input(ui.input, "0.1");
+      await ui.unmount();
+      await act(async () => {
+        ui.input.dispatchEvent(new Event("change"));
+        ui.input.dispatchEvent(new Event("compositionend"));
+        ui.input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      });
+      expect(ui.complete).not.toHaveBeenCalled();
+      expect(ui.cancel).not.toHaveBeenCalled();
+    },
+  );
 });
