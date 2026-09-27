@@ -167,12 +167,12 @@
   stroke-linejoin: round;
 }
 
-[data-gp-root] [data-gp-gamut="display-p3"] {
+[data-gp-root] [data-gp-part="gamut-boundary"][data-gp-gamut="display-p3"] {
   stroke: oklch(0.95 0.006 265 / 0.92);
   stroke-width: 1.15;
 }
 
-[data-gp-root] [data-gp-gamut="srgb"] {
+[data-gp-root] [data-gp-part="gamut-boundary"][data-gp-gamut="srgb"] {
   stroke: oklch(0.25 0.006 265 / 0.96);
   stroke-width: 1.25;
   stroke-dasharray: 5 4;
@@ -562,12 +562,12 @@
   opacity: 0.78;
 }
 
-[data-gp-root] [data-gp-gamut="display-p3"] {
+[data-gp-root] [data-gp-part="gamut-interval"][data-gp-gamut="display-p3"] {
   top: 2px;
   border-top: 1px solid currentColor;
 }
 
-[data-gp-root] [data-gp-gamut="srgb"] {
+[data-gp-root] [data-gp-part="gamut-interval"][data-gp-gamut="srgb"] {
   bottom: 2px;
   border-bottom: 1px dashed currentColor;
   opacity: 0.56;

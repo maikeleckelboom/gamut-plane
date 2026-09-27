@@ -1,6 +1,6 @@
 # React instrument parity
 
-The Vue and React adapters implement the same closed instrument over core's exact color/plane contracts and render's shared visual contracts. React keeps idiomatic controlled color, controlled/uncontrolled view, native section props/ref and a normal legend node. No public composable primitives are introduced.
+The Vue and React adapters implement the same closed instrument over core's exact color/plane contracts, render's shared visual contracts and UI's semantic anatomy/presentation authority. React keeps idiomatic controlled color, controlled/uncontrolled view, native section props/ref and a normal legend node. No public composable primitives are introduced.
 
 ## Private source responsibilities
 
@@ -13,13 +13,13 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `interaction/rangeInteraction.ts`      | Native input/change distinction, live RAF, final completion, pending-work interruption and Hue preview ownership                                                      |
 | `components/NumericInput.tsx`          | Native transient draft buffer, dirty/revision state, IME, bounds, Enter/change/blur deduplication, Escape and external-value reset                                    |
 | `components/CoordinateViewControl.tsx` | Horizontal radiogroup, roving tab stop, wrapping arrow navigation and focus                                                                                           |
-| `components/BoundaryDetails.tsx`       | Narrow, presentational sampled-guide disclosure                                                                                                                       |
 | `components/BoundaryTargetResult.tsx`  | Always-visible target status, sampled guide chroma/delta and actual guide-color swatch                                                                                |
 | `components/GamutWarningGlyph.tsx`     | Decorative warning SVG                                                                                                                                                |
 | `hooks/useControllableView.ts`         | Initial uncontrolled view and authoritative controlled view requests                                                                                                  |
 | `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                                                           |
 | `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                                                      |
-| `style.css`                            | Package-local accepted instrument geometry, type hierarchy, controls/focus and container layout                                                                       |
+
+The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet and warning glyph geometry to both adapters.
 
 There is no whole-product context, giant hook, render-time resource allocation or redundant color state. Event callbacks do not depend on consumer memoization. A suspended/abandoned render cannot replace committed callbacks. Mutable interaction and renderer resources belong to one mounted instance and are disposed silently.
 
@@ -61,14 +61,14 @@ React-specific tests additionally cover native section/ref protection, controlle
 
 The focused two-dimensional plane retains Vue's `role="application"`: one native slider cannot describe two editable coordinates, and a generic group does not express the custom keyboard editor. The role is restricted to that surface; the selector and native form controls retain their own semantics. Labels explain axes/current coordinates and keyboard editing; warning text is part of control descriptions. There is no global Escape handler. Automated axe/keyboard proof does not substitute for manual screen-reader acceptance.
 
-CSS preserves the accepted local dark surface, host font, gradients, markers, target-guide connector, focus and warning geometry. React uses distinct selectors/container naming so importing both adapters' CSS does not collide. Available component width owns the 39em transition: at the default 16px font, 623px is one column and 624/625px are two. Enlarged text raises the threshold; disabling the named container retains a usable single column.
+The single stylesheet in `packages/ui/src/style.css` preserves the accepted local dark surface, host font, gradients, markers, target-guide connector, focus and warning geometry. Both adapter `./style.css` artifacts contain its copied bytes and selectors are scoped to `data-gp-root`. Available component width owns the 39em transition: at the default 16px font, 623px is one column and 624/625px are two. Enlarged text raises the threshold; disabling the named container retains a usable single column.
 
-Four reviewed Windows/Linux references cover OKLCH, OKLab, narrow layout and out-of-Display-P3 warning/target guide. New React geometry is compared against the established Vue composition; no Vue snapshots are replaced. Renderer/sampling algorithms are unchanged, so no new timing benchmark is claimed.
+Four existing React references cover OKLCH, OKLab, narrow layout and out-of-Display-P3 warning/target guide. The [Phase 1B foundation record](ui-foundation-phase-1b.md) adds twelve matched Windows captures per adapter and semantic parity checks. No approved Vue or React references were replaced. Renderer/sampling algorithms are unchanged, so no new timing benchmark is claimed.
 
 ## External consumption and lifecycle proof
 
-The ordinary Vite consumer and Next App Router consumer install actual core/render/React tarballs outside the workspace. Manifests/ESM/declarations/CSS/README/LICENSE are inspected, private artifact paths are content-addressed, and installed private-package files are checked against tarball bytes. No source alias, private deep import, SSR suppression or manual renderer initialization is used.
+The ordinary Vite consumer and Next App Router consumer install actual core/render/UI/React tarballs outside the workspace. Manifests/ESM/declarations/CSS/README/LICENSE are inspected, private artifact paths are content-addressed, and installed private-package files are checked against tarball bytes. No source alias, private deep import, SSR suppression or manual renderer initialization is used.
 
-Next loads the server document and CSS while scripts are held, records actual nodes and relationships, then checks their retention after hydration. Both views include controls, guides, disclosure and legend before scripts. Root Strict Mode counts all plane/track observers and native plane/control/window/resolution listeners through setup/cleanup/setup and unmount. Teardown emits no edit, rollback, completion or cancellation.
+Next loads the server document and CSS while scripts are held, records actual nodes and relationships, then checks their retention after hydration. Both views include controls, guides, target result and legend before scripts. Root Strict Mode counts all plane/track observers and native plane/control/window/resolution listeners through setup/cleanup/setup and unmount. Teardown emits no edit, rollback, completion or cancellation.
 
 Use the [testing commands](testing.md) for reproducible evidence. This parity record does not set package versions; publication, deployment, alpha controls, uncontrolled color and public composable primitives remain outside its scope.

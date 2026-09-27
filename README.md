@@ -101,6 +101,7 @@ New-Item -ItemType Directory -Force -Path $artifacts
 pnpm build:packages
 pnpm --filter @gamut-plane/core pack --pack-destination $artifacts --json
 pnpm --filter @gamut-plane/render pack --pack-destination $artifacts --json
+pnpm --filter @gamut-plane/ui pack --pack-destination $artifacts --json
 pnpm --filter @gamut-plane/vue pack --pack-destination $artifacts --json
 ```
 
@@ -110,15 +111,16 @@ Use the filenames returned by `pnpm pack --json` and copy the tarballs into an `
 overrides:
   "@gamut-plane/core": "file:./artifacts/gamut-plane-core-0.2.0.tgz"
   "@gamut-plane/render": "file:./artifacts/gamut-plane-render-0.2.0.tgz"
+  "@gamut-plane/ui": "file:./artifacts/gamut-plane-ui-0.2.0.tgz"
 ```
 
 Then install them from the application root:
 
 ```powershell
-pnpm add ./artifacts/gamut-plane-core-0.2.0.tgz ./artifacts/gamut-plane-render-0.2.0.tgz ./artifacts/gamut-plane-vue-0.2.0.tgz
+pnpm add ./artifacts/gamut-plane-core-0.2.0.tgz ./artifacts/gamut-plane-render-0.2.0.tgz ./artifacts/gamut-plane-ui-0.2.0.tgz ./artifacts/gamut-plane-vue-0.2.0.tgz
 ```
 
-The overrides resolve all unpublished transitive dependencies from their local artifacts. `pnpm test:package` exercises this installation in an isolated Vue consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping both dependency tarballs and overrides. `pnpm test:react-vite` verifies ordinary React consumption; `pnpm test:next` verifies Next App Router and root Strict Mode. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
+The overrides resolve all unpublished transitive dependencies from their local artifacts. UI is an internal dependency; application code imports only its adapter and adapter `style.css`. `pnpm test:package` exercises this installation in an isolated Vue consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping the three dependency tarballs and overrides. `pnpm test:react-vite` verifies ordinary React consumption; `pnpm test:next` verifies Next App Router and root Strict Mode. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
 
 ## Color and editing behavior
 

@@ -123,6 +123,6 @@ Peers remain React / React DOM 19.3.x, tested at 19.3.0 with Next 16.3.4. Canvas
 
 ## Private artifact verification
 
-Build and pack core, render and React, then install all three tarballs with local dependency overrides using the [repository instructions](../../README.md#install-local-packages). Consumers import only this adapter and its CSS. Registry installation and npm publication are not claimed.
+Build and pack core, render, UI and React, then install all four tarballs with local dependency overrides using the [repository instructions](../../README.md#install-local-packages). Consumers import only this adapter and its CSS. Registry installation and npm publication are not claimed.
 
 `pnpm test` includes React package tests. `pnpm test:react-vite` verifies isolated packed Vite consumption, accessibility and visuals. `pnpm test:next` verifies packed Next development/production hydration, prerendering and root Strict Mode. See the [coverage map](../../docs/react-parity.md) and [testing guide](../../docs/testing.md).

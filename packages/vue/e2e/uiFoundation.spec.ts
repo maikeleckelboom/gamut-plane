@@ -108,3 +108,43 @@ for (const state of states) {
     if (process.platform === "win32") await expect(root).toHaveScreenshot(`ui-${state.name}.png`);
   });
 }
+
+test("Vue numeric change during composition completes the draft", async ({ page }) => {
+  await page.goto("/?single");
+  const field = page.getByRole("spinbutton", { name: "Hue numeric value" });
+  await field.evaluate((input: HTMLInputElement) => {
+    input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    input.value = "120";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator("[data-commits]")).toHaveText("1");
+  await expect(field).toHaveValue("120.0");
+  await field.evaluate((input) =>
+    input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true })),
+  );
+  await field.dispatchEvent("change");
+  await expect(page.locator("[data-commits]")).toHaveText("1");
+});
+
+test("Vue queued range input can publish after differing parent replacement", async ({ page }) => {
+  await page.goto("/?single");
+  const range = page.locator('[data-picker-control="h"] input[type="range"]');
+  await range.evaluate(async (input: HTMLInputElement) => {
+    input.value = "120";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    const button = [...document.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "Replace first color",
+    );
+    if (!button) throw new Error("Missing parent replacement control");
+    button.click();
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  const definition = JSON.parse(
+    (await page.locator("[data-definition]").getAttribute("data-definition"))!,
+  );
+  expect(definition.channels[2]).toBe(120);
+  await expect(page.locator("[data-commits]")).toHaveText("0");
+});

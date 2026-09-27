@@ -1,34 +1,35 @@
 # Architecture
 
-This document describes the released v0.3 architecture. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted vNext direction; its future structure is not implemented here.
+This document describes the v0.3 instrument and the first vNext UI foundation slice. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) identifies what has been implemented and what remains deferred.
 
 ## Layer boundaries
 
-The standalone app imports Vue and core. Vue and React import core and the internal `@gamut-plane/render` package. Core has no dependency on any adapter or browser layer.
+The standalone app imports Vue and core. Vue and React import core, the internal `@gamut-plane/render` package, and the private framework-neutral `@gamut-plane/ui` package. Core has no dependency on any adapter or browser layer.
 
 - `packages/core` (`@gamut-plane/core`) owns ColorValue authorship and observation, exact gamut analysis, CSS input/output policy, plane geometry, keyboard math, boundary search and sampled-guide interpolation. It has no Vue, DOM or Canvas dependency.
 - `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
-- `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer arbitration, numeric drafts, frame scheduling, local styling and component/consumer tests.
-- `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, numeric drafts, range/pointer lifecycle, scheduling and local styles. It has no Vue dependency. The standalone app remains Vue.
+- `packages/ui` (`@gamut-plane/ui`) owns the canonical semantic instrument parts/states, authored v0.3 stylesheet and shared warning glyph geometry. It has no framework or renderer dependency and is not a supported consumer API.
+- `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer arbitration, numeric drafts, frame scheduling and component/consumer tests.
+- `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, numeric drafts, range/pointer lifecycle and scheduling. It has no Vue dependency. The standalone app remains Vue.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
 
 The app imports built public package entries. Its `@` alias resolves only app code. The Vue component owns its renderer.
 
 ## Distribution and public API
 
-All packages export built ESM JavaScript and declarations from `dist`. Core, render and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core and render external; `vue-tsc` emits declarations. Public exports restrict module access; internal declarations support adapter types without creating public subpaths.
+All packages export built ESM JavaScript and declarations from `dist`. Core, render, UI and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core, render and UI external; `vue-tsc` emits declarations. Public adapter exports restrict module access; internal declarations support adapter types without creating public subpaths.
 
-Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. React depends on core and render, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains ownership of gestures, rollback and frame scheduling.
+Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render, UI and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped listener cleanup. React depends on core, render and UI, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains ownership of gestures, rollback and frame scheduling.
 
 Vue exports `GamutPlane`, `ColorValue`, `GamutPlaneView` and `CanvasColorSpaceStatus`, plus `style.css`. React exports the same selected-color type. Each component accepts a required defining color value; changing view observes it, while edits author a new value in that plane. See the [Vue API reference](../packages/vue/README.md#component-api) and [React API reference](../packages/react/README.md#component-api). Renderer constants, table paths, preview flags and IDs are internal.
 
 The plane model defaults locally to `oklch`; `v-model:plane` gives the parent ownership. View changes never convert or republish the authored color. Boundary props default to true. `field-legend` accepts host-owned explanatory or visibility controls without exposing renderer state. Canvas capability describes the granted context, not display hardware; `pending` is the initial shell state.
 
-The artifacts contain built output, package metadata, README and MIT license. Core and render declare no side effects; adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned core and render dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
+The artifacts contain built output, package metadata, README and MIT license. Core and render declare no side effects; UI and adapters mark CSS as side-effectful so bundlers retain it. All manifests use `private: true`. Local consumers override versioned private dependencies with their tarballs, as shown in the [installation instructions](../README.md#install-local-packages). Registry installation is not part of this private-artifact verification.
 
 ## Styling and host ownership
 
-Each adapter's `src/style.css` supplies local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. React uses separate `gpr-` selectors and a `gamut-plane-react` container to coexist with Vue. No package rule changes document themes, body/html, generic controls or focus outside the instrument. Scientific surfaces/ranges explicitly retain left-to-right coordinate direction in RTL hosts. The app's document resets, fonts and page palette stay in `app.css`.
+`packages/ui/src/style.css` is the only authored instrument stylesheet. Adapter builds copy its built bytes to their own `dist/style.css`; consumers retain `@gamut-plane/vue/style.css` or `@gamut-plane/react/style.css`. It supplies the accepted local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. Shared selectors are scoped to `[data-gp-root]`. No package rule changes document themes, body/html, generic controls or focus outside the instrument. Scientific surfaces/ranges explicitly retain left-to-right coordinate direction in RTL hosts. The app's document resets, fonts and page palette stay in `app.css`.
 
 The root owns the named inline-size container `gamut-plane`. A complete one-column base layout becomes two columns at 39em (320px field + 270px controls + 34px gap at the default font size). Enlarged text raises that threshold. Below 30em, supplementary text/readouts adapt. Host width, not viewport width, owns these decisions; without container queries the one-column layout remains usable.
 
@@ -36,7 +37,7 @@ Vue and React `useId()` supply stable title/control IDs within their respective 
 
 ## Server rendering
 
-Importing any ESM entry needs no browser globals. The instrument server-renders its complete supported UI: controls, accessible labels, authored values, marker, SVG guides and a CSS-reserved field. Vite extracts CSS into the separate stylesheet export; the built JavaScript entry has no CSS import. Consumers load that stylesheet through their framework's ordinary global CSS mechanism.
+Importing any ESM entry needs no browser globals. The instrument server-renders its complete supported UI: controls, accessible labels, authored values, marker, SVG guides and a CSS-reserved field. UI builds the canonical CSS file; adapter builds copy it into each separate stylesheet export. The built JavaScript entry has no CSS import. Consumers load their adapter stylesheet through their framework's ordinary global CSS mechanism.
 
 Canvas context work, measurements, ResizeObserver, DPR tracking, scroll listeners and frame scheduling begin after mount. VueUse retains ownership of observer/listener cleanup. Capability is deterministically `pending` through server rendering and initial client rendering. Lifecycle setup and teardown never publish edits. Mutable color/draft/gesture/sampling/renderer state is per instance; generated lookup tables are shared visualization data.
 

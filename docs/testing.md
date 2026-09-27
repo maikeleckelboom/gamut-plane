@@ -61,7 +61,7 @@ Automation uses the lockfile-pinned Chromium version. Other engines, physical de
 
 `packages/vue/consumer` is an independent Vue application fixture. It imports the component and stylesheet through public entries, without demo CSS, source aliases, shared tsconfig, or generated-file imports. One instance uses a color-only model; another also binds its plane.
 
-`pnpm test:package` builds and packs core, render and Vue, checks tarball manifests and file lists, and copies the fixture into an OS temporary directory outside the workspace. It installs every unpublished dependency from its tarball using local overrides, then runs strict typechecking, Node ESM import and server rendering, a production host build, and Chromium tests from `packages/vue/e2e`.
+`pnpm test:package` builds and packs core, render, UI and Vue, checks tarball manifests and file lists, and copies the fixture into an OS temporary directory outside the workspace. It installs every unpublished dependency from its tarball using local overrides, then runs strict typechecking, Node ESM import and server rendering, a production host build, and Chromium tests from `packages/vue/e2e`. The runner checks the installed UI and adapter stylesheets against the canonical authored bytes.
 
 The browser cases cover independent instance state and focus, plane ownership, IDs, numeric drafts, alpha preservation, cancellation, 280–800px containers, the 623/624/625px layout threshold, first reveal, scrolling/resizing during capture, enlarged text, style isolation, gamut guides, and axe accessibility. Screenshots check visible light-to-dark field variation in both instances, since Canvas bitmap pixels alone do not establish that the browser composited the field.
 
@@ -69,7 +69,7 @@ Successful consumers are removed. Failures retain the consumer and Playwright ev
 
 ## Packed React/Vite consumption
 
-`pnpm test:react-vite` copies `packages/react/consumer` and `packages/react/e2e` outside workspace resolution. It packs core/render/React, verifies ESM/declarations/CSS/README/LICENSE/metadata, installs with the independent frozen lockfile, runs typechecking and Node SSR, builds with Vite and runs Chromium on port 4182. No workspace alias, custom transpilation or registry fallback for private packages is allowed.
+`pnpm test:react-vite` copies `packages/react/consumer` and `packages/react/e2e` outside workspace resolution. It packs core/render/UI/React, verifies ESM/declarations/CSS/README/LICENSE/metadata and canonical stylesheet bytes, installs with the independent frozen lockfile, runs typechecking and Node SSR, builds with Vite and runs Chromium on port 4182. No workspace alias, custom transpilation or registry fallback for private packages is allowed.
 
 The browser suite ports Vue's embedding, rendering and accessibility contracts to the public React API, and adds native ranges in both views, external replacement, boundary/legend/ref/accent behavior, scientific RTL, uncapped DPR and four representative screenshots. It covers 623/624/625px container edges, enlarged text, narrow/revealed/resized hosts, capture during scroll, all numeric controls, negative OKLab drafts, warnings/target guides and independent instruments. Axe requires no serious/critical violations in both views. Screenshots cover normal OKLCH, OKLab, narrow and outside-Display-P3 states.
 
@@ -77,9 +77,11 @@ The browser suite ports Vue's embedding, rendering and accessibility contracts t
 
 All packed runners content-address the freshly packed private tarballs in the temporary manifests/lockfile. Registry versions/integrities remain frozen. Each installed private-package file is then compared byte-for-byte with the tarball inventory. This prevents pnpm's same-name/version artifact cache from silently validating older code. The checked-in fixture manifests retain readable local artifact paths.
 
+Both packed Vite suites include `e2e/uiFoundation.spec.ts`: identical deterministic state dimensions, semantic `data-gp-*` anatomy/state assertions and twelve Windows screenshots per adapter. The fixtures cover both views, selected colors inside/outside sRGB and Display P3, guide visibility, target presentation, a 340px host, the 623/624/625px threshold and 200% text. Existing approved visual references remain separate. On other platforms the semantic/status assertions still run, but the new Windows snapshots are not compared. The paired browser tests also freeze the current numeric IME and queued-range parent-feedback differences; see the [Phase 1B foundation record](ui-foundation-phase-1b.md).
+
 ## Packed Nuxt SSR and hydration
 
-`packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core, render and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt/fixture typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
+`packages/vue/nuxt-consumer` is copied into an OS temporary directory outside the workspace. `pnpm test:nuxt` packs core, render, UI and Vue, installs the fixture with `--frozen-lockfile`, runs Node import/server rendering and Nuxt/fixture typechecking, then runs browser tests against development, production and generated servers on port 4180. No source aliases, inherited app CSS, transpilation rules or SSR bypasses are used. All unpublished transitive dependencies come from tarballs; this does not verify registry installation.
 
 The fixture pins Nuxt 4.5.2, Vue 3.5.42, Vue Router 5.3.1, TypeScript 6.0.3 and Playwright 1.61.1, tested on Node 24.16.0 / pnpm 11.9.0. Registry resolutions and integrity hashes are frozen. Only the local artifact entries omit integrity because the tested artifact changes with the worktree; packing and installing happens in the same isolated directory. To deliberately refresh the fixture graph, use `pnpm --filter @gamut-plane/vue test:nuxt --lock` and review its lockfile diff.
 
@@ -93,7 +95,7 @@ Framework references: [Vue SSR](https://vuejs.org/guide/scaling-up/ssr), [Vue us
 
 ## Packed Next and root Strict Mode
 
-`pnpm test:next` copies `packages/react/next-consumer` outside the workspace, packs core/render/React, verifies artifact file lists, export targets, CSS side-effect metadata, dependency/peer boundaries and preserved `"use client"` directives, then installs using the fixture's frozen lockfile. All three private packages are installed from their artifacts. The normal Node entry is server-rendered with no browser globals and no lifecycle emissions; independent documents deliberately may reuse IDs.
+`pnpm test:next` copies `packages/react/next-consumer` outside the workspace, packs core/render/UI/React, verifies artifact file lists, export targets, CSS side-effect metadata, dependency/peer boundaries and preserved `"use client"` directives, then installs using the fixture's frozen lockfile. All four private packages are installed from their artifacts. The normal Node entry is server-rendered with no browser globals and no lifecycle emissions; independent documents deliberately may reuse IDs.
 
 The consumer pins React / React DOM / their type packages 19.3.0, Next.js 16.3.4, TypeScript 6.0.3, Vite 8.1.4 (diagnostic fixture) and Playwright 1.61.1. Node 24.16.0 and pnpm 11.9.0 are the tested runtime/toolchain. The Next fixture uses the default Turbopack build. There are no aliases, transpilation exceptions, browser polyfills, hydration suppression or SSR-disabling wrappers.
 
