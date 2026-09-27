@@ -15,7 +15,7 @@ vi.mock("../src/capabilities/guideSupport.js", async (original) => {
   };
 });
 
-it("preserves a technical editor without a field, and reports a distinct guide relation absence", () => {
+it("resolves a real guide relation without Canvas field support, and reports a distinct missing relation", () => {
   const created = createColorValue({ space: "oklch", channels: [0.5, 0.1, 40], alpha: 1 });
   if (!created.ok) throw new Error("Invalid fixture");
   const context = resolveEditorVisualSupport("oklab-ab");
@@ -28,9 +28,27 @@ it("preserves a technical editor without a field, and reports a distinct guide r
     field: null,
   });
   expect(resolveField(created.value, noField)).toEqual({ kind: "field-unsupported" });
-  expect(resolveRequestedGuides(created.value, noField, ["srgb-boundary"], [])).toEqual([
-    { guideId: "srgb-boundary", kind: "no-field" },
-  ]);
+  const withoutField = resolveRequestedGuides(
+    created.value,
+    noField,
+    ["srgb-boundary", "display-p3-boundary"],
+    [],
+  );
+  expect(withoutField[0]).toMatchObject({
+    guideId: "srgb-boundary",
+    kind: "resolved",
+    forms: {
+      contour: { kind: "available" },
+      reference: { kind: "available" },
+      lightnessIntervals: { kind: "available" },
+      chromaIntervals: { kind: "available" },
+      targetMarker: { kind: "check-not-requested" },
+    },
+  });
+  expect(withoutField[1]).toMatchObject({
+    guideId: "display-p3-boundary",
+    kind: "resolved",
+  });
   const rows = resolveRequestedGuides(
     created.value,
     resolveEditorVisualSupport("oklch-lc"),

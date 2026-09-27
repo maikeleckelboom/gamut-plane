@@ -1,4 +1,6 @@
 import {
+  OKLAB_AB_PLANE,
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
   convertOklchToOklab,
   getHueGuideIntervals,
   getLightnessGuideIntervals,
@@ -9,9 +11,12 @@ import {
   type PickerPlaneGeometry,
   type PlanePoint,
 } from "@gamut-plane/core";
-import type { EditorId } from "@gamut-plane/core/internal/capabilities";
+import {
+  editorDefinitions,
+  geometryDefinitions,
+  type EditorId,
+} from "@gamut-plane/core/internal/capabilities";
 import { PICKER_GAMUT_TABLES } from "../generated/gamutTables.js";
-import { fieldSupport } from "./fieldSupport.js";
 
 export type GuideId = "srgb-boundary" | "display-p3-boundary";
 export interface GuideDefinition {
@@ -56,22 +61,23 @@ export interface GuideSupport {
   readonly forms: GuideForms;
 }
 
-const lch = fieldSupport["oklch-lc"];
-const lab = fieldSupport["oklab-ab"];
+// Guide geometry and contour math predate Canvas field support; the relations are independent.
+const lchGeometry = geometryDefinitions[editorDefinitions["oklch-lc"].geometryId];
+const labGeometry = geometryDefinitions[editorDefinitions["oklab-ab"].geometryId];
 
 function positionLchGuide(color: OklchSample): PlanePoint {
-  return lch.geometry.constrain(lch.geometry.toPoint(color.l, color.c));
+  return lchGeometry.constrain(lchGeometry.toPoint(color.l, color.c));
 }
 
 function positionLabGuide(color: OklchSample): PlanePoint {
   const coordinates = convertOklchToOklab(color);
-  return lab.geometry.constrain(lab.geometry.toPoint(coordinates[1]!, coordinates[2]!));
+  return labGeometry.constrain(labGeometry.toPoint(coordinates[1]!, coordinates[2]!));
 }
 
 const lchForms = Object.freeze({
   contour: Object.freeze({
-    build: lch.plane.buildGamutContour,
-    closed: lch.plane.gamutContourClosed,
+    build: OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour,
+    closed: OKLCH_LIGHTNESS_CHROMA_PLANE.gamutContourClosed,
   }),
   hueIntervals: getHueGuideIntervals,
   lightnessIntervals: getLightnessGuideIntervals,
@@ -82,8 +88,8 @@ const lchForms = Object.freeze({
 
 const labForms = Object.freeze({
   contour: Object.freeze({
-    build: lab.plane.buildGamutContour,
-    closed: lab.plane.gamutContourClosed,
+    build: OKLAB_AB_PLANE.buildGamutContour,
+    closed: OKLAB_AB_PLANE.gamutContourClosed,
   }),
   hueIntervals: null,
   lightnessIntervals: getLightnessGuideIntervals,
@@ -97,24 +103,24 @@ export const guideSupport = Object.freeze({
   "oklch-lc": Object.freeze({
     "srgb-boundary": Object.freeze({
       guideId: "srgb-boundary",
-      editorId: lch.editorId,
+      editorId: editorDefinitions["oklch-lc"].id,
       forms: lchForms,
     }),
     "display-p3-boundary": Object.freeze({
       guideId: "display-p3-boundary",
-      editorId: lch.editorId,
+      editorId: editorDefinitions["oklch-lc"].id,
       forms: lchForms,
     }),
   }),
   "oklab-ab": Object.freeze({
     "srgb-boundary": Object.freeze({
       guideId: "srgb-boundary",
-      editorId: lab.editorId,
+      editorId: editorDefinitions["oklab-ab"].id,
       forms: labForms,
     }),
     "display-p3-boundary": Object.freeze({
       guideId: "display-p3-boundary",
-      editorId: lab.editorId,
+      editorId: editorDefinitions["oklab-ab"].id,
       forms: labForms,
     }),
   }),

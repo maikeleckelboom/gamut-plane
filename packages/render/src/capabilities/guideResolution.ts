@@ -41,7 +41,7 @@ export interface ResolvedGuideForms {
 
 export type GuideResolution = Readonly<{ guideId: GuideId }> &
   (
-    | Readonly<{ kind: "no-editor" | "no-field" | "no-guide-for-editor" }>
+    | Readonly<{ kind: "no-editor" | "no-guide-for-editor" }>
     | Readonly<{ kind: "resolved"; support: GuideSupport; forms: ResolvedGuideForms }>
   );
 
@@ -95,7 +95,6 @@ export function resolveRequestedGuides(
   if (editor.kind === "no-editor-requested") {
     return requested.map((guideId) => ({ guideId, kind: "no-editor" }));
   }
-  if (editor.field === null) return requested.map((guideId) => ({ guideId, kind: "no-field" }));
   const relations: Readonly<
     Partial<Record<EditorId, Readonly<Partial<Record<GuideId, GuideSupport>>>>>
   > = guideSupport;

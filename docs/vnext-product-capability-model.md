@@ -1326,7 +1326,7 @@ in `InstrumentViewState`.
 | Core   | `analyzeRequestedGamuts(value, requested)` in `capabilities/requestedGamuts.ts`                  | Readonly `GamutCheckResult` rows with core `GamutId` and `ColorResult<GamutAnalysis, GamutAnalysisError>`                                                      |
 | Render | `resolveEditorVisualSupport(editorId)` in `capabilities/editorResolution.ts`                     | `no-editor-requested`, or core editor/geometry plus nullable render field support                                                                              |
 | Render | `resolveField(value, support)` in the same module                                                | `no-field-requested`, `field-unsupported`, `available`, or scoped `value-unavailable`; raw projection/fixed-coordinate facts retained when projection succeeds |
-| Render | `resolveRequestedGuides(value, support, requested, checks)` in `capabilities/guideResolution.ts` | One ordered row per request: `no-editor`, `no-field`, `no-guide-for-editor`, or `resolved` with per-form outcomes                                              |
+| Render | `resolveRequestedGuides(value, support, requested, checks)` in `capabilities/guideResolution.ts` | One ordered row per request: `no-editor`, `no-guide-for-editor`, or `resolved` with per-form outcomes                                                          |
 
 The collection calls the unchanged single-gamut analyzer independently with the original value,
 preserves supplied canonical order and never drops failure rows. Empty input means zero analyses.
@@ -1414,6 +1414,55 @@ retain requested preferences, and invalidate semantic interaction state on accep
 Any runtime package exports needed for that composition require an explicit decision then. No
 control-level disabling, help-state design, output/mapping availability or public generalized API
 is implemented here.
+
+### Phase 2F.1: source revisions and guide prerequisites
+
+Exact-result provenance belongs to the future adapter's **accepted resolution revision**. One
+synchronous composition call takes one accepted `ColorValue` and one accepted `InstrumentViewState`,
+then derives observation, requested exact checks, editor support, field result and requested guides
+from those inputs. It supplies only the checks just computed from that value to guide resolution.
+An accepted value or semantic selection change creates a new revision; old derived rows are never
+mixed into it. The test-only cross-layer composition now proves a controlled outside-to-inside
+parent replacement, including the adversarial case where manually supplying the old rows to the
+low-level guide resolver would incorrectly grant an outside marker. That owner-local resolver does
+**not** enforce provenance; a future React/Vue integration must preserve the composition boundary
+and derive the whole revision from committed accepted inputs during each update. No asynchronous
+generation token or persistent cache is needed for these synchronous operations.
+
+The identity relevant to a revision is the accepted authored **definition**. `definingEquals`
+compares representation, all three authored coordinates and alpha using `Object.is`, including
+signed zero. A separately constructed defining-equal `ColorValue` is the same authored definition
+for this purpose, matching existing parent-feedback semantics; `source === current` is too strict.
+Checks are currently recomputed within a revision, even for defining-equal feedback, so this rule
+does not authorize caching. A different authored definition, including one that is inside after an
+outside definition, gets fresh checks. A `ColorSnapshotV1` comparison or new fingerprint would add
+allocation/transport machinery without strengthening this synchronous composition contract.
+Binding rows to a source object would force a runtime sibling contract before adapters own it;
+render-side source verification would need such a binding or redundant exact analysis. Neither is
+needed now. Raw rows remain an internal, owner-local input, not an independently reusable cache.
+
+Field and guide support are separate render relations. Phase 2C sourced guide contour and target
+geometry from the same legacy plane object as Canvas field sampling, but none of the current guide
+forms invokes its `sampleField` operation. Guide support now references core editor geometry and
+the existing contour functions directly; guide resolution checks the guide relation without gating
+on `FieldSupport`. No production editor or guide row was added. A test-only known editor with its
+field relation removed still resolves its real guide relation while `resolveField` reports
+`field-unsupported`. A separately missing guide relation still reports `no-guide-for-editor`.
+
+| Guide form          | Runtime prerequisites; Canvas field sampler is not one                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contour             | Editor geometry context, generated table, and observed Hue for L/C or bounded observed OKLab Lightness for a/b; existing plane contour builder |
+| Hue intervals       | OKLCH sample and bounded Lightness; structurally absent for a/b                                                                                |
+| Lightness intervals | OKLCH sample and generated table                                                                                                               |
+| Chroma intervals    | Available sampled reference and maximum Chroma normalization                                                                                   |
+| Reference           | OKLCH sample, bounded Lightness and generated table                                                                                            |
+| Target marker       | Available reference, editor geometry position, and a matching supplied exact `outside` check                                                   |
+
+This preserves the current two editors' outputs, observation-only states, partial results for
+extended authored coordinates and owner-native exact failures. The older `no-field` guide outcome
+was a current-implementation gate, not a scientific or permanent product prerequisite. Missing
+field support remains a scoped field result. The Phase 2A illustrative contracts above retain
+their historical design context; this subsection records the implemented Phase 2F.1 boundary.
 
 Legacy `createPickerPresentation` and `getBoundaryPresentation` retain eager projections and
 all-or-nothing throws. Vue/React production sources, v0.3 public APIs, unused OKLab Chroma outputs,
