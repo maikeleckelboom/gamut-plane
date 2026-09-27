@@ -16,6 +16,7 @@ export interface PlaneGestureInput<Value, Point> {
 
 export interface PlaneGestureBinding {
   readonly active: boolean;
+  readonly hasPendingPoint: boolean;
   reconcile(): void;
   rollback(): boolean;
   interrupt(): boolean;
@@ -139,6 +140,9 @@ export function mountPlaneGesture<Value, Point>(
   return {
     get active() {
       return pointerId !== null;
+    },
+    get hasPendingPoint() {
+      return pending !== null;
     },
     reconcile() {
       if (disposed) return;
