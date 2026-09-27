@@ -362,4 +362,20 @@ test("available width owns layout, including threshold edges, fallback, enlarged
   const start = (await color(first)).h;
   await range.press("ArrowRight");
   await expect.poll(async () => (await color(first)).h).toBeCloseTo(start + 0.1, 6);
+  await page.getByRole("spinbutton", { name: "Host width" }).fill("320");
+  await first.getByRole("radio", { name: "OKLab", exact: true }).click();
+  const a = first.locator('[data-oklab-coordinate="a"]');
+  await a.fill("-0.1250");
+  await a.press("Enter");
+  await expect(a).toBeFocused();
+  await expect(a).toHaveValue("-0.1250");
+  for (const coordinate of ["a", "b"]) {
+    const input = first.locator(`[data-oklab-coordinate="${coordinate}"]`);
+    await expect(input).toBeVisible();
+    expect(await input.inputValue()).toMatch(/^-?\d\.\d{4}$/);
+    expect(await input.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
+      true,
+    );
+  }
+  expect(await first.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 });
