@@ -1,9 +1,10 @@
 import { createRef, StrictMode, type ComponentPropsWithRef } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { snapshotColor, type ColorValue } from "@gamut-plane/core";
 import * as publicApi from "../src/index.js";
 import { GamutPlane, type GamutPlaneProps } from "../src/index.js";
-import { event, get, initial, mount } from "./helpers.js";
+import { color, event, get, initial, mount } from "./helpers.js";
 
 describe("public instrument contract", () => {
   it.each([
@@ -51,6 +52,11 @@ describe("public instrument contract", () => {
     expectTypeOf<GamutPlaneProps>().not.toHaveProperty("onChange");
     expectTypeOf<GamutPlaneProps>().not.toHaveProperty("onCommit");
     expectTypeOf<GamutPlaneProps>().not.toHaveProperty("onCapability");
+    expectTypeOf<GamutPlaneProps["value"]>().toEqualTypeOf<ColorValue>();
+    expectTypeOf<GamutPlaneProps["onValueChange"]>().toEqualTypeOf<(value: ColorValue) => void>();
+    expectTypeOf<NonNullable<GamutPlaneProps["onValueCommit"]>>().toEqualTypeOf<
+      (value: ColorValue) => void
+    >();
   });
   it("merges native root props, ref, style, accent and legend while protecting semantics", async () => {
     const ref = createRef<HTMLElement>();
@@ -197,7 +203,7 @@ describe("public instrument contract", () => {
     expect(changes).not.toHaveBeenCalled();
   });
   it("keeps target, visibility, authored color and lifecycle callbacks independent", async () => {
-    const value = { l: 0.62, c: 0.42, h: 30, alpha: 1 };
+    const value = color(0.62, 0.42, 30, 1);
     const changes = vi.fn(),
       commits = vi.fn(),
       cancels = vi.fn(),
@@ -217,10 +223,8 @@ describe("public instrument contract", () => {
     expect(get(ui.element, "[data-boundary-target-result]").dataset.boundaryTarget).toBe("srgb");
     expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-guide"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="srgb-boundary-projection"]')).toBeNull();
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -239,12 +243,8 @@ describe("public instrument contract", () => {
     );
     expect(ui.element.querySelector('[data-gamut-boundary="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
-    expect(ui.element.querySelector('[data-gamut-marker="display-p3-boundary-guide"]')).toBeNull();
-    expect(
-      ui.element.querySelector('[data-gamut-marker="display-p3-boundary-projection"]'),
-    ).toBeNull();
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -260,12 +260,10 @@ describe("public instrument contract", () => {
     );
     expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
-    expect(ui.element.querySelectorAll('[data-gamut-marker$="boundary-guide"]')).toHaveLength(0);
-    expect(ui.element.querySelectorAll("[data-gamut-marker]")).toHaveLength(0);
-    expect(ui.element.querySelector('[data-marker-role="target-boundary-projection"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
     expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain("Guide C");
-    expect(value).toEqual({ l: 0.62, c: 0.42, h: 30, alpha: 1 });
+    expect(snapshotColor(value).channels).toEqual([0.62, 0.42, 30]);
     expect(changes).not.toHaveBeenCalled();
     expect(commits).not.toHaveBeenCalled();
     expect(cancels).not.toHaveBeenCalled();
@@ -296,7 +294,7 @@ describe("public instrument contract", () => {
     "server renders the complete %s shell without callbacks or mutation",
     (view) => {
       const callback = vi.fn();
-      const value = Object.freeze({ ...initial, c: 0.52 });
+      const value = color(0.62, 0.52, 45, 0.37);
       const html = renderToString(
         <GamutPlane
           value={value}
@@ -317,7 +315,7 @@ describe("public instrument contract", () => {
       expect(html).toContain("data-active-marker");
       expect(html).toContain('data-gamut-boundary="srgb"');
       expect(callback).not.toHaveBeenCalled();
-      expect(value).toEqual({ ...initial, c: 0.52 });
+      expect(snapshotColor(value).channels).toEqual([0.62, 0.52, 45]);
     },
   );
 });

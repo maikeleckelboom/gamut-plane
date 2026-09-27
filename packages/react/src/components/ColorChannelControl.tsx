@@ -185,7 +185,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           className="gpr-channel-control-range"
           dir="ltr"
           type="range"
-          aria-label={`${label} ${value.toFixed(precision)}`}
+          aria-label={label}
           aria-describedby={describedBy}
           defaultValue={bounded}
           min={min}

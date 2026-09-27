@@ -2,17 +2,61 @@ import { describe, expect, it } from "vitest";
 
 import {
   CSS_DISPLAY_DECIMALS,
+  exactStatusLabel,
   formatOklchForDisplay,
   formatRgbCssForDisplay,
+  unavailableOutput,
 } from "@/colorPresentation";
 
 describe("CSS presentation formatting", () => {
+  it("labels exact status and unavailable outputs without implying clipping", () => {
+    expect(exactStatusLabel["within-tolerance"]).toBe("Within tolerance");
+    for (const [code, gamut, compact, explanation] of [
+      [
+        "out-of-gamut",
+        "srgb",
+        "Unavailable · outside sRGB",
+        "Selected color is outside sRGB; no clipped value is emitted.",
+      ],
+      [
+        "boundary-tolerance",
+        "srgb",
+        "Unavailable · boundary tolerance",
+        "Selected color is within tolerance of the sRGB boundary; strict output is unavailable.",
+      ],
+    ] as const) {
+      expect(unavailableOutput(code, gamut)).toEqual({
+        compact,
+        explanation,
+        showBoundaryPreview: true,
+      });
+    }
+    for (const [code, reason] of [
+      ["numerical-range", "numerical range"],
+      ["alpha-required", "alpha required"],
+      ["invalid-definition", "invalid definition"],
+      ["requires-css-normalization", "CSS normalization required"],
+    ] as const) {
+      expect(unavailableOutput(code, "display-p3")).toEqual({
+        compact: `Unavailable · ${reason}`,
+        explanation: `Display P3 output is unavailable: ${reason}.`,
+        showBoundaryPreview: false,
+      });
+    }
+  });
+
   it("formats Display P3 channels to stable display precision without trailing zeros", () => {
     expect(
       formatRgbCssForDisplay(
         "color(display-p3 0.31650380404936257 0.5973245576847196 0.9835484146109986)",
       ),
     ).toBe("color(display-p3 0.316504 0.597325 0.983548)");
+    expect(formatRgbCssForDisplay("color(display-p3 0.3 0.6 0.9 / 1)")).toBe(
+      "color(display-p3 0.3 0.6 0.9)",
+    );
+    expect(formatRgbCssForDisplay("color(display-p3 0.3 0.6 0.9 / 0.5)")).toBe(
+      "color(display-p3 0.3 0.6 0.9 / 0.5)",
+    );
     expect(CSS_DISPLAY_DECIMALS).toBe(6);
   });
 
@@ -34,12 +78,19 @@ describe("CSS presentation formatting", () => {
   });
 
   it("keeps OKLCH display compact and stable, including alpha", () => {
-    expect(formatOklchForDisplay({ l: 0.68, c: 0.18, h: 252, alpha: 1 })).toBe(
+    expect(formatOklchForDisplay({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 })).toBe(
       "oklch(68% 0.18 252)",
     );
     expect(
-      formatOklchForDisplay({ l: 0.000004, c: 0.0000044, h: 359.9999994, alpha: 0.5000004 }),
+      formatOklchForDisplay({
+        space: "oklch",
+        channels: [0.000004, 0.0000044, 359.9999994],
+        alpha: 0.5000004,
+      }),
     ).toBe("oklch(0% 0.000004 359.999999 / 0.5)");
+    expect(formatOklchForDisplay({ space: "oklch", channels: [0.5, 0, null], alpha: 1 })).toBe(
+      "oklch(50% 0 none)",
+    );
   });
 
   it("leaves integer sRGB serialization unchanged", () => {

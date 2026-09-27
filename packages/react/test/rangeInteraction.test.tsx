@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { normalizeHue } from "@gamut-plane/core";
+import { definitionOf, normalizeHue } from "@gamut-plane/core";
 import { ColorChannelControl } from "../src/components/ColorChannelControl.js";
-import { event, frames, get, host, input, mount } from "./helpers.js";
+import { color, event, frames, get, host, input, mount } from "./helpers.js";
 
 async function range() {
   const clock = frames(),
@@ -40,6 +40,26 @@ async function range() {
   };
 }
 describe("native range lifecycle", () => {
+  it("keeps the right Hue endpoint visible when authored feedback normalizes 360 to zero", async () => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+
+    await input(range, "360");
+    await clock.flush();
+    expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(0);
+    expect(range.getAttribute("aria-label")).toBe("Hue");
+    expect(range.value).toBe("360");
+
+    await event(range, "change");
+    expect(range.value).toBe("360");
+    expect(ui.commits).toHaveBeenCalledOnce();
+
+    await ui.replace(color(0.62, 0.2, 180, 0.37));
+    expect(range.value).toBe("180");
+  });
+
   it.each([87.1, 360])("retains Hue preview through normalized feedback for %s", async (hue) => {
     const clock = frames(),
       ui = await host();
@@ -51,7 +71,7 @@ describe("native range lifecycle", () => {
       await input(range, String(next));
       await clock.flush();
       await clock.flush();
-      expect(ui.changes.mock.calls.at(-1)![0].h).toBe(normalizeHue(next));
+      expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(normalizeHue(next));
       expect(field.dataset.fieldQuality).toBe("preview");
     }
     await event(range, "change");
@@ -72,7 +92,7 @@ describe("native range lifecycle", () => {
     await clock.flush();
     await clock.flush();
     await input(range, "90.1");
-    await ui.replace({ ...ui.changes.mock.calls[0]![0], h: 180 });
+    await ui.replace(color(0.62, 0.2, 180, 0.37));
     await clock.flush();
     expect(range.value).toBe("180");
     expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
@@ -102,7 +122,7 @@ describe("native range lifecycle", () => {
     await event(range, "change");
     expect(ui.order).toEqual(["change", "commit"]);
     expect(ui.commits.mock.calls[0]![0]).toEqual(ui.changes.mock.calls[0]![0]);
-    expect(ui.commits.mock.calls[0]![0].h).toBe(180);
+    expect(definitionOf(ui.commits.mock.calls[0]![0]).channels[2]).toBe(180);
     await clock.flush();
     expect(ui.changes).toHaveBeenCalledOnce();
   });

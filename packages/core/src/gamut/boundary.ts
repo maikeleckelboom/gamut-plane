@@ -1,13 +1,26 @@
-import { OKLCH, convert, findCuspOKLCH, isRGBInGamut } from "@texel/color";
+import {
+  DisplayP3Gamut,
+  DisplayP3Linear,
+  OKLCH,
+  convert,
+  findCuspOKLCH,
+  isRGBInGamut,
+  sRGBGamut,
+  sRGBLinear,
+} from "@texel/color";
 
-import { GAMUT_DEFINITIONS } from "../color/convert.js";
 import type { DisplayGamut } from "../color/types.js";
-import { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "./types.js";
+import type { GamutBoundaryOptions, GamutBoundaryTable } from "./types.js";
 
+/** Linear-light tolerance for the numeric search that generates sampled boundaries. */
+const BOUNDARY_SEARCH_TOLERANCE = 1e-9;
+const GAMUT_DEFINITIONS = {
+  srgb: { linear: sRGBLinear, gamut: sRGBGamut },
+  "display-p3": { linear: DisplayP3Linear, gamut: DisplayP3Gamut },
+} as const;
 const DEFAULT_HUE_STEPS = 180;
 const DEFAULT_LIGHTNESS_STEPS = 51;
 const DEFAULT_SEARCH_ITERATIONS = 18;
-const tableCache = new Map<string, GamutBoundaryTable>();
 
 interface ResolvedBoundaryOptions {
   hueSteps: number;
@@ -40,10 +53,10 @@ function resolveOptions(options: GamutBoundaryOptions = {}): ResolvedBoundaryOpt
 
 function isCandidateInGamut(candidate: number[], rgb: number[], gamut: DisplayGamut): boolean {
   convert(candidate, OKLCH, GAMUT_DEFINITIONS[gamut].linear, rgb);
-  return isRGBInGamut(rgb, GAMUT_EPSILON);
+  return isRGBInGamut(rgb, BOUNDARY_SEARCH_TOLERANCE);
 }
 
-/** Exact per-point search used during table precomputation and verification. */
+/** Numeric per-point boundary search used during table precomputation and verification. */
 export function findMaximumChroma(
   l: number,
   h: number,
@@ -135,23 +148,6 @@ export function generateGamutBoundaryTable(
   return { gamut, hueSteps, lightnessSteps, chromaMax };
 }
 
-export function getCachedGamutBoundaryTable(
-  gamut: DisplayGamut,
-  options: GamutBoundaryOptions = {},
-): GamutBoundaryTable {
-  const resolved = resolveOptions(options);
-  const key = `${gamut}:${resolved.hueSteps}:${resolved.lightnessSteps}:${resolved.searchIterations}`;
-  const cached = tableCache.get(key);
-  if (cached) return cached;
-  const table = generateGamutBoundaryTable(gamut, resolved);
-  tableCache.set(key, table);
-  return table;
-}
-
-export function clearGamutBoundaryTableCache(): void {
-  tableCache.clear();
-}
-
 /** Bilinear Cmax lookup; no gamut checks occur on the interaction path. */
 export function getMaximumChromaFromTable(table: GamutBoundaryTable, l: number, h: number): number {
   if (table.chromaMax.length !== table.hueSteps * table.lightnessSteps) {
@@ -170,14 +166,4 @@ export function getMaximumChromaFromTable(table: GamutBoundaryTable, l: number, 
   const top = at(l0, h0) * (1 - ht) + at(l0, h1) * ht;
   const bottom = at(l1, h0) * (1 - ht) + at(l1, h1) * ht;
   return top * (1 - lt) + bottom * lt;
-}
-
-export function getGamutOutline(table: GamutBoundaryTable, l: number): Float32Array {
-  const outline = new Float32Array(table.hueSteps * 2);
-  for (let hueIndex = 0; hueIndex < table.hueSteps; hueIndex += 1) {
-    const hue = (hueIndex / table.hueSteps) * 360;
-    outline[hueIndex * 2] = hue;
-    outline[hueIndex * 2 + 1] = getMaximumChromaFromTable(table, l, hue);
-  }
-  return outline;
 }

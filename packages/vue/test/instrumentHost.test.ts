@@ -1,18 +1,26 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, ref } from "vue";
-import type { OklchColor, PickerPlaneId } from "@gamut-plane/core";
+import {
+  createColorValue,
+  definitionOf,
+  type ColorValue,
+  type PickerPlaneId,
+} from "@gamut-plane/core";
 import { GamutPlane as PlaneInstrument } from "../src/index";
 import { dispatchPointer, installAnimationFrameController } from "./interactionHelpers";
+import { color } from "./colorValue";
 
-const origin: OklchColor = { l: 0.5, c: 0.2, h: 0.5, alpha: 0.7 };
+const origin = color(0.5, 0.2, 0.5, 0.7);
 function mountHost(controlled = false) {
-  const model = ref({ ...origin });
+  const model = ref(origin);
   const plane = ref<PickerPlaneId>("oklch");
   const commits = vi.fn();
   const cancel = vi.fn();
-  const updates = vi.fn((color: OklchColor) => {
-    model.value = { ...color };
+  const updates = vi.fn((value: ColorValue) => {
+    const rebuilt = createColorValue(definitionOf(value));
+    if (!rebuilt.ok) throw new Error("Invalid feedback");
+    model.value = rebuilt.value;
   });
   const wrapper = mount(
     defineComponent({
@@ -77,7 +85,7 @@ describe("reactive instrument host", () => {
     frames.flush();
     await flushPromises();
     host.pointer("pointermove");
-    const preset = { l: 0.7, c: 0.52, h: 270, alpha: 0.3 };
+    const preset = color(0.7, 0.52, 270, 0.3);
     host.model.value = preset;
     await flushPromises();
     frames.flush();
@@ -151,7 +159,7 @@ describe("reactive instrument host", () => {
     host.pointer("pointerdown");
     frames.flush();
     await flushPromises();
-    const published = { ...host.model.value };
+    const published = host.model.value;
     host.pointer("pointermove", 1, 190, 40);
     await host.wrapper.get('[data-plane-option="oklab"]').trigger("click");
     frames.flush();

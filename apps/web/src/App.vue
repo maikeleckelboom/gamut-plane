@@ -1,30 +1,29 @@
 <script setup lang="ts">
 import {
+  analyzeGamut,
+  createColorValue,
   findMaximumChroma,
-  isColorInGamut,
-  serializeColor,
-  serializeHexColor,
-  toOklabColor,
+  represent,
+  serializeCss,
+  serializeHex,
+  type ColorValue,
   type DisplayGamut,
 } from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
-import {
-  GamutPlane,
-  type OklchColor,
-  type GamutPlaneView,
-  type CanvasColorSpaceStatus,
-} from "@gamut-plane/vue";
+import { GamutPlane, type GamutPlaneView, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
+import {
+  exactStatusLabel,
+  formatOklchForDisplay,
+  formatRgbCssForDisplay,
+  unavailableOutput,
+} from "@/colorPresentation";
 
-const selectedColor = ref<OklchColor>({
-  l: 0.68,
-  c: 0.18,
-  h: 252,
-  alpha: 1,
-});
+const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+if (!fixture.ok) throw new Error("Invalid initial selected color");
+const selectedColor = ref<ColorValue>(fixture.value);
 const activePlane = ref<GamutPlaneView>("oklch");
 const boundaryTarget = ref<DisplayGamut>("srgb");
 const boundaries = ref({
@@ -35,61 +34,78 @@ const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
 const copiedRepresentation = ref<CssRepresentation | null>(null);
 
-const gamutStatus = computed(() => ({
-  srgb: { inGamut: isColorInGamut(selectedColor.value, "srgb") },
-  displayP3: { inGamut: isColorInGamut(selectedColor.value, "display-p3") },
-}));
-const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
-const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
+function observe<S extends "oklch" | "oklab" | "srgb" | "display-p3">(space: S) {
+  const result = represent(selectedColor.value, space);
+  if (!result.ok) throw new RangeError(`Selected color cannot be observed in ${space}`);
+  return result.value;
+}
+const oklch = computed(() => observe("oklch"));
+const gamutStatus = computed(() => {
+  const srgb = analyzeGamut(selectedColor.value, "srgb-gamut");
+  const displayP3 = analyzeGamut(selectedColor.value, "display-p3-gamut");
+  if (!srgb.ok || !displayP3.ok) throw new RangeError("Selected color cannot be analyzed");
+  return {
+    srgb: srgb.value.status,
+    displayP3: displayP3.value.status,
+  };
+});
+const oklchCopyCss = computed(() => {
+  const output = serializeCss(oklch.value, { policy: "preserve-coordinates" });
+  return output.ok ? output.value.text : null;
+});
+const oklchDisplayCss = computed(() => formatOklchForDisplay(oklch.value));
 const selectedCoordinates = computed(() => {
-  const color = selectedColor.value;
   if (activePlane.value === "oklch") {
+    const [l, c, h] = oklch.value.channels;
     return [
-      { label: "L", value: color.l.toFixed(4) },
-      { label: "C", value: color.c.toFixed(4) },
-      { label: "H", value: `${color.h.toFixed(2)}°` },
+      { label: "L", value: l.toFixed(4) },
+      { label: "C", value: c.toFixed(4) },
+      { label: "H", value: h === null ? "none" : `${h.toFixed(2)}°` },
     ];
   }
-  const oklab = toOklabColor(color);
+  const [l, a, b] = observe("oklab").channels;
   return [
-    { label: "L", value: oklab.l.toFixed(4) },
-    { label: "a", value: oklab.a.toFixed(4) },
-    { label: "b", value: oklab.b.toFixed(4) },
+    { label: "L", value: l.toFixed(4) },
+    { label: "a", value: a.toFixed(4) },
+    { label: "b", value: b.toFixed(4) },
   ];
 });
-const srgbCanonicalCss = computed(() => exactCss("srgb"));
-const hexColor = computed(() =>
-  gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
+const srgbCssOutput = computed(() => strictCss("srgb"));
+const srgbCopyCss = computed(() =>
+  srgbCssOutput.value.ok ? srgbCssOutput.value.value.text : null,
 );
-const displayP3CanonicalCss = computed(() => exactCss("display-p3"));
+const hexOutput = computed(() => {
+  const srgb = observe("srgb");
+  return serializeHex(srgb, { alpha: srgb.alpha === 1 ? "omit" : "include" });
+});
+const hexColor = computed(() => (hexOutput.value.ok ? hexOutput.value.value.text : null));
+const displayP3CssOutput = computed(() => strictCss("display-p3"));
+const displayP3CopyCss = computed(() =>
+  displayP3CssOutput.value.ok ? displayP3CssOutput.value.value.text : null,
+);
+const hexUnavailable = computed(() =>
+  hexOutput.value.ok ? null : unavailableOutput(hexOutput.value.error.code, "srgb"),
+);
+const srgbUnavailable = computed(() =>
+  srgbCssOutput.value.ok ? null : unavailableOutput(srgbCssOutput.value.error.code, "srgb"),
+);
+const displayP3Unavailable = computed(() =>
+  displayP3CssOutput.value.ok
+    ? null
+    : unavailableOutput(displayP3CssOutput.value.error.code, "display-p3"),
+);
 const srgbDisplayCss = computed(() =>
-  srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
+  srgbCopyCss.value ? formatRgbCssForDisplay(srgbCopyCss.value) : null,
 );
 const displayP3DisplayCss = computed(() =>
-  displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
+  displayP3CopyCss.value ? formatRgbCssForDisplay(displayP3CopyCss.value) : null,
 );
 // Visual previews only. These values never become selected state or copy output.
 const srgbBoundaryPreviewCss = computed(() =>
-  gamutStatus.value.srgb.inGamut
-    ? null
-    : serializeColor(
-        {
-          ...selectedColor.value,
-          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "srgb"),
-        },
-        "srgb",
-      ),
+  srgbUnavailable.value?.showBoundaryPreview ? boundaryPreviewCss("srgb") : null,
 );
 const displayP3BoundaryPreviewCss = computed(() =>
-  gamutStatus.value.displayP3.inGamut
-    ? null
-    : serializeColor(
-        {
-          ...selectedColor.value,
-          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "display-p3"),
-        },
-        "display-p3",
-      ),
+  displayP3Unavailable.value?.showBoundaryPreview ? boundaryPreviewCss("display-p3") : null,
 );
 
 const clipboardSupported = useSupported(
@@ -114,9 +130,26 @@ const capabilityLabel = computed(() => {
   return "Detecting";
 });
 
-function exactCss(gamut: DisplayGamut): string | null {
-  const status = gamut === "srgb" ? gamutStatus.value.srgb : gamutStatus.value.displayP3;
-  return status.inGamut ? serializeColor(selectedColor.value, gamut) : null;
+function strictCss(gamut: DisplayGamut) {
+  return serializeCss(observe(gamut), {
+    policy: "require-in-gamut",
+    gamut: gamut === "srgb" ? "srgb-gamut" : "display-p3-gamut",
+  });
+}
+
+function boundaryPreviewCss(gamut: DisplayGamut): string | null {
+  const [l, , observedHue] = oklch.value.channels;
+  // A separate transient boundary reference for the swatch, never the selected ColorValue.
+  const reference = createColorValue({
+    space: "oklch",
+    channels: [l, findMaximumChroma(l, observedHue ?? 0, gamut), observedHue ?? 0],
+    alpha: oklch.value.alpha,
+  });
+  if (!reference.ok) return null;
+  const observed = represent(reference.value, gamut);
+  if (!observed.ok) return null;
+  const css = serializeCss(observed.value, { policy: "preserve-coordinates" });
+  return css.ok ? css.value.text : null;
 }
 
 function isCopied(representation: CssRepresentation): boolean {
@@ -165,8 +198,8 @@ async function copyCss(
       <div class="project-identity">
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
-          membership checks.
+          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact gamut
+          status checks.
         </p>
       </div>
     </header>
@@ -265,16 +298,14 @@ async function copyCss(
         <section class="gamut-facts" aria-labelledby="gamut-status-title">
           <h3 id="gamut-status-title">Exact gamut status</h3>
           <dl>
-            <div data-exact-gamut-status="srgb">
+            <div data-exact-gamut-status="srgb" :data-exact-status="gamutStatus.srgb">
               <dt>sRGB</dt>
-              <dd :data-status="gamutStatus.srgb.inGamut ? 'inside' : 'outside'">
-                {{ gamutStatus.srgb.inGamut ? "Inside" : "Outside" }}
-              </dd>
+              <dd :data-status="gamutStatus.srgb">{{ exactStatusLabel[gamutStatus.srgb] }}</dd>
             </div>
-            <div data-exact-gamut-status="display-p3">
+            <div data-exact-gamut-status="display-p3" :data-exact-status="gamutStatus.displayP3">
               <dt>Display P3</dt>
-              <dd :data-status="gamutStatus.displayP3.inGamut ? 'inside' : 'outside'">
-                {{ gamutStatus.displayP3.inGamut ? "Inside" : "Outside" }}
+              <dd :data-status="gamutStatus.displayP3">
+                {{ exactStatusLabel[gamutStatus.displayP3] }}
               </dd>
             </div>
           </dl>
@@ -286,7 +317,7 @@ async function copyCss(
             <span>OKLCH</span>
             <span
               class="css-representation__swatch"
-              :style="{ backgroundColor: oklchCanonicalCss }"
+              :style="{ backgroundColor: oklchCopyCss ?? undefined }"
               aria-hidden="true"
             />
             <button
@@ -294,7 +325,7 @@ async function copyCss(
               data-copy-representation="oklch"
               :data-copied="isCopied('oklch') ? 'true' : 'false'"
               :aria-label="isCopied('oklch') ? 'Copied OKLCH CSS value' : 'Copy OKLCH CSS value'"
-              @click="copyCss('oklch', 'OKLCH', oklchCanonicalCss)"
+              @click="copyCss('oklch', 'OKLCH', oklchCopyCss)"
             >
               {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
@@ -302,22 +333,30 @@ async function copyCss(
               <code>{{ oklchDisplayCss }}</code>
             </div>
           </div>
-          <div class="css-representation" data-css-representation="hex">
+          <div
+            class="css-representation"
+            data-css-representation="hex"
+            :data-output-error="hexOutput.ok ? undefined : hexOutput.error.code"
+          >
             <span>Hex · sRGB</span>
             <span
               class="css-representation__swatch"
-              :data-preview-kind="hexColor ? 'output' : 'boundary'"
+              :data-preview-kind="
+                hexColor ? 'output' : srgbBoundaryPreviewCss ? 'boundary' : 'none'
+              "
               :style="{ backgroundColor: hexColor ?? srgbBoundaryPreviewCss ?? undefined }"
-              :role="hexColor ? undefined : 'img'"
-              :aria-hidden="hexColor ? 'true' : undefined"
-              :aria-label="hexColor ? undefined : 'sRGB boundary color preview'"
+              :role="!hexColor && srgbBoundaryPreviewCss ? 'img' : undefined"
+              :aria-hidden="hexColor || !srgbBoundaryPreviewCss ? 'true' : undefined"
+              :aria-label="
+                !hexColor && srgbBoundaryPreviewCss ? 'sRGB boundary color preview' : undefined
+              "
             />
             <button
               type="button"
               data-copy-representation="hex"
               :data-copied="isCopied('hex') ? 'true' : 'false'"
               :disabled="!hexColor"
-              :aria-describedby="hexColor ? undefined : 'srgb-copy-reason'"
+              :aria-describedby="hexColor ? undefined : 'hex-copy-reason'"
               :aria-label="isCopied('hex') ? 'Copied Hex value' : 'Copy Hex value'"
               @click="copyCss('hex', 'Hex', hexColor)"
             >
@@ -325,72 +364,93 @@ async function copyCss(
             </button>
             <div class="css-representation__value">
               <code v-if="hexColor">{{ hexColor }}</code>
-              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+              <span v-else aria-describedby="hex-copy-reason">{{ hexUnavailable?.compact }}</span>
             </div>
           </div>
-          <div class="css-representation" data-css-representation="srgb">
+          <div
+            class="css-representation"
+            data-css-representation="srgb"
+            :data-output-error="srgbCssOutput.ok ? undefined : srgbCssOutput.error.code"
+          >
             <span>sRGB</span>
             <span
               class="css-representation__swatch"
-              :data-preview-kind="srgbCanonicalCss ? 'output' : 'boundary'"
-              :style="{ backgroundColor: srgbCanonicalCss ?? srgbBoundaryPreviewCss ?? undefined }"
-              :role="srgbCanonicalCss ? undefined : 'img'"
-              :aria-hidden="srgbCanonicalCss ? 'true' : undefined"
-              :aria-label="srgbCanonicalCss ? undefined : 'sRGB boundary color preview'"
+              :data-preview-kind="
+                srgbCopyCss ? 'output' : srgbBoundaryPreviewCss ? 'boundary' : 'none'
+              "
+              :style="{ backgroundColor: srgbCopyCss ?? srgbBoundaryPreviewCss ?? undefined }"
+              :role="!srgbCopyCss && srgbBoundaryPreviewCss ? 'img' : undefined"
+              :aria-hidden="srgbCopyCss || !srgbBoundaryPreviewCss ? 'true' : undefined"
+              :aria-label="
+                !srgbCopyCss && srgbBoundaryPreviewCss ? 'sRGB boundary color preview' : undefined
+              "
             />
             <button
               type="button"
               data-copy-representation="srgb"
               :data-copied="isCopied('srgb') ? 'true' : 'false'"
-              :disabled="!srgbCanonicalCss"
-              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
+              :disabled="!srgbCopyCss"
+              :aria-describedby="srgbCopyCss ? undefined : 'srgb-copy-reason'"
               :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
-              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
+              @click="copyCss('srgb', 'sRGB', srgbCopyCss)"
             >
               {{ isCopied("srgb") ? "Copied" : "Copy" }}
             </button>
             <div class="css-representation__value">
               <code v-if="srgbDisplayCss">{{ srgbDisplayCss }}</code>
-              <span v-else aria-describedby="srgb-copy-reason">Unavailable · outside sRGB</span>
+              <span v-else aria-describedby="srgb-copy-reason">{{ srgbUnavailable?.compact }}</span>
             </div>
           </div>
-          <div class="css-representation" data-css-representation="display-p3">
+          <div
+            class="css-representation"
+            data-css-representation="display-p3"
+            :data-output-error="displayP3CssOutput.ok ? undefined : displayP3CssOutput.error.code"
+          >
             <span>Display P3</span>
             <span
               class="css-representation__swatch"
-              :data-preview-kind="displayP3CanonicalCss ? 'output' : 'boundary'"
+              :data-preview-kind="
+                displayP3CopyCss ? 'output' : displayP3BoundaryPreviewCss ? 'boundary' : 'none'
+              "
               :style="{
-                backgroundColor: displayP3CanonicalCss ?? displayP3BoundaryPreviewCss ?? undefined,
+                backgroundColor: displayP3CopyCss ?? displayP3BoundaryPreviewCss ?? undefined,
               }"
-              :role="displayP3CanonicalCss ? undefined : 'img'"
-              :aria-hidden="displayP3CanonicalCss ? 'true' : undefined"
-              :aria-label="displayP3CanonicalCss ? undefined : 'Display P3 boundary color preview'"
+              :role="!displayP3CopyCss && displayP3BoundaryPreviewCss ? 'img' : undefined"
+              :aria-hidden="displayP3CopyCss || !displayP3BoundaryPreviewCss ? 'true' : undefined"
+              :aria-label="
+                !displayP3CopyCss && displayP3BoundaryPreviewCss
+                  ? 'Display P3 boundary color preview'
+                  : undefined
+              "
             />
             <button
               type="button"
               data-copy-representation="display-p3"
               :data-copied="isCopied('display-p3') ? 'true' : 'false'"
-              :disabled="!displayP3CanonicalCss"
-              :aria-describedby="displayP3CanonicalCss ? undefined : 'display-p3-copy-reason'"
+              :disabled="!displayP3CopyCss"
+              :aria-describedby="displayP3CopyCss ? undefined : 'display-p3-copy-reason'"
               :aria-label="
                 isCopied('display-p3') ? 'Copied Display P3 CSS value' : 'Copy Display P3 CSS value'
               "
-              @click="copyCss('display-p3', 'Display P3', displayP3CanonicalCss)"
+              @click="copyCss('display-p3', 'Display P3', displayP3CopyCss)"
             >
               {{ isCopied("display-p3") ? "Copied" : "Copy" }}
             </button>
             <div class="css-representation__value">
               <code v-if="displayP3DisplayCss">{{ displayP3DisplayCss }}</code>
-              <span v-else aria-describedby="display-p3-copy-reason">
-                Unavailable · outside Display P3
-              </span>
+              <span v-else aria-describedby="display-p3-copy-reason">{{
+                displayP3Unavailable?.compact
+              }}</span>
             </div>
           </div>
-          <p v-if="!hexColor" id="srgb-copy-reason" class="sr-only">
-            Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.
+          <p v-if="hexUnavailable" id="hex-copy-reason" class="sr-only">
+            {{ hexUnavailable.explanation }}
           </p>
-          <p v-if="!displayP3CanonicalCss" id="display-p3-copy-reason" class="sr-only">
-            Selected color is outside Display P3; no clipped value is emitted.
+          <p v-if="srgbUnavailable" id="srgb-copy-reason" class="sr-only">
+            {{ srgbUnavailable.explanation }}
+          </p>
+          <p v-if="!displayP3CopyCss" id="display-p3-copy-reason" class="sr-only">
+            {{ displayP3Unavailable?.explanation }}
           </p>
           <p v-if="!clipboardSupported" class="copy-support">
             Clipboard access is unavailable in this browser.

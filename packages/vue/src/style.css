@@ -52,11 +52,13 @@
 
 .plane-instrument .plane-instrument__view-control [role="radiogroup"] {
   display: inline-flex;
+  max-inline-size: 100%;
   gap: 4px;
 }
 
 .plane-instrument .plane-instrument__view-control button {
   width: 6em;
+  min-inline-size: 0;
   min-height: 30px;
   border: 0;
   padding: 7px 10px;
@@ -177,14 +179,14 @@
 }
 
 .plane-instrument .color-plane__marker,
-.plane-instrument .color-plane__projection-connector,
+.plane-instrument .color-plane__target-guide-connector,
 .plane-instrument .color-plane__warning {
   position: absolute;
   pointer-events: none;
 }
 
 .plane-instrument .color-plane__marker,
-.plane-instrument .color-plane__projection-connector {
+.plane-instrument .color-plane__target-guide-connector {
   z-index: 4;
 }
 
@@ -210,16 +212,16 @@
     0 2px 7px oklch(0 0 0 / 0.72);
 }
 
-.plane-instrument .color-plane__marker--projection {
-  width: var(--picker-projection-marker-size, 11px);
-  height: var(--picker-projection-marker-size, 11px);
+.plane-instrument .color-plane__marker--target-guide {
+  width: var(--picker-target-guide-marker-size, 11px);
+  height: var(--picker-target-guide-marker-size, 11px);
   border: 1px solid oklch(0.98 0 0 / 0.9);
   border-radius: 50%;
-  background: var(--projection-marker-color, oklch(0.12 0 0 / 0.72));
+  background: var(--target-guide-marker-color, oklch(0.12 0 0 / 0.72));
   box-shadow: 0 0 0 1px oklch(0 0 0 / 0.6);
 }
 
-.plane-instrument .color-plane__projection-connector {
+.plane-instrument .color-plane__target-guide-connector {
   height: 1px;
   border-top: 1px dashed oklch(0.98 0 0 / 0.72);
   transform: translateY(-50%);

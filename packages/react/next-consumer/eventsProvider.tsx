@@ -1,16 +1,17 @@
 "use client";
 
 import React, { createContext, useContext, useState, type ReactNode } from "react";
-import type { OklchColor } from "@gamut-plane/react";
+import type { ColorValue } from "@gamut-plane/react";
+import { snapshotColor, type ColorSnapshotV1 } from "@gamut-plane/core";
 
 interface Events {
   changes: number;
   commits: number;
   cancels: number;
-  final: OklchColor | null;
+  final: ColorSnapshotV1 | null;
 }
 const Context = createContext<
-  (type: "changes" | "commits" | "cancels", value?: OklchColor) => void
+  (type: "changes" | "commits" | "cancels", value?: ColorValue) => void
 >(() => {});
 export const useEvents = () => useContext(Context);
 export function EventsProvider({ children }: { children: ReactNode }) {
@@ -21,7 +22,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         setEvents((previous) => ({
           ...previous,
           [type]: previous[type] + 1,
-          final: type === "commits" ? (value ?? null) : previous.final,
+          final: type === "commits" ? (value ? snapshotColor(value) : null) : previous.final,
         }))
       }
     >

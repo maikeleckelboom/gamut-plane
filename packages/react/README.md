@@ -1,6 +1,6 @@
 # @gamut-plane/react
 
-A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, boundary projection and exact Display P3 warnings. Private, version `0.1.0`, and unpublished.
+A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, a target guide and exact Display P3 status. Private, version `0.2.0`, and unpublished.
 
 ## Controlled color
 
@@ -8,18 +8,20 @@ A complete native React OKLCH and OKLab instrument with channel controls, numeri
 "use client";
 
 import { useState } from "react";
-import { GamutPlane, type OklchColor } from "@gamut-plane/react";
+import { GamutPlane, type ColorValue } from "@gamut-plane/react";
 import "@gamut-plane/react/style.css";
 
-export function ColorEditor({ initial }: { initial: OklchColor }) {
+export function ColorEditor({ initial }: { initial: ColorValue }) {
   const [color, setColor] = useState(initial);
   return <GamutPlane value={color} onValueChange={setColor} />;
 }
 ```
 
-The parent owns color; there is no `defaultValue` or uncontrolled color mode. Every edit emits a complete color and preserves alpha. The supplied object is never mutated. Fresh callbacks and equivalent cloned feedback work without `useCallback`, `useMemo` or stable identity.
+The parent owns the immutable `ColorValue`; there is no `defaultValue` or uncontrolled color mode. Construct it with `createColorValue` from `@gamut-plane/core`. Every edit preserves alpha and emits a new value defined in the edited plane. View changes only observe the current definition. Defining-equal feedback reconstructed by the parent retains an active gesture without stable object identity.
 
-Core requires finite lightness and alpha in 0–1, nonnegative finite chroma and finite hue. Hue edits normalize hue. Neither display-gamut membership nor the visible 0.4 chroma/disc limit clamps authored color. The Chroma numeric field supports values beyond its slider. OKLab edits use core projection/unprojection without RGB or CSS round trips.
+Hue-less OKLCH neutrals stay hue-less until a real Hue edit establishes direction. The field's fallback hue slice is presentation only; chromatic OKLCH edits wait for that direction. Neither display-gamut membership nor the visible 0.4 chroma/disc limit clamps authored color. The Chroma numeric field supports values beyond its slider. Plane edits use core `authorPlaneEdit` and never round-trip through RGB or CSS.
+
+`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. Its OKLCH and OKLab views require that selected value to be numerically representable in both views. Core `ColorValue` intentionally permits a wider finite coordinate domain: for pathological finite coordinates, `represent` or `projectColorToPlane` can return `numerical-range`. The instrument never silently clamps, maps, normalizes or replaces such a value; choose a representable authored value before mounting it.
 
 ## Coordinate view
 
@@ -39,15 +41,15 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 
 | Prop                       | Type                                                        | Default / purpose                                   |
 | -------------------------- | ----------------------------------------------------------- | --------------------------------------------------- |
-| `value`                    | `OklchColor`                                                | Required authored color                             |
-| `onValueChange`            | `(value: OklchColor) => void`                               | Required edit delivery                              |
+| `value`                    | `ColorValue`                                                | Required defining color                             |
+| `onValueChange`            | `(value: ColorValue) => void`                               | Required edit delivery                              |
 | `view`                     | `GamutPlaneView`                                            | Optional authoritative view                         |
 | `defaultView`              | `GamutPlaneView`                                            | `"oklch"`; initialization only                      |
 | `onViewChange`             | `(view: GamutPlaneView) => void`                            | User requests for a different view                  |
-| `boundaryTarget`           | `DisplayGamut`                                              | `"srgb"`; controlled projection/reference target    |
+| `boundaryTarget`           | `DisplayGamut`                                              | `"srgb"`; controlled sampled-guide target           |
 | `showSrgbBoundary`         | `boolean`                                                   | `true`                                              |
 | `showDisplayP3Boundary`    | `boolean`                                                   | `true`                                              |
-| `onValueCommit`            | `(value: OklchColor) => void`                               | Completion, after value delivery                    |
+| `onValueCommit`            | `(value: ColorValue) => void`                               | Completion, after value delivery                    |
 | `onCancel`                 | `() => void`                                                | Plane cancellation or discarded dirty numeric draft |
 | `onCanvasColorSpaceChange` | `(status: CanvasColorSpaceStatus) => void`                  | Committed post-mount context transitions            |
 | `legend`                   | `React.ReactNode`                                           | Host content beneath the field                      |
@@ -55,7 +57,7 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 | `style`                    | `React.CSSProperties & { "--gamut-plane-accent"?: string }` | Merged root styles                                  |
 | `ref`                      | Native section ref                                          | Root `<section>`                                    |
 
-`GamutPlaneView` is `"oklch" | "oklab"`; `DisplayGamut` is `"srgb" | "display-p3"`. Both types are exported with `GamutPlane`, `GamutPlaneProps`, `OklchColor` and `CanvasColorSpaceStatus`. Internal components/controllers are private.
+`GamutPlaneView` is `"oklch" | "oklab"`; `DisplayGamut` is `"srgb" | "display-p3"`. Both types are exported with `GamutPlane`, `GamutPlaneProps`, `ColorValue` and `CanvasColorSpaceStatus`. Internal components/controllers are private.
 
 Root props are based on native section props, including `id`, ordinary `data-*`, appropriate ARIA descriptions and ordinary DOM event handlers. React 19's normal ref prop accepts an object or callback ref; there is no imperative handle. Internal labels, roles, reserved state attributes and geometry variables remain component-owned. Children, injected HTML, editable content and hydration suppression are not supported. Use `legend` for composition.
 
@@ -78,9 +80,9 @@ const [boundaryTarget, setBoundaryTarget] = useState<DisplayGamut>("srgb");
 />;
 ```
 
-The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and projection overlays. Exact membership and the target result retain their meaning. Exact membership uses direct core math; contours, guide values, guide swatch and projection are sampled visualization data. The OKLab circular edit limit is not a display gamut.
+The legend renders normally during SSR and receives no private renderer state. Hiding a boundary removes its field contour, accessible hit path, channel intervals and target-guide overlays. Exact status and the target result retain their meaning. `analyzeGamut` receives the original `ColorValue`; contours, guide values, guide swatch and target guide are sampled visualization data. The OKLab circular edit limit is not a display gamut.
 
-Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting. The primary outside-Display-P3 warning remains based on exact Display P3 membership, regardless of target.
+Boundary target selects the sampled-guide reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut. Neither mutates the authored color or changes the other setting. The primary Display P3 warning appears only for exact `outside` status, regardless of target; `within-tolerance` is visually contained while strict output may reject it.
 
 Only `--gamut-plane-accent` is a supported theme property. Styles are local, inherit the host font and preserve its document palette, resets and color scheme. Available container width owns the one/two-column layout at 39em, with a usable one-column fallback. Scientific axes and ranges remain left-to-right inside an RTL host; surrounding prose inherits its direction.
 
@@ -111,7 +113,7 @@ Numeric handling respects IME composition; external value changes reset stale dr
 
 ## SSR and Next
 
-The ESM entry preserves `"use client"`. Use a normal Server Component → serializable initial color → Client Component with `useState` arrangement. For example, `app/page.tsx` can render the `ColorEditor` above with `{ l: 0.68, c: 0.18, h: 252, alpha: 0.37 }`. Import `@gamut-plane/react/style.css` through Next's normal root layout CSS mechanism.
+The ESM entry preserves `"use client"`. Use `snapshotColor` on the server and `restoreColor` in the Client Component when passing a color across the Server Component boundary; do not pass a live `ColorValue` as serialized props. Within one runtime, pass `ColorValue` directly. Import `@gamut-plane/react/style.css` through Next's normal root layout CSS mechanism.
 
 Server HTML includes the chosen view's controls, numbers, labels, marker, SVG guides, disclosure, legend and reserved square geometry. Painting, measurement, observers and listeners begin after mount. No SSR disabling, hydration suppression, custom transpilation, alias, polyfill or manual renderer initialization is needed. Hydration and Strict Mode do not publish edits.
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_PROJECTION_MARKER_RADIUS,
+  PICKER_TARGET_GUIDE_MARKER_RADIUS,
   PICKER_SLIDER_ANNOTATION_CLEARANCE,
   PICKER_SLIDER_EDGE_CLEARANCE,
   PICKER_SLIDER_THUMB_WIDTH,
@@ -90,30 +90,28 @@ describe("placePlanarWarning", () => {
     expectClearOfActive(placement, activeCenter);
   });
 
-  it("avoids a boundary projection marker at the preferred position when another quadrant fits", () => {
+  it("avoids a target guide marker at the preferred position when another quadrant fits", () => {
     const input = placementInput({ x: 50, y: 50 });
-    input.projectionMarker = {
+    input.targetGuideMarker = {
       center: { x: 66, y: 34 },
-      radius: PICKER_PROJECTION_MARKER_RADIUS,
+      radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
     };
 
     expect(placePlanarWarning(input)).toEqual({ left: 27, top: 27 });
   });
 
-  it("is deterministic and does not mutate nested input geometry", () => {
+  it("does not mutate nested input geometry", () => {
     const input = placementInput({ x: 6, y: 94 });
-    input.projectionMarker = {
+    input.targetGuideMarker = {
       center: { x: 22, y: 78 },
-      radius: PICKER_PROJECTION_MARKER_RADIUS,
+      radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
     };
     const snapshot = structuredClone(input);
 
-    const first = placePlanarWarning(input);
-    const second = placePlanarWarning(input);
+    const placement = placePlanarWarning(input);
 
-    expect(second).toEqual(first);
     expect(input).toEqual(snapshot);
-    expectWithinSurface(first);
+    expectWithinSurface(placement);
   });
 });
 

@@ -140,9 +140,10 @@ test("Hue dragging previews only the field and settles at full quality", async (
   await expect(plane).toHaveAttribute("data-field-quality", "full");
   expect(await hue.evaluate((element) => getComputedStyle(element).cursor)).toBe("pointer");
 
-  const beforeKeyboard = await hue.getAttribute("aria-label");
   await hue.focus();
+  const beforeKeyboard = await hue.inputValue();
   await hue.press("ArrowLeft");
-  await expect(hue).not.toHaveAttribute("aria-label", beforeKeyboard!);
+  await expect(hue).toHaveAccessibleName("Hue");
+  await expect(hue).not.toHaveValue(beforeKeyboard);
   await expect(plane).toHaveAttribute("data-field-quality", "full");
 });

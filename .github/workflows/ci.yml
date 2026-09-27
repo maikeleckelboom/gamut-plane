@@ -51,6 +51,9 @@ jobs:
       - name: Type-check
         run: pnpm typecheck
 
+      - name: Prove the color domain without DOM types
+        run: pnpm --filter @gamut-plane/core typecheck:domain-nodom
+
       - name: Run unit and component tests
         run: pnpm test
 
@@ -59,6 +62,9 @@ jobs:
 
       - name: Build production application
         run: pnpm build
+
+      - name: Check packed core declarations and transport without DOM types
+        run: pnpm --filter @gamut-plane/core test:packed-domain
 
       - name: Inspect production artifact
         run: pnpm check:build

@@ -7,7 +7,15 @@ import "@gamut-plane/react/style.css";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <EventsProvider>
-      <InstrumentHost initial={{ l: 0.68, c: 0.52345678, h: 612.123456, alpha: 0.37 }} />
+      <InstrumentHost
+        initial={{
+          type: "gamut-plane/color",
+          version: 1,
+          space: "oklch",
+          channels: [0.68, 0.52345678, 612.123456],
+          alpha: 0.37,
+        }}
+      />
     </EventsProvider>
   </StrictMode>,
 );

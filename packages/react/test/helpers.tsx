@@ -1,7 +1,8 @@
 import { act, createElement, useState, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, vi } from "vitest";
-import { GamutPlane, type GamutPlaneProps, type OklchColor } from "../src/index.js";
+import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
+import { GamutPlane, type GamutPlaneProps } from "../src/index.js";
 
 const roots = new Set<Root>();
 afterEach(async () => {
@@ -35,7 +36,12 @@ export function get<T extends Element = HTMLElement>(root: ParentNode, selector:
   if (!element) throw Error(`Missing ${selector}`);
   return element;
 }
-export const initial: OklchColor = Object.freeze({ l: 0.62, c: 0.2, h: 45, alpha: 0.37 });
+export function color(l: number, c: number, h: number | null, alpha: number): ColorValue {
+  const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
+  if (!result.ok) throw new Error("Invalid test color");
+  return result.value;
+}
+export const initial = color(0.62, 0.2, 45, 0.37);
 export async function event(
   element: Element,
   type: string,
@@ -86,11 +92,11 @@ export function frames() {
   };
 }
 export async function host(options: Partial<GamutPlaneProps> = {}) {
-  const changes = vi.fn<(color: OklchColor) => void>();
-  const commits = vi.fn<(color: OklchColor) => void>();
+  const changes = vi.fn<(color: ColorValue) => void>();
+  const commits = vi.fn<(color: ColorValue) => void>();
   const cancels = vi.fn<() => void>();
   const order: string[] = [];
-  let replace: (color: OklchColor) => void = () => {};
+  let replace: (color: ColorValue) => void = () => {};
   function Host() {
     const [value, setValue] = useState(options.value ?? initial);
     replace = setValue;
@@ -100,7 +106,9 @@ export async function host(options: Partial<GamutPlaneProps> = {}) {
       onValueChange: (next) => {
         changes(next);
         order.push("change");
-        setValue({ ...next });
+        const rebuilt = createColorValue(definitionOf(next));
+        if (!rebuilt.ok) throw new Error("Invalid controlled feedback");
+        setValue(rebuilt.value);
       },
       onValueCommit: (next) => {
         commits(next);
@@ -119,7 +127,7 @@ export async function host(options: Partial<GamutPlaneProps> = {}) {
     commits,
     cancels,
     order,
-    replace: async (value: OklchColor) => {
+    replace: async (value: ColorValue) => {
       await act(async () => replace(value));
     },
   };

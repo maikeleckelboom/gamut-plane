@@ -1,23 +1,18 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdtemp, readFile, realpath, stat, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   addressConsumerArtifacts,
+  packPrivateArtifact,
+  verifyPackedDependencyGraph,
   verifyInstalledArtifacts,
   createPnpmRunner,
+  type PackedArtifact,
 } from "../../../scripts/packedConsumer.mts";
 
-interface Manifest {
-  private: boolean;
-  version: string;
-  exports: Record<string, string | Record<string, string>>;
-  dependencies: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-  sideEffects: string[] | boolean;
-}
 export async function prepareReactConsumer(kind: "next" | "react-vite", directory: string) {
   const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
   const fixture = join(packageRoot, directory);
@@ -30,39 +25,27 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
   await cp(fixture, consumer, { recursive: true });
   if (kind === "react-vite")
     await cp(join(packageRoot, "e2e"), join(consumer, "e2e"), { recursive: true });
+  const artifacts: PackedArtifact[] = [];
   for (const name of ["core", "render", "react"]) {
-    await run(
-      ["pack", "--pack-destination", join(consumer, "artifacts")],
+    const artifact = await packPrivateArtifact(
+      pnpm,
       resolve(packageRoot, "..", name),
+      join(consumer, "artifacts"),
     );
-    const tarball = join(consumer, "artifacts", `gamut-plane-${name}-0.1.0.tgz`);
+    const { tarball, files, manifest } = artifact;
     function tar(args: string[]) {
       const result = spawnSync("tar", args, { encoding: "utf8", windowsHide: true });
       assert.equal(result.status, 0, result.stderr);
       return result.stdout;
     }
-    const files = tar(["-tf", tarball]).trim().split(/\r?\n/);
-    const manifest: Manifest = JSON.parse(tar(["-xOf", tarball, "package/package.json"]));
-    assert.equal(manifest.private, true);
-    assert.equal(manifest.version, "0.1.0");
-    assert.ok(files.includes("package/LICENSE"));
-    assert.ok(files.includes("package/README.md"));
-    assert.ok(
-      files.every((file) => /^package\/(?:dist\/|package\.json$|README\.md$|LICENSE$)/.test(file)),
-    );
-    for (const entry of Object.values(manifest.exports))
-      for (const target of typeof entry === "string" ? [entry] : Object.values(entry))
-        assert.ok(files.includes(`package/${target.replace(/^\.\//, "")}`));
-    assert.ok(
-      Object.values(manifest.dependencies).every((value) => !/^(workspace|file|link):/.test(value)),
-    );
-    assert.equal(manifest.dependencies.vue, undefined);
+    assert.equal(manifest.types, "./dist/index.d.ts");
+    assert.equal(manifest.dependencies?.vue, undefined);
     if (name === "react") {
       assert.deepEqual(Object.keys(manifest.exports), [".", "./style.css"]);
-      assert.deepEqual(manifest.sideEffects, ["**/*.css"]);
+      assert.deepEqual((manifest as { sideEffects?: string[] }).sideEffects, ["**/*.css"]);
       assert.deepEqual(manifest.peerDependencies, { react: "~19.3.0", "react-dom": "~19.3.0" });
-      assert.equal(manifest.dependencies.react, undefined);
-      assert.equal(manifest.dependencies["react-dom"], undefined);
+      assert.equal(manifest.dependencies?.react, undefined);
+      assert.equal(manifest.dependencies?.["react-dom"], undefined);
       for (const file of ["index.js", "GamutPlane.js"])
         assert.match(tar(["-xOf", tarball, `package/dist/${file}`]), /^"use client";/);
       const component = tar(["-xOf", tarball, "package/dist/GamutPlane.js"]);
@@ -74,16 +57,22 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
         "GamutPlane",
         "GamutPlaneProps",
         "GamutPlaneView",
-        "OklchColor",
+        "ColorValue",
+        "DisplayGamut",
         "CanvasColorSpaceStatus",
       ])
         assert.ok(types.includes(name));
-      assert.doesNotMatch(types, /ColorPlane|NumericInput|ColorChannelControl|mountPlane/);
+      assert.doesNotMatch(
+        types,
+        /ColorPlane|NumericInput|ColorChannelControl|OklchSample|PickerPlaneFieldSampler|PickerGuide|mountPlane/,
+      );
     }
     console.log(
-      `@gamut-plane/${name}: ${(await stat(tarball)).size} packed bytes\n${files.join("\n")}`,
+      `${artifact.name}: ${artifact.bytes} packed bytes, sha256 ${artifact.sha256}\n${files.join("\n")}`,
     );
+    artifacts.push(artifact);
   }
+  verifyPackedDependencyGraph(artifacts);
   if (process.argv.includes("--lock")) {
     await run(["install", "--lockfile-only", "--frozen-lockfile=false"]);
     const lock = (await readFile(join(consumer, "pnpm-lock.yaml"), "utf8")).replace(
@@ -93,14 +82,15 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
     await writeFile(join(fixture, "pnpm-lock.yaml"), lock);
     await writeFile(join(consumer, "pnpm-lock.yaml"), lock);
   }
-  await addressConsumerArtifacts(consumer, ["core", "render", "react"]);
-  return { consumer, temporaryRoot, run };
+  await addressConsumerArtifacts(consumer, artifacts);
+  return { consumer, temporaryRoot, run, artifacts };
 }
 
 export async function installReactConsumer(
   consumer: string,
   run: ReturnType<typeof createPnpmRunner>,
+  artifacts: readonly PackedArtifact[],
 ) {
   await run(["install", "--frozen-lockfile"]);
-  await verifyInstalledArtifacts(consumer, ["core", "render", "react"]);
+  await verifyInstalledArtifacts(consumer, artifacts);
 }

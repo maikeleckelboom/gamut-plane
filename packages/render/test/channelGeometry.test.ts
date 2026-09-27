@@ -5,7 +5,7 @@ import {
   channelWarning,
   nearestThreshold,
 } from "../src/channelGeometry.js";
-import { projectionConnectorStyle } from "../src/presentation.js";
+import { guideConnectorStyle } from "../src/presentation.js";
 
 describe("shared visual presentation geometry", () => {
   it("merges only overlapping sampled intervals in their own gamut without mutating inputs", () => {
@@ -22,9 +22,9 @@ describe("shared visual presentation geometry", () => {
     ]);
     expect(intervals[0].start).toBe(-1);
     const thresholds = channelThresholds(sections);
-    expect(thresholds.map((value) => value.label)).toEqual([
-      "Inside Display P3 gamut →",
-      "← Inside sRGB gamut",
+    expect(thresholds.map((value) => [value.tone, value.insideSide])).toEqual([
+      ["display-p3", "right"],
+      ["srgb", "left"],
     ]);
     expect(nearestThreshold(thresholds, 0.31)?.position).toBe(0.3);
   });
@@ -33,7 +33,7 @@ describe("shared visual presentation geometry", () => {
     const warning = channelWarning(
       0.29,
       320,
-      [{ id: "projection", tone: "projection", lane: "srgb", position: 0.9, label: "projection" }],
+      [{ id: "target-guide", tone: "guide", lane: "srgb", position: 0.9, label: "target guide" }],
       thresholds,
     );
     expect(warning.obstacles).toHaveLength(2);
@@ -41,12 +41,12 @@ describe("shared visual presentation geometry", () => {
     expect(channelWarning(0.295, 320, [], thresholds).placement.side).toBe("left");
   });
   it("serializes rectangular and radial connectors deterministically", () => {
-    expect(projectionConnectorStyle({ x: 0.7, y: 0.4 }, { x: 0.3, y: 0.4 }, false)).toEqual({
+    expect(guideConnectorStyle({ x: 0.7, y: 0.4 }, { x: 0.3, y: 0.4 }, false)).toEqual({
       left: "30.00000000%",
       top: "40.00000000%",
       width: "40.00000000%",
     });
-    const radial = projectionConnectorStyle({ x: 0.6, y: 0.6 }, { x: 0.4, y: 0.4 }, true);
+    const radial = guideConnectorStyle({ x: 0.6, y: 0.6 }, { x: 0.4, y: 0.4 }, true);
     expect(radial.width).toBe("28.28427125%");
     expect(radial.transform).toBe("translateY(-50%) rotate(-2.3561944902rad)");
   });

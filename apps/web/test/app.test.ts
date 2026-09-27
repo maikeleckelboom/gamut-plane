@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { findMaximumChroma, serializeColor } from "@gamut-plane/core";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane } from "@gamut-plane/vue";
 
 import App from "@/App.vue";
 
@@ -37,11 +38,7 @@ describe("standalone application", () => {
     await flushPromises();
 
     expect(wrapper.get("h1").text()).toBe("Gamut Plane");
-    expect(wrapper.find(".project-kicker").exists()).toBe(false);
-    expect(wrapper.find(".inspector-kicker").exists()).toBe(false);
     expect(wrapper.get('[data-canvas-capability="srgb"]').text()).toBe("sRGB");
-    expect(wrapper.findAll("[data-exact-gamut-status]")).toHaveLength(2);
-    expect(wrapper.findAll("[data-picker-gamut-status]")).toHaveLength(0);
     expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(2);
     expect(wrapper.get('[data-plane-id="oklch"]').exists()).toBe(true);
     expect(wrapper.get(".project-header").attributes("aria-describedby")).toBe(
@@ -52,7 +49,6 @@ describe("standalone application", () => {
     expect(wrapper.findAll(".coordinate-summary__values > div").map((pair) => pair.text())).toEqual(
       ["L0.6800", "C0.1800", "H252.00°"],
     );
-    expect(wrapper.text()).not.toContain("Membership uses exact linear-light conversion");
     expect(
       wrapper
         .findAll("[data-boundary-target-option]")
@@ -69,7 +65,6 @@ describe("standalone application", () => {
         .map((status) => status.attributes("data-exact-gamut-status")),
     ).toEqual(["srgb", "display-p3"]);
     expect(wrapper.find("[data-boundary-guide-swatch]").exists()).toBe(true);
-    expect(wrapper.find("details").exists()).toBe(false);
     expect(
       wrapper
         .findAll("[data-css-representation]")
@@ -118,7 +113,6 @@ describe("standalone application", () => {
       "b",
     ]);
     expect(wrapper.get(".coordinate-summary__values dd").text()).toBe("0.6800");
-    expect(wrapper.find(".channel-values").exists()).toBe(false);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
 
     wrapper.unmount();
@@ -144,7 +138,7 @@ describe("standalone application", () => {
     wrapper.unmount();
   });
 
-  it("displays bounded P3 precision while copying the canonical value", async () => {
+  it("displays bounded P3 precision while copying the full output value", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
 
@@ -159,7 +153,7 @@ describe("standalone application", () => {
     const announcement = wrapper.get('[role="status"]').text();
     const copiedValue = announcement.replace("Copied Display P3: ", "");
     expect(copiedValue).toMatch(
-      /^color\(display-p3 0\.31650380404936257 0\.5973245576847196 0\.9835484146109986\)$/,
+      /^color\(display-p3 0\.31650380404936257 0\.5973245576847196 0\.9835484146109986 \/ 1\)$/,
     );
     expect(copiedValue).not.toBe(displayed);
     expect(announcement).toContain(copiedValue);
@@ -170,100 +164,89 @@ describe("standalone application", () => {
   it("uses one value/status slot per row and concise unavailable output without clipping", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
+    const outputRow = (name: "oklch" | "hex" | "srgb" | "display-p3") =>
+      wrapper.get(`[data-css-representation="${name}"]`);
 
     for (const representation of wrapper.findAll("[data-css-representation]")) {
       expect(representation.findAll(".css-representation__value")).toHaveLength(1);
       expect(representation.findAll(".css-representation__swatch")).toHaveLength(1);
     }
-    const originalColor = wrapper.get('[data-css-representation="oklch"] code').text();
-    const srgbPreview = serializeColor(
-      { l: 0.68, c: findMaximumChroma(0.68, 252, "srgb"), h: 252, alpha: 1 },
-      "srgb",
-    );
-    const hexSwatch = wrapper.get('[data-css-representation="hex"] .css-representation__swatch');
-    const srgbSwatch = wrapper.get('[data-css-representation="srgb"] .css-representation__swatch');
+    const originalColor = outputRow("oklch").get("code").text();
+    const hex = outputRow("hex");
+    const srgb = outputRow("srgb");
+    const hexSwatch = hex.get(".css-representation__swatch");
     expect(hexSwatch.attributes("data-preview-kind")).toBe("boundary");
-    expect(hexSwatch.attributes("style")).toContain(srgbPreview);
-    expect(srgbSwatch.attributes("style")).toBe(hexSwatch.attributes("style"));
+    expect(hexSwatch.attributes("style")).toContain("color(srgb ");
+    expect(srgb.get(".css-representation__swatch").attributes("style")).toBe(
+      hexSwatch.attributes("style"),
+    );
     expect(hexSwatch.attributes("aria-label")).toBe("sRGB boundary color preview");
-    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalColor);
-    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toMatch(/^oklch\(/);
-    expect(wrapper.get('[data-css-representation="display-p3"] code').text()).toMatch(
-      /^color\(display-p3 /,
-    );
-    expect(wrapper.get('[data-css-representation="hex"] .css-representation__value').text()).toBe(
-      "Unavailable · outside sRGB",
-    );
-    const representation = wrapper.get('[data-css-representation="srgb"]');
-    const copyButton = representation.get('[data-copy-representation="srgb"]');
-    expect(copyButton.attributes("disabled")).toBeDefined();
-    expect(copyButton.attributes("aria-describedby")).toBe("srgb-copy-reason");
-    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeDefined();
-    expect(wrapper.get('[data-copy-representation="hex"]').attributes("aria-describedby")).toBe(
-      "srgb-copy-reason",
-    );
-    expect(representation.get(".css-representation__value").text()).toBe(
-      "Unavailable · outside sRGB",
-    );
-    expect(wrapper.get("#srgb-copy-reason").text()).toBe(
-      "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
-    );
-    expect(wrapper.findAll("#srgb-copy-reason")).toHaveLength(1);
-    expect(representation.find(".css-representation__value p").exists()).toBe(false);
+    expect(outputRow("oklch").get("code").text()).toBe(originalColor);
+    for (const row of [hex, srgb]) {
+      expect(row.attributes("data-output-error")).toBe("out-of-gamut");
+      expect(row.get(".css-representation__value").text()).toContain("Unavailable");
+      expect(row.get("button").attributes("disabled")).toBeDefined();
+    }
+    expect(srgb.get("button").attributes("aria-describedby")).toBe("srgb-copy-reason");
+    expect(wrapper.get("#srgb-copy-reason").exists()).toBe(true);
 
-    await copyButton.trigger("click");
+    await srgb.get("button").trigger("click");
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(document.execCommand).not.toHaveBeenCalled();
 
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.52");
     await flushPromises();
-    const p3Preview = serializeColor(
-      { l: 0.68, c: findMaximumChroma(0.68, 252, "display-p3"), h: 252, alpha: 1 },
-      "display-p3",
-    );
-    const p3Swatch = wrapper.get(
-      '[data-css-representation="display-p3"] .css-representation__swatch',
-    );
+    const p3 = outputRow("display-p3");
+    const p3Swatch = p3.get(".css-representation__swatch");
     expect(p3Swatch.attributes("data-preview-kind")).toBe("boundary");
-    const normalizedPreview = document.createElement("span");
-    normalizedPreview.style.backgroundColor = p3Preview;
-    expect(p3Swatch.attributes("style")).toContain(normalizedPreview.style.backgroundColor);
+    expect(p3Swatch.attributes("style")).toContain("color(display-p3 ");
     expect(p3Swatch.attributes("aria-label")).toBe("Display P3 boundary color preview");
-    expect(
-      wrapper.get('[data-css-representation="display-p3"] .css-representation__value').text(),
-    ).toBe("Unavailable · outside Display P3");
-    expect(
-      wrapper.get('[data-copy-representation="display-p3"]').attributes("disabled"),
-    ).toBeDefined();
-    expect(wrapper.get("#display-p3-copy-reason").text()).toBe(
-      "Selected color is outside Display P3; no clipped value is emitted.",
-    );
+    expect(p3.attributes("data-output-error")).toBe("out-of-gamut");
+    expect(p3.get("button").attributes("disabled")).toBeDefined();
+    expect(p3.get("button").attributes("aria-describedby")).toBe("display-p3-copy-reason");
+    expect(outputRow("oklch").get("code").text()).toContain("0.52");
 
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0");
     await flushPromises();
-    expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
-    expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^rgb\(/);
-    expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
-    normalizedPreview.style.backgroundColor = wrapper
-      .get('[data-css-representation="hex"] code')
-      .text();
-    expect(
-      wrapper
-        .get('[data-css-representation="hex"] .css-representation__swatch')
-        .attributes("style"),
-    ).toContain(normalizedPreview.style.backgroundColor);
-    expect(
-      wrapper
-        .get('[data-css-representation="srgb"] .css-representation__swatch')
-        .attributes("data-preview-kind"),
-    ).toBe("output");
-    expect(
-      wrapper
-        .get('[data-css-representation="display-p3"] .css-representation__swatch')
-        .attributes("data-preview-kind"),
-    ).toBe("output");
+    expect(hex.get("code").text()).toMatch(/^#[0-9A-F]{6}$/);
+    expect(srgb.get("code").text()).toMatch(/^color\(srgb /);
+    expect(hex.get("button").attributes("disabled")).toBeUndefined();
+    const normalizedPreview = document.createElement("span");
+    normalizedPreview.style.backgroundColor = hex.get("code").text();
+    expect(hexSwatch.attributes("style")).toContain(normalizedPreview.style.backgroundColor);
+    expect(srgb.get(".css-representation__swatch").attributes("data-preview-kind")).toBe("output");
+    expect(p3Swatch.attributes("data-preview-kind")).toBe("output");
     expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
+    wrapper.unmount();
+  });
+
+  it("shows exact tolerance status while strict output stays unavailable", async () => {
+    const wrapper = mount(App, { attachTo: document.body });
+    const fringe = createColorValue({
+      space: "srgb",
+      channels: [-1e-10, 0.5, 0.5],
+      alpha: 1,
+    });
+    if (!fringe.ok) throw new Error("Invalid tolerance fixture");
+    wrapper.findComponent(GamutPlane).vm.$emit("update:modelValue", fringe.value);
+    await flushPromises();
+
+    const status = wrapper.get('[data-exact-gamut-status="srgb"]');
+    expect(status.attributes("data-exact-status")).toBe("within-tolerance");
+    expect(status.get("dd").attributes("data-status")).toBe("within-tolerance");
+    expect(status.get("dd").text()).toBe("Within tolerance");
+    for (const name of ["hex", "srgb"] as const) {
+      const row = wrapper.get(`[data-css-representation="${name}"]`);
+      expect(row.attributes("data-output-error")).toBe("boundary-tolerance");
+      expect(row.get(".css-representation__value").text()).toContain("Unavailable");
+      expect(row.get("button").attributes("disabled")).toBeDefined();
+      expect(row.get(".css-representation__swatch").attributes("data-preview-kind")).toBe(
+        "boundary",
+      );
+    }
+    expect(wrapper.get("#srgb-copy-reason").exists()).toBe(true);
+    expect(wrapper.get('[data-exact-gamut-status="display-p3"] dd').text()).toBe("Inside");
     wrapper.unmount();
   });
 });

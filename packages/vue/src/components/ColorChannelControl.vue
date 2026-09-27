@@ -32,6 +32,7 @@ const props = withDefaults(
     max: number;
     step: number;
     gradient: string;
+    normalizeValue?: (value: number) => number;
     precision?: number;
     markers?: LinearControlMarker[];
     intervals?: LinearControlInterval[];
@@ -83,6 +84,12 @@ let isUnmounted = false;
 let activeRangePointerId: number | null = null;
 let rangeInteractionReported = false;
 let lastPublishedRangeValue = boundedModelValue.value;
+const displayedRangeValue = computed(() =>
+  (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) ===
+  boundedModelValue.value
+    ? lastPublishedRangeValue
+    : boundedModelValue.value,
+);
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
@@ -91,15 +98,15 @@ const instrumentStyle = {
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
   "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
-const inGamutSections = computed(() => channelSections(props.intervals));
+const guideSections = computed(() => channelSections(props.intervals));
 const boundaryPreviewSection = computed(() =>
-  inGamutSections.value.find(
+  guideSections.value.find(
     (section) => section.tone === props.boundaryPreviewTone && section.end < 1,
   ),
 );
-const gamutThresholds = computed(() => channelThresholds(inGamutSections.value));
+const guideThresholds = computed(() => channelThresholds(guideSections.value));
 const warning = computed(() =>
-  channelWarning(props.warningPosition, trackWidth.value, props.markers, gamutThresholds.value),
+  channelWarning(props.warningPosition, trackWidth.value, props.markers, guideThresholds.value),
 );
 const warningPlacement = computed(() => warning.value.placement);
 const warningObstacles = computed(() => warning.value.obstacles);
@@ -217,7 +224,11 @@ function sectionStyle(section: LinearControlInterval): Record<string, string> {
 }
 
 watch(boundedModelValue, (value) => {
-  if (pendingRangeValue === null) lastPublishedRangeValue = value;
+  if (
+    pendingRangeValue === null &&
+    (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) !== value
+  )
+    lastPublishedRangeValue = value;
 });
 
 onBeforeUnmount(() => {
@@ -259,7 +270,7 @@ onBeforeUnmount(() => {
       <span class="channel-control__field" :style="{ backgroundImage: gradient }" />
       <span class="channel-control__gamut-ranges" aria-hidden="true">
         <span
-          v-for="(section, index) in inGamutSections"
+          v-for="(section, index) in guideSections"
           :key="`${section.tone}-range-${index}`"
           class="channel-control__gamut-range"
           :class="`channel-control__gamut-range--${section.tone}`"
@@ -290,8 +301,8 @@ onBeforeUnmount(() => {
         class="channel-control__range"
         type="range"
         :aria-describedby="describedBy"
-        :aria-label="`${label} ${modelValue.toFixed(precision)}`"
-        :value="boundedModelValue"
+        :aria-label="label"
+        :value="displayedRangeValue"
         :min="min"
         :max="max"
         :step="step"

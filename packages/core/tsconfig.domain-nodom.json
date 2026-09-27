@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": [],
+    "strict": true,
+    "skipLibCheck": false,
+    "noEmit": true
+  },
+  "include": [
+    "src/result.ts",
+    "src/color/representation.ts",
+    "src/color/value.ts",
+    "src/color/represent.ts",
+    "src/picker/geometry.ts",
+    "src/picker/edit.ts",
+    "src/color/snapshot.ts",
+    "src/gamut/analyze.ts",
+    "src/gamut/map.ts",
+    "src/input/parseCssValue.ts",
+    "src/output/css.ts",
+    "src/output/hex.ts",
+    "test/domain/publicApi.types.ts"
+  ]
+}

@@ -5,12 +5,15 @@ import { defineComponent, h, ref } from "vue";
 
 import {
   OKLCH_LIGHTNESS_CHROMA_PLANE,
-  getCachedGamutBoundaryTable,
-  type OklchColor,
-  type PickerPlaneContract,
+  generateGamutBoundaryTable,
+  definitionOf,
+  type ColorValue,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
 } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
 import PlaneInstrument from "../src/components/GamutPlane.vue";
+import { color, planeValue } from "./colorValue";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -25,7 +28,7 @@ describe("renderer invalidation contracts", () => {
     createLinearGradient.mockClear();
 
     const buildGamutContour = vi.fn(OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour);
-    const plane: PickerPlaneContract = {
+    const plane: PickerPlaneGeometry & PickerPlaneFieldSampler = {
       ...OKLCH_LIGHTNESS_CHROMA_PLANE,
       buildGamutContour,
     };
@@ -33,12 +36,13 @@ describe("renderer invalidation contracts", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        ...planeValue(color(0.62, 0.2, 210, 1)),
         plane,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
-        boundaryProjectionLabel: "sRGB target boundary projection",
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
+        targetGuidePoint: null,
+        targetGuideCss: "",
+        targetGuideLabel: "sRGB sampled target guide",
         warningVisible: false,
         warningLabel: "",
       },
@@ -53,7 +57,7 @@ describe("renderer invalidation contracts", () => {
     expect(initialGradientBuilds).toBeGreaterThan(0);
 
     await wrapper.setProps({
-      modelValue: { l: 0.74, c: 0.12, h: 210, alpha: 1 },
+      ...planeValue(color(0.74, 0.12, 210, 1)),
     });
     await flushPromises();
     frames.flush();
@@ -63,10 +67,10 @@ describe("renderer invalidation contracts", () => {
     expect(wrapper.get('[data-gamut-boundary="srgb"]').attributes("d")).toBe(initialPath);
 
     await wrapper.setProps({
-      modelValue: { l: 0.74, c: 0.12, h: 220, alpha: 1 },
+      ...planeValue(color(0.74, 0.12, 220, 1)),
     });
     await wrapper.setProps({
-      modelValue: { l: 0.74, c: 0.12, h: 235, alpha: 1 },
+      ...planeValue(color(0.74, 0.12, 235, 1)),
     });
     await flushPromises();
 
@@ -77,7 +81,7 @@ describe("renderer invalidation contracts", () => {
     expect(createLinearGradient.mock.calls.length).toBeGreaterThan(initialGradientBuilds);
 
     createLinearGradient.mockClear();
-    await wrapper.setProps({ modelValue: { l: 0.74, c: 0.12, h: 235.0001, alpha: 1 } });
+    await wrapper.setProps({ ...planeValue(color(0.74, 0.12, 235.0001, 1)) });
     frames.flush();
     expect(createLinearGradient).toHaveBeenCalled();
 
@@ -104,12 +108,13 @@ describe("renderer invalidation contracts", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
-        boundaryProjectionLabel: "sRGB target boundary projection",
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
+        targetGuidePoint: null,
+        targetGuideCss: "",
+        targetGuideLabel: "sRGB sampled target guide",
         warningVisible: false,
         warningLabel: "",
       },
@@ -175,12 +180,13 @@ describe("renderer invalidation contracts", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
-        boundaryProjectionLabel: "sRGB target boundary projection",
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
+        targetGuidePoint: null,
+        targetGuideCss: "",
+        targetGuideLabel: "sRGB sampled target guide",
         warningVisible: false,
         warningLabel: "",
       },
@@ -223,12 +229,13 @@ describe("renderer invalidation contracts", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: { l: 0.62, c: 0.2, h: 210, alpha: 1 },
+        ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
-        boundaryProjectionLabel: "sRGB target boundary projection",
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
+        targetGuidePoint: null,
+        targetGuideCss: "",
+        targetGuideLabel: "sRGB sampled target guide",
         warningVisible: false,
         warningLabel: "",
       },
@@ -242,7 +249,7 @@ describe("renderer invalidation contracts", () => {
     try {
       await wrapper.setProps({
         interactionPreview: true,
-        modelValue: { l: 0.62, c: 0.2, h: 211, alpha: 1 },
+        ...planeValue(color(0.62, 0.2, 211, 1)),
       });
       await flushPromises();
       frames.flush();
@@ -264,7 +271,7 @@ describe("renderer invalidation contracts", () => {
     const context = document.createElement("canvas").getContext("2d")!;
     const createLinearGradient = vi.mocked(context.createLinearGradient);
     createLinearGradient.mockClear();
-    const model = ref({ l: 0.62, c: 0.2, h: 210, alpha: 1 });
+    const model = ref(color(0.62, 0.2, 210, 1));
     const publications: number[] = [];
     const commits: number[] = [];
     const Host = defineComponent({
@@ -272,11 +279,12 @@ describe("renderer invalidation contracts", () => {
         return () =>
           h(PlaneInstrument, {
             modelValue: model.value,
-            "onUpdate:modelValue": (color: OklchColor) => {
-              publications.push(color.h);
+            "onUpdate:modelValue": (color: ColorValue) => {
+              publications.push(definitionOf(color).channels[2] as number);
               model.value = color;
             },
-            onCommit: (color: OklchColor) => commits.push(color.h),
+            onCommit: (color: ColorValue) =>
+              commits.push(definitionOf(color).channels[2] as number),
           });
       },
     });
@@ -302,7 +310,7 @@ describe("renderer invalidation contracts", () => {
     await flushPromises();
 
     expect(publications).toEqual([270]);
-    expect(model.value.h).toBe(270);
+    expect(definitionOf(model.value).channels[2]).toBe(270);
     expect(boundary.attributes("d")).not.toBe(initialPath);
     expect(frames.pendingCount).toBe(1);
     expect(createLinearGradient).toHaveBeenCalledTimes(initialGradientBuilds);
@@ -318,7 +326,7 @@ describe("renderer invalidation contracts", () => {
 
     expect(publications).toEqual([270, 300]);
     expect(commits).toEqual([300]);
-    expect(model.value.h).toBe(300);
+    expect(definitionOf(model.value).channels[2]).toBe(300);
     expect(frames.pendingCount).toBe(1);
     frames.flush();
 

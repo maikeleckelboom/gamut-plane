@@ -25,6 +25,27 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   expect(errors).toEqual([]);
 });
 
+test("Hue drag past the right edge stays at the right endpoint", async ({ page }) => {
+  await openInstrument(page);
+  await expect(page.locator('[data-picker-control="h"] .channel-control__field')).toHaveCSS(
+    "background-image",
+    /oklch\(0\.68 0\.18/,
+  );
+  const range = page.locator('[data-picker-control="h"] input[type="range"]');
+  const bounds = (await range.boundingBox())!;
+  const y = bounds.y + bounds.height / 2;
+
+  await page.mouse.move(bounds.x + bounds.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width + 80, y, { steps: 10 });
+  await expect(range).toHaveValue("360");
+  await page.mouse.up();
+
+  await expect(range).toHaveAccessibleName("Hue");
+  await expect(range).toHaveValue("360");
+  await expect(page.locator(".coordinate-summary__values dd").last()).toHaveText("0.00°");
+});
+
 test("bundled Inter and inspector rows retain their hierarchy across coordinate views", async ({
   page,
 }) => {
@@ -131,8 +152,9 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(srgbTarget).toBeChecked();
   await expect(p3Target).not.toBeChecked();
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
+  await expect(targetResult).toHaveAttribute("data-target-exact-status", "outside");
   await expect(targetResult).toContainText("Target · sRGB");
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(1);
   await expect(page.locator('[data-gamut-range="srgb"]')).not.toHaveCount(0);
   await expect(
     page.locator('[data-picker-control="c"] [data-slider-boundary-preview]'),
@@ -166,25 +188,21 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
   await expect(page.locator("[data-slider-boundary-preview]")).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker="srgb-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(selected).toHaveText(originalSelection ?? "");
 
   await page.getByRole("checkbox", { name: "Display P3" }).uncheck();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
   await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
-  await expect(page.locator('[data-gamut-marker$="boundary-guide"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "sRGB" }).check();
   await p3Target.click();
   await expect(p3Target).toBeChecked();
-  await expect(page.locator('[data-gamut-marker="display-p3-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await expect(targetResult).toContainText("Guide C");
   await expect(selected).toHaveText(originalSelection ?? "");
 });
@@ -449,7 +467,7 @@ test("wide plane follows the workspace when the header wraps", async ({ page }) 
   const shortHeader = await measure();
   await description.evaluate((element) => {
     element.textContent =
-      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact membership checks. " +
+      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact gamut status checks. " +
       "The instrument remains usable when the project description takes more than one line.";
   });
   const wrappedHeader = await measure();
@@ -538,6 +556,23 @@ test("enlarged text, focus visibility, and Canvas capability remain usable and t
   }));
   expect(oklabGeometry.overflow).toBeLessThanOrEqual(0);
   expect(oklabGeometry.clippedCoordinates).toBe(false);
+
+  await page.setViewportSize({ width: 320, height: 720 });
+  const instrument = page.locator("[data-plane-instrument]");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  expect(await instrument.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  );
+  for (const name of ["OKLCH", "OKLab"]) {
+    const option = instrument.getByRole("radio", { name, exact: true });
+    await expect(option).toBeInViewport();
+    await option.click();
+    await expect(option).toHaveAttribute("aria-checked", "true");
+  }
 });
 
 test("CSS copy controls expose precision, success feedback, and disabled semantics", async ({
@@ -568,11 +603,14 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   const srgbCopy = page.getByRole("button", { name: "Copy sRGB CSS value" });
   const hexCopy = page.getByRole("button", { name: "Copy Hex value" });
   await expect(hexCopy).toBeDisabled();
-  await expect(hexCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
+  await expect(hexCopy).toHaveAttribute("aria-describedby", "hex-copy-reason");
   await expect(srgbCopy).toBeDisabled();
   await expect(srgbCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(page.locator("#srgb-copy-reason")).toHaveText(
-    "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+    "Selected color is outside sRGB; no clipped value is emitted.",
+  );
+  await expect(page.locator("#hex-copy-reason")).toHaveText(
+    "Selected color is outside sRGB; no clipped value is emitted.",
   );
   await expect(
     page.locator('[data-css-representation="hex"] .css-representation__value'),
@@ -591,14 +629,14 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   );
 });
 
-test("Hex copies the selected in-sRGB value without changing the canonical color", async ({
+test("Hex copies the selected in-sRGB value without changing the authored color", async ({
   page,
 }) => {
   await openInstrument(page);
   await page.getByLabel("Chroma numeric value").fill("0");
   await page.getByLabel("Chroma numeric value").press("Enter");
 
-  const canonical = await page.locator('[data-css-representation="oklch"] code').textContent();
+  const copiedCss = await page.locator('[data-css-representation="oklch"] code').textContent();
   const hex = page.locator('[data-css-representation="hex"]');
   const value = await hex.locator("code").textContent();
   expect(value).toMatch(/^#[0-9A-F]{6}$/);
@@ -607,7 +645,7 @@ test("Hex copies the selected in-sRGB value without changing the canonical color
   await copy.click();
   await expect(copy).toHaveAccessibleName("Copied Hex value");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
-  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(canonical!);
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(copiedCss!);
 });
 
 test("keyboard-only navigation reaches boundary and copy controls with visible focus", async ({

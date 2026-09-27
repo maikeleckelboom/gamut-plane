@@ -22,9 +22,10 @@ export {
 export type {
   LinearControlInterval,
   LinearControlMarker,
-  GamutThreshold,
+  GuideThreshold,
 } from "./channelGeometry.js";
-export { colorGradient, projectionConnectorStyle } from "./presentation.js";
+export { colorGradient, guideConnectorStyle } from "./presentation.js";
+export { createPickerPresentation } from "./pickerPresentation.js";
 export {
   displayGamutLabel,
   getBoundaryPresentation,

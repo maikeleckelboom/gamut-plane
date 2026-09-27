@@ -1,13 +1,31 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type OklchColor, type GamutPlaneView } from "@gamut-plane/vue";
+import { createColorValue, represent, snapshotColor } from "@gamut-plane/core";
+import { GamutPlane, type ColorValue, type GamutPlaneView } from "@gamut-plane/vue";
+
+function color(l: number, c: number, h: number, alpha: number): ColorValue {
+  const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
+  if (!result.ok) throw new Error("Invalid Nuxt consumer color");
+  return result.value;
+}
 
 const route = useRoute();
 const events = useState("events", () => ({ changes: 0, commits: 0, cancels: 0 }));
-const initial: OklchColor = route.query.alternate
-  ? { l: 0.31, c: 0.41, h: -28.25, alpha: 0.61 }
-  : { l: 0.68, c: 0.52345678, h: 612.123456, alpha: 0.37 };
-const colors = ref([{ ...initial }, { ...initial, l: 0.43, h: 120.25 }]);
+const initial = route.query.alternate
+  ? color(0.31, 0.41, -28.25, 0.61)
+  : color(0.68, 0.52345678, 612.123456, 0.37);
+const observedInitial = represent(initial, "oklch");
+if (!observedInitial.ok) throw new Error("Cannot observe Nuxt consumer color");
+const colors = ref([
+  initial,
+  color(0.43, observedInitial.value.channels[1], 120.25, observedInitial.value.alpha),
+]);
+function observedReadout(value: ColorValue) {
+  const result = represent(value, "oklch");
+  if (!result.ok) throw new Error("Cannot observe Nuxt consumer color");
+  const [l, c, h] = result.value.channels;
+  return { l, c, h, alpha: result.value.alpha };
+}
 const views: GamutPlaneView[] = ["oklch", "oklab"];
 const hidden = ref(Boolean(route.query.hidden));
 const narrow = ref(Boolean(route.query.narrow));
@@ -35,7 +53,9 @@ const narrow = ref(Boolean(route.query.narrow));
         @commit="events.commits++"
         @cancel="events.cancels++"
       />
-      <output data-color>{{ JSON.stringify(colors[index]) }}</output>
+      <output data-color :data-definition="JSON.stringify(snapshotColor(colors[index]!))">{{
+        JSON.stringify(observedReadout(colors[index]!))
+      }}</output>
     </div>
   </div>
 </template>

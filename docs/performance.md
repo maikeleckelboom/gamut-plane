@@ -14,7 +14,7 @@ The synchronous renderer in `packages/render` owns buffers and draw-cache keys. 
 - Size, actual device pixel ratio, granted Canvas color space, plane, and fixed axis form the field cache key.
 - Canvas backing dimensions use the uncapped device pixel ratio. CSS dimensions remain the interaction coordinate system.
 - The OKLab field is sampled into one reusable 80 × 80 offscreen buffer with 24 color samples per row, then scaled to the visible backing store.
-- After native input begins during an OKLCH Hue pointer interaction, only the colored field uses one reusable 192-column preview buffer. Exact canonical state and contours remain live. Pointer completion immediately disables preview and schedules the ordinary full-width draw; rendered quality becomes full when that draw completes.
+- After native input begins during an OKLCH Hue pointer interaction, only the colored field uses one reusable 192-column preview buffer. The selected `ColorValue` and contours remain live. Pointer completion immediately disables preview and schedules the ordinary full-width draw; rendered quality becomes full when that draw completes.
 - If the optional Hue preview buffer cannot obtain a context, the field uses the ordinary full-width algorithm. Auxiliary buffers do not change the capability reported for the visible Canvas context.
 - Mutable color vectors, sampling scratch data, the offscreen canvas, Canvas contexts, and generated `Float32Array` tables are reused instead of allocated per sample.
 - Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
@@ -99,4 +99,4 @@ Use the following protocol when a renderer, sampling, or table algorithm change 
 7. Compare the same scenario and environment before and after the change. Treat a result smaller than normal run-to-run variance as inconclusive.
 8. Run unit, browser, and screenshot tests after instrumentation is removed or disabled.
 
-Any accepted performance optimization must preserve exact membership, plane geometry, boundary semantics, interaction cancellation, high-DPI sharpness, and the visible color-space capability report.
+Any accepted performance optimization must preserve exact gamut status, plane geometry, boundary semantics, interaction cancellation, high-DPI sharpness, and the visible color-space capability report.

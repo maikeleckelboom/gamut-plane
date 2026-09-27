@@ -62,8 +62,8 @@ test("plane markers cover guides while the slider preview keeps authored alpha",
       return context.getImageData(0, 0, 1, 1).data[3] ?? 0;
     });
 
-  await expect(first.locator('[data-marker-role="target-boundary-projection"]')).toHaveCount(1);
-  expect(await paintedAlpha('[data-marker-role="target-boundary-projection"]')).toBe(255);
+  await expect(first.locator('[data-marker-role="target-guide"]')).toHaveCount(1);
+  expect(await paintedAlpha('[data-marker-role="target-guide"]')).toBe(255);
   expect(await paintedAlpha('[data-marker-role="active-color"]')).toBe(255);
   expect((await paintedAlpha("[data-slider-boundary-preview]")) / 255).toBeCloseTo(0.3, 2);
   expect((await color(first)).alpha).toBe(0.3);
@@ -210,6 +210,9 @@ test("OKLab negative decimal drafts, invalid input, Escape and subsequent edits"
     await input.press("Enter");
     await input.press("Tab");
     const committed = await color(first);
+    expect(
+      JSON.parse((await first.locator("[data-definition]").getAttribute("data-definition"))!).space,
+    ).toBe("oklab");
     expect(committed.alpha).toBe(0.7);
     expect(committed.l).toBe(0.5);
     await input.fill("");
@@ -305,7 +308,7 @@ test("available width owns layout, including threshold edges, fallback, enlarged
 }) => {
   const { first } = await openHost(page);
   const workspace = first.locator(".plane-instrument__workspace");
-  for (const width of [280, 340, 623, 624, 625, 800]) {
+  for (const width of [280, 320, 340, 623, 624, 625, 800]) {
     await page.getByRole("spinbutton", { name: "Host width" }).fill(String(width));
     await expect
       .poll(() =>
@@ -341,6 +344,14 @@ test("available width owns layout, including threshold edges, fallback, enlarged
     expect(await first.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
       true,
     );
+  }
+  await page.getByRole("spinbutton", { name: "Host width" }).fill("320");
+  expect(await first.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  for (const name of ["OKLab", "OKLCH"]) {
+    const option = first.getByRole("radio", { name, exact: true });
+    await expect(option).toBeVisible();
+    await option.click();
+    await expect(option).toHaveAttribute("aria-checked", "true");
   }
   await page.getByRole("spinbutton", { name: "Host width" }).fill("340");
   expect(await first.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);

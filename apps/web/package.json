@@ -1,6 +1,5 @@
 {
   "name": "@gamut-plane/web",
-  "version": "0.1.0",
   "private": true,
   "description": "Standalone Vue application for interactive OKLab and OKLCH gamut-plane inspection.",
   "license": "MIT",

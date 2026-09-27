@@ -1,19 +1,47 @@
 "use client";
 
 import React, { useState } from "react";
-import { GamutPlane, type GamutPlaneView, type OklchColor } from "@gamut-plane/react";
+import {
+  createColorValue,
+  definitionOf,
+  represent,
+  restoreColor,
+  snapshotColor,
+  type ColorSnapshotV1,
+  type ColorValue,
+} from "@gamut-plane/core";
+import { GamutPlane, type GamutPlaneView } from "@gamut-plane/react";
 import { useEvents } from "./eventsProvider";
+
+function observedReadout(value: ColorValue) {
+  const result = represent(value, "oklch");
+  if (!result.ok) throw new Error("Cannot observe Next consumer color");
+  const [l, c, h] = result.value.channels;
+  return { l, c, h, alpha: result.value.alpha };
+}
 
 export function InstrumentHost({
   initial,
   hidden = false,
   narrow = false,
 }: {
-  initial: OklchColor;
+  initial: ColorSnapshotV1;
   hidden?: boolean;
   narrow?: boolean;
 }) {
-  const [colors, setColors] = useState(() => [{ ...initial }, { ...initial, l: 0.43, h: 120.25 }]);
+  const [colors, setColors] = useState<ColorValue[]>(() => {
+    const first = restoreColor(initial);
+    if (!first.ok) throw new Error("Invalid Next consumer snapshot");
+    const observed = represent(first.value, "oklch");
+    if (!observed.ok) throw new Error("Cannot observe Next consumer snapshot");
+    const second = createColorValue({
+      space: "oklch",
+      channels: [0.43, observed.value.channels[1], 120.25],
+      alpha: observed.value.alpha,
+    });
+    if (!second.ok) throw new Error("Invalid Next consumer snapshot");
+    return [first.value, second.value];
+  });
   const [isHidden, setHidden] = useState(hidden);
   const [isNarrow, setNarrow] = useState(narrow);
   const [mounted, setMounted] = useState(true);
@@ -27,12 +55,30 @@ export function InstrumentHost({
       <button onClick={() => setNarrow(!isNarrow)}>Resize hosts</button>
       <button onClick={() => setMounted(!mounted)}>Toggle mount</button>
       <button onClick={() => rerender(renderCount + 1)}>Rerender parent</button>
-      <button onClick={() => setColors((values) => values.map((value) => ({ ...value })))}>
+      <button
+        onClick={() =>
+          setColors((values) =>
+            values.map((value) => {
+              const rebuilt = createColorValue(definitionOf(value));
+              if (!rebuilt.ok) throw new Error("Invalid controlled color");
+              return rebuilt.value;
+            }),
+          )
+        }
+      >
         Clone colors
       </button>
       <button
         onClick={() =>
-          setColors((values) => [{ l: 0.21, c: 0.31, h: 82, alpha: 0.63 }, values[1]!])
+          setColors((values) => {
+            const replacement = createColorValue({
+              space: "oklch",
+              channels: [0.21, 0.31, 82],
+              alpha: 0.63,
+            });
+            if (!replacement.ok) throw new Error("Invalid replacement color");
+            return [replacement.value, values[1]!];
+          })
         }
       >
         Replace first
@@ -57,14 +103,16 @@ export function InstrumentHost({
               value={color}
               onValueChange={(next) => {
                 setColors((values) =>
-                  values.map((value, position) => (position === index ? { ...next } : value)),
+                  values.map((value, position) => (position === index ? next : value)),
                 );
                 record("changes");
               }}
               onValueCommit={completion ? (next) => record("commits", next) : undefined}
               onCancel={() => record("cancels")}
             />
-            <output data-color>{JSON.stringify(color)}</output>
+            <output data-color data-definition={JSON.stringify(snapshotColor(color))}>
+              {JSON.stringify(observedReadout(color))}
+            </output>
           </div>
         ))}
     </div>

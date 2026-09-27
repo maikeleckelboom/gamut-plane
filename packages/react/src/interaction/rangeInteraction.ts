@@ -83,9 +83,11 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
       if (value === previous) return;
       previous = value;
       const expected = current().normalizeValue?.(published) ?? published;
-      if (value !== expected) interrupt();
-      published = value;
-      if (pending === null) element.value = String(clamp(value));
+      if (value !== expected) {
+        interrupt();
+        published = value;
+        if (pending === null) element.value = String(clamp(value));
+      }
     },
     dispose() {
       disposed = true;

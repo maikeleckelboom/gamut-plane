@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-  '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
+  '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
+  '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -14,14 +14,14 @@ importers:
   .:
     dependencies:
       '@gamut-plane/core':
-        specifier: file:artifacts/gamut-plane-core-0.1.0.tgz
-        version: file:artifacts/gamut-plane-core-0.1.0.tgz
+        specifier: file:artifacts/gamut-plane-core-0.2.0.tgz
+        version: file:artifacts/gamut-plane-core-0.2.0.tgz
       '@gamut-plane/react':
-        specifier: file:artifacts/gamut-plane-react-0.1.0.tgz
-        version: file:artifacts/gamut-plane-react-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: file:artifacts/gamut-plane-react-0.2.0.tgz
+        version: file:artifacts/gamut-plane-react-0.2.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@gamut-plane/render':
-        specifier: file:artifacts/gamut-plane-render-0.1.0.tgz
-        version: file:artifacts/gamut-plane-render-0.1.0.tgz
+        specifier: file:artifacts/gamut-plane-render-0.2.0.tgz
+        version: file:artifacts/gamut-plane-render-0.2.0.tgz
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -67,22 +67,22 @@ packages:
   '@emnapi/wasi-threads@1.2.2':
     resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
 
-  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-core-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-core-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
 
-  '@gamut-plane/react@file:artifacts/gamut-plane-react-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-react-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/react@file:artifacts/gamut-plane-react-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-react-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
     peerDependencies:
       react: ~19.3.0
       react-dom: ~19.3.0
 
-  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-render-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-render-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
 
   '@napi-rs/wasm-runtime@1.2.4':
@@ -447,20 +447,20 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.1.0.tgz':
+  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.2.0.tgz':
     dependencies:
       '@texel/color': 1.1.11
 
-  '@gamut-plane/react@file:artifacts/gamut-plane-react-0.1.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@gamut-plane/react@file:artifacts/gamut-plane-react-0.2.0.tgz(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-      '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
+      '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
     dependencies:
-      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
   '@napi-rs/wasm-runtime@1.2.4(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:

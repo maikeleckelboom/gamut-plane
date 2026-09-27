@@ -10,19 +10,18 @@ export interface LinearControlMarker {
   id: string;
   label: string;
   position: number;
-  tone: "projection";
+  tone: "guide";
   lane: LinearControlInterval["tone"];
   cssColor?: string;
 }
-export interface GamutThreshold {
+export interface GuideThreshold {
   position: number;
   tone: LinearControlInterval["tone"];
   insideSide: "left" | "right";
-  label: string;
 }
 const tones = ["display-p3", "srgb"] as const;
 
-/** Merge sampled visual intervals, retaining the exact-membership boundary in core. */
+/** Merge sampled visual intervals; exact gamut status is analyzed from ColorValue elsewhere. */
 export function channelSections(
   intervals: readonly LinearControlInterval[],
 ): LinearControlInterval[] {
@@ -45,7 +44,7 @@ export function channelSections(
     return sections;
   });
 }
-export function channelThresholds(sections: readonly LinearControlInterval[]): GamutThreshold[] {
+export function channelThresholds(sections: readonly LinearControlInterval[]): GuideThreshold[] {
   return tones.flatMap((tone) => {
     const intervals = sections.filter((section) => section.tone === tone);
     return [...new Set(intervals.flatMap(({ start, end }) => [start, end]))]
@@ -54,21 +53,19 @@ export function channelThresholds(sections: readonly LinearControlInterval[]): G
         const inside = intervals.some(
           (interval) => Math.abs(interval.start - position) <= Number.EPSILON * 16,
         );
-        const name = tone === "display-p3" ? "Display P3" : "sRGB";
         return {
           position,
           tone,
           insideSide: inside ? "right" : "left",
-          label: inside ? `Inside ${name} gamut →` : `← Inside ${name} gamut`,
         };
       });
   });
 }
 export function nearestThreshold(
-  thresholds: readonly GamutThreshold[],
+  thresholds: readonly GuideThreshold[],
   position: number,
-): GamutThreshold | null {
-  return thresholds.reduce<GamutThreshold | null>(
+): GuideThreshold | null {
+  return thresholds.reduce<GuideThreshold | null>(
     (nearest, threshold) =>
       !nearest || Math.abs(threshold.position - position) < Math.abs(nearest.position - position)
         ? threshold
@@ -80,7 +77,7 @@ export function channelWarning(
   position: number,
   width: number,
   markers: readonly LinearControlMarker[],
-  thresholds: readonly GamutThreshold[],
+  thresholds: readonly GuideThreshold[],
 ) {
   const normalized = Number.isFinite(position) ? position : 0;
   const nearest = nearestThreshold(
@@ -90,7 +87,7 @@ export function channelWarning(
   const obstacles = [
     ...markers.map((marker) => ({
       center: Math.min(1, Math.max(0, marker.position)) * width,
-      width: geometry.PICKER_SLIDER_PROJECTION_COLLISION_WIDTH,
+      width: geometry.PICKER_SLIDER_GUIDE_COLLISION_WIDTH,
     })),
     ...thresholds.map((threshold) => ({
       center:

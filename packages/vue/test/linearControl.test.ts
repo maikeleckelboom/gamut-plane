@@ -2,6 +2,7 @@ import { installAnimationFrameController, dispatchPointer } from "./interactionH
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, nextTick, ref } from "vue";
+import { normalizeHue } from "@gamut-plane/core";
 
 import ColorChannelControl, {
   type LinearControlInterval,
@@ -14,7 +15,7 @@ import {
   PICKER_WARNING_GLYPH_SIZE,
 } from "@gamut-plane/render";
 
-const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
+const WARNING_LABEL = "Outside primary Display P3. Selected OKLCH is preserved.";
 
 function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl>["$props"]> = {}) {
   return mount(ColorChannelControl, {
@@ -33,7 +34,7 @@ function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl
   });
 }
 
-function mountCanonicalControl(initialValue = 180) {
+function mountSelectedControl(initialValue = 180, normalizeValue = (value: number) => value) {
   const model = ref(initialValue);
   const updates: number[] = [];
   const commits: number[] = [];
@@ -41,17 +42,18 @@ function mountCanonicalControl(initialValue = 180) {
     setup() {
       return () =>
         h(ColorChannelControl, {
-          id: "canonical-control",
+          id: "selected-control",
           label: "Hue",
           channel: "H",
           modelValue: model.value,
           min: 0,
           max: 360,
           step: 1,
+          normalizeValue,
           gradient: "linear-gradient(90deg, black, white)",
           "onUpdate:modelValue": (value: number) => {
             updates.push(value);
-            model.value = value;
+            model.value = normalizeValue(value);
           },
           onCommit: (value: number) => commits.push(value),
         });
@@ -72,6 +74,30 @@ afterEach(() => {
 });
 
 describe("ColorChannelControl gamut annotations", () => {
+  it("keeps the right Hue endpoint visible when authored feedback normalizes 360 to zero", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, commits } = mountSelectedControl(252, normalizeHue);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    range.value = "360";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    frames.flush();
+    await nextTick();
+    expect(model.value).toBe(0);
+    expect(range.getAttribute("aria-label")).toBe("Hue");
+    expect(range.value).toBe("360");
+
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+    await nextTick();
+    expect(commits).toEqual([360]);
+    expect(range.value).toBe("360");
+
+    model.value = 180;
+    await nextTick();
+    expect(range.value).toBe("180");
+    wrapper.unmount();
+  });
+
   it("publishes only the latest live range value once per animation frame", async () => {
     const frames = installAnimationFrameController();
     const wrapper = mountControl({ modelValue: 180 });
@@ -133,9 +159,9 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("restores the canonical native value when pending pointer input is cancelled", () => {
+  it("restores the committed native value when pending pointer input is cancelled", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -161,7 +187,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("restores the latest published value and cannot publish a later cancelled value", async () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
     dispatchPointer(range, "pointerdown", 18);
@@ -189,7 +215,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("keeps a normally completed value through later blur and capture loss", async () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -217,7 +243,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("does not emit or roll back when cancellation has no pending range value", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -237,7 +263,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("restores pending native input on blur without reporting a pointer interaction", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -483,7 +509,7 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("pins Chroma overflow visuals without changing the canonical numeric value", async () => {
+  it("pins Chroma overflow visuals without changing the authored numeric value", async () => {
     const wrapper = mountControl({
       id: "chroma-control",
       label: "Chroma",

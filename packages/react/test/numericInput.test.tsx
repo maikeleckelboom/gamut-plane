@@ -1,8 +1,8 @@
 import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { OKLAB_AB_PLANE } from "@gamut-plane/core";
+import { definitionOf, projectColorToPlane, OKLAB_AB_PLANE } from "@gamut-plane/core";
 import { NumericInput } from "../src/components/NumericInput.js";
-import { event, get, host, input, mount } from "./helpers.js";
+import { color, event, get, host, input, mount } from "./helpers.js";
 
 async function numeric() {
   const complete = vi.fn(),
@@ -34,8 +34,8 @@ describe("numeric draft lifecycle", () => {
       expect(ui.changes).toHaveBeenCalledOnce();
       expect(ui.commits).toHaveBeenCalledOnce();
       expect(ui.order).toEqual(["change", "commit"]);
-      expect(ui.commits.mock.calls[0]![0].c).toBe(0.12345);
-      expect(ui.commits.mock.calls[0]![0].alpha).toBe(0.37);
+      expect(definitionOf(ui.commits.mock.calls[0]![0]).channels[1]).toBe(0.12345);
+      expect(definitionOf(ui.commits.mock.calls[0]![0]).alpha).toBe(0.37);
       await input(field, "0.3");
       await event(field, "change");
       expect(ui.commits).toHaveBeenCalledTimes(2);
@@ -86,7 +86,7 @@ describe("numeric draft lifecycle", () => {
     const field = get<HTMLInputElement>(ui.element, '[aria-label="Chroma numeric value"]');
     await input(field, "0.72");
     await event(field, "change");
-    expect(ui.commits.mock.calls[0]![0].c).toBe(0.72);
+    expect(definitionOf(ui.commits.mock.calls[0]![0]).channels[1]).toBe(0.72);
     expect(field.value).toBe("0.7200");
     expect(
       get<HTMLInputElement>(ui.element, '[data-picker-control="c"] [type="range"]').value,
@@ -94,8 +94,8 @@ describe("numeric draft lifecycle", () => {
     expect(ui.element.textContent).toContain("outside the visible editing range");
   });
   it("uses plane-domain membership for exact-edge and genuine-overflow help", async () => {
-    const nearEdge = { l: 0.62, c: 0.4000000000000001, h: 210, alpha: 0.7 };
-    const outside = { ...nearEdge, c: 0.52 };
+    const nearEdge = color(0.62, 0.4000000000000001, 210, 0.7);
+    const outside = color(0.62, 0.52, 210, 0.7);
     const oklch = await host({ value: nearEdge });
     const oklab = await host({ value: nearEdge, defaultView: "oklab" });
 
@@ -110,7 +110,7 @@ describe("numeric draft lifecycle", () => {
     expect(oklab.element.textContent).toContain(
       "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved.",
     );
-    expect(outside.c).toBe(0.52);
+    expect(definitionOf(outside).channels[1]).toBe(0.52);
     expect(oklch.changes).not.toHaveBeenCalled();
     expect(oklab.changes).not.toHaveBeenCalled();
   });
@@ -122,9 +122,9 @@ describe("numeric draft lifecycle", () => {
 
     const edited = ui.changes.mock.calls.at(-1)?.[0];
     expect(edited).toBeDefined();
-    expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(OKLAB_AB_PLANE.project(edited!).point)).toBe(
-      true,
-    );
+    const projection = projectColorToPlane(edited!, "oklab");
+    if (!projection.ok) throw new Error("Invalid edited projection");
+    expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(projection.value.point)).toBe(true);
     expect(ui.element.textContent).not.toContain("outside the OKLab editing disc");
   });
   it("does not intercept Enter or Escape during IME composition", async () => {
