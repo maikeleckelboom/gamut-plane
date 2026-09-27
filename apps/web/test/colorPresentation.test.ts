@@ -2,11 +2,49 @@ import { describe, expect, it } from "vitest";
 
 import {
   CSS_DISPLAY_DECIMALS,
+  exactStatusLabel,
   formatOklchForDisplay,
   formatRgbCssForDisplay,
+  unavailableOutput,
 } from "@/colorPresentation";
 
 describe("CSS presentation formatting", () => {
+  it("labels exact status and unavailable outputs without implying clipping", () => {
+    expect(exactStatusLabel["within-tolerance"]).toBe("Within tolerance");
+    for (const [code, gamut, compact, explanation] of [
+      [
+        "out-of-gamut",
+        "srgb",
+        "Unavailable · outside sRGB",
+        "Selected color is outside sRGB; no clipped value is emitted.",
+      ],
+      [
+        "boundary-tolerance",
+        "srgb",
+        "Unavailable · boundary tolerance",
+        "Selected color is within tolerance of the sRGB boundary; strict output is unavailable.",
+      ],
+    ] as const) {
+      expect(unavailableOutput(code, gamut)).toEqual({
+        compact,
+        explanation,
+        showBoundaryPreview: true,
+      });
+    }
+    for (const [code, reason] of [
+      ["numerical-range", "numerical range"],
+      ["alpha-required", "alpha required"],
+      ["invalid-definition", "invalid definition"],
+      ["requires-css-normalization", "CSS normalization required"],
+    ] as const) {
+      expect(unavailableOutput(code, "display-p3")).toEqual({
+        compact: `Unavailable · ${reason}`,
+        explanation: `Display P3 output is unavailable: ${reason}.`,
+        showBoundaryPreview: false,
+      });
+    }
+  });
+
   it("formats Display P3 channels to stable display precision without trailing zeros", () => {
     expect(
       formatRgbCssForDisplay(

@@ -8,16 +8,18 @@ import {
   serializeHex,
   type ColorValue,
   type DisplayGamut,
-  type GamutStatus,
-  type CssOutputError,
-  type HexOutputError,
 } from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
 import { GamutPlane, type GamutPlaneView, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
-import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
+import {
+  exactStatusLabel,
+  formatOklchForDisplay,
+  formatRgbCssForDisplay,
+  unavailableOutput,
+} from "@/colorPresentation";
 
 const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!fixture.ok) throw new Error("Invalid initial selected color");
@@ -47,11 +49,6 @@ const gamutStatus = computed(() => {
     displayP3: displayP3.value.status,
   };
 });
-const exactStatusLabel: Record<GamutStatus, string> = {
-  inside: "Inside",
-  "within-tolerance": "Within tolerance",
-  outside: "Outside",
-};
 const oklchCanonicalCss = computed(() => {
   const output = serializeCss(oklch.value, { policy: "preserve-coordinates" });
   return output.ok ? output.value.text : null;
@@ -138,36 +135,6 @@ function strictCss(gamut: DisplayGamut) {
     policy: "require-in-gamut",
     gamut: gamut === "srgb" ? "srgb-gamut" : "display-p3-gamut",
   });
-}
-
-function unavailableOutput(
-  code: CssOutputError["code"] | HexOutputError["code"],
-  gamut: DisplayGamut,
-) {
-  const label = gamut === "srgb" ? "sRGB" : "Display P3";
-  if (code === "out-of-gamut")
-    return {
-      compact: `Unavailable · outside ${label}`,
-      explanation: `Selected color is outside ${label}; no clipped value is emitted.`,
-      showBoundaryPreview: true,
-    };
-  if (code === "boundary-tolerance")
-    return {
-      compact: "Unavailable · boundary tolerance",
-      explanation: `Selected color is within tolerance of the ${label} boundary; strict output is unavailable.`,
-      showBoundaryPreview: true,
-    };
-  const reason = {
-    "numerical-range": "numerical range",
-    "alpha-required": "alpha required",
-    "invalid-definition": "invalid definition",
-    "requires-css-normalization": "CSS normalization required",
-  }[code];
-  return {
-    compact: `Unavailable · ${reason}`,
-    explanation: `${label} output is unavailable: ${reason}.`,
-    showBoundaryPreview: false,
-  };
 }
 
 function boundaryPreviewCss(gamut: DisplayGamut): string | null {

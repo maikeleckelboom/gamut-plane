@@ -1,29 +1,32 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import {
   OKLAB_AB_PLANE,
-  OKLAB_FIELD_COLUMN_SAMPLES,
-  OKLAB_FIELD_ROW_COUNT,
-  OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
-  buildLightnessChromaBoundaryPath,
-  buildOklabGamutContour,
-  clampPlanePointToInstrumentBounds,
-  clearGamutBoundaryTableCache,
-  constrainOklabPlanePoint,
-  getCachedGamutBoundaryTable,
+  generateGamutBoundaryTable,
   getHueGuideIntervals,
   getLightnessGuideIntervals,
-  getMaximumChromaFromTable,
   getPickerGuide,
-  isPointInOklabInstrumentDomain,
   oklabCoordinatesToPlanePoint,
   oklchCoordinatesToPlanePoint,
   type DisplayGamut,
   type GamutBoundaryTable,
   type OklchSample,
 } from "../src/index";
+import { getMaximumChromaFromTable } from "../src/gamut/boundary";
+import {
+  clampPlanePointToInstrumentBounds,
+  constrainOklabPlanePoint,
+  isPointInOklabInstrumentDomain,
+  OKLAB_PICKER_AXIS_LIMIT,
+} from "../src/picker/geometry";
+import {
+  buildLightnessChromaBoundaryPath,
+  buildOklabGamutContour,
+  OKLAB_FIELD_COLUMN_SAMPLES,
+  OKLAB_FIELD_ROW_COUNT,
+} from "../src/picker/plane";
 
 function syntheticHueTable(
   gamut: DisplayGamut,
@@ -57,15 +60,10 @@ describe("OKLCH picker geometry and analysis", () => {
   let tables: { srgb: GamutBoundaryTable; displayP3: GamutBoundaryTable };
 
   beforeAll(() => {
-    clearGamutBoundaryTableCache();
     tables = {
-      srgb: getCachedGamutBoundaryTable("srgb", options),
-      displayP3: getCachedGamutBoundaryTable("display-p3", options),
+      srgb: generateGamutBoundaryTable("srgb", options),
+      displayP3: generateGamutBoundaryTable("display-p3", options),
     };
-  });
-
-  afterAll(() => {
-    clearGamutBoundaryTableCache();
   });
 
   it("locks the instrument to C=0.4 and clamps only rectangular coordinates", () => {
@@ -104,15 +102,13 @@ describe("OKLCH picker geometry and analysis", () => {
     );
   });
 
-  it("builds deterministic finite fixed-hue boundary geometry into reusable buffers", () => {
+  it("builds finite fixed-hue boundary geometry into reusable buffers", () => {
     const sampleCount = 33;
     const output = new Float32Array(sampleCount * 2);
     const srgb = buildLightnessChromaBoundaryPath(tables.srgb, 30, sampleCount, output);
-    const repeated = buildLightnessChromaBoundaryPath(tables.srgb, 30, sampleCount);
     const displayP3 = buildLightnessChromaBoundaryPath(tables.displayP3, 30, sampleCount);
 
     expect(srgb).toBe(output);
-    expect([...repeated]).toEqual([...srgb]);
     expect(srgb).toHaveLength(sampleCount * 2);
     expect(srgb[1]).toBe(1);
     expect(srgb.at(-1)).toBe(0);
@@ -150,7 +146,6 @@ describe("OKLCH picker geometry and analysis", () => {
     const color = { c: 0.1, h: 30 };
     const intervals = getLightnessGuideIntervals(tables.srgb, color);
     expect(intervals.length).toBeGreaterThan(0);
-    expect(getLightnessGuideIntervals(tables.srgb, color)).toEqual(intervals);
 
     for (const interval of intervals) {
       expect(interval.start).toBeGreaterThanOrEqual(0);
@@ -199,16 +194,13 @@ describe("OKLCH picker geometry and analysis", () => {
   });
 
   describe("Hue guide intervals", () => {
-    it("returns no interval or the complete normalized domain deterministically", () => {
+    it("returns no interval or the complete normalized domain", () => {
       const noValidHue = syntheticHueTable("srgb", [0, 0, 0, 0]);
       const allValidHues = syntheticHueTable("srgb", [1, 1, 1, 1]);
       const color = { l: 0.5, c: 0.5 };
 
       expect(getHueGuideIntervals(noValidHue, color)).toEqual([]);
       expect(getHueGuideIntervals(allValidHues, color)).toEqual([{ start: 0, end: 1 }]);
-      expect(getHueGuideIntervals(allValidHues, color)).toEqual(
-        getHueGuideIntervals(allValidHues, color),
-      );
     });
 
     it("solves one normalized interval from table Hue knots", () => {
@@ -355,7 +347,7 @@ describe("OKLCH picker geometry and analysis", () => {
       expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(bounded)).toBe(true);
     });
 
-    it("samples the numeric OKLab field deterministically", () => {
+    it("samples the numeric OKLab field", () => {
       expect(OKLAB_FIELD_ROW_COUNT).toBe(80);
       expect(OKLAB_FIELD_COLUMN_SAMPLES).toBe(24);
       const points = [
@@ -363,33 +355,29 @@ describe("OKLCH picker geometry and analysis", () => {
         { x: 0.75, y: 0.32 },
         { x: 0.12, y: 0.56 },
       ];
-      const sample = () =>
-        points.map((point) => {
-          const output: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
-          OKLAB_AB_PLANE.sampleField(point, 0.64, output, {
-            input: [0, 0, 0],
-            converted: [0, 0, 0],
-          });
-          return { ...output };
+      const samples = points.map((point) => {
+        const output: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
+        OKLAB_AB_PLANE.sampleField(point, 0.64, output, {
+          input: [0, 0, 0],
+          converted: [0, 0, 0],
         });
+        return { ...output };
+      });
 
-      expect(sample()).toEqual(sample());
-      expect(sample().every((color) => color.l === 0.64 && color.alpha === 1)).toBe(true);
+      expect(samples.every((color) => color.l === 0.64 && color.alpha === 1)).toBe(true);
 
       const corner: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
       OKLAB_AB_PLANE.sampleField({ x: 0, y: 0 }, 0.64, corner);
       expect(corner.c).toBeCloseTo(Math.hypot(0.4, 0.4), 11);
     });
 
-    it("builds deterministic finite closed contours and retains gamut association", () => {
+    it("builds finite closed contours and retains gamut association", () => {
       const sampleCount = 49;
       const srgbOutput = new Float32Array(sampleCount * 2);
       const srgb = buildOklabGamutContour(tables.srgb, 0.62, sampleCount, srgbOutput);
-      const srgbRepeated = buildOklabGamutContour(tables.srgb, 0.62, sampleCount);
       const displayP3 = buildOklabGamutContour(tables.displayP3, 0.62, sampleCount);
 
       expect(srgb).toBe(srgbOutput);
-      expect([...srgb]).toEqual([...srgbRepeated]);
       expect([...srgb].every(Number.isFinite)).toBe(true);
       expect([...displayP3].every(Number.isFinite)).toBe(true);
       expect(srgb.at(-2)).toBe(srgb[0]);

@@ -2,7 +2,7 @@ import { installAnimationFrameController } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { OKLCH_LIGHTNESS_CHROMA_PLANE, getCachedGamutBoundaryTable } from "@gamut-plane/core";
+import { OKLCH_LIGHTNESS_CHROMA_PLANE, generateGamutBoundaryTable } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
 import { color, planeValue } from "./colorValue";
 
@@ -37,8 +37,8 @@ describe("planar canvas backing store", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -102,8 +102,8 @@ describe("planar canvas backing store", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",

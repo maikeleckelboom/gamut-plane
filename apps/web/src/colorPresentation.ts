@@ -1,6 +1,47 @@
-import type { ColorRepresentation } from "@gamut-plane/core";
+import type {
+  ColorRepresentation,
+  CssOutputError,
+  DisplayGamut,
+  GamutStatus,
+  HexOutputError,
+} from "@gamut-plane/core";
 
 export const CSS_DISPLAY_DECIMALS = 6;
+export const exactStatusLabel: Record<GamutStatus, string> = {
+  inside: "Inside",
+  "within-tolerance": "Within tolerance",
+  outside: "Outside",
+};
+
+export function unavailableOutput(
+  code: CssOutputError["code"] | HexOutputError["code"],
+  gamut: DisplayGamut,
+) {
+  const label = gamut === "srgb" ? "sRGB" : "Display P3";
+  if (code === "out-of-gamut")
+    return {
+      compact: `Unavailable · outside ${label}`,
+      explanation: `Selected color is outside ${label}; no clipped value is emitted.`,
+      showBoundaryPreview: true,
+    };
+  if (code === "boundary-tolerance")
+    return {
+      compact: "Unavailable · boundary tolerance",
+      explanation: `Selected color is within tolerance of the ${label} boundary; strict output is unavailable.`,
+      showBoundaryPreview: true,
+    };
+  const reason = {
+    "numerical-range": "numerical range",
+    "alpha-required": "alpha required",
+    "invalid-definition": "invalid definition",
+    "requires-css-normalization": "CSS normalization required",
+  }[code];
+  return {
+    compact: `Unavailable · ${reason}`,
+    explanation: `${label} output is unavailable: ${reason}.`,
+    showBoundaryPreview: false,
+  };
+}
 
 function formatDecimal(value: number, maximumDecimals = CSS_DISPLAY_DECIMALS): string {
   if (!Number.isFinite(value)) {

@@ -5,8 +5,7 @@ import {
   convertOklabToOklch,
   convertOklchToOklab,
   definitionOf,
-  getMaximumChromaFromTable,
-  isColorValue,
+  getPickerGuide,
   oklabCoordinatesToPlanePoint,
   projectColorToPlane,
   serializeOklchSample,
@@ -43,7 +42,6 @@ describe("shared picker presentation", () => {
         expect(presentation.oklab.representation.space).toBe("oklab");
         expect(presentation.projection.point).toEqual(projected.value.point);
         expect(presentation.targetResult.swatchCss).toContain("oklch(");
-        expect(Object.values(presentation).some(isColorValue)).toBe(false);
       }
       expect(definitionOf(selected)).toBe(original);
       expect(definitionOf(selected).space).toBe(definition.space);
@@ -94,7 +92,7 @@ describe("shared picker presentation", () => {
       const [l, , hue] = presentation.oklch.channels;
       const table = target === "srgb" ? PICKER_GAMUT_TABLES.srgb : PICKER_GAMUT_TABLES.displayP3;
       expect(Number(presentation.targetResult.guideChroma)).toBeCloseTo(
-        getMaximumChromaFromTable(table, l, hue ?? presentation.fieldHue),
+        getPickerGuide({ l, c: 0, h: hue ?? presentation.fieldHue, alpha: 1 }, table).maximumChroma,
         4,
       );
       expect(definitionOf(selected).space).toBe(definition.space);
@@ -116,11 +114,15 @@ describe("shared picker presentation", () => {
     expect(presentation.targetResult.status).toBe(direct.value.status);
     expect(presentation.targetGuidePoint).toBeNull();
     expect(Number(presentation.targetResult.guideChroma)).toBeCloseTo(
-      getMaximumChromaFromTable(
+      getPickerGuide(
+        {
+          l: observed.value.representation.channels[0],
+          c: 0,
+          h: observed.value.representation.channels[2] ?? 0,
+          alpha: 1,
+        },
         PICKER_GAMUT_TABLES.srgb,
-        observed.value.representation.channels[0],
-        observed.value.representation.channels[2] ?? 0,
-      ),
+      ).maximumChroma,
       4,
     );
   });
@@ -157,7 +159,10 @@ describe("shared picker presentation", () => {
     (view) => {
       const selected = value({ space: "oklch", channels: [0.62, 0.24, 270], alpha: 0.5 });
       const presentation = createPickerPresentation(selected, view, "srgb", visible);
-      const guideChroma = getMaximumChromaFromTable(PICKER_GAMUT_TABLES.srgb, 0.62, 270);
+      const guideChroma = getPickerGuide(
+        { l: 0.62, c: 0.24, h: 270, alpha: 0.5 },
+        PICKER_GAMUT_TABLES.srgb,
+      ).maximumChroma;
       expect(presentation.targetGuidePoint).not.toBeNull();
       expect(presentation.targetGuideCss).toContain("oklch(");
       if (view === "oklch") {

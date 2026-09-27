@@ -5,7 +5,7 @@ import { defineComponent, h, ref } from "vue";
 
 import {
   OKLCH_LIGHTNESS_CHROMA_PLANE,
-  getCachedGamutBoundaryTable,
+  generateGamutBoundaryTable,
   definitionOf,
   type ColorValue,
   type PickerPlaneFieldSampler,
@@ -38,8 +38,8 @@ describe("renderer invalidation contracts", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -110,8 +110,8 @@ describe("renderer invalidation contracts", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -182,8 +182,8 @@ describe("renderer invalidation contracts", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -231,8 +231,8 @@ describe("renderer invalidation contracts", () => {
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
-        srgbTable: getCachedGamutBoundaryTable("srgb", options),
-        displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
+        srgbTable: generateGamutBoundaryTable("srgb", options),
+        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",

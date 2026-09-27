@@ -63,15 +63,7 @@ export {
   type PickerPlaneKeyboardAction,
 } from "./picker/keyboard.js";
 export {
-  buildLightnessChromaBoundaryPath,
-  buildOklabGamutContour,
-  clampPlanePointToInstrumentBounds,
-  constrainOklabPlanePoint,
-  isPointInOklabInstrumentDomain,
   OKLAB_AB_PLANE,
-  OKLAB_FIELD_COLUMN_SAMPLES,
-  OKLAB_FIELD_ROW_COUNT,
-  OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   oklabCoordinatesToPlanePoint,
@@ -93,14 +85,7 @@ export {
   type LightnessGuideInterval,
   type PickerGuide,
 } from "./picker/analysis.js";
-export {
-  clearGamutBoundaryTableCache,
-  findMaximumChroma,
-  generateGamutBoundaryTable,
-  getCachedGamutBoundaryTable,
-  getGamutOutline,
-  getMaximumChromaFromTable,
-} from "./gamut/boundary.js";
+export { findMaximumChroma, generateGamutBoundaryTable } from "./gamut/boundary.js";
 export type { GamutBoundaryOptions, GamutBoundaryTable } from "./gamut/types.js";
 
 export { normalizeHue, type DisplayGamut, type OklchSample } from "./color/types.js";

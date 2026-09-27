@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findMaximumChroma, getMaximumChromaFromTable } from "@gamut-plane/core";
+import { findMaximumChroma, getPickerGuide } from "@gamut-plane/core";
 import { PICKER_GAMUT_TABLE_DIGEST, PICKER_GAMUT_TABLES } from "../src/generated/gamutTables";
 
 describe("bundled picker gamut facts", () => {
@@ -24,7 +24,7 @@ describe("bundled picker gamut facts", () => {
     ["display-p3", 0.86, 310],
   ] as const)("stays close to exact %s Cmax at L %s and H %s", (gamut, l, h) => {
     const table = gamut === "srgb" ? PICKER_GAMUT_TABLES.srgb : PICKER_GAMUT_TABLES.displayP3;
-    const guide = getMaximumChromaFromTable(table, l, h);
+    const guide = getPickerGuide({ l, c: 0, h, alpha: 1 }, table).maximumChroma;
     const exact = findMaximumChroma(l, h, gamut, 24);
     expect(Math.abs(guide - exact)).toBeLessThan(0.006);
   });

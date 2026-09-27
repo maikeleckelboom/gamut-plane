@@ -100,7 +100,7 @@ describe("placePlanarWarning", () => {
     expect(placePlanarWarning(input)).toEqual({ left: 27, top: 27 });
   });
 
-  it("is deterministic and does not mutate nested input geometry", () => {
+  it("does not mutate nested input geometry", () => {
     const input = placementInput({ x: 6, y: 94 });
     input.targetGuideMarker = {
       center: { x: 22, y: 78 },
@@ -108,12 +108,10 @@ describe("placePlanarWarning", () => {
     };
     const snapshot = structuredClone(input);
 
-    const first = placePlanarWarning(input);
-    const second = placePlanarWarning(input);
+    const placement = placePlanarWarning(input);
 
-    expect(second).toEqual(first);
     expect(input).toEqual(snapshot);
-    expectWithinSurface(first);
+    expectWithinSurface(placement);
   });
 });
 

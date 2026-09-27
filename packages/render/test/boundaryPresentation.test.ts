@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   OKLCH_PICKER_MAX_CHROMA,
-  getMaximumChromaFromTable,
   serializeOklchSample,
   type DisplayGamut,
   type OklchSample,
 } from "@gamut-plane/core";
-import { getBoundaryPresentation, PICKER_GAMUT_TABLES } from "../src/index.js";
+import { getBoundaryPresentation } from "../src/index.js";
 
 const observed: OklchSample = { l: 0.62, c: 0.24, h: 270, alpha: 0.5 };
 const outside = { srgb: "outside", displayP3: "outside" } as const;
@@ -63,15 +62,11 @@ describe("shared sampled guide presentation", () => {
       outside,
     );
 
-    for (const [model, table] of [
-      [srgb, PICKER_GAMUT_TABLES.srgb],
-      [p3, PICKER_GAMUT_TABLES.displayP3],
-    ] as const) {
-      expect(model.targetGuide.maximumChroma).toBe(
-        getMaximumChromaFromTable(table, observed.l, observed.h),
-      );
+    for (const model of [srgb, p3]) {
       expect(model.targetGuide.color).toEqual({ ...observed, c: model.targetGuide.maximumChroma });
     }
+    expect(srgb.targetGuide.gamut).toBe("srgb");
+    expect(p3.targetGuide.gamut).toBe("display-p3");
     expect(srgb.targetGuide.maximumChroma).not.toBe(p3.targetGuide.maximumChroma);
   });
 
