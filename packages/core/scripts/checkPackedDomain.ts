@@ -37,6 +37,10 @@ try {
     exports: Record<string, unknown>;
   };
   assert.ok(manifest.exports["."], "Packed core must retain its public export map");
+  assert.deepEqual(manifest.exports["./internal/capabilities"], {
+    types: "./dist/capabilities/index.d.ts",
+    import: "./dist/capabilities/index.js",
+  });
   const artifact = join(consumer, "core.tgz");
   await copyFile(tarball, artifact);
   await writeFile(
@@ -68,6 +72,24 @@ try {
     `
 import { analyzeGamut, authorPlaneEdit, createColorValue, definitionOf, projectColorToPlane, represent, serializeCss, serializeHex, snapshotColor, restoreColor, definingEquals } from "@gamut-plane/core";
 import type { ColorValue, ColorRepresentation } from "@gamut-plane/core";
+import * as root from "@gamut-plane/core";
+import * as capabilities from "@gamut-plane/core/internal/capabilities";
+import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
+import type { EditorId, EditorDefinition, GeometryId, GeometryDefinition } from "@gamut-plane/core/internal/capabilities";
+
+if (Object.keys(capabilities).sort().join() !== "editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface expanded");
+if ("editorDefinitions" in root || "geometryDefinitions" in root) throw new Error("Internal capabilities leaked into root");
+const editorId: EditorId = "oklch-lc";
+const editor: EditorDefinition = editorDefinitions[editorId];
+const geometryId: GeometryId = editor.geometryId;
+const geometry: GeometryDefinition<"oklch"> = geometryDefinitions[geometryId];
+if (geometry.planeId !== "oklch" || geometry.toPoint(0.6, 0.2).x !== 0.5) throw new Error("Packed capability geometry failed");
+if (!Object.isFrozen(editorDefinitions) || !Object.isFrozen(geometry)) throw new Error("Packed capability immutability failed");
+// @ts-expect-error only core-defined primary editor identities cross the internal boundary
+const unsupportedEditor: EditorId = "srgb-channels";
+// @ts-expect-error internal capabilities are deliberately absent from the root type surface
+type RootEditor = import("@gamut-plane/core").EditorId;
+void unsupportedEditor;
 
 const source = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
 if (!source.ok) throw new Error("Packed construction failed");
