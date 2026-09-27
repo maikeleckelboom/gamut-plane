@@ -1698,14 +1698,17 @@ render serializers remain shared. No runtime export or new dependency is propose
 
 ### 36.3 Contract: a readonly view of one revision
 
-The conceptual name `GeneralizedPresentation` describes the following small private adapter view,
-not a public API, new scientific model or universal descriptor. This TypeScript-like sketch uses
-existing result types through the actual adapter revision; it is not production code:
+`GeneralizedPresentation` remains the design term. Prefer `AcceptedPresentationView` for the
+future private helper/type: it signals a small projection of an accepted revision, not a future
+home for controls, copy, layout, open state, callbacks, mapping/output or environment readiness.
+This is a production naming recommendation, not a new owner or a rename of historical design
+terminology. This TypeScript-like sketch uses existing result types through the actual adapter
+revision; it is not production code:
 
 ```ts
 type AcceptedResolutionRevision = ReturnType<typeof resolveAcceptedRevision>;
 
-type GeneralizedPresentation = Readonly<{
+type AcceptedPresentationView = Readonly<{
   authored: Readonly<{
     representationId: ColorSpaceId;
     alpha: number;
@@ -1720,24 +1723,46 @@ type GeneralizedPresentation = Readonly<{
 ```
 
 Derivation accepts exactly **one** accepted revision. `authored.representationId` and `alpha` are
-read from `definitionOf(revision.source)`; `selection` is the accepted pair by reference. Every
-other member is the corresponding existing result/collection by reference, with `checks` named
-`exactChecks` only for clarity. No structurally identical observation, exact, editor, field or
-guide alias is introduced in render. Consumers can take just one family; none must narrow a
-global branch before reading another. An implementation can use these member expressions
-directly if a helper adds no value, but both adapters must satisfy the same contract.
+read from `definitionOf(revision.source)`. For `presentAcceptedRevision(revision)` or equivalent,
+the following identities are the default implementation contract, not optional optimizations:
 
-The wrapper has no `ready`, `error`, global `supported`, `mode`, `source` copy, cached definition,
-target, environment status, callbacks, control schema or writable state. Accepted request arrays
+```ts
+presentation.selection === revision.state.selection;
+presentation.observation === revision.observation;
+presentation.exactChecks === revision.checks;
+presentation.editor === revision.editor;
+presentation.field === revision.field;
+presentation.guides === revision.guides;
+```
+
+`exactChecks` only renames the reference to `revision.checks`. Do not recreate selection, map
+exact or guide rows into equivalent objects, clone editor/field results, or clone result arrays for
+naming consistency. Do not introduce structurally identical presentation aliases around existing
+owner-native unions. The only expected new semantic record is the small readonly authored context
+`{ representationId: ColorSpaceId, alpha: number }`; a shallow readonly outer view may also be
+allocated. Consumers can take just one borrowed family without narrowing a global branch. An
+implementation can use direct member expressions if a helper adds no value, but both adapters
+must satisfy the same contract.
+
+`authored` is a convenience projection, not a snapshot, duplicate definition, transport object,
+second authored-state authority or place to accumulate defining channels. The accepted
+`revision.source` remains the sole route to the complete defining coordinates. An inspector
+needing them reads `definitionOf(revision.source)` from that same revision. Do not expand
+`authored` to `{ representationId, channels, alpha }` merely for convenience; future expansion
+requires a demonstrated presentation need and cannot introduce parallel writable state.
+
+The wrapper has no `ready`, `error`, global `supported`, `mode`, `hasPlane`, `source` copy, cached
+definition, target, environment status, callbacks, control schema or writable state. Accepted request arrays
 remain in `revision.state`; exact/guide rows already preserve their ordered request identities.
 Do not duplicate the arrays inside presentation. Empty exact rows mean no checks requested.
 Every requested guide retains a row even if ineffective. Presentation never drops it from state.
 
 `editor.kind === "no-editor-requested"` already identifies observation-only mode, agreeing with
-accepted `selection.editorId === null`. Storing another `editable/observation-only` discriminant
-could drift and would mislead for an active editor with unavailable field. Derive rendering from
-the existing unions instead. The private type is an aggregation of independent families, not an
-object that makes all outcomes succeed/fail together.
+accepted `selection.editorId === null`. Another `editable/observation-only` discriminant or
+`hasPlane` boolean could drift: an editor can coexist with an unsupported or unavailable field,
+guides can survive field failure, and selected observation can fail independently. Consumers
+narrow the actual unions. The private type aggregates independent families; it does not make all
+outcomes succeed or fail together.
 
 The adapter composition trusts the revision's provenance. It does not accept separately supplied
 check rows, compare source objects, hash definitions, add revision IDs, or run science to verify
@@ -1750,11 +1775,21 @@ discriminated union, including nullable OKLCH Hue. Keep that entire result and n
 after `ok`. Phase 2G infers the revision from a union-valued selection; TypeScript does not thereby
 correlate the separate selection property with the observation result. The synchronous revision
 contract supplies that runtime invariant, including the selected ID when observation fails.
-This is sufficient for current consumers; do not add an unchecked cast or a giant combined union.
-If a future consumer needs selection-based compile-time narrowing, strengthen correlation at the
-accepted revision's construction boundary with a focused generic/distributed proof, not by
-relabeling a result in presentation. No additional type-only test is needed for these existing
-indexed types in this design phase.
+This is sufficient for current consumers. Phase 2H.1 must stop and strengthen typing at the
+accepted-revision construction boundary if it would otherwise need `as ColorRepresentation<...>`,
+`as any` or another unchecked assertion solely to pretend selection and observation are
+correlated. A focused generic/distributed accepted-revision type improvement is allowed when
+implementation evidence requires it. Ordinary discriminant narrowing on `observation.value.space`
+and owner-native result types are allowed. Relabeling one representation's tuple as another,
+casting solely from selection, or widening to `unknown` and casting later are not. Do not
+proactively redesign revision typing if 2H.1 compiles without it; no type-only proof is needed
+for the existing indexed types in this design phase.
+
+The projection is synchronously derived from the accepted revision: React may derive it during
+render, and Vue may use `computed`. Do not add `presentationRef`, `presentationStore`,
+`presentationRevision`, `setPresentation(...)` or equivalent adapter state without later
+framework evidence. Phase 2G's accepted revision/committed props remain imperative interaction
+authority.
 
 ### 36.4 Authored, observed and inspection-only semantics
 
@@ -1849,6 +1884,16 @@ already come from the same revision and must not be recomputed by presentation.
 `GuideResolution` is already the generalized presentation fact. Preserve its row identity,
 `no-editor`, `no-guide-for-editor` or `resolved`, and each existing form result. Do not invent
 aliases for these unions or attach all guides beneath `field.kind === "available"`.
+The entire `presentation.guides` array is `revision.guides` by identity; therefore each guide
+row, form array and available contour `Float32Array` is also the original object. In particular:
+
+```ts
+presentation.guides[n].forms.contour.value.points === revision.guides[n].forms.contour.value.points;
+```
+
+This identity applies when that contour form is available. Do not use `Array.from`, spread,
+construct a new `Float32Array`, copy a buffer for immutability, or serialize it to SVG inside
+the generalized projection. The future 2H.1 test must check contour-buffer identity explicitly.
 
 | Existing resolved form | Pass-through fact                                                                                                                       | Remaining display work and owner                                                                                                                                                                           |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1928,14 +1973,21 @@ projections/throws would defeat the contract. Initial production adoption retain
 public state domain and its established failure behavior.
 
 `boundaryTarget` stays outside selection, checked gamuts and visible guides. Its compatibility
-path may pick a matching ordinary exact result already present (today both are always checked)
-and a requested guide reference/marker already present. A hidden target still needs its sampled
-reference for the always-visible target panel, while it must not gain a visible marker. That
-requires explicitly scoped legacy reference work **outside** ordinary requested-guide resolution,
-not adding an invisible ordinary guide or exact check. When refactoring, derive that missing
-reference once for the accepted source, only in compatibility preparation, retaining bounded-L
-legacy failures; share existing owner-local math rather than reproducing it in adapters/UI.
-Unrequested guide contours must never be generated just for the target panel.
+path may consume accepted source/revision facts, `boundaryTarget`, legacy visibility, a matching
+accepted exact result when available, a matching requested guide/reference when available, and
+one explicitly scoped sampled reference if the hidden target panel still requires it. Today both
+exact checks happen for legacy reasons; compatibility cannot add a check to generalized ordinary
+state. A hidden target still needs its sampled reference for the always-visible target panel,
+while it must not gain a visible marker. That is a **legacy compatibility prerequisite** outside
+ordinary requested-guide resolution, never an invisible ordinary guide request. When refactoring,
+derive that missing reference once for the accepted source, only in compatibility preparation,
+retaining bounded-L legacy failures; share existing owner-local math rather than reproducing it
+in adapters/UI. For `showSrgbBoundary = false` and `boundaryTarget = "srgb"`, compatibility may
+obtain the panel's sampled reference, but must not generate an ordinary sRGB contour, intervals,
+guide request or exact check solely for that target. The same rule applies symmetrically to P3.
+The target path must not mutate `InstrumentViewState`, add to `visibleGuides` or `checkedGamuts`,
+perform hidden exact analysis, reinterpret `boundaryTarget` as a mapping destination, become
+generalized ordinary presentation authority, or supply stale exact rows to the accepted revision.
 
 Likewise, additional OKLCH facts needed by the OKLab legacy track/target are explicit detail
 prerequisites, not selected observation or a compulsory second projection. Render owns any such
@@ -1952,12 +2004,16 @@ mapping application/preview, output formats and CSS/Hex serializer state remain 
 
 ### 36.10 Immutability, typed arrays, SSR and work limits
 
-The future adapter view and newly allocated small authored-context record are readonly and
-shallow-frozen. Keep existing result/collection references and their readonly contracts. Current
+The future outer adapter view is readonly in TypeScript and shallow-frozen at runtime if a helper
+allocates it. The newly allocated authored-context record is readonly and shallow-frozen. These
+are the only expected allocations in the pure projection. Keep existing result/collection
+references and their readonly contracts. Current
 accepted state, definition and exact-row shells are frozen; not every nested render result is
 runtime-frozen, and the presentation contract must not falsely claim deep immutability. Treat
-borrowed nested objects/arrays as immutable by ownership, with mutation checks in the shared
-contract tests. Do not freeze borrowed graphs during render or allocate deep clones for safety.
+borrowed result objects, result arrays, guide form arrays and contour buffers as immutable by
+ownership. The projection must not mutate them. Shared contract tests should capture
+representative data before projection and verify it remains unchanged afterward. Do not newly
+freeze borrowed graphs during render or allocate clones for safety.
 
 `Float32Array` contour buffers pass through unchanged and without copying. The type permits
 element writes, so consumer discipline/tests must forbid them; deep-freezing a nonempty typed
@@ -1965,9 +2021,13 @@ array is not an immutability solution. Generated tables are also shared read-onl
 to SVG only at the display boundary, never to ordinary arrays per render. Existing keyed visual
 reuse may remain where certified; no new cache or cross-revision memoization is required.
 
-Presentation derivation adds no `represent`, `analyzeGamut`/`analyzeRequestedGamuts`, `resolveField`,
-`resolveRequestedGuides`, geometry projection, inactive-editor traversal or table sampling.
-It reads already-accepted facts. Existing Phase 2G resolution still has its own owner-local
+Presentation derivation performs **zero** new scientific or scoped capability-resolution calls:
+no `represent`, `analyzeGamut`, `analyzeRequestedGamuts`, `resolveEditorVisualSupport`,
+`resolveField`, `resolveRequestedGuides`, `projectColorToPlane`, `buildGamutContour`, guide
+sampling operation or inactive-editor traversal. `definitionOf(revision.source)` is allowed to
+read defining authority without conversion/resolution. Later explicitly scoped SVG/CSS visual
+serialization at the actual display boundary is separate from generalized fact projection.
+The projection reads already-accepted facts. Existing Phase 2G resolution still has its own owner-local
 prerequisite work; this design does not claim those internal observations are already deduplicated.
 Removing legacy duplicate work is a later explicit migration with equivalence evidence.
 No guides requested means no ordinary guide work; no unrequested/inactive contours or eager
@@ -1980,6 +2040,13 @@ initial client, and can become unavailable while field facts stay available. Mea
 placement and actual field quality remain adapter resource updates. Keep current stable CSS/SVG
 precision and hydration node/ID/focus preservation; no new browser primitive or VueUse migration
 is involved in this design.
+
+If 2H.1 grows into substantial transformation logic, multiple new catalogs, a broad render
+helper or hundreds of lines of production presentation code, stop and explain why. The accepted
+design expects two small adapter-local helpers plus shared semantic contract tests, much closer
+to a thin projection than a presentation subsystem rewrite. Significant logic likely belongs to
+later editable-detail or legacy compatibility migration; this is an architectural smell, not a
+hard line-count gate.
 
 ### 36.11 Required scenario matrix and evidence
 
@@ -2017,10 +2084,23 @@ fixtures; this phase adds no runtime resolver or test implementation.
 | Q — defining-equal reconstructed source                  | New instance with the same defining channels/alpha, including signed-zero/missing-Hue cases               | Equivalent semantic facts; no identity-based rejection or special cache. Helper provenance/reconstruction and real component feedback tests retain source/gesture authority.                                                                                                                                        |
 | R — boundaryTarget change                                | Same accepted source/state; sRGB target ↔ P3 target                                                       | Ordinary generalized facts unchanged semantically; only legacy target/detail selection changes, including with guides hidden. Component contract tests target independence for all visibility combinations.                                                                                                         |
 
-Additional required proofs in implementation are tolerance-fringe status preservation, the
-null/failure/available-empty distinction, raw Hue/signed zero, no mutations or extra scientific
-calls, no contour-buffer copies, same-representation editor identity, and active-editor observation
-failure. The latter two are semantic tests; do not expand production editor admission to obtain them.
+Phase 2H.2 must test the **private projection itself** across A–R and these additional cases:
+all six borrowed family references and representative nested identities; no new science or
+resolution calls; no result-array, guide-form-array or contour-buffer mutation; exact contour
+buffer identity without copies; raw signed zero, null Hue and non-normalized Hue; unchanged
+within-tolerance status and unavailable exact result by reference; `available []` distinct from
+`null`; field unsupported while a guide remains available; selected observation failure with
+other families intact; the same representation with null versus non-null editor; and a test-only
+same-representation alternate editor. Also prove the view has no `boundaryTarget`, Canvas
+readiness, callbacks, stored state or state mutation. Do not expand production editor admission
+to obtain the alternate-editor test.
+
+For a precomputed accepted revision, tests must instrument or otherwise reliably prove zero
+additional calls to `represent`, `analyzeRequestedGamuts`, `resolveEditorVisualSupport`,
+`resolveField` and `resolveRequestedGuides` during projection. Use the smallest reliable proof if
+spying across packed package boundaries is inappropriate; the evidence is required, while a
+brittle mocking mechanism is not. Keep science performed to construct the revision outside the
+projection measurement. Matching legacy comparisons apply only where domains match.
 
 The [frozen Phase 2C equivalence suite](../packages/render/test/presentationEquivalence.test.ts)
 compares every legacy output and gradient exactly against pre-migration fixtures for both views,
@@ -2040,15 +2120,31 @@ not authorization to update baselines in this phase.
 
 The following work requires a subsequent implementation phase; none starts here.
 
-| Step                                                 | Concrete bounded work                                                                                                                                                                                                                                                                                                                                                                | Required evidence before advancing                                                                                                                                                                                                                                                                          |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2H.1 — private presentation view                     | Add only the small pure adapter-local derivation beside accepted resolution (or equivalent direct family projections), with a shared contract test executed for both adapters. Reuse existing owner result types and serializers; no new package or render aggregate, no component adoption.                                                                                         | Observation-only cases, reference/tuple/error preservation, shallow immutability boundary, no scientific recomputation/DOM access. If type correlation becomes necessary, prove it at revision construction rather than casting in presentation.                                                            |
-| 2H.2 — complete semantic proof                       | Exercise every A–R row, tolerance/missing/raw values and unsupported relations; compare matching facts to accepted results. Keep the frozen whole-object legacy suite alongside these tests.                                                                                                                                                                                         | No fabricated editor/plane, no global failure, check/guide and field/guide independence, original arrays/buffers unchanged. Compare only corresponding generalized/legacy facts where domains match; preserve the legacy throw tests separately.                                                            |
-| 2H.3 — internal adapter adoption                     | React first, then Vue: consume generalized high-level families from the same accepted revision while current editable-detail and target paths continue. Keep only currently reachable public selections; do not implement an observation UI or new partial-state product behavior incidentally.                                                                                      | Shared real-component accepted-revision/current-composition tests, committed/abandoned render and rejected-request semantics, frozen v0.3 output, packed Vue/React and Nuxt/Next SSR/hydration, existing visuals without baseline changes.                                                                  |
-| 2H.4 — reduce duplicate legacy computation by family | Source exact facts from revision rows, active field projection from `field`, and visible guide forms/contours from `guides`, including child `ColorPlane` work. Factor preserved editor gradients/visual serialization and UI formatting into their stated owners. Prepare only missing legacy target references/companion prerequisites explicitly, never ordinary hidden requests. | Exact current-detail/target equivalence including hidden targets, unused OKLab outputs and throw boundary; call-count proof that checks/projections/contours are no longer repeated; raw numeric and buffer preservation. Any unsupported legacy edge remains isolated until proved, not silently repaired. |
+| Step                                                 | Concrete bounded work                                                                                                                                                                                                                                                                                                                 | Required evidence before advancing                                                                                                                                                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2H.1 — private presentation view                     | Implement only the thin synchronous revision → presentation projection in private adapter modules, plus shared semantic contract tests. Borrow owner-native results; allocate only authored context and an optional shallow shell. Do not replace `createPickerPresentation(...)` or adopt the view in React/Vue component rendering. | Reference identity, contour identity, shallow immutability, raw results and no new science/resolution/DOM work. Fix any necessary representation correlation at accepted-revision construction, never with an unchecked presentation cast. |
+| 2H.2 — complete semantic proof                       | Exercise the private projection over every A–R row and the explicit adversarial cases in §36.11; keep the frozen whole-object legacy suite alongside these tests.                                                                                                                                                                     | Independent failures/absences, identity and no-work evidence, unchanged arrays/buffers, no target/environment/state leakage. Compare only matching generalized/legacy facts where domains match; preserve legacy throw tests separately.   |
+| 2H.3 — internal adapter adoption                     | React first, then Vue: components consume generalized high-level families from the accepted revision while current editable detail and target paths coexist. Keep currently reachable public selections; do not introduce observation UI or new partial-state product behavior incidentally.                                          | Real-component accepted-revision/current-composition tests, committed/abandoned render and rejected-request semantics, frozen v0.3 output, packed Vue/React and Nuxt/Next SSR/hydration, existing visuals without baseline changes.        |
+| 2H.4 — reduce duplicate legacy computation by family | Remove repeated exact analysis, then active field presentation projection, requested guide forms/contours, child `ColorPlane` recomputation, target-only sampled-reference work, and finally remaining current-editor detail where ownership/equivalence is clear.                                                                    | For each family: before and after authority, consumer inventory, equivalence evidence and call-count/work evidence. Preserve target/throw/lifecycle behavior; do not invent ordinary hidden requests or rewrite controls universally.      |
 
-Do not let 2H.4 become a universal control rewrite. Each removed source of duplication must have
-an explicit consumer and equivalence proof, including imperatively restored marker/resource paths.
+The preferred 2H.4 order is: (1) replace repeated legacy `analyzeGamut` calls with accepted
+`exactChecks`; (2) use accepted `field` for current active projection, marker and fixed-coordinate
+facts where domains match, while preserving justified interaction-time projection; (3) use
+requested `guides` for contours, intervals, sampled references and exact-dependent markers,
+without rebuilding available contours; (4) remove child `ColorPlane` duplicate projection and
+contour work once parent facts are authoritative and lifecycle/resource behavior is equivalent;
+(5) reduce hidden-target-only sampling once ordinary guide migration is stable, keeping it
+explicitly scoped; (6) migrate remaining gradients, warning positions, help/copy and other
+current-editor detail only where ownership and equivalence are clear. Source evidence during
+implementation may justify changing this order. This sequence does not widen 2H.1 or demand a
+universal control descriptor rewrite.
+
+Each removed family needs a recorded **before authority → after authority**, consumer inventory,
+equivalence evidence and call-count/work evidence. For `legacy analyzeGamut → accepted exactChecks`,
+prove the same current-domain statuses/errors, no extra analyzer call and unchanged target/warning
+interpretation. For `buildGamutContour again → resolved contour buffer`, prove the same visible
+geometry and `closed` semantics, no extra contour build or buffer copy, and the same SVG output.
+Apply this pattern to every family, including imperatively restored marker/resource paths.
 New observation-only public exposure, request-acceptance APIs and compact redesign are separate
 product phases after these contracts are certified.
 
@@ -2081,12 +2177,26 @@ how a future inspection UI draws available guides without a Canvas field; and fu
 editor requirements. These do not block presenting independent facts. A successful guide is not a
 mandate to draw it on an unavailable field. A concrete typed API for legacy detail preparation is
 deferred to the bounded extraction in 2H.4, constrained by the owners and retirement checks above.
+Future inspection-channel metadata remains UI work: representation-qualified rows must follow
+core tuple order, so OKLCH scientific L/C/H must not be replaced with current H/L/C control order.
+The 2H.1 projection preserves the core observation result and chooses no inspection ordering,
+`toFixed`, `Intl.NumberFormat`, scientific notation policy or editor-precision reuse.
+
+Stop Phase 2H.1 and report if the tiny projection appears to require new science or render
+capability resolution, deep cloning, contour regeneration, UI runtime scientific imports,
+render importing UI state, a central package, unchecked representation-correlation casts, a
+public API, adapter component rewrites, observation UI, legacy target redesign,
+formatting/precision decisions or Canvas/environment state in deterministic presentation.
+These are boundary violations to reassess, not reasons to expand the phase silently.
 
 There are no public prop names/APIs, sRGB/P3 selector exposure, mapping/output workflows, new
 representations/editors, central control descriptors, runtime caches, package changes, CSS,
 generated-data or baseline changes here. No tabs/select/popover choice, panel order, compact
 dimensions, style, animation or disclosure interaction is decided. No production resolver or
 Vue/React adapter is edited. This phase only updates the design and its architecture cross-reference.
+Neither this hardening nor the private 2H.1 helper requires exports, export-map entries,
+dependencies, versions or public adapter types. If sharing later appears to require a new package
+or runtime entry, reassess the accepted adapter-local ownership decision before proceeding.
 
 For this documentation-only change, run `pnpm format`, `pnpm format:check`, `pnpm lint`,
 `pnpm typecheck`, `pnpm test` and `git diff --check`, then review the complete diff against the

@@ -176,6 +176,12 @@ Canvas readiness/resources remain adapter-owned. This is a design contract only,
 adapter or public API change. Its source audit, A–R scenarios and staged retirement criteria follow
 ADR 0003 without adding a package or reverse dependency.
 
+Phase 2H Design.1 hardens that contract: the six existing families retain exact revision
+references, including contour buffers; only authored context and an optional shallow view shell
+are allocated. Projection performs no science or capability resolution. The private 2H.1 helper
+does not change component rendering; later duplicate legacy work requires per-family equivalence
+and call-count evidence.
+
 ## Generated tables
 
 The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.
