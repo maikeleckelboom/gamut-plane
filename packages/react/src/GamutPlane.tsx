@@ -23,11 +23,7 @@ import {
   type PlaneEditError,
   type PlaneEditReference,
 } from "@gamut-plane/core";
-import {
-  createPickerPresentation,
-  hueGradient,
-  type CanvasColorSpaceStatus,
-} from "@gamut-plane/render";
+import { createPickerPresentation, type CanvasColorSpaceStatus } from "@gamut-plane/render";
 import { useControllableView } from "./hooks/useControllableView.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
@@ -192,7 +188,7 @@ export function GamutPlane({
                 max={360}
                 step={0.1}
                 precision={1}
-                gradient={hueGradient}
+                gradient={model.hueGradient}
                 intervals={model.hueIntervals}
                 warningPosition={model.huePosition}
                 normalizeValue={normalizeHue}

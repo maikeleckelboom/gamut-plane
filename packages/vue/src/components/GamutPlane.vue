@@ -20,7 +20,6 @@ import ColorChannelControl from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
 import {
   createPickerPresentation,
-  hueGradient,
   PICKER_GAMUT_TABLES,
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/render";
@@ -208,7 +207,8 @@ watch(
             :max="360"
             :step="0.1"
             :precision="1"
-            :gradient="hueGradient"
+            :gradient="presentation.hueGradient"
+            :normalize-value="normalizeHue"
             :intervals="presentation.hueIntervals"
             :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"

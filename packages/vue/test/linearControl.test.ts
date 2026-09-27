@@ -2,6 +2,7 @@ import { installAnimationFrameController, dispatchPointer } from "./interactionH
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, nextTick, ref } from "vue";
+import { normalizeHue } from "@gamut-plane/core";
 
 import ColorChannelControl, {
   type LinearControlInterval,
@@ -33,7 +34,7 @@ function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl
   });
 }
 
-function mountSelectedControl(initialValue = 180) {
+function mountSelectedControl(initialValue = 180, normalizeValue = (value: number) => value) {
   const model = ref(initialValue);
   const updates: number[] = [];
   const commits: number[] = [];
@@ -48,10 +49,11 @@ function mountSelectedControl(initialValue = 180) {
           min: 0,
           max: 360,
           step: 1,
+          normalizeValue,
           gradient: "linear-gradient(90deg, black, white)",
           "onUpdate:modelValue": (value: number) => {
             updates.push(value);
-            model.value = value;
+            model.value = normalizeValue(value);
           },
           onCommit: (value: number) => commits.push(value),
         });
@@ -72,6 +74,29 @@ afterEach(() => {
 });
 
 describe("ColorChannelControl gamut annotations", () => {
+  it("keeps the right Hue endpoint visible when authored feedback normalizes 360 to zero", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, commits } = mountSelectedControl(252, normalizeHue);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+
+    range.value = "360";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    frames.flush();
+    await nextTick();
+    expect(model.value).toBe(0);
+    expect(range.value).toBe("360");
+
+    range.dispatchEvent(new Event("change", { bubbles: true }));
+    await nextTick();
+    expect(commits).toEqual([360]);
+    expect(range.value).toBe("360");
+
+    model.value = 180;
+    await nextTick();
+    expect(range.value).toBe("180");
+    wrapper.unmount();
+  });
+
   it("publishes only the latest live range value once per animation frame", async () => {
     const frames = installAnimationFrameController();
     const wrapper = mountControl({ modelValue: 180 });

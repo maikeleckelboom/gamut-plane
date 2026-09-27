@@ -24,6 +24,15 @@ function value(definition: ColorRepresentation) {
 }
 
 describe("shared picker presentation", () => {
+  it("shows the selected color at the matching stop of every OKLCH channel gradient", () => {
+    const selected = value({ space: "oklch", channels: [0.5, 0.2, 180], alpha: 1 });
+    const presentation = createPickerPresentation(selected, "oklch", "srgb", visible);
+    const selectedStop = `${serializeOklchSample({ l: 0.5, c: 0.2, h: 180, alpha: 1 })} 50.000%`;
+    expect(presentation.hueGradient).toContain(selectedStop);
+    expect(presentation.lightnessGradient).toContain(selectedStop);
+    expect(presentation.chromaGradient).toContain(selectedStop);
+  });
+
   it.each([
     { space: "srgb", channels: [0.7, 0.3, 0.2], alpha: 0.8 },
     { space: "display-p3", channels: [0.7, 0.3, 0.2], alpha: 0.8 },

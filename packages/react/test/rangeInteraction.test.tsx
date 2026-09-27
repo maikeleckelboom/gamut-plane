@@ -40,6 +40,25 @@ async function range() {
   };
 }
 describe("native range lifecycle", () => {
+  it("keeps the right Hue endpoint visible when authored feedback normalizes 360 to zero", async () => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+
+    await input(range, "360");
+    await clock.flush();
+    expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(0);
+    expect(range.value).toBe("360");
+
+    await event(range, "change");
+    expect(range.value).toBe("360");
+    expect(ui.commits).toHaveBeenCalledOnce();
+
+    await ui.replace(color(0.62, 0.2, 180, 0.37));
+    expect(range.value).toBe("180");
+  });
+
   it.each([87.1, 360])("retains Hue preview through normalized feedback for %s", async (hue) => {
     const clock = frames(),
       ui = await host();

@@ -94,6 +94,27 @@ test("all scientific ranges retain native input/change order and preserve alpha"
   }
 });
 
+test("Hue drag past the right edge keeps the right thumb with normalized color feedback", async ({
+  page,
+}) => {
+  await expect(page.locator('[data-picker-control="h"] .gpr-channel-control-field')).toHaveCSS(
+    "background-image",
+    /oklch\(0\.5 0\.2/,
+  );
+  const range = page.locator('[data-picker-control="h"] input[type="range"]');
+  const bounds = (await range.boundingBox())!;
+  const y = bounds.y + bounds.height / 2;
+
+  await page.mouse.move(bounds.x + bounds.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width + 80, y, { steps: 10 });
+  await expect(range).toHaveValue("360");
+  await page.mouse.up();
+
+  await expect(range).toHaveValue("360");
+  expect(JSON.parse(await page.locator("[data-color]").innerText()).h).toBe(0);
+});
+
 test("plane markers cover guides while the slider preview keeps authored alpha", async ({
   page,
 }) => {

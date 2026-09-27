@@ -32,6 +32,7 @@ const props = withDefaults(
     max: number;
     step: number;
     gradient: string;
+    normalizeValue?: (value: number) => number;
     precision?: number;
     markers?: LinearControlMarker[];
     intervals?: LinearControlInterval[];
@@ -83,6 +84,12 @@ let isUnmounted = false;
 let activeRangePointerId: number | null = null;
 let rangeInteractionReported = false;
 let lastPublishedRangeValue = boundedModelValue.value;
+const displayedRangeValue = computed(() =>
+  (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) ===
+  boundedModelValue.value
+    ? lastPublishedRangeValue
+    : boundedModelValue.value,
+);
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
@@ -217,7 +224,11 @@ function sectionStyle(section: LinearControlInterval): Record<string, string> {
 }
 
 watch(boundedModelValue, (value) => {
-  if (pendingRangeValue === null) lastPublishedRangeValue = value;
+  if (
+    pendingRangeValue === null &&
+    (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) !== value
+  )
+    lastPublishedRangeValue = value;
 });
 
 onBeforeUnmount(() => {
@@ -291,7 +302,7 @@ onBeforeUnmount(() => {
         type="range"
         :aria-describedby="describedBy"
         :aria-label="`${label} ${modelValue.toFixed(precision)}`"
-        :value="boundedModelValue"
+        :value="displayedRangeValue"
         :min="min"
         :max="max"
         :step="step"

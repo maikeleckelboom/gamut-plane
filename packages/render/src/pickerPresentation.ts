@@ -104,6 +104,7 @@ export function createPickerPresentation(
     warningVisible: gamutStatus.displayP3 === "outside",
     huePosition: normalizeHue(fieldHue) / 360,
     chromaPosition: Math.min(1, Math.max(0, c / OKLCH_PICKER_MAX_CHROMA)),
+    hueGradient: colorGradient(72, (position) => ({ ...sample, h: position * 360, alpha: 1 })),
     lightnessGradient: colorGradient(12, (position) => ({ ...sample, l: position, alpha: 1 })),
     chromaGradient: colorGradient(12, (position) => ({
       ...sample,

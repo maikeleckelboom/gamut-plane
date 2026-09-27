@@ -25,6 +25,26 @@ test("loads the standalone OKLCH instrument without console errors", async ({ pa
   expect(errors).toEqual([]);
 });
 
+test("Hue drag past the right edge stays at the right endpoint", async ({ page }) => {
+  await openInstrument(page);
+  await expect(page.locator('[data-picker-control="h"] .channel-control__field')).toHaveCSS(
+    "background-image",
+    /oklch\(0\.68 0\.18/,
+  );
+  const range = page.locator('[data-picker-control="h"] input[type="range"]');
+  const bounds = (await range.boundingBox())!;
+  const y = bounds.y + bounds.height / 2;
+
+  await page.mouse.move(bounds.x + bounds.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width + 80, y, { steps: 10 });
+  await expect(range).toHaveValue("360");
+  await page.mouse.up();
+
+  await expect(range).toHaveValue("360");
+  await expect(page.locator(".coordinate-summary__values dd").last()).toHaveText("0.00°");
+});
+
 test("bundled Inter and inspector rows retain their hierarchy across coordinate views", async ({
   page,
 }) => {
