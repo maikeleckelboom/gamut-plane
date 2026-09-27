@@ -1,8 +1,6 @@
 import { useRef, type KeyboardEvent } from "react";
 import type { GamutPlaneView } from "../GamutPlane.js";
-import { gpPart } from "@gamut-plane/ui";
-
-const options = ["oklch", "oklab"] as const;
+import { gpPart, currentViewOptions, representationUi } from "@gamut-plane/ui";
 
 export function CoordinateViewControl({
   view,
@@ -16,14 +14,18 @@ export function CoordinateViewControl({
     const direction = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
     if (!direction) return;
     event.preventDefault();
-    const next = options[(options.indexOf(option) + direction + options.length) % options.length]!;
+    const next =
+      currentViewOptions[
+        (currentViewOptions.indexOf(option) + direction + currentViewOptions.length) %
+          currentViewOptions.length
+      ]!;
     onViewChange(next);
     buttons.current.get(next)?.focus();
   }
   return (
     <div className="gpr-plane-instrument-view-control" data-gp-part={gpPart.viewControl}>
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
-        {options.map((option) => (
+        {currentViewOptions.map((option) => (
           <button
             key={option}
             type="button"
@@ -39,7 +41,7 @@ export function CoordinateViewControl({
             onClick={() => onViewChange(option)}
             onKeyDown={(event) => navigate(option, event)}
           >
-            {option === "oklab" ? "OKLab" : "OKLCH"}
+            {representationUi[option].label}
           </button>
         ))}
       </div>

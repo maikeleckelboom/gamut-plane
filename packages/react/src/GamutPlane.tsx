@@ -12,7 +12,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  OKLCH_PICKER_MAX_CHROMA,
   authorPlaneEdit,
   normalizeHue,
   oklabCoordinatePlanePoint,
@@ -24,13 +23,16 @@ import {
   type PlaneEditReference,
 } from "@gamut-plane/core";
 import { createPickerPresentation, type CanvasColorSpaceStatus } from "@gamut-plane/render";
-import { gpPart } from "@gamut-plane/ui";
+import { gpPart, editorUi } from "@gamut-plane/ui";
 import { useControllableView } from "./hooks/useControllableView.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { NumericInput } from "./components/NumericInput.js";
 import { BoundaryTargetResult } from "./components/BoundaryTargetResult.js";
+
+const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
+const [fixedLightness, a, b] = editorUi["oklab-ab"].companions;
 
 export type GamutPlaneView = "oklch" | "oklab";
 type ProtectedRootProp =
@@ -181,16 +183,16 @@ export function GamutPlane({
           {view === "oklch" ? (
             <>
               <ColorChannelControl
-                key="hue"
+                key={`${hue.channelId}:${hue.operationId}`}
                 {...shared}
                 id={`${id}-hue`}
-                channel="H"
-                label="Hue"
+                channel={hue.symbol}
+                label={hue.label}
                 value={model.fieldHue}
-                min={0}
-                max={360}
-                step={0.1}
-                precision={1}
+                min={hue.sliderRange.min}
+                max={hue.sliderRange.max}
+                step={hue.step}
+                precision={hue.precision}
                 gradient={model.hueGradient}
                 intervals={model.hueIntervals}
                 warningPosition={model.huePosition}
@@ -219,16 +221,16 @@ export function GamutPlane({
                 onInteraction={setHuePreview}
               />
               <ColorChannelControl
-                key="lightness"
+                key={`${lightness.channelId}:${lightness.operationId}`}
                 {...shared}
                 id={`${id}-lightness`}
-                channel="L"
-                label="Lightness"
+                channel={lightness.symbol}
+                label={lightness.label}
                 value={model.oklch.channels[0]}
-                min={0}
-                max={1}
-                step={0.001}
-                precision={4}
+                min={lightness.sliderRange.min}
+                max={lightness.sliderRange.max}
+                step={lightness.step}
+                precision={lightness.precision}
                 gradient={model.lightnessGradient}
                 intervals={model.lightnessIntervals}
                 warningPosition={model.oklch.channels[0]}
@@ -254,22 +256,22 @@ export function GamutPlane({
                 }
               />
               <ColorChannelControl
-                key="chroma"
+                key={`${chroma.channelId}:${chroma.operationId}`}
                 {...shared}
                 id={`${id}-chroma`}
-                channel="C"
-                label="Chroma"
+                channel={chroma.symbol}
+                label={chroma.label}
                 value={model.oklch.channels[1]}
-                min={0}
-                max={OKLCH_PICKER_MAX_CHROMA}
-                step={0.001}
-                precision={4}
+                min={chroma.sliderRange.min}
+                max={chroma.sliderRange.max}
+                step={chroma.step}
+                precision={chroma.precision}
                 gradient={model.chromaGradient}
                 intervals={model.chromaIntervals}
                 markers={model.markers}
                 boundaryPreviewColor={model.targetResult.swatchCss}
                 boundaryPreviewTone={boundaryTarget}
-                overflowMax
+                overflowMax={!("max" in chroma.numericBounds)}
                 help={model.chromaHelp}
                 warningPosition={model.chromaPosition}
                 onInput={(next) =>
@@ -299,16 +301,16 @@ export function GamutPlane({
           ) : (
             <>
               <ColorChannelControl
-                key="oklab-lightness"
+                key={`${fixedLightness.channelId}:${fixedLightness.operationId}`}
                 {...shared}
                 id={`${id}-oklab-lightness`}
-                channel="L"
-                label="OKLab lightness · fixed axis"
+                channel={fixedLightness.symbol}
+                label={fixedLightness.label}
                 value={model.projection.fixed}
-                min={0}
-                max={1}
-                step={0.001}
-                precision={4}
+                min={fixedLightness.sliderRange.min}
+                max={fixedLightness.sliderRange.max}
+                step={fixedLightness.step}
+                precision={fixedLightness.precision}
                 gradient={model.fixedLightnessGradient}
                 intervals={model.lightnessIntervals}
                 help={model.domainHelp}
@@ -340,23 +342,23 @@ export function GamutPlane({
                 aria-label="Editable OKLab coordinates"
               >
                 <span>Editable coordinate</span>
-                {(["a", "b"] as const).map((coordinate) => (
-                  <label key={coordinate}>
-                    <span>{coordinate}</span>
+                {[a, b].map((control) => (
+                  <label key={`${control.channelId}:${control.operationId}`}>
+                    <span>{control.label}</span>
                     <NumericInput
-                      value={coordinate === "a" ? model.projection.x : model.projection.y}
-                      precision={4}
-                      min={coordinate === "a" ? model.plane.xAxis.min : model.plane.yAxis.min}
-                      max={coordinate === "a" ? model.plane.xAxis.max : model.plane.yAxis.max}
-                      step={0.001}
-                      data-oklab-coordinate={coordinate}
-                      aria-label={`OKLab ${coordinate} numeric value`}
+                      value={control.symbol === "a" ? model.projection.x : model.projection.y}
+                      precision={control.precision}
+                      min={control.numericBounds.min}
+                      max={control.numericBounds.max}
+                      step={control.step}
+                      data-oklab-coordinate={control.symbol}
+                      aria-label={control.numericLabel}
                       onComplete={(next) =>
                         edit(
                           authorPlaneEdit(value, {
                             plane: "oklab",
                             kind: "point",
-                            point: oklabCoordinatePlanePoint(model.oklab, coordinate, next),
+                            point: oklabCoordinatePlanePoint(model.oklab, control.symbol, next),
                           }),
                           true,
                         )
