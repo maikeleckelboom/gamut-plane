@@ -34,12 +34,19 @@ describe("CSS presentation formatting", () => {
   });
 
   it("keeps OKLCH display compact and stable, including alpha", () => {
-    expect(formatOklchForDisplay({ l: 0.68, c: 0.18, h: 252, alpha: 1 })).toBe(
+    expect(formatOklchForDisplay({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 })).toBe(
       "oklch(68% 0.18 252)",
     );
     expect(
-      formatOklchForDisplay({ l: 0.000004, c: 0.0000044, h: 359.9999994, alpha: 0.5000004 }),
+      formatOklchForDisplay({
+        space: "oklch",
+        channels: [0.000004, 0.0000044, 359.9999994],
+        alpha: 0.5000004,
+      }),
     ).toBe("oklch(0% 0.000004 359.999999 / 0.5)");
+    expect(formatOklchForDisplay({ space: "oklch", channels: [0.5, 0, null], alpha: 1 })).toBe(
+      "oklch(50% 0 none)",
+    );
   });
 
   it("leaves integer sRGB serialization unchanged", () => {

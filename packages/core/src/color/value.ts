@@ -5,8 +5,8 @@ import {
   type ColorRepresentation,
 } from "./representation.js";
 
-declare const colorValueBrand: unique symbol;
-export type ColorValue = Readonly<{ readonly [colorValueBrand]: "ColorValue" }>;
+/** Type-only marker; runtime validity is checked by isColorValue. */
+export type ColorValue = Readonly<{ readonly __colorValueBrand: "ColorValue" }>;
 export type DefinitionError = Readonly<{ code: "invalid-definition" }>;
 
 type ColorValueDataV1 = Readonly<{

@@ -89,6 +89,7 @@ export {
   type PlaneEditError,
   type PlaneEditReference,
 } from "./picker/edit.js";
+export { keyboardPlanePoint, oklabCoordinatePlanePoint } from "./picker/keyboard.js";
 
 export type { ColorResult } from "./result.js";
 export type {

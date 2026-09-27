@@ -1,6 +1,6 @@
 # @gamut-plane/vue
 
-A Vue component for editing one OKLCH color in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
+A Vue component for editing one `ColorValue` in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
 
 This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal `@gamut-plane/render` package and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
 
@@ -9,10 +9,13 @@ This package is private and **not published to npm**. Use the [local tarball ins
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type DisplayGamut, type OklchColor } from "@gamut-plane/vue";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane, type ColorValue, type DisplayGamut } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
-const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+if (!initial.ok) throw new Error("Invalid initial color");
+const color = ref<ColorValue>(initial.value);
 const boundaryTarget = ref<DisplayGamut>("srgb");
 </script>
 
@@ -25,7 +28,7 @@ const boundaryTarget = ref<DisplayGamut>("srgb");
 
 | API                          | Behavior                                                                                    |
 | ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `v-model`                    | Required `OklchColor`; receives live color edits                                            |
+| `v-model`                    | Required `ColorValue`; receives live color edits                                            |
 | `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
 | `boundaryTarget`             | Controlled `DisplayGamut` projection/reference target; defaults to `"srgb"`                 |
 | `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
@@ -39,7 +42,7 @@ Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the sa
 
 Boundary target selects the projection/reference gamut. Target and visibility are independent state, but visibility controls all visual guide/projection overlays for that gamut. Neither mutates the authored color or changes the other setting.
 
-The color model requires finite lightness and alpha in 0–1, nonnegative finite chroma, and finite hue. Edits preserve alpha and unedited values. Gamut guides and the bounded editing geometry do not clamp the authored color to a display gamut.
+The `ColorValue` definition is authoritative. Changing coordinate view only observes it; real edits produce a new value defined in the edited plane. An absent neutral hue stays absent until a Hue edit establishes a direction. The field uses a presentation-only hue slice while direction is absent; chromatic OKLCH edits wait for a real Hue edit. Edits preserve alpha, and gamut guides do not clamp the authored color to a display gamut. Use `snapshotColor` and `restoreColor` from core at serialization boundaries.
 
 Cancelling a plane drag restores its starting color. A parent replacement or view change ends the gesture without rollback; interrupted native ranges retain published values. Numeric drafts apply on completion and discard on Escape. See the [interaction lifecycle](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md#interaction-lifecycle) for details.
 
@@ -77,9 +80,12 @@ Use the component with ordinary Vue state in a page or component:
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type OklchColor } from "@gamut-plane/vue";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane, type ColorValue } from "@gamut-plane/vue";
 
-const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 0.37 });
+const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 0.37 });
+if (!initial.ok) throw new Error("Invalid initial color");
+const color = ref<ColorValue>(initial.value);
 </script>
 
 <template>

@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { createColorValue, represent, snapshotColor } from "@gamut-plane/core";
 import {
   GamutPlane,
   type DisplayGamut,
-  type OklchColor,
+  type ColorValue,
   type GamutPlaneView,
 } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
-const initial = (): OklchColor => ({ l: 0.5, c: 0.2, h: 0.5, alpha: 0.7 });
+function color(l: number, c: number, h: number, alpha: number): ColorValue {
+  const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
+  if (!result.ok) throw new Error("Invalid packed consumer color");
+  return result.value;
+}
+const initial = () => color(0.5, 0.2, 0.5, 0.7);
+function observedReadout(value: ColorValue) {
+  const result = represent(value, "oklch");
+  if (!result.ok) throw new Error("Cannot observe packed consumer color");
+  const [l, c, h] = result.value.channels;
+  return { l, c, h, alpha: result.value.alpha };
+}
 const first = ref(initial());
 const second = ref(initial());
 const plane = ref<GamutPlaneView>("oklch");
@@ -28,7 +40,7 @@ if (single) width.value = 900;
     <label>Host width <input v-model="width" type="number" /></label>
     <button @click="shown = !shown">Toggle first</button>
     <button @click="dark = !dark">Toggle surroundings</button>
-    <button @click="first = { l: 0.7, c: 0.52, h: 270, alpha: 0.3 }">Replace first color</button>
+    <button @click="first = color(0.7, 0.52, 270, 0.3)">Replace first color</button>
     <button @click="plane = plane === 'oklch' ? 'oklab' : 'oklch'">Parent view</button>
     <button @click="boundaryTarget = boundaryTarget === 'srgb' ? 'display-p3' : 'srgb'">
       Parent boundary target
@@ -40,7 +52,9 @@ if (single) width.value = 900;
         <div v-show="shown">
           <GamutPlane v-model="first" :boundary-target="boundaryTarget" @commit="commits[0]!++" />
         </div>
-        <output data-color>{{ JSON.stringify(first) }}</output>
+        <output data-color :data-definition="JSON.stringify(snapshotColor(first))">{{
+          JSON.stringify(observedReadout(first))
+        }}</output>
         <output data-commits>{{ commits[0] }}</output>
         <output data-boundary-target-output>{{ boundaryTarget }}</output>
       </div>
@@ -53,7 +67,9 @@ if (single) width.value = 900;
         boundary-target="display-p3"
         @commit="commits[1]!++"
       />
-      <output data-color>{{ JSON.stringify(second) }}</output>
+      <output data-color :data-definition="JSON.stringify(snapshotColor(second))">{{
+        JSON.stringify(observedReadout(second))
+      }}</output>
       <output data-commits>{{ commits[1] }}</output>
       <output data-plane>{{ plane }}</output>
     </div>

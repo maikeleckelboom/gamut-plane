@@ -8,6 +8,7 @@ import {
   parseCssColor,
 } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
+import { planeValue } from "./colorValue";
 
 const originalPixelRatio = window.devicePixelRatio;
 
@@ -38,7 +39,7 @@ describe("planar canvas backing store", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: parseCssColor("oklch(62% 0.2 248)"),
+        ...planeValue(parseCssColor("oklch(62% 0.2 248)")),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
@@ -102,7 +103,7 @@ describe("planar canvas backing store", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        modelValue: parseCssColor("oklch(62% 0.2 248)"),
+        ...planeValue(parseCssColor("oklch(62% 0.2 248)")),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),

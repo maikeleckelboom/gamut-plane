@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { createSSRApp, h } from "vue";
 import { renderToString } from "vue/server-renderer";
-import { GamutPlane, type OklchColor, type GamutPlaneView } from "@gamut-plane/vue";
+import { GamutPlane, type ColorValue, type GamutPlaneView } from "@gamut-plane/vue";
 import { createColorValue, definingEquals, restoreColor, snapshotColor } from "@gamut-plane/core";
 
 assert.equal(typeof window, "undefined");
@@ -27,8 +27,14 @@ assert.equal(
   realpathSync(hostRequire.resolve("vue")),
   realpathSync(instrumentRequire.resolve("vue")),
 );
-const color: OklchColor = Object.freeze({ l: 0.68, c: 0.52345678, h: 612.123456, alpha: 0.37 });
-const original = { ...color };
+const fixture = createColorValue({
+  space: "oklch",
+  channels: [0.68, 0.52345678, 612.123456],
+  alpha: 0.37,
+});
+if (!fixture.ok) throw new Error("Invalid SSR color");
+const color = fixture.value;
+const original = snapshotColor(color);
 for (const plane of ["oklch", "oklab"] satisfies GamutPlaneView[]) {
   let events = 0;
   const app = createSSRApp({
@@ -59,12 +65,14 @@ for (const plane of ["oklch", "oklab"] satisfies GamutPlaneView[]) {
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(events, 0);
-  assert.deepEqual(color, original);
+  assert.deepEqual(snapshotColor(color), original);
 }
-async function renderRequest(value: OklchColor) {
+async function renderRequest(value: ColorValue) {
   return renderToString(createSSRApp({ render: () => h(GamutPlane, { modelValue: value }) }));
 }
-const other = Object.freeze({ l: 0.21, c: 0.62, h: -42, alpha: 0.19 });
+const otherResult = createColorValue({ space: "oklch", channels: [0.21, 0.62, -42], alpha: 0.19 });
+if (!otherResult.ok) throw new Error("Invalid alternate SSR color");
+const other = otherResult.value;
 const [first, second, repeated] = await Promise.all([
   renderRequest(color),
   renderRequest(other),

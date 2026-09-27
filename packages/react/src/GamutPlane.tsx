@@ -5,26 +5,27 @@ import { presentationStyle } from "./model/presentationStyle.js";
 import {
   useId,
   useLayoutEffect,
+  useRef,
   useState,
   type ComponentPropsWithRef,
   type CSSProperties,
   type ReactNode,
 } from "react";
 import {
-  OKLAB_AB_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
+  authorPlaneEdit,
   normalizeHue,
+  oklabCoordinatePlanePoint,
+  represent,
+  type ColorResult,
+  type ColorValue,
   type DisplayGamut,
-  type OklchColor,
+  type PlaneEditError,
+  type PlaneEditReference,
 } from "@gamut-plane/core";
 import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
 import { useControllableView } from "./hooks/useControllableView.js";
-import {
-  instrumentModel,
-  hueGradient,
-  editChannel,
-  editCoordinate,
-} from "./model/instrumentModel.js";
+import { instrumentModel, hueGradient } from "./model/instrumentModel.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
@@ -47,15 +48,15 @@ type ProtectedRootProp =
   | "suppressHydrationWarning"
   | "style";
 export interface GamutPlaneProps extends Omit<ComponentPropsWithRef<"section">, ProtectedRootProp> {
-  value: OklchColor;
-  onValueChange: (value: OklchColor) => void;
+  value: ColorValue;
+  onValueChange: (value: ColorValue) => void;
   view?: GamutPlaneView | undefined;
   defaultView?: GamutPlaneView | undefined;
   onViewChange?: ((view: GamutPlaneView) => void) | undefined;
   boundaryTarget?: DisplayGamut | undefined;
   showSrgbBoundary?: boolean | undefined;
   showDisplayP3Boundary?: boolean | undefined;
-  onValueCommit?: ((value: OklchColor) => void) | undefined;
+  onValueCommit?: ((value: ColorValue) => void) | undefined;
   onCancel?: (() => void) | undefined;
   onCanvasColorSpaceChange?: ((status: CanvasColorSpaceStatus) => void) | undefined;
   legend?: ReactNode;
@@ -103,14 +104,27 @@ export function GamutPlane({
     srgb: showSrgbBoundary,
     displayP3: showDisplayP3Boundary,
   });
+  const hueReference = useRef<PlaneEditReference | undefined>(undefined);
+  useLayoutEffect(() => {
+    const observed = represent(value, "oklch");
+    if (!observed.ok) throw new RangeError("Selected hue cannot be observed");
+    const hue = observed.value.channels[2];
+    if (hue !== null) hueReference.current = { hue };
+    else hueReference.current = undefined;
+  }, [value]);
   const [huePreview, setHuePreview] = useState(false);
   // A view transition interrupts temporary preview ownership, never authored state.
   useLayoutEffect(() => {
     setHuePreview(false);
   }, [view]);
-  function edit(next: OklchColor, complete: boolean) {
-    onValueChange(next);
-    if (complete) onValueCommit?.(next);
+  function edit(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean) {
+    if (!result.ok) return;
+    const observed = represent(result.value, "oklch");
+    if (observed.ok && observed.value.channels[2] !== null) {
+      hueReference.current = { hue: observed.value.channels[2] };
+    }
+    onValueChange(result.value);
+    if (complete) onValueCommit?.(result.value);
   }
   const dom = Object.fromEntries(
     Object.entries(rootProps).filter(
@@ -143,6 +157,8 @@ export function GamutPlane({
         <div className="gpr-plane-instrument-field">
           <ColorPlane
             value={value}
+            presentationColor={model.presentationColor}
+            getEditReference={() => hueReference.current}
             plane={model.plane}
             projectionColor={model.projectionColor}
             projectionLabel={model.projectionLabel}
@@ -166,7 +182,7 @@ export function GamutPlane({
                 id={`${id}-hue`}
                 channel="H"
                 label="Hue"
-                value={value.h}
+                value={model.presentationColor.h}
                 min={0}
                 max={360}
                 step={0.1}
@@ -175,8 +191,31 @@ export function GamutPlane({
                 intervals={model.hueIntervals}
                 warningPosition={model.huePosition}
                 normalizeValue={normalizeHue}
-                onInput={(next) => edit(editChannel(value, "h", next), false)}
-                onComplete={(next) => edit(editChannel(value, "h", next), true)}
+                help={
+                  model.oklch.channels[2] === null
+                    ? "Hue is unset. Edit Hue to choose a direction."
+                    : undefined
+                }
+                onInput={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { h: normalizeHue(next) },
+                    }),
+                    false,
+                  )
+                }
+                onComplete={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { h: normalizeHue(next) },
+                    }),
+                    true,
+                  )
+                }
                 onInteraction={setHuePreview}
               />
               <ColorChannelControl
@@ -185,16 +224,34 @@ export function GamutPlane({
                 id={`${id}-lightness`}
                 channel="L"
                 label="Lightness"
-                value={value.l}
+                value={model.oklch.channels[0]}
                 min={0}
                 max={1}
                 step={0.001}
                 precision={4}
                 gradient={model.lightnessGradient}
                 intervals={model.lightnessIntervals}
-                warningPosition={value.l}
-                onInput={(next) => edit(editChannel(value, "l", next), false)}
-                onComplete={(next) => edit(editChannel(value, "l", next), true)}
+                warningPosition={model.oklch.channels[0]}
+                onInput={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { l: next },
+                    }),
+                    false,
+                  )
+                }
+                onComplete={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { l: next },
+                    }),
+                    true,
+                  )
+                }
               />
               <ColorChannelControl
                 key="chroma"
@@ -202,7 +259,7 @@ export function GamutPlane({
                 id={`${id}-chroma`}
                 channel="C"
                 label="Chroma"
-                value={value.c}
+                value={model.oklch.channels[1]}
                 min={0}
                 max={OKLCH_PICKER_MAX_CHROMA}
                 step={0.001}
@@ -213,10 +270,34 @@ export function GamutPlane({
                 boundaryPreviewColor={model.targetResult.swatchCss}
                 boundaryPreviewTone={boundaryTarget}
                 overflowMax
-                help={model.chromaHelp}
+                help={
+                  model.oklch.channels[2] === null
+                    ? "Set Hue before increasing chroma."
+                    : model.chromaHelp
+                }
                 warningPosition={model.chromaPosition}
-                onInput={(next) => edit(editChannel(value, "c", next), false)}
-                onComplete={(next) => edit(editChannel(value, "c", next), true)}
+                onInput={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { c: next },
+                      ...(hueReference.current && { reference: hueReference.current }),
+                    }),
+                    false,
+                  )
+                }
+                onComplete={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklch",
+                      kind: "channels",
+                      channels: { c: next },
+                      ...(hueReference.current && { reference: hueReference.current }),
+                    }),
+                    true,
+                  )
+                }
               />
             </>
           ) : (
@@ -236,8 +317,26 @@ export function GamutPlane({
                 intervals={model.lightnessIntervals}
                 help={model.domainHelp}
                 warningPosition={model.projection.fixed}
-                onInput={(next) => edit(OKLAB_AB_PLANE.editFixedAxis(value, next), false)}
-                onComplete={(next) => edit(OKLAB_AB_PLANE.editFixedAxis(value, next), true)}
+                onInput={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklab",
+                      kind: "channels",
+                      channels: { l: next },
+                    }),
+                    false,
+                  )
+                }
+                onComplete={(next) =>
+                  edit(
+                    authorPlaneEdit(value, {
+                      plane: "oklab",
+                      kind: "channels",
+                      channels: { l: next },
+                    }),
+                    true,
+                  )
+                }
               />
               <div
                 className="gpr-plane-instrument-coordinate-readout"
@@ -255,7 +354,16 @@ export function GamutPlane({
                       step={0.001}
                       data-oklab-coordinate={coordinate}
                       aria-label={`OKLab ${coordinate} numeric value`}
-                      onComplete={(next) => edit(editCoordinate(value, coordinate, next), true)}
+                      onComplete={(next) =>
+                        edit(
+                          authorPlaneEdit(value, {
+                            plane: "oklab",
+                            kind: "point",
+                            point: oklabCoordinatePlanePoint(model.oklab, coordinate, next),
+                          }),
+                          true,
+                        )
+                      }
                       onCancel={onCancel}
                     />
                   </label>

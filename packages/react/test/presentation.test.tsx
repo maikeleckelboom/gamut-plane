@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { GamutPlane } from "../src/index.js";
-import { event, frames, get, host, initial, input, mount } from "./helpers.js";
+import { color, event, frames, get, host, input, mount } from "./helpers.js";
 import { canvasContext } from "./setup.js";
 
 describe("instrument presentation contracts", () => {
@@ -8,7 +8,11 @@ describe("instrument presentation contracts", () => {
     "keeps %s target result visible and distinguishes sampled data from exact warnings",
     async (view) => {
       const ui = await mount(
-        <GamutPlane value={{ ...initial, c: 0.52 }} onValueChange={vi.fn()} defaultView={view} />,
+        <GamutPlane
+          value={color(0.62, 0.52, 45, 0.37)}
+          onValueChange={vi.fn()}
+          defaultView={view}
+        />,
       );
       const target = get<HTMLElement>(ui.element, "[data-boundary-target-result]");
       expect(target.textContent).toContain("Guide C");
@@ -33,7 +37,7 @@ describe("instrument presentation contracts", () => {
     },
   );
   it("updates exact warnings without losing sampled intervals or clamping overflow", async () => {
-    const ui = await host({ value: { ...initial, c: 0.52 } });
+    const ui = await host({ value: color(0.62, 0.52, 45, 0.37) });
     expect(get(ui.element, '[data-picker-control="c"]').dataset.instrumentOverflow).toBe("true");
     expect(
       get<HTMLInputElement>(ui.element, '[data-picker-control="c"] [type="number"]').value,
@@ -42,7 +46,7 @@ describe("instrument presentation contracts", () => {
       get<HTMLInputElement>(ui.element, '[data-picker-control="c"] [type="range"]').value,
     ).toBe("0.4");
     expect(ui.element.querySelectorAll("[data-gamut-range]").length).toBeGreaterThan(0);
-    await ui.replace({ ...initial, c: 0 });
+    await ui.replace(color(0.62, 0, 45, 0.37));
     expect(get(ui.element, "[data-gamut-warning]").style.display).toBe("none");
     expect(ui.element.querySelectorAll('[aria-describedby*="gamut-warning"]')).toHaveLength(0);
     expect(ui.changes).not.toHaveBeenCalled();

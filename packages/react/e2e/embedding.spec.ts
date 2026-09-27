@@ -181,6 +181,9 @@ test("OKLab negative decimal drafts, invalid input, Escape and subsequent edits"
     await input.press("Enter");
     await input.press("Tab");
     const committed = await color(first);
+    expect(
+      JSON.parse((await first.locator("[data-definition]").getAttribute("data-definition"))!).space,
+    ).toBe("oklab");
     expect(committed.alpha).toBe(0.7);
     expect(committed.l).toBe(0.5);
     await input.fill("");

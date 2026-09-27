@@ -5,6 +5,8 @@ import {
   createColorValue,
   definitionOf,
   definingEquals,
+  keyboardPlanePoint,
+  oklabCoordinatePlanePoint,
   projectColorToPlane,
   type ColorRepresentation,
   type ColorValue,
@@ -22,6 +24,25 @@ function edited(result: ReturnType<typeof authorPlaneEdit>): ColorValue {
 }
 
 describe("ColorValue plane observations and authorship", () => {
+  it("resolves keyboard and numeric geometry before edit authorship", () => {
+    const source = create({ space: "oklch", channels: [0.6, 0.2, 210], alpha: 0.7 });
+    const lch = projectColorToPlane(source, "oklch");
+    const lab = projectColorToPlane(source, "oklab");
+    if (!lch.ok || !lab.ok) throw new Error("projection failed");
+    const lchPoint = keyboardPlanePoint(lch.value, "increase-x", false);
+    const lchEdit = edited(
+      authorPlaneEdit(source, { plane: "oklch", kind: "point", point: lchPoint }),
+    );
+    expect(definitionOf(lchEdit).channels[1]).toBeCloseTo(0.205, 12);
+    const labPoint = keyboardPlanePoint(lab.value, "minimum-x", false);
+    const labEdit = edited(
+      authorPlaneEdit(source, { plane: "oklab", kind: "point", point: labPoint }),
+    );
+    expect(definitionOf(labEdit).space).toBe("oklab");
+    const coordinatePoint = oklabCoordinatePlanePoint(lab.value, "a", 0.4);
+    expect(Math.hypot(coordinatePoint.x - 0.5, coordinatePoint.y - 0.5)).toBeLessThanOrEqual(0.5);
+    expect(definitionOf(source).space).toBe("oklch");
+  });
   const definitions = [
     { space: "srgb", channels: [1.2, -0.1, 0.4], alpha: -0 },
     { space: "display-p3", channels: [1, 0.3, -0.2], alpha: 0.372913 },

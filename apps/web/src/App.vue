@@ -1,30 +1,25 @@
 <script setup lang="ts">
 import {
+  analyzeGamut,
+  createColorValue,
   findMaximumChroma,
-  isColorInGamut,
+  represent,
+  serializeCss,
   serializeColor,
-  serializeHexColor,
-  toOklabColor,
+  serializeHex,
+  type ColorValue,
   type DisplayGamut,
 } from "@gamut-plane/core";
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
-import {
-  GamutPlane,
-  type OklchColor,
-  type GamutPlaneView,
-  type CanvasColorSpaceStatus,
-} from "@gamut-plane/vue";
+import { GamutPlane, type GamutPlaneView, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 import { formatOklchForDisplay, formatRgbCssForDisplay } from "@/colorPresentation";
 
-const selectedColor = ref<OklchColor>({
-  l: 0.68,
-  c: 0.18,
-  h: 252,
-  alpha: 1,
-});
+const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+if (!fixture.ok) throw new Error("Invalid initial selected color");
+const selectedColor = ref<ColorValue>(fixture.value);
 const activePlane = ref<GamutPlaneView>("oklch");
 const boundaryTarget = ref<DisplayGamut>("srgb");
 const boundaries = ref({
@@ -35,32 +30,48 @@ const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
 const copiedRepresentation = ref<CssRepresentation | null>(null);
 
-const gamutStatus = computed(() => ({
-  srgb: { inGamut: isColorInGamut(selectedColor.value, "srgb") },
-  displayP3: { inGamut: isColorInGamut(selectedColor.value, "display-p3") },
-}));
-const oklchCanonicalCss = computed(() => serializeColor(selectedColor.value));
-const oklchDisplayCss = computed(() => formatOklchForDisplay(selectedColor.value));
+function observe<S extends "oklch" | "oklab" | "srgb" | "display-p3">(space: S) {
+  const result = represent(selectedColor.value, space);
+  if (!result.ok) throw new RangeError(`Selected color cannot be observed in ${space}`);
+  return result.value;
+}
+const oklch = computed(() => observe("oklch"));
+const gamutStatus = computed(() => {
+  const srgb = analyzeGamut(selectedColor.value, "srgb-gamut");
+  const displayP3 = analyzeGamut(selectedColor.value, "display-p3-gamut");
+  if (!srgb.ok || !displayP3.ok) throw new RangeError("Selected color cannot be analyzed");
+  return {
+    srgb: { inGamut: srgb.value.status === "inside" },
+    displayP3: { inGamut: displayP3.value.status === "inside" },
+  };
+});
+const oklchCanonicalCss = computed(() => {
+  const output = serializeCss(oklch.value, { policy: "preserve-coordinates" });
+  return output.ok ? output.value.text : null;
+});
+const oklchDisplayCss = computed(() => formatOklchForDisplay(oklch.value));
 const selectedCoordinates = computed(() => {
-  const color = selectedColor.value;
   if (activePlane.value === "oklch") {
+    const [l, c, h] = oklch.value.channels;
     return [
-      { label: "L", value: color.l.toFixed(4) },
-      { label: "C", value: color.c.toFixed(4) },
-      { label: "H", value: `${color.h.toFixed(2)}°` },
+      { label: "L", value: l.toFixed(4) },
+      { label: "C", value: c.toFixed(4) },
+      { label: "H", value: h === null ? "none" : `${h.toFixed(2)}°` },
     ];
   }
-  const oklab = toOklabColor(color);
+  const [l, a, b] = observe("oklab").channels;
   return [
-    { label: "L", value: oklab.l.toFixed(4) },
-    { label: "a", value: oklab.a.toFixed(4) },
-    { label: "b", value: oklab.b.toFixed(4) },
+    { label: "L", value: l.toFixed(4) },
+    { label: "a", value: a.toFixed(4) },
+    { label: "b", value: b.toFixed(4) },
   ];
 });
 const srgbCanonicalCss = computed(() => exactCss("srgb"));
-const hexColor = computed(() =>
-  gamutStatus.value.srgb.inGamut ? serializeHexColor(selectedColor.value) : null,
-);
+const hexColor = computed(() => {
+  const srgb = observe("srgb");
+  const output = serializeHex(srgb, { alpha: srgb.alpha === 1 ? "omit" : "include" });
+  return output.ok ? output.value.text : null;
+});
 const displayP3CanonicalCss = computed(() => exactCss("display-p3"));
 const srgbDisplayCss = computed(() =>
   srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
@@ -74,8 +85,10 @@ const srgbBoundaryPreviewCss = computed(() =>
     ? null
     : serializeColor(
         {
-          ...selectedColor.value,
-          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "srgb"),
+          l: oklch.value.channels[0],
+          c: findMaximumChroma(oklch.value.channels[0], oklch.value.channels[2] ?? 0, "srgb"),
+          h: oklch.value.channels[2] ?? 0,
+          alpha: oklch.value.alpha,
         },
         "srgb",
       ),
@@ -85,8 +98,10 @@ const displayP3BoundaryPreviewCss = computed(() =>
     ? null
     : serializeColor(
         {
-          ...selectedColor.value,
-          c: findMaximumChroma(selectedColor.value.l, selectedColor.value.h, "display-p3"),
+          l: oklch.value.channels[0],
+          c: findMaximumChroma(oklch.value.channels[0], oklch.value.channels[2] ?? 0, "display-p3"),
+          h: oklch.value.channels[2] ?? 0,
+          alpha: oklch.value.alpha,
         },
         "display-p3",
       ),
@@ -115,8 +130,11 @@ const capabilityLabel = computed(() => {
 });
 
 function exactCss(gamut: DisplayGamut): string | null {
-  const status = gamut === "srgb" ? gamutStatus.value.srgb : gamutStatus.value.displayP3;
-  return status.inGamut ? serializeColor(selectedColor.value, gamut) : null;
+  const output = serializeCss(observe(gamut), {
+    policy: "require-in-gamut",
+    gamut: gamut === "srgb" ? "srgb-gamut" : "display-p3-gamut",
+  });
+  return output.ok ? output.value.text : null;
 }
 
 function isCopied(representation: CssRepresentation): boolean {
@@ -286,7 +304,7 @@ async function copyCss(
             <span>OKLCH</span>
             <span
               class="css-representation__swatch"
-              :style="{ backgroundColor: oklchCanonicalCss }"
+              :style="{ backgroundColor: oklchCanonicalCss ?? undefined }"
               aria-hidden="true"
             />
             <button

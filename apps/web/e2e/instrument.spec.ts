@@ -546,7 +546,7 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   await openInstrument(page);
 
   await expect(page.locator('[data-css-representation="display-p3"] code')).toHaveText(
-    "color(display-p3 0.316504 0.597325 0.983548)",
+    "color(display-p3 0.316504 0.597325 0.983548 / 1)",
   );
   const p3Copy = page.locator('[data-copy-representation="display-p3"]');
   await expect(p3Copy).toHaveAccessibleName("Copy Display P3 CSS value");

@@ -1,7 +1,7 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { serializeColor } from "@gamut-plane/core";
+import { projectColorToPlane, serializeColor } from "@gamut-plane/core";
 import {
   geometryToSvgPath,
   pointStyle,
@@ -30,6 +30,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const {
     plane,
     value,
+    presentationColor,
     projectionColor,
     projectionLabel,
     warningVisible,
@@ -45,26 +46,35 @@ export function ColorPlane(props: ColorPlaneProps) {
   const [capability, setCapability] = useState<CanvasColorSpaceStatus>("pending");
   const notified = useRef<CanvasColorSpaceStatus>("pending");
   const [quality, setQuality] = useState<RenderedFieldQuality>("full");
-  const projection = plane.project(value);
-  const activePoint = plane.positionActivePoint(value);
+  const projected = projectColorToPlane(value, plane.id);
+  if (!projected.ok) throw new RangeError("Selected color cannot be projected into the plane");
+  const projection = projected.value;
+  const fixed =
+    projection.plane === "oklch" ? presentationColor.h : projection.representation.channels[0];
+  const x = projection.representation.channels[1];
+  const y =
+    projection.plane === "oklch"
+      ? projection.representation.channels[0]
+      : projection.representation.channels[2];
+  const activePoint = plane.constrainPoint(projected.value.point);
   const guide = projectionColor ? plane.positionActivePoint(projectionColor) : null;
   // Plane markers must occlude guides even when the authored color has transparency.
   const paths = useMemo(
     () => ({
       srgb: showSrgbBoundary
         ? geometryToSvgPath(
-            plane.buildGamutContour(PICKER_GAMUT_TABLES.srgb, projection.fixed),
+            plane.buildGamutContour(PICKER_GAMUT_TABLES.srgb, fixed),
             plane.gamutContourClosed,
           )
         : "",
       p3: showDisplayP3Boundary
         ? geometryToSvgPath(
-            plane.buildGamutContour(PICKER_GAMUT_TABLES.displayP3, projection.fixed),
+            plane.buildGamutContour(PICKER_GAMUT_TABLES.displayP3, fixed),
             plane.gamutContourClosed,
           )
         : "",
     }),
-    [plane, projection.fixed, showDisplayP3Boundary, showSrgbBoundary],
+    [plane, fixed, showDisplayP3Boundary, showSrgbBoundary],
   );
   useLayoutEffect(() => {
     const mounted = mountPlane(
@@ -91,7 +101,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   useLayoutEffect(() => {
     binding.current?.reconcile();
   });
-  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point.${warningVisible ? " Outside Display P3" : ""}`;
+  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x.toFixed(3)}. Vertical ${plane.yAxis.label} ${y.toFixed(3)}. Arrow keys adjust the selected point.${projection.plane === "oklch" && projection.representation.channels[2] === null ? " Set Hue before increasing chroma." : ""}${warningVisible ? " Outside Display P3" : ""}`;
   const geometryStyle = {
     "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
@@ -119,7 +129,7 @@ export function ColorPlane(props: ColorPlaneProps) {
         dir="ltr"
         aria-label={label}
         data-render-color-space={capability}
-        data-outside-instrument={String(!plane.isPointInInstrumentDomain(projection.point))}
+        data-outside-instrument={String(!plane.isPointInInstrumentDomain(projected.value.point))}
       >
         <canvas ref={canvas} aria-hidden="true" />
         {plane.id === "oklab" && (
@@ -224,7 +234,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
           style={presentationStyle({
             ...pointStyle(activePoint),
-            "--marker-color": serializeColor({ ...value, alpha: 1 }),
+            "--marker-color": serializeColor({ ...presentationColor, alpha: 1 }),
           })}
           data-outside-display-p3={String(warningVisible)}
           data-active-marker=""

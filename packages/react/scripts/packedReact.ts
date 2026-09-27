@@ -74,7 +74,7 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
         "GamutPlane",
         "GamutPlaneProps",
         "GamutPlaneView",
-        "OklchColor",
+        "ColorValue",
         "CanvasColorSpaceStatus",
       ])
         assert.ok(types.includes(name));

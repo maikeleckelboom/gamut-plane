@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import {
+  authorPlaneEdit,
+  definingEquals,
+  keyboardPlanePoint,
+  projectColorToPlane,
   serializeColor,
+  type ColorValue,
   type OklchColor,
   type GamutBoundaryTable,
   type PickerPlaneContract,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
+  type PlaneEditReference,
 } from "@gamut-plane/core";
 import { useDevicePixelRatio, useEventListener, useResizeObserver } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -34,7 +40,9 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    modelValue: OklchColor;
+    modelValue: ColorValue;
+    presentationColor: OklchColor;
+    editReference?: PlaneEditReference;
     plane: PickerPlaneContract;
     srgbTable: GamutBoundaryTable;
     displayP3Table: GamutBoundaryTable;
@@ -54,8 +62,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [color: OklchColor];
-  commit: [color: OklchColor];
+  "update:modelValue": [color: ColorValue];
+  commit: [color: ColorValue];
   cancel: [];
   capability: [status: CanvasColorSpaceStatus];
 }>();
@@ -74,18 +82,26 @@ let pointerRaf: number | null = null;
 let pendingPoint: PlanePoint | null = null;
 let activePointerId: number | null = null;
 let latestInteractionPoint: PlanePoint | null = null;
-let latestInteractionColor: OklchColor | null = null;
-let interactionOrigin: OklchColor | null = null;
+let latestInteractionColor: ColorValue | null = null;
+let interactionOrigin: ColorValue | null = null;
 let boundsDirty = false;
 let isUnmounted = false;
 let isMounted = false;
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
 
-const activeProjection = computed(() => props.plane.project(props.modelValue));
-const fixedAxis = computed(() => activeProjection.value.fixed);
+const activeProjection = computed(() => {
+  const projected = projectColorToPlane(props.modelValue, props.plane.id);
+  if (!projected.ok) throw new RangeError("Selected color cannot be projected into the plane");
+  return projected.value;
+});
+const fixedAxis = computed(() =>
+  props.plane.id === "oklch"
+    ? props.presentationColor.h
+    : activeProjection.value.representation.channels[0],
+);
 const activePoint = computed(() => activeProjection.value.point);
-const boundedActivePoint = computed(() => props.plane.positionActivePoint(props.modelValue));
+const boundedActivePoint = computed(() => props.plane.constrainPoint(activePoint.value));
 const boundaryProjectionPoint = computed<PlanePoint | null>(() => {
   if (!props.boundaryProjectionColor) return null;
   return props.plane.positionActivePoint(props.boundaryProjectionColor);
@@ -124,10 +140,10 @@ const displayP3Path = computed(() =>
       )
     : "",
 );
-const activeCss = computed(() => serializeColor({ ...props.modelValue, alpha: 1 }));
+const activeCss = computed(() => serializeColor({ ...props.presentationColor, alpha: 1 }));
 const planeLabel = computed(() => {
-  const projection = activeProjection.value;
-  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${projection.x.toFixed(3)}. Vertical ${props.plane.yAxis.label} ${projection.y.toFixed(3)}. Arrow keys adjust the selected point.`;
+  const channels = activeProjection.value.representation.channels;
+  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${channels[1].toFixed(3)}. Vertical ${props.plane.yAxis.label} ${props.plane.id === "oklch" ? channels[0].toFixed(3) : (channels[2] as number).toFixed(3)}. Arrow keys adjust the selected point.${props.plane.id === "oklch" && channels[2] === null ? " Set Hue before increasing chroma." : ""}`;
   return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
 });
 const instrumentStyle = {
@@ -240,10 +256,23 @@ function positionActiveAnnotations(point: PlanePoint): void {
   warning.style.visibility = "visible";
 }
 
-function emitLivePoint(point: PlanePoint): OklchColor {
+function emitLivePoint(point: PlanePoint): ColorValue | null {
   pendingPoint = null;
   positionActiveAnnotations(point);
-  const color = props.plane.unproject(point, activeProjection.value.fixed, props.modelValue);
+  const result =
+    props.plane.id === "oklch"
+      ? authorPlaneEdit(props.modelValue, {
+          plane: "oklch",
+          kind: "point",
+          point,
+          ...(props.editReference ? { reference: props.editReference } : {}),
+        })
+      : authorPlaneEdit(props.modelValue, { plane: "oklab", kind: "point", point });
+  if (!result.ok) {
+    positionActiveAnnotations(boundedActivePoint.value);
+    return null;
+  }
+  const color = result.value;
   if (activePointerId !== null) {
     latestInteractionPoint = point;
     latestInteractionColor = color;
@@ -277,7 +306,7 @@ function onPointerDown(event: PointerEvent): void {
   if (!point || !surface.value) return;
   event.preventDefault();
   activePointerId = event.pointerId;
-  interactionOrigin = { ...props.modelValue };
+  interactionOrigin = props.modelValue;
   latestInteractionPoint = null;
   latestInteractionColor = null;
   surface.value.dataset.pointerFocus = "";
@@ -300,7 +329,7 @@ function finishPointer(event: PointerEvent): void {
   endPointer();
   if (point) {
     const color = emitLivePoint(point);
-    emit("commit", color);
+    if (color) emit("commit", color);
   }
 }
 
@@ -321,9 +350,9 @@ function cancelInteraction(rollback: boolean): void {
   const origin = interactionOrigin;
   endPointer();
   if (rollback && origin) emit("update:modelValue", origin);
-  positionActiveAnnotations(
-    props.plane.positionActivePoint(rollback && origin ? origin : props.modelValue),
-  );
+  const selected = rollback && origin ? origin : props.modelValue;
+  const projected = projectColorToPlane(selected, props.plane.id);
+  if (projected.ok) positionActiveAnnotations(props.plane.constrainPoint(projected.value.point));
   emit("cancel");
 }
 
@@ -351,9 +380,19 @@ function onKeydown(event: KeyboardEvent): void {
 
   event.preventDefault();
   cancelInteraction(false);
-  const next = props.plane.editFromKeyboard(props.modelValue, action, event.shiftKey);
-  emit("update:modelValue", next);
-  emit("commit", next);
+  const point = keyboardPlanePoint(activeProjection.value, action, event.shiftKey);
+  const result =
+    props.plane.id === "oklch"
+      ? authorPlaneEdit(props.modelValue, {
+          plane: "oklch",
+          kind: "point",
+          point,
+          ...(props.editReference ? { reference: props.editReference } : {}),
+        })
+      : authorPlaneEdit(props.modelValue, { plane: "oklab", kind: "point", point });
+  if (!result.ok) return;
+  emit("update:modelValue", result.value);
+  emit("commit", result.value);
 }
 
 function onBlur(): void {
@@ -367,16 +406,11 @@ watch(
   { flush: "sync" },
 );
 watch(
-  () => [props.modelValue.l, props.modelValue.c, props.modelValue.h, props.modelValue.alpha],
+  () => props.modelValue,
   () => {
     const expected = latestInteractionColor ?? interactionOrigin;
     if (!expected || activePointerId === null) return;
-    // Cloned v-model feedback is still ours; a different parent value supersedes the gesture.
-    if (
-      (["l", "c", "h", "alpha"] as const).some((key) => props.modelValue[key] !== expected[key])
-    ) {
-      cancelInteraction(false);
-    }
+    if (!definingEquals(props.modelValue, expected)) cancelInteraction(false);
   },
   { flush: "sync" },
 );

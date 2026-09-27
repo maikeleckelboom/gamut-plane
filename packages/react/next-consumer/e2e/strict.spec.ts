@@ -253,7 +253,13 @@ test("cloned feedback and fresh callbacks preserve a coalesced gesture and final
   await page.mouse.up();
   await expect.poll(async () => (await events(page)).commits).toBe(1);
   const final = await color(page);
-  expect((await events(page)).final).toEqual(final);
+  expect((await events(page)).final).toEqual(
+    JSON.parse(
+      (await page
+        .locator('[data-host="first"] [data-definition]')
+        .getAttribute("data-definition"))!,
+    ),
+  );
   expect(final.c).toBeGreaterThan(0.3);
   expect(final.l).toBeGreaterThan(0.85);
   expect(final.alpha).toBe(0.37);
@@ -381,7 +387,13 @@ test("resizing during capture updates pointer geometry", async ({ page }) => {
   const final = await color(page);
   expect(final.c).toBeCloseTo(0.1, 2);
   expect(final.l).toBeCloseTo(0.75, 2);
-  expect((await events(page)).final).toEqual(final);
+  expect((await events(page)).final).toEqual(
+    JSON.parse(
+      (await page
+        .locator('[data-host="first"] [data-definition]')
+        .getAttribute("data-definition"))!,
+    ),
+  );
   expect((await events(page)).cancels).toBe(0);
   expect(errors).toEqual([]);
 });

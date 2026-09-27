@@ -150,7 +150,7 @@ describe("standalone application", () => {
 
     const representation = wrapper.get('[data-css-representation="display-p3"]');
     const displayed = representation.get("code").text();
-    expect(displayed).toBe("color(display-p3 0.316504 0.597325 0.983548)");
+    expect(displayed).toBe("color(display-p3 0.316504 0.597325 0.983548 / 1)");
 
     const copyButton = representation.get('[data-copy-representation="display-p3"]');
     await copyButton.trigger("click");
@@ -159,7 +159,7 @@ describe("standalone application", () => {
     const announcement = wrapper.get('[role="status"]').text();
     const copiedValue = announcement.replace("Copied Display P3: ", "");
     expect(copiedValue).toMatch(
-      /^color\(display-p3 0\.31650380404936257 0\.5973245576847196 0\.9835484146109986\)$/,
+      /^color\(display-p3 0\.31650380404936257 0\.5973245576847196 0\.9835484146109986 \/ 1\)$/,
     );
     expect(copiedValue).not.toBe(displayed);
     expect(announcement).toContain(copiedValue);
@@ -242,7 +242,7 @@ describe("standalone application", () => {
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0");
     await flushPromises();
     expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
-    expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^rgb\(/);
+    expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^color\(srgb /);
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
     normalizedPreview.style.backgroundColor = wrapper
       .get('[data-css-representation="hex"] code')

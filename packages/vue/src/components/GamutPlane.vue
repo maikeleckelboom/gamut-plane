@@ -3,10 +3,17 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
+  authorPlaneEdit,
   normalizeHue,
+  oklabCoordinatePlanePoint,
+  projectColorToPlane,
+  represent,
   serializeColor,
+  type ColorResult,
+  type ColorValue,
   type DisplayGamut,
-  type OklchColor,
+  type PlaneEditError,
+  type PlaneEditReference,
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import { computed, ref, useId, watch } from "vue";
@@ -19,13 +26,14 @@ import {
   colorGradient,
   displayGamutLabel,
   getBoundaryPresentation,
+  observePickerPresentationColor,
   PICKER_GAMUT_TABLES,
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
-    modelValue: OklchColor;
+    modelValue: ColorValue;
     boundaryTarget?: DisplayGamut;
     showSrgbBoundary?: boolean;
     showDisplayP3Boundary?: boolean;
@@ -38,8 +46,8 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [color: OklchColor];
-  commit: [color: OklchColor];
+  "update:modelValue": [color: ColorValue];
+  commit: [color: ColorValue];
   cancel: [];
   capability: [status: CanvasColorSpaceStatus];
 }>();
@@ -56,9 +64,34 @@ const tables = PICKER_GAMUT_TABLES;
 const activePlaneContract = computed(() =>
   plane.value === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
 );
-const planeProjection = computed(() => activePlaneContract.value.project(props.modelValue));
+const presentationColor = computed(() => observePickerPresentationColor(props.modelValue));
+const oklchProjection = computed(() => {
+  const projected = projectColorToPlane(props.modelValue, "oklch");
+  if (!projected.ok) throw new RangeError("Selected color cannot be projected into OKLCH");
+  return projected.value;
+});
+const oklabProjection = computed(() => {
+  const projected = projectColorToPlane(props.modelValue, "oklab");
+  if (!projected.ok) throw new RangeError("Selected color cannot be projected into OKLab");
+  return projected.value;
+});
+const planeProjection = computed(() =>
+  plane.value === "oklch"
+    ? {
+        point: oklchProjection.value.point,
+        x: oklchProjection.value.representation.channels[1],
+        y: oklchProjection.value.representation.channels[0],
+        fixed: presentationColor.value.h,
+      }
+    : {
+        point: oklabProjection.value.point,
+        x: oklabProjection.value.representation.channels[1],
+        y: oklabProjection.value.representation.channels[2],
+        fixed: oklabProjection.value.representation.channels[0],
+      },
+);
 const boundary = computed(() =>
-  getBoundaryPresentation(props.modelValue, plane.value, props.boundaryTarget, {
+  getBoundaryPresentation(presentationColor.value, plane.value, props.boundaryTarget, {
     srgb: props.showSrgbBoundary,
     displayP3: props.showDisplayP3Boundary,
   }),
@@ -82,29 +115,29 @@ const hueGradient = computed(() =>
 const lightnessGradient = computed(() =>
   colorGradient(12, (position) => ({
     l: position,
-    c: props.modelValue.c,
-    h: props.modelValue.h,
+    c: presentationColor.value.c,
+    h: presentationColor.value.h,
     alpha: 1,
   })),
 );
 const chromaGradient = computed(() =>
   colorGradient(12, (position) => ({
-    l: props.modelValue.l,
+    l: presentationColor.value.l,
     c: position * OKLCH_PICKER_MAX_CHROMA,
-    h: props.modelValue.h,
+    h: presentationColor.value.h,
     alpha: 1,
   })),
 );
 const oklabLightnessGradient = computed(() =>
-  colorGradient(12, (position) => OKLAB_AB_PLANE.editFixedAxis(props.modelValue, position)),
+  colorGradient(12, (position) => OKLAB_AB_PLANE.editFixedAxis(presentationColor.value, position)),
 );
 
-const activeCss = computed(() => serializeColor(props.modelValue));
+const activeCss = computed(() => serializeColor(presentationColor.value));
 const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
 const primaryGamutWarning = "Outside Display P3";
-const hueWarningPosition = computed(() => normalizeHue(props.modelValue.h) / 360);
+const hueWarningPosition = computed(() => normalizeHue(presentationColor.value.h) / 360);
 const chromaWarningPosition = computed(() =>
-  Math.min(1, Math.max(0, props.modelValue.c / OKLCH_PICKER_MAX_CHROMA)),
+  Math.min(1, Math.max(0, presentationColor.value.c / OKLCH_PICKER_MAX_CHROMA)),
 );
 const boundaryProjectionColor = computed(() => boundary.value.projectionColor);
 const instrumentStyle = computed<Record<string, string>>(() => ({
@@ -112,14 +145,24 @@ const instrumentStyle = computed<Record<string, string>>(() => ({
 }));
 const boundaryGuideCss = computed(() => serializeColor(targetResult.value.boundaryGuide.color));
 const hueRangeDragging = ref(false);
+const hueReference = ref<PlaneEditReference>();
+watch(
+  () => props.modelValue,
+  (value) => {
+    const observed = represent(value, "oklch");
+    if (!observed.ok) throw new RangeError("Selected hue cannot be observed");
+    const hue = observed.value.channels[2];
+    if (hue !== null) hueReference.value = { hue };
+    else hueReference.value = undefined;
+  },
+  { immediate: true, flush: "sync" },
+);
 const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
 const isOutsideOklchInstrumentDomain = computed(() => {
-  const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(props.modelValue);
-  return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(projection.point);
+  return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(oklchProjection.value.point);
 });
 const isOutsideOklabInstrumentDomain = computed(() => {
-  const projection = OKLAB_AB_PLANE.project(props.modelValue);
-  return !OKLAB_AB_PLANE.isPointInInstrumentDomain(projection.point);
+  return !OKLAB_AB_PLANE.isPointInInstrumentDomain(oklabProjection.value.point);
 });
 const chromaHelp = computed(() =>
   isOutsideOklchInstrumentDomain.value
@@ -156,76 +199,37 @@ function movePlaneSelection(value: PickerPlaneId, event: KeyboardEvent): void {
   planeOptionButtons.get(next)?.focus();
 }
 
-function oklabLightnessColor(value: number): OklchColor {
-  return OKLAB_AB_PLANE.editFixedAxis(props.modelValue, value);
+function publish(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean): void {
+  if (!result.ok) return;
+  const observed = represent(result.value, "oklch");
+  if (observed.ok && observed.value.channels[2] !== null)
+    hueReference.value = { hue: observed.value.channels[2] };
+  if (complete) emit("commit", result.value);
+  else emit("update:modelValue", result.value);
 }
 
-function updateOklabLightness(value: number): void {
-  emit("update:modelValue", oklabLightnessColor(value));
-}
-
-function commitOklabLightness(value: number): void {
-  emit("commit", oklabLightnessColor(value));
-}
-
-type OklabCoordinate = "a" | "b";
-
-function clampAxisValue(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
-}
-
-function oklabCoordinateColor(coordinate: OklabCoordinate, value: number): OklchColor | null {
-  if (!Number.isFinite(value)) return null;
-
-  const contract = activePlaneContract.value;
-  const projection = planeProjection.value;
-  const a = clampAxisValue(
-    coordinate === "a" ? value : projection.x,
-    contract.xAxis.min,
-    contract.xAxis.max,
+function editOklch(channel: "l" | "c" | "h", value: number, complete: boolean): void {
+  publish(
+    authorPlaneEdit(props.modelValue, {
+      plane: "oklch",
+      kind: "channels",
+      channels: { [channel]: channel === "h" ? normalizeHue(value) : value },
+      ...(channel !== "h" && hueReference.value ? { reference: hueReference.value } : {}),
+    }),
+    complete,
   );
-  const b = clampAxisValue(
-    coordinate === "b" ? value : projection.y,
-    contract.yAxis.min,
-    contract.yAxis.max,
-  );
-  const point = {
-    x: (a - contract.xAxis.min) / (contract.xAxis.max - contract.xAxis.min),
-    y: 1 - (b - contract.yAxis.min) / (contract.yAxis.max - contract.yAxis.min),
-  };
-
-  return contract.unproject(point, projection.fixed, props.modelValue);
 }
 
-function updateOklabCoordinate(coordinate: OklabCoordinate, value: number): void {
-  const color = oklabCoordinateColor(coordinate, value);
-  if (color) emit("update:modelValue", color);
-}
-
-function commitOklabCoordinate(coordinate: OklabCoordinate, value: number): void {
-  const color = oklabCoordinateColor(coordinate, value);
-  if (color) emit("commit", color);
-}
-
-function channelColor(channel: "l" | "c" | "h", value: number): OklchColor {
-  const color: OklchColor = {
-    l: props.modelValue.l,
-    c: props.modelValue.c,
-    h: props.modelValue.h,
-    alpha: props.modelValue.alpha,
-  };
-  if (channel === "l") color.l = value;
-  else if (channel === "c") color.c = value;
-  else color.h = normalizeHue(value);
-  return color;
-}
-
-function updateChannel(channel: "l" | "c" | "h", value: number): void {
-  emit("update:modelValue", channelColor(channel, value));
-}
-
-function commitChannel(channel: "l" | "c" | "h", value: number): void {
-  emit("commit", channelColor(channel, value));
+function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): void {
+  const edit =
+    channel === "l"
+      ? { plane: "oklab" as const, kind: "channels" as const, channels: { l: value } }
+      : {
+          plane: "oklab" as const,
+          kind: "point" as const,
+          point: oklabCoordinatePlanePoint(oklabProjection.value, channel, value),
+        };
+  publish(authorPlaneEdit(props.modelValue, edit), complete);
 }
 
 watch(
@@ -269,6 +273,8 @@ watch(
       <div class="plane-instrument__field">
         <ColorPlane
           :model-value="modelValue"
+          :presentation-color="presentationColor"
+          :edit-reference="hueReference"
           :plane="activePlaneContract"
           :srgb-table="tables.srgb"
           :display-p3-table="tables.displayP3"
@@ -293,7 +299,7 @@ watch(
             :id="`${instanceId}-hue`"
             channel="H"
             label="Hue"
-            :model-value="modelValue.h"
+            :model-value="presentationColor.h"
             :min="0"
             :max="360"
             :step="0.1"
@@ -303,8 +309,13 @@ watch(
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="hueWarningPosition"
-            @update:model-value="updateChannel('h', $event)"
-            @commit="commitChannel('h', $event)"
+            :help="
+              oklchProjection.representation.channels[2] === null
+                ? 'Hue is unset. Edit Hue to choose a direction.'
+                : undefined
+            "
+            @update:model-value="editOklch('h', $event, false)"
+            @commit="editOklch('h', $event, true)"
             @cancel="emit('cancel')"
             @range-interaction="hueRangeDragging = $event"
           />
@@ -313,7 +324,7 @@ watch(
             :id="`${instanceId}-lightness`"
             channel="L"
             label="Lightness"
-            :model-value="modelValue.l"
+            :model-value="oklchProjection.representation.channels[0]"
             :min="0"
             :max="1"
             :step="0.001"
@@ -322,9 +333,9 @@ watch(
             :intervals="lightnessIntervals"
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
-            :warning-position="modelValue.l"
-            @update:model-value="updateChannel('l', $event)"
-            @commit="commitChannel('l', $event)"
+            :warning-position="oklchProjection.representation.channels[0]"
+            @update:model-value="editOklch('l', $event, false)"
+            @commit="editOklch('l', $event, true)"
             @cancel="emit('cancel')"
           />
 
@@ -332,7 +343,7 @@ watch(
             :id="`${instanceId}-chroma`"
             channel="C"
             label="Chroma"
-            :model-value="modelValue.c"
+            :model-value="oklchProjection.representation.channels[1]"
             :min="0"
             :max="OKLCH_PICKER_MAX_CHROMA"
             :step="0.001"
@@ -346,9 +357,13 @@ watch(
             :warning-visible="isOutsideDisplayP3"
             :warning-label="primaryGamutWarning"
             :warning-position="chromaWarningPosition"
-            :help="chromaHelp"
-            @update:model-value="updateChannel('c', $event)"
-            @commit="commitChannel('c', $event)"
+            :help="
+              oklchProjection.representation.channels[2] === null
+                ? 'Set Hue before increasing chroma.'
+                : chromaHelp
+            "
+            @update:model-value="editOklch('c', $event, false)"
+            @commit="editOklch('c', $event, true)"
             @cancel="emit('cancel')"
           />
         </template>
@@ -369,8 +384,8 @@ watch(
             :warning-label="primaryGamutWarning"
             :warning-position="planeProjection.fixed"
             :help="oklabDomainHelp"
-            @update:model-value="updateOklabLightness"
-            @commit="commitOklabLightness"
+            @update:model-value="editOklab('l', $event, false)"
+            @commit="editOklab('l', $event, true)"
             @cancel="emit('cancel')"
           />
           <div class="plane-instrument__coordinate-readout" aria-label="Editable OKLab coordinates">
@@ -386,8 +401,8 @@ watch(
                 inputmode="decimal"
                 data-oklab-coordinate="a"
                 aria-label="OKLab a numeric value"
-                @update:model-value="updateOklabCoordinate('a', $event)"
-                @commit="commitOklabCoordinate('a', $event)"
+                @update:model-value="editOklab('a', $event, false)"
+                @commit="editOklab('a', $event, true)"
                 @cancel="emit('cancel')"
               />
             </label>
@@ -402,8 +417,8 @@ watch(
                 inputmode="decimal"
                 data-oklab-coordinate="b"
                 aria-label="OKLab b numeric value"
-                @update:model-value="updateOklabCoordinate('b', $event)"
-                @commit="commitOklabCoordinate('b', $event)"
+                @update:model-value="editOklab('b', $event, false)"
+                @commit="editOklab('b', $event, true)"
                 @cancel="emit('cancel')"
               />
             </label>

@@ -45,10 +45,13 @@ After [installing the local packages](#install-local-packages), import the compo
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
-import { GamutPlane, type DisplayGamut, type OklchColor } from "@gamut-plane/vue";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane, type ColorValue, type DisplayGamut } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
-const color = ref<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+if (!initial.ok) throw new Error("Invalid initial color");
+const color = ref<ColorValue>(initial.value);
 const boundaryTarget = ref<DisplayGamut>("srgb");
 </script>
 
@@ -65,11 +68,16 @@ The view defaults to OKLCH. Bind `v-model:plane` to a `ref<GamutPlaneView>("oklc
 
 ```tsx
 import { useState } from "react";
-import { GamutPlane, type OklchColor } from "@gamut-plane/react";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane, type ColorValue } from "@gamut-plane/react";
 import "@gamut-plane/react/style.css";
 
 export function ColorEditor() {
-  const [color, setColor] = useState<OklchColor>({ l: 0.68, c: 0.18, h: 252, alpha: 1 });
+  const [color, setColor] = useState<ColorValue>(() => {
+    const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+    if (!initial.ok) throw new Error("Invalid initial color");
+    return initial.value;
+  });
   return (
     <GamutPlane
       value={color}
