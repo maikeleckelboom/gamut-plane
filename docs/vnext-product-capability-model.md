@@ -4,6 +4,8 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
+Phase 2B now implements only the internal core inventory in section 30; see the source record in section 27. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Capability consumption, product admission and public APIs remain later work.
+
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
 The prerequisite was verified before editing:
@@ -1017,7 +1019,16 @@ Output capability definitions for existing serializers can be introduced interna
 
 ## 27. Phase 2B implementation contract
 
-**Add internal core definitions describing existing behavior.** The final inventory is the exact scope, not an invitation to infer additional capabilities. Phase 2B remains unimplemented here.
+**Implemented: internal core definitions describing existing behavior.** The final inventory is the exact scope, not an invitation to infer additional capabilities.
+
+The implementation lives in `packages/core/src/capabilities/`:
+
+- [representationDefinitions.ts](../packages/core/src/capabilities/representationDefinitions.ts) defines four representations and their twelve ordered qualified channels. [types/representationDefinitions.ts](../packages/core/src/capabilities/types/representationDefinitions.ts) owns `RepresentationDefinition<S>` and `ChannelDefinition<S, I>`; existing `ColorRepresentation<S>` and `ChannelsBySpace` remain the value contracts.
+- [editOperationDefinitions.ts](../packages/core/src/capabilities/editOperationDefinitions.ts) describes all six operations through narrowed references to existing functions. Hue editing is the explicit `normalizeHue` → H patch composition; disc-coordinate editing is `oklabCoordinatePlanePoint` → point authorship. There is no wrapper algorithm or dispatcher.
+- [geometryDefinitions.ts](../packages/core/src/capabilities/geometryDefinitions.ts) references current projection, coordinate mapping, constraint, membership and keyboard authorities for the rectangle and disc. [editorDefinitions.ts](../packages/core/src/capabilities/editorDefinitions.ts) binds the two primary contexts and exports the static `editorsByRepresentation` relation, including empty RGB entries.
+- [types/editingDefinitions.ts](../packages/core/src/capabilities/types/editingDefinitions.ts) owns the correlated `GeometryDefinition`, `EditOperationDefinition`, `EditorDefinition` and `EditorsByRepresentation` contracts. Closed IDs derive from explicit contract keys/identity fields; exhaustive keyed tables prevent drift while keeping request and tuple correlations readable. No lookup wrapper or runtime validation layer is needed.
+
+Readonly contracts and explicitly frozen records, tuples and nested facts protect the shared definitions. Core's no-DOM configuration includes all capability sources and the compile-only mismatch proofs. [Capability tests](../packages/core/test/capabilities/) exercise existing construction, observation and edit operations, including missing/powerless/raw Hue, signed zero, overflow, raw versus disc-constrained OKLab and zero/one/multiple editor relations. They describe low-level explicit-reference behavior without changing or claiming broader Vue/React reference parity. The definitions are absent from root exports and package export maps; compiled internal modules/declarations are private artifact contents only.
 
 ### What Phase 2B adds
 
