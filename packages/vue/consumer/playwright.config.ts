@@ -6,6 +6,8 @@ export default defineConfig({
   retries: 0,
   forbidOnly: true,
   reporter: "line",
+  snapshotPathTemplate: "{testDir}/screenshots/{arg}-{platform}{ext}",
+  expect: { toHaveScreenshot: { animations: "disabled", maxDiffPixelRatio: 0.003 } },
   use: {
     baseURL: "http://127.0.0.1:4179",
     viewport: { width: 1440, height: 1000 },

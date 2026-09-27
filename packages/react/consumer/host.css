@@ -36,3 +36,6 @@ main > label input {
   display: block;
   overflow-wrap: anywhere;
 }
+.parity-instance {
+  max-width: 100%;
+}
