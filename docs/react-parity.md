@@ -10,7 +10,6 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `components/ColorPlane.tsx`            | Canvas/SVG/marker/target-guide/warning DOM, accessible surface, committed controller/renderer lifecycle                                                               |
 | `interaction/planeInteraction.ts`      | One pointer, origin/expected feedback, latest point, pointer/field RAFs, synchronous completion, cancellation/reconciliation, bounds/resize/DPR tracking and disposal |
 | `components/ColorChannelControl.tsx`   | A complete linear control: label, range, numeric field, intervals, ticks, threshold context, measured warning placement                                               |
-| `interaction/rangeInteraction.ts`      | Native input/change distinction, live RAF, final completion, pending-work interruption and Hue preview ownership                                                      |
 | `components/NumericInput.tsx`          | Native transient draft buffer, dirty/revision state, IME, bounds, Enter/change/blur deduplication, Escape and external-value reset                                    |
 | `components/CoordinateViewControl.tsx` | Horizontal radiogroup, roving tab stop, wrapping arrow navigation and focus                                                                                           |
 | `components/BoundaryTargetResult.tsx`  | Always-visible target status, sampled guide chroma/delta and actual guide-color swatch                                                                                |
@@ -19,7 +18,7 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                                                           |
 | `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                                                      |
 
-The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet and warning glyph geometry to both adapters.
+The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet, warning glyph geometry and `src/interaction/rangeInteraction.ts` to both adapters. Its internal `RangeInput` and `mountRange` own native input/change distinction, live RAF, expected feedback, parent interruption, pointer preview and callback-silent disposal. React keeps committed-prop/layout-effect integration and pointer-focus hooks.
 
 There is no whole-product context, giant hook, render-time resource allocation or redundant color state. Event callbacks do not depend on consumer memoization. A suspended/abandoned render cannot replace committed callbacks. Mutable interaction and renderer resources belong to one mounted instance and are disposed silently.
 

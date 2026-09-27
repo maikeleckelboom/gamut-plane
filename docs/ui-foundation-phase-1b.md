@@ -1,17 +1,18 @@
 # Phase 1B shared UI foundation
 
-This is the first implementation slice of [ADR 0002](decisions/0002-vnext-instrument-architecture.md), following the [Phase 1A audit](vnext-ui-foundation-audit.md). The instrument still presents the approved v0.3 design. Plane, range and numeric controllers remain adapter-owned; color truth and rendering algorithms remain in core and render.
+This is the first implementation slice of [ADR 0002](decisions/0002-vnext-instrument-architecture.md), following the [Phase 1A audit](vnext-ui-foundation-audit.md). Phase 1B.2 adds one shared range interaction controller. The instrument still presents the approved v0.3 design; plane gestures and numeric drafts remain adapter-owned, while color truth and rendering algorithms remain in core and render.
 
 ## Authority and distribution
 
-`@gamut-plane/ui` is a private workspace package with no runtime dependency on Vue, React, core, render or the DOM. Its source is deliberately small:
+`@gamut-plane/ui` is a private workspace package with no runtime dependency on Vue, React, core or render. Its range controller uses native DOM APIs only after an adapter mounts it, so importing the package during SSR has no browser side effects. Its source remains small:
 
-| Source                      | Authority                                                                |
-| --------------------------- | ------------------------------------------------------------------------ |
-| `packages/ui/src/parts.ts`  | Instrument part names, state attribute names and bounded state values    |
-| `packages/ui/src/glyphs.ts` | Warning glyph `viewBox` and path data; adapters render native SVG        |
-| `packages/ui/src/style.css` | Sole authored instrument stylesheet and current semantic `--gp-*` tokens |
-| `packages/ui/src/index.ts`  | Internal exports used by the adapters                                    |
+| Source                                            | Authority                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `packages/ui/src/parts.ts`                        | Instrument part names, state attribute names and bounded state values                                     |
+| `packages/ui/src/glyphs.ts`                       | Warning glyph `viewBox` and path data; adapters render native SVG                                         |
+| `packages/ui/src/style.css`                       | Sole authored instrument stylesheet and current semantic `--gp-*` tokens                                  |
+| `packages/ui/src/interaction/rangeInteraction.ts` | Native range input/change, coalescing, parent feedback, pointer preview, interruption and silent disposal |
+| `packages/ui/src/index.ts`                        | Internal exports used by the adapters                                                                     |
 
 The UI build copies the authored sheet to `packages/ui/dist/style.css`. Each adapter build copies those exact bytes to its own `dist/style.css`. Both public consumer imports remain `@gamut-plane/vue/style.css` and `@gamut-plane/react/style.css`; consumers never import UI directly. The packed Vite, Nuxt and Next fixtures install UI from a local tarball as an adapter dependency, inspect installed files against the tarball and load CSS through the adapter entry. The Vite packed gates additionally compare both installed stylesheets against the authored source.
 
@@ -40,15 +41,27 @@ There are twelve new Windows screenshots for each adapter, taken in the same Chr
 
 ## Behavior boundaries frozen before controller work
 
-The paired browser tests deliberately dispatch the same native event sequence in each packed Vite consumer. They record observable adapter differences rather than choosing a new behavior:
+The paired browser tests deliberately dispatch the same native event sequence in each packed Vite consumer. Phase 1B recorded two observable differences before controller extraction:
 
 | Sequence                                                                                                                       | Vue                                                                         | React                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Start numeric composition, set Hue to `120`, dispatch composing input and `change`, then end composition and dispatch `change` | Completes during composition, formats `120.0`, and emits one commit overall | Keeps the `120` draft with zero commits until composition ends, then commits once        |
 | Queue Hue range `input` at `120`, synchronously replace the parent color with Hue `270`, then wait two animation frames        | The queued value publishes `120` after replacement, with no commit          | The replacement remains `270`; the queued value is interrupted, with no change or commit |
 
-These are reproducible Chromium event-sequence results. Physical IME implementations can order native events differently; no general claim about every operating-system IME is made. Neither behavior was changed in this pass. The next controller extraction must decide the intended contract explicitly and adjust tests and documentation with that decision.
+These were reproducible Chromium event-sequence results. Phase 1B.2 resolves the range difference in favor of parent authority: both adapters now discard queued `120`, retain parent Hue `270`, reconcile the native slider, and make no stale change or commit. The numeric IME difference remains deferred. Physical IME implementations can order native events differently; no general claim about every operating-system IME is made.
+
+## Phase 1B.2 shared range authority
+
+`mountRange(element, current)` and its `RangeInput` contract are internal exports from `@gamut-plane/ui`. `current()` supplies the latest authored value, bounds, optional native-to-authored `normalizeValue`, live/completion callbacks and optional pointer-interaction callback. The controller attaches native listeners at mount, owns the active pointer, published value, pending RAF value and expected feedback, and exposes `reconcile()` and `dispose()`. It is framework-neutral, but deliberately DOM-specific. It neither owns Vue/React lifecycle nor accesses the DOM at module evaluation.
+
+Native `input` reads `valueAsNumber` and may publish only the latest value in a frame. Native `change` cancels pending work, reads the actual final native value, and calls the completion adapter synchronously. Each product adapter publishes the final live color before its commit callback. Cancellation, capture loss and blur discard pending work and restore the latest published native value without inventing the instrument's `cancel` event. Pointer-down alone reports no preview; the first input during that pointer gesture starts it, and completion, interruption or cancellation ends it once.
+
+When authored parent feedback matches the published value, including Hue `360` normalized to authored `0`, the interaction continues and the native endpoint may stay at `360`. A genuinely different parent value interrupts pending or active work, updates the native range and ends a reported preview once. Disposal cancels frames, clears state and removes listeners without invoking any consumer callback, including interaction end. View changes clear the product's Hue preview in `GamutPlane` itself; child teardown does not supply that signal.
+
+React retains committed-prop and layout-effect integration. Vue now mounts and reconciles the same controller through its lifecycle; its reactive display binding mirrors the reconciled native value so expected normalized feedback does not move the thumb. Both keep pointer-focus hooks in the adapter. Numeric drafts, plane gestures, Canvas lifecycle, ResizeObserver and warning placement remain with their current owners.
+
+The foundation suites now assert exact canonical state values for view, gamut boundaries/intervals, markers, axes, channels, status, warning, overflow and pointer focus. A separate P3-only color `[0.68, 0.18, 252]` targeted to Display P3 proves sRGB `outside`, P3 `inside` and target `inside`. The original twelve Windows screenshots per adapter remain unchanged; semantic assertions run on all CI platforms.
 
 ## Deferred work
 
-The vNext visual redesign, popover/compact layout, additional color spaces, gamut/model changes, renderer algorithms, and shared plane/range/numeric controllers remain outside this foundation slice. The existing `data-warning-side` placement hint remains a render-owned positional value; it was not promoted into the canonical UI state vocabulary. No existing accepted accessibility or hydration contract was intentionally changed.
+The vNext visual redesign, popover/compact layout, additional color spaces, gamut/model changes, renderer algorithms, and shared plane/numeric controllers remain outside this foundation slice. The existing `data-warning-side` placement hint remains a render-owned positional value; it was not promoted into the canonical UI state vocabulary. No existing accepted accessibility or hydration contract was intentionally changed.
