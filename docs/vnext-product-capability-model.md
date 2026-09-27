@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Generalized public selection/check/guide state and scoped availability remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Public selection/check/guide APIs and scoped availability remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -1247,3 +1247,51 @@ future work. The current raw OKLab patch capability is still not exposed for a/b
 OKLab Chroma presentation fields and broad legacy plane/sampler type remain unchanged migration
 boundaries. No CSS, geometry, ColorValue, operation definition, output/mapping UI or public adapter
 API change is included.
+
+## 33. Phase 2E: generalized product-state policy
+
+`packages/ui/src/instrumentState.ts` now owns one pure, framework-neutral internal policy. Its
+`InstrumentSelection` uses core's representation and editor identities, correlates known editors
+with their representation, and admits an explicit `null` editor for observation only in all four
+representations. `validateSelection` checks external unknown input against supplied technical
+editor facts and UI product admission, returning a small issue code for shape, unknown identity,
+representation mismatch or non-admission. It never repairs a rejected pair. Current facts use the
+two Phase 2D admitted primary editors; the test-only alternate editor proves same-representation
+switching and the difference between technical existence and admission. `defaultSelection` is a
+separate initialization choice: OKLCH/L-C, OKLab/a-b, and null for sRGB/Display P3. It is not run
+over accepted selections and does not replace explicit null.
+
+`InstrumentViewState<G>` contains only selection, checked gamut IDs and requested guide IDs. The
+guide family is generic because `GuideId` remains render-owned. At adapter composition, `G` is
+instantiated with render's actual `GuideId`; the guide inventory is supplied from render's
+`guideDefinitions`. This avoids a UI-to-render package relation or duplicate production guide
+union while retaining exhaustive built-in typing at the composition boundary. A render-internal
+type-only subpath was considered but would add a declared UI dependency and packed-declaration
+obligation for a relation that the adapter already composes. Moving guide identity to UI or core
+would contradict ADR 0003's ownership. UI JavaScript has no core or render runtime import.
+
+Both ID collections accept duplicates and arbitrary input order, validate every ID, deduplicate
+and freeze code-unit ascending arrays. Unknown or malformed IDs fail; no ID is silently dropped.
+The current checked pair is `display-p3-gamut`, then `srgb-gamut` in wire order, independent of
+visual priority. Empty checks mean no ordinary exact comparison requested, not success. Empty
+guides are valid. A guide may be requested without its corresponding exact check, and a check
+without a guide. Requested guides survive an observation-only or otherwise unsupported editor;
+effective guide availability and value-dependent operation results remain later resolution work.
+
+`validateInstrumentViewState` accepts parsed unknown input, requires precisely the three state
+dimensions, validates each, and returns one complete frozen state or one issue. Serialization
+contains stable IDs and arrays only; it carries no ColorValue, descriptors, results, output,
+target, draft or environment state. There is no persistence schema or mutable shared store.
+Equality compares stable identities and canonical arrays. Requests remain returned values;
+adapters alone decide whether a controlled request becomes accepted state. Defaults initialize
+missing local state only.
+
+`selectionFromCurrentView` is the single product conversion from the old `oklch`/`oklab` view to
+the generalized pair. Render's independent current-view bridge remains for its legacy
+presentation signature and is contract-tested against UI. `legacyCheckedGamuts` records v0.3's
+unconditional two checks. A cross-package test maps all four combinations of existing guide
+booleans through render-owned IDs. The old singular `boundaryTarget` is a focused-reference
+bridge with different semantics and is rejected as an extra ordinary-state field. No production
+adapter or render behavior, public API, DOM or stylesheet changes in this phase. The next migration
+boundary is scoped availability followed by deliberate adapter state ownership and public API
+design, retaining parent ColorValue authority and semantic interaction invalidation.

@@ -15,7 +15,13 @@ sibling adapters. Four representation labels coexist with explicit two-view prim
 OKLCH → `oklch-lc`, then OKLab → `oklab-ab`. Frozen companion tuples describe ordinary labels,
 slider spans, numeric completion bounds, steps, precision and semantic channel/operation bindings.
 They describe structural composition, not whether an operation is usable for a particular color.
-There is no operation executor, generalized selection state or new consumer API.
+There is no operation executor or new consumer API. `src/instrumentState.ts` adds the internal
+generalized selection/check/guide policy: unknown-input validation with explicit issues,
+initialization defaults, deterministic frozen set arrays and structural equality. An explicit
+observation-only selection remains valid. The guide ID family is supplied by render at the adapter
+composition boundary, keeping UI free of a render dependency. State contains only stable IDs and
+requested preferences; current Vue/React props, rendering and accepted-state ownership do not
+change. Directional `boundaryTarget` remains outside ordinary view state.
 
 Metadata imports only types from `@gamut-plane/core/internal/capabilities`; emitted JavaScript
 has no core or render import. Core is an ordinary package dependency because emitted declarations

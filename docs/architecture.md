@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters, preserving v0.3 presentation and public root APIs. Generalized selection/check/guide state, scoped availability and visual redesign remain future work.
+This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Public adapter APIs and v0.3 presentation remain unchanged; scoped availability and visual redesign remain future work.
 
 ## Layer boundaries
 
@@ -9,6 +9,7 @@ The standalone app imports Vue and core. Vue and React import core, the internal
 - `packages/core` (`@gamut-plane/core`) owns ColorValue authorship and observation, exact gamut analysis, CSS input/output policy, plane geometry, keyboard math, boundary search and sampled-guide interpolation. It has no Vue, DOM or Canvas dependency.
 - `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
 - `packages/ui` (`@gamut-plane/ui`) owns current representation labels, primary admission/order, editor companion composition, ordinary control labels/bounds/steps/precision, canonical semantic instrument parts/states, authored v0.3 stylesheet, shared warning glyph geometry, native range/numeric policies and one plane pointer gesture controller. Its controllers are DOM-specific but have no module-evaluation DOM access. UI has a declared core dependency for type-only capability relationships; emitted runtime JavaScript has no core, render or framework import. It is not a supported consumer API.
+- UI also owns pure generalized selection, checked-gamut and requested-guide state validation. Guide IDs stay render-owned and enter the generic UI policy as a supplied ID family at adapter composition; UI has no render dependency. Accepted state is frozen, serializable IDs and arrays, with no authored color or directional destination.
 - `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas resources, numeric markup and product events.
 - `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas/environment resources and committed-prop integration. It has no Vue dependency. The standalone app remains Vue.
 - `apps/web` consumes both public package entries. It owns the page shell, selected-color inspector, exact status presentation, boundary legend/checkboxes, clipboard feedback, metadata, social/deployment assets and application tests.
@@ -44,8 +45,14 @@ references, dynamic render facts and lifecycle. Channel/operation keys preserve 
 UI's `currentEditorByView` is the current product bridge. Render retains its bounded internal
 bridge to avoid a reverse UI dependency or signature churn; a cross-package test requires the
 two to agree. Metadata existence does not admit RGB to the selector. There is no new selection,
-checked-gamut or guide-array authority and no availability behavior change. Direct metadata/type
-tests, the same native composition suite in both adapters, and packed declaration/runtime checks
+checked-gamut or guide-array public adapter API and no availability behavior change. The internal
+`instrumentState.ts` policy validates all four representation selections, admitted editor pairs,
+checked gamut sets and requested guide sets independently. `selectionFromCurrentView` converts
+the two legacy views; `legacyCheckedGamuts` records current unconditional exact checks. Existing
+guide booleans map through render's owned guide IDs at composition; `boundaryTarget` stays outside
+ordinary view state. Defaults are initialization-only and adapters still own request acceptance.
+Direct metadata, state and type tests, the same native composition suite in both adapters, and
+packed declaration/runtime checks
 cover this boundary; existing structural, screenshot, accessibility and hydration gates remain.
 
 `packages/ui/src/style.css` is the only authored instrument stylesheet. Adapter builds copy its built bytes to their own `dist/style.css`; consumers retain `@gamut-plane/vue/style.css` or `@gamut-plane/react/style.css`. It supplies the accepted local dark defaults and inherits the host font. Only `--gamut-plane-accent` is a supported customization property. Internal `--gp-*` and geometry variables are implementation details. Shared selectors are scoped to `[data-gp-root]`. No package rule changes document themes, body/html, generic controls or focus outside the instrument. Scientific surfaces/ranges explicitly retain left-to-right coordinate direction in RTL hosts. The app's document resets, fonts and page palette stay in `app.css`.
