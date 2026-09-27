@@ -28,7 +28,7 @@
     "./style.css": "./dist/style.css"
   },
   "scripts": {
-    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "build": "vite build && vue-tsc -p tsconfig.build.json && node scripts/copyStyle.ts",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
     "test:package": "node scripts/checkPackedConsumer.ts",

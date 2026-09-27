@@ -82,6 +82,13 @@ try {
     artifacts.push(artifact);
   }
   verifyPackedDependencyGraph(artifacts);
+  const ui = artifacts.find((artifact) => artifact.name === "@gamut-plane/ui")!;
+  const vue = artifacts.find((artifact) => artifact.name === "@gamut-plane/vue")!;
+  const uiCss = run("tar", ["-xOf", ui.tarball, "package/dist/style.css"], consumer);
+  const vueCss = run("tar", ["-xOf", vue.tarball, "package/dist/style.css"], consumer);
+  assert.equal(uiCss, vueCss, "Vue adapter CSS must equal the canonical packed UI sheet");
+  assert.equal(uiCss, await readFile(resolve(packageRoot, "../ui/src/style.css"), "utf8"));
+  assert.match(uiCss, /\[data-gp-root\]/);
 
   await cp(join(packageRoot, "consumer"), consumer, { recursive: true });
   await cp(join(packageRoot, "e2e"), join(consumer, "e2e"), { recursive: true });

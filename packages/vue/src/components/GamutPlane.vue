@@ -15,7 +15,6 @@ import {
 import { computed, ref, useId, watch } from "vue";
 import { gpPart } from "@gamut-plane/ui";
 import NumericInput from "./NumericInput.vue";
-import "../style.css";
 
 import ColorChannelControl from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";

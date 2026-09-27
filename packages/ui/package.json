@@ -10,16 +10,19 @@
     "README.md"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
   "scripts": {
-    "build": "node scripts/clean.ts && tsc -p tsconfig.build.json",
+    "build": "node scripts/clean.ts && tsc -p tsconfig.build.json && node scripts/copyStyle.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
