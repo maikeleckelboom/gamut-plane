@@ -8,4 +8,7 @@ const output = resolve(packageRoot, "dist");
 assert.equal(dirname(output), resolve(packageRoot));
 await rm(output, { recursive: true, force: true });
 await mkdir(output);
-await cp(resolve(packageRoot, "src/style.css"), resolve(output, "style.css"));
+await cp(
+  fileURLToPath(import.meta.resolve("@gamut-plane/ui/style.css")),
+  resolve(output, "style.css"),
+);

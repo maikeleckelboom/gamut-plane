@@ -73,6 +73,21 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
     artifacts.push(artifact);
   }
   verifyPackedDependencyGraph(artifacts);
+  const ui = artifacts.find((artifact) => artifact.name === "@gamut-plane/ui")!;
+  const react = artifacts.find((artifact) => artifact.name === "@gamut-plane/react")!;
+  const packedCss = (tarball: string) => {
+    const result = spawnSync("tar", ["-xOf", tarball, "package/dist/style.css"], {
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  };
+  assert.equal(packedCss(react.tarball), packedCss(ui.tarball));
+  assert.equal(
+    packedCss(ui.tarball),
+    await readFile(resolve(packageRoot, "../ui/src/style.css"), "utf8"),
+  );
   if (process.argv.includes("--lock")) {
     await run(["install", "--lockfile-only", "--frozen-lockfile=false"]);
     const lock = (await readFile(join(consumer, "pnpm-lock.yaml"), "utf8")).replace(
