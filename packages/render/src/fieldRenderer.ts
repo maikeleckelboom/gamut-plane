@@ -1,6 +1,6 @@
 import {
-  serializeColor,
-  type OklchColor,
+  serializeOklchSample,
+  type OklchSample,
   type PickerPlaneFieldSampler,
   type PickerPlaneSampleScratch,
 } from "@gamut-plane/core";
@@ -86,7 +86,7 @@ export function createFieldRenderer(
     sampleScale: number,
     logicalHeight: number,
     fixed: number,
-    color: OklchColor,
+    color: OklchSample,
   ): void {
     const sampling = plane.fieldSampling;
     if (sampling.kind !== "column-gradient") return;
@@ -99,7 +99,7 @@ export function createFieldRenderer(
       for (let index = 0; index < rowCount; index += 1) {
         const row = Math.min(index * sampling.rowStep, logicalHeight);
         plane.sampleField({ x, y: row / logicalHeight }, fixed, color, fieldScratch);
-        gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeColor(color));
+        gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeOklchSample(color));
       }
 
       target.fillStyle = gradient;
@@ -168,7 +168,7 @@ export function createFieldRenderer(
     const fieldKey = `${plane.id}:${width}:${height}:${pixelRatio}:${fixed}:${canvasColorSpace}:${fieldQuality}`;
     if (fieldKey === lastFieldKey) return quality;
 
-    const color: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
+    const color: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, backingWidth, backingHeight);
 
@@ -205,7 +205,7 @@ export function createFieldRenderer(
         for (let column = 0; column < columnSamples; column += 1) {
           const position = column / (columnSamples - 1);
           plane.sampleField({ x: position, y }, fixed, color, fieldScratch);
-          gradient.addColorStop(position, serializeColor(color));
+          gradient.addColorStop(position, serializeOklchSample(color));
         }
 
         bufferContext.fillStyle = gradient;

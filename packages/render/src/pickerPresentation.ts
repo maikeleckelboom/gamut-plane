@@ -6,11 +6,11 @@ import {
   convertOklabToOklch,
   normalizeHue,
   projectColorToPlane,
-  serializeColor,
+  serializeOklchSample,
   type ColorValue,
   type DisplayGamut,
   type GamutStatus,
-  type OklchColor,
+  type OklchSample,
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import {
@@ -19,6 +19,9 @@ import {
   type BoundaryGuideVisibility,
 } from "./boundaryPresentation.js";
 import { colorGradient } from "./presentation.js";
+
+// CSS-only gradient precision keeps converted C/H stable across SSR and hydration.
+const GRADIENT_SIGNIFICANT_DIGITS = 12;
 
 export const hueGradient = colorGradient(72, (position) => ({
   l: 0.8,
@@ -45,7 +48,7 @@ export function createPickerPresentation(
   const [, observedA, observedB] = oklab.value.representation.channels;
   // A hue-less observation stays hue-less. Only visual sampling needs a numeric slice.
   const fieldHue = observedHue ?? 0;
-  const sample: OklchColor = { l, c, h: fieldHue, alpha: oklch.value.representation.alpha };
+  const sample: OklchSample = { l, c, h: fieldHue, alpha: oklch.value.representation.alpha };
   const srgbAnalysis = analyzeGamut(value, "srgb-gamut");
   const displayP3Analysis = analyzeGamut(value, "display-p3-gamut");
   if (!srgbAnalysis.ok || !displayP3Analysis.ok) {
@@ -69,7 +72,7 @@ export function createPickerPresentation(
           y: oklab.value.representation.channels[2],
           fixed: oklab.value.representation.channels[0],
         };
-  const activeCss = serializeColor(sample);
+  const activeCss = serializeOklchSample(sample);
 
   return {
     plane,
@@ -79,7 +82,7 @@ export function createPickerPresentation(
     gamutStatus,
     fieldHue,
     activeCss,
-    markerCss: serializeColor({ ...sample, alpha: 1 }),
+    markerCss: serializeOklchSample({ ...sample, alpha: 1 }),
     targetGuidePoint: boundary.targetGuidePoint,
     targetGuideCss: boundary.targetGuideCss,
     targetGuideLabel: `${targetLabel} sampled target guide`,
@@ -95,7 +98,7 @@ export function createPickerPresentation(
       guideChroma: targetGuide.maximumChroma.toFixed(4),
       guideDelta: targetGuide.deltaC.toFixed(4),
       showGuideDelta: targetGuide.deltaC > 0,
-      swatchCss: serializeColor(targetGuide.color),
+      swatchCss: serializeOklchSample(targetGuide.color),
     },
     // Tolerance fringe is visually contained, matching the former epsilon-based warning policy.
     warningVisible: gamutStatus.displayP3 === "outside",
@@ -109,11 +112,10 @@ export function createPickerPresentation(
     })),
     fixedLightnessGradient: colorGradient(12, (position) => {
       const [stopL, stopC, stopH] = convertOklabToOklch([position, observedA, observedB]);
-      // Stabilize CSS-only polar coordinates across server and browser last-bit math.
       return {
         l: stopL!,
-        c: Number(stopC!.toPrecision(12)),
-        h: Number(stopH!.toPrecision(12)),
+        c: Number(stopC!.toPrecision(GRADIENT_SIGNIFICANT_DIGITS)),
+        h: Number(stopH!.toPrecision(GRADIENT_SIGNIFICANT_DIGITS)),
         alpha: oklab.value.representation.alpha,
       };
     }),

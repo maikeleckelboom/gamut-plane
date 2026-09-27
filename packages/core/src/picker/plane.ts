@@ -1,5 +1,5 @@
 import { convertOklabToOklch } from "../color/convert.js";
-import { normalizeHue, type OklchColor } from "../color/types.js";
+import { normalizeHue, type OklchSample } from "../color/types.js";
 import { getMaximumChromaFromTable } from "../gamut/boundary.js";
 import type { GamutBoundaryTable } from "../gamut/types.js";
 import {
@@ -75,9 +75,9 @@ export interface PickerPlaneFieldSampler {
   sampleField(
     point: PlanePoint,
     fixed: number,
-    output: OklchColor,
+    output: OklchSample,
     scratch?: PickerPlaneSampleScratch,
-  ): OklchColor;
+  ): OklchSample;
 }
 
 function resolveSampleCount(sampleCount: number): number {
@@ -121,9 +121,9 @@ export function buildLightnessChromaBoundaryPath(
 function sampleOklchField(
   point: PlanePoint,
   fixed: number,
-  output: OklchColor,
+  output: OklchSample,
   _scratch?: PickerPlaneSampleScratch,
-): OklchColor {
+): OklchSample {
   const bounded = clampPlanePointToInstrumentBounds(point);
   output.l = 1 - bounded.y;
   output.c = bounded.x * OKLCH_PICKER_MAX_CHROMA;
@@ -154,9 +154,9 @@ export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneGeometry & PickerPlaneFiel
 function sampleOklabField(
   point: PlanePoint,
   fixed: number,
-  output: OklchColor,
+  output: OklchSample,
   scratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] },
-): OklchColor {
+): OklchSample {
   const { a, b } = oklabCoordinatesFromPlanePoint(point);
   const radius = Math.hypot(a, b);
   scratch.input[0] = clampUnit(fixed);

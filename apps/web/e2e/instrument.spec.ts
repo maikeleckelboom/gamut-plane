@@ -565,11 +565,14 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   const srgbCopy = page.getByRole("button", { name: "Copy sRGB CSS value" });
   const hexCopy = page.getByRole("button", { name: "Copy Hex value" });
   await expect(hexCopy).toBeDisabled();
-  await expect(hexCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
+  await expect(hexCopy).toHaveAttribute("aria-describedby", "hex-copy-reason");
   await expect(srgbCopy).toBeDisabled();
   await expect(srgbCopy).toHaveAttribute("aria-describedby", "srgb-copy-reason");
   await expect(page.locator("#srgb-copy-reason")).toHaveText(
-    "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+    "Selected color is outside sRGB; no clipped value is emitted.",
+  );
+  await expect(page.locator("#hex-copy-reason")).toHaveText(
+    "Selected color is outside sRGB; no clipped value is emitted.",
   );
   await expect(
     page.locator('[data-css-representation="hex"] .css-representation__value'),
@@ -588,7 +591,7 @@ test("CSS copy controls expose precision, success feedback, and disabled semanti
   );
 });
 
-test("Hex copies the selected in-sRGB value without changing the canonical color", async ({
+test("Hex copies the selected in-sRGB value without changing the authored color", async ({
   page,
 }) => {
   await openInstrument(page);

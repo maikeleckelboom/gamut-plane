@@ -3,15 +3,15 @@ import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   convertOklchToOklab,
-  getHueGamutIntervals,
-  getLightnessGamutIntervals,
+  getHueGuideIntervals,
+  getLightnessGuideIntervals,
   getPickerGuide,
   oklabCoordinatesToPlanePoint,
   oklchCoordinatesToPlanePoint,
-  serializeColor,
+  serializeOklchSample,
   type DisplayGamut,
   type GamutStatus,
-  type OklchColor,
+  type OklchSample,
   type PickerGuide,
   type PickerPlaneId,
   type PlanePoint,
@@ -53,7 +53,7 @@ function gamutLabel(gamut: DisplayGamut): string {
   return gamut === "srgb" ? "sRGB" : "Display P3";
 }
 
-function positionGuide(color: OklchColor, view: PickerPlaneId): PlanePoint {
+function positionGuide(color: OklchSample, view: PickerPlaneId): PlanePoint {
   if (view === "oklch") {
     return OKLCH_LIGHTNESS_CHROMA_PLANE.constrainPoint(
       oklchCoordinatesToPlanePoint(color.l, color.c),
@@ -67,7 +67,7 @@ function positionGuide(color: OklchColor, view: PickerPlaneId): PlanePoint {
 
 /** Shared target and visible-guide presentation for the Vue and React adapters. */
 export function getBoundaryPresentation(
-  color: OklchColor,
+  color: OklchSample,
   view: PickerPlaneId,
   target: DisplayGamut,
   visibility: BoundaryGuideVisibility,
@@ -83,10 +83,8 @@ export function getBoundaryPresentation(
   // Only exact outside status creates a marker. The table supplies its visual coordinate.
   const showTargetGuide =
     targetVisible && exactStatus[target === "srgb" ? "srgb" : "displayP3"] === "outside";
-  const markerColor = showTargetGuide
-    ? { ...color, c: Math.min(color.c, targetGuide.maximumChroma) }
-    : null;
-  const targetGuideCss = markerColor ? serializeColor({ ...markerColor, alpha: 1 }) : "";
+  const markerColor = showTargetGuide ? targetGuide.color : null;
+  const targetGuideCss = markerColor ? serializeOklchSample({ ...markerColor, alpha: 1 }) : "";
   const targetGuidePoint = markerColor ? positionGuide(markerColor, view) : null;
   const markers: LinearControlMarker[] = [];
   if (markerColor) {
@@ -101,7 +99,7 @@ export function getBoundaryPresentation(
   }
 
   function intervals(
-    get: typeof getHueGamutIntervals | typeof getLightnessGamutIntervals,
+    get: typeof getHueGuideIntervals | typeof getLightnessGuideIntervals,
   ): LinearControlInterval[] {
     return gamuts.flatMap((gamut) =>
       get(tableFor(gamut), color).map((interval) => ({ ...interval, tone: gamut })),
@@ -114,8 +112,8 @@ export function getBoundaryPresentation(
     targetGuidePoint,
     targetGuideCss,
     markers,
-    hueIntervals: view === "oklch" ? intervals(getHueGamutIntervals) : [],
-    lightnessIntervals: intervals(getLightnessGamutIntervals),
+    hueIntervals: view === "oklch" ? intervals(getHueGuideIntervals) : [],
+    lightnessIntervals: intervals(getLightnessGuideIntervals),
     chromaIntervals: gamuts.map((gamut) => ({
       start: 0,
       end: Math.min(

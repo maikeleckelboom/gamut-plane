@@ -1,9 +1,23 @@
-import { OKLCH, convert, findCuspOKLCH, isRGBInGamut } from "@texel/color";
+import {
+  DisplayP3Gamut,
+  DisplayP3Linear,
+  OKLCH,
+  convert,
+  findCuspOKLCH,
+  isRGBInGamut,
+  sRGBGamut,
+  sRGBLinear,
+} from "@texel/color";
 
-import { GAMUT_DEFINITIONS } from "../color/convert.js";
 import type { DisplayGamut } from "../color/types.js";
-import { GAMUT_EPSILON, type GamutBoundaryOptions, type GamutBoundaryTable } from "./types.js";
+import type { GamutBoundaryOptions, GamutBoundaryTable } from "./types.js";
 
+/** Linear-light tolerance for the numeric search that generates sampled boundaries. */
+const BOUNDARY_SEARCH_TOLERANCE = 1e-9;
+const GAMUT_DEFINITIONS = {
+  srgb: { linear: sRGBLinear, gamut: sRGBGamut },
+  "display-p3": { linear: DisplayP3Linear, gamut: DisplayP3Gamut },
+} as const;
 const DEFAULT_HUE_STEPS = 180;
 const DEFAULT_LIGHTNESS_STEPS = 51;
 const DEFAULT_SEARCH_ITERATIONS = 18;
@@ -40,10 +54,10 @@ function resolveOptions(options: GamutBoundaryOptions = {}): ResolvedBoundaryOpt
 
 function isCandidateInGamut(candidate: number[], rgb: number[], gamut: DisplayGamut): boolean {
   convert(candidate, OKLCH, GAMUT_DEFINITIONS[gamut].linear, rgb);
-  return isRGBInGamut(rgb, GAMUT_EPSILON);
+  return isRGBInGamut(rgb, BOUNDARY_SEARCH_TOLERANCE);
 }
 
-/** Exact per-point search used during table precomputation and verification. */
+/** Numeric per-point boundary search used during table precomputation and verification. */
 export function findMaximumChroma(
   l: number,
   h: number,

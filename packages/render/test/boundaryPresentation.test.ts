@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getMaximumChromaFromTable, type DisplayGamut, type OklchColor } from "@gamut-plane/core";
+import {
+  OKLCH_PICKER_MAX_CHROMA,
+  getMaximumChromaFromTable,
+  serializeOklchSample,
+  type DisplayGamut,
+  type OklchSample,
+} from "@gamut-plane/core";
 import { getBoundaryPresentation, PICKER_GAMUT_TABLES } from "../src/index.js";
 
-const observed: OklchColor = { l: 0.62, c: 0.24, h: 270, alpha: 0.5 };
+const observed: OklchSample = { l: 0.62, c: 0.24, h: 270, alpha: 0.5 };
 const outside = { srgb: "outside", displayP3: "outside" } as const;
 
 describe("shared sampled guide presentation", () => {
@@ -67,5 +73,25 @@ describe("shared sampled guide presentation", () => {
       expect(model.targetGuide.color).toEqual({ ...observed, c: model.targetGuide.maximumChroma });
     }
     expect(srgb.targetGuide.maximumChroma).not.toBe(p3.targetGuide.maximumChroma);
+  });
+
+  it("positions an outside-only guide at its sampled C even when the sample exceeds selected C", () => {
+    const selected = { ...observed, c: 0.01 };
+    const model = getBoundaryPresentation(
+      selected,
+      "oklch",
+      "srgb",
+      { srgb: true, displayP3: false },
+      outside,
+    );
+    const guideC = model.targetGuide.maximumChroma;
+    expect(guideC).toBeGreaterThan(selected.c);
+    expect(model.targetGuidePoint?.x).toBeCloseTo(guideC / OKLCH_PICKER_MAX_CHROMA, 10);
+    expect(model.markers[0]?.position).toBeCloseTo(guideC / OKLCH_PICKER_MAX_CHROMA, 10);
+    expect(model.markers[0]?.label).toContain(`C ${guideC.toFixed(4)}`);
+    expect(model.targetGuideCss).toBe(
+      serializeOklchSample({ ...model.targetGuide.color, alpha: 1 }),
+    );
+    expect(selected.c).toBe(0.01);
   });
 });

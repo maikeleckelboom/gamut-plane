@@ -13,8 +13,8 @@ import {
   clearGamutBoundaryTableCache,
   constrainOklabPlanePoint,
   getCachedGamutBoundaryTable,
-  getHueGamutIntervals,
-  getLightnessGamutIntervals,
+  getHueGuideIntervals,
+  getLightnessGuideIntervals,
   getMaximumChromaFromTable,
   getPickerGuide,
   isPointInOklabInstrumentDomain,
@@ -22,7 +22,7 @@ import {
   oklchCoordinatesToPlanePoint,
   type DisplayGamut,
   type GamutBoundaryTable,
-  type OklchColor,
+  type OklchSample,
 } from "../src/index";
 
 function syntheticHueTable(
@@ -76,7 +76,7 @@ describe("OKLCH picker geometry and analysis", () => {
   });
 
   it("samples the numeric OKLCH field and builds its fixed-hue contour", () => {
-    const color: OklchColor = { l: 0.37, c: 0.29, h: 312.5, alpha: 0.45 };
+    const color: OklchSample = { l: 0.37, c: 0.29, h: 312.5, alpha: 0.45 };
     const point = oklchCoordinatesToPlanePoint(color.l, color.c);
     expect(OKLCH_LIGHTNESS_CHROMA_PLANE.id).toBe("oklch");
     const sampled = { l: 0, c: 0, h: 0, alpha: 1 };
@@ -123,7 +123,7 @@ describe("OKLCH picker geometry and analysis", () => {
   });
 
   it("derives distinct sampled guide facts without mutating the observed coordinates", () => {
-    const color: OklchColor = { l: 0.6, c: 0.2, h: 30, alpha: 0.45 };
+    const color: OklchSample = { l: 0.6, c: 0.2, h: 30, alpha: 0.45 };
     const snapshot = structuredClone(color);
     const srgb = getPickerGuide(color, tables.srgb);
     const displayP3 = getPickerGuide(color, tables.displayP3);
@@ -143,14 +143,14 @@ describe("OKLCH picker geometry and analysis", () => {
   });
 
   it("solves lightness-valid intervals from piecewise table interpolation", () => {
-    expect(getLightnessGamutIntervals(tables.srgb, { c: 0, h: 30 })).toEqual([
+    expect(getLightnessGuideIntervals(tables.srgb, { c: 0, h: 30 })).toEqual([
       { start: 0, end: 1 },
     ]);
 
     const color = { c: 0.1, h: 30 };
-    const intervals = getLightnessGamutIntervals(tables.srgb, color);
+    const intervals = getLightnessGuideIntervals(tables.srgb, color);
     expect(intervals.length).toBeGreaterThan(0);
-    expect(getLightnessGamutIntervals(tables.srgb, color)).toEqual(intervals);
+    expect(getLightnessGuideIntervals(tables.srgb, color)).toEqual(intervals);
 
     for (const interval of intervals) {
       expect(interval.start).toBeGreaterThanOrEqual(0);
@@ -163,16 +163,16 @@ describe("OKLCH picker geometry and analysis", () => {
     }
   });
 
-  describe("Lightness gamut intervals", () => {
+  describe("Lightness guide intervals", () => {
     it("returns none, all, and multiple ordered intervals from synthetic table rows", () => {
       const noValid = syntheticLightnessTable("srgb", [0, 0, 0, 0, 0]);
       const allValid = syntheticLightnessTable("display-p3", [1, 1, 1, 1, 1]);
       const multiple = syntheticLightnessTable("display-p3", [0, 1, 0, 1, 0]);
       const color = { c: 0.5, h: 123 };
 
-      expect(getLightnessGamutIntervals(noValid, color)).toEqual([]);
-      expect(getLightnessGamutIntervals(allValid, color)).toEqual([{ start: 0, end: 1 }]);
-      expect(getLightnessGamutIntervals(multiple, color)).toEqual([
+      expect(getLightnessGuideIntervals(noValid, color)).toEqual([]);
+      expect(getLightnessGuideIntervals(allValid, color)).toEqual([{ start: 0, end: 1 }]);
+      expect(getLightnessGuideIntervals(multiple, color)).toEqual([
         { start: 0.125, end: 0.375 },
         { start: 0.625, end: 0.875 },
       ]);
@@ -181,7 +181,7 @@ describe("OKLCH picker geometry and analysis", () => {
     it("preserves an inclusive zero-length interval at an isolated table peak", () => {
       const table = syntheticLightnessTable("srgb", [0, 0, 0.5, 0, 0]);
 
-      expect(getLightnessGamutIntervals(table, { c: 0.5, h: 0 })).toEqual([
+      expect(getLightnessGuideIntervals(table, { c: 0.5, h: 0 })).toEqual([
         { start: 0.5, end: 0.5 },
       ]);
     });
@@ -192,36 +192,36 @@ describe("OKLCH picker geometry and analysis", () => {
       const color = { c: 0.5, h: 45 };
       const snapshot = structuredClone(color);
 
-      expect(getLightnessGamutIntervals(srgb, color)).toEqual([]);
-      expect(getLightnessGamutIntervals(displayP3, color)).toEqual([{ start: 0, end: 1 }]);
+      expect(getLightnessGuideIntervals(srgb, color)).toEqual([]);
+      expect(getLightnessGuideIntervals(displayP3, color)).toEqual([{ start: 0, end: 1 }]);
       expect(color).toEqual(snapshot);
     });
   });
 
-  describe("Hue gamut intervals", () => {
+  describe("Hue guide intervals", () => {
     it("returns no interval or the complete normalized domain deterministically", () => {
       const noValidHue = syntheticHueTable("srgb", [0, 0, 0, 0]);
       const allValidHues = syntheticHueTable("srgb", [1, 1, 1, 1]);
       const color = { l: 0.5, c: 0.5 };
 
-      expect(getHueGamutIntervals(noValidHue, color)).toEqual([]);
-      expect(getHueGamutIntervals(allValidHues, color)).toEqual([{ start: 0, end: 1 }]);
-      expect(getHueGamutIntervals(allValidHues, color)).toEqual(
-        getHueGamutIntervals(allValidHues, color),
+      expect(getHueGuideIntervals(noValidHue, color)).toEqual([]);
+      expect(getHueGuideIntervals(allValidHues, color)).toEqual([{ start: 0, end: 1 }]);
+      expect(getHueGuideIntervals(allValidHues, color)).toEqual(
+        getHueGuideIntervals(allValidHues, color),
       );
     });
 
     it("solves one normalized interval from table Hue knots", () => {
       const table = syntheticHueTable("display-p3", [0, 1, 1, 0]);
 
-      expect(getHueGamutIntervals(table, { l: 0.5, c: 0.5 })).toEqual([
+      expect(getHueGuideIntervals(table, { l: 0.5, c: 0.5 })).toEqual([
         { start: 0.125, end: 0.625 },
       ]);
     });
 
     it("returns multiple intervals in normalized slider order", () => {
       const table = syntheticHueTable("display-p3", [0, 1, 0, 1, 0, 0, 0, 0]);
-      const intervals = getHueGamutIntervals(table, { l: 0.5, c: 0.5 });
+      const intervals = getHueGuideIntervals(table, { l: 0.5, c: 0.5 });
 
       expect(intervals).toEqual([
         { start: 0.0625, end: 0.1875 },
@@ -240,7 +240,7 @@ describe("OKLCH picker geometry and analysis", () => {
       expect(getMaximumChromaFromTable(table, 0.5, 0)).toBe(
         getMaximumChromaFromTable(table, 0.5, 360),
       );
-      expect(getHueGamutIntervals(table, { l: 0.5, c: 0.5 })).toEqual([
+      expect(getHueGuideIntervals(table, { l: 0.5, c: 0.5 })).toEqual([
         { start: 0, end: 0.125 },
         { start: 0.625, end: 1 },
       ]);
@@ -267,15 +267,15 @@ describe("OKLCH picker geometry and analysis", () => {
         ]),
       };
 
-      expect(getHueGamutIntervals(table, { l: 0, c: 0.4 })).toEqual([]);
-      expect(getHueGamutIntervals(table, { l: 0.25, c: 0.4 })).toEqual([{ start: 0.2, end: 0.55 }]);
-      expect(getHueGamutIntervals(table, { l: 0.5, c: 0.4 })).toEqual([{ start: 0.1, end: 0.65 }]);
+      expect(getHueGuideIntervals(table, { l: 0, c: 0.4 })).toEqual([]);
+      expect(getHueGuideIntervals(table, { l: 0.25, c: 0.4 })).toEqual([{ start: 0.2, end: 0.55 }]);
+      expect(getHueGuideIntervals(table, { l: 0.5, c: 0.4 })).toEqual([{ start: 0.1, end: 0.65 }]);
     });
 
     it("keeps each gamut table separate and does not mutate the color or table", () => {
       const srgb = syntheticHueTable("srgb", [0, 0, 0, 0]);
       const displayP3 = syntheticHueTable("display-p3", [1, 1, 1, 1]);
-      const color: OklchColor = {
+      const color: OklchSample = {
         l: 0.5,
         c: 0.5,
         h: 42,
@@ -287,8 +287,8 @@ describe("OKLCH picker geometry and analysis", () => {
       const displayP3Data = displayP3.chromaMax;
       const displayP3Snapshot = [...displayP3Data];
 
-      expect(getHueGamutIntervals(srgb, color)).toEqual([]);
-      expect(getHueGamutIntervals(displayP3, color)).toEqual([{ start: 0, end: 1 }]);
+      expect(getHueGuideIntervals(srgb, color)).toEqual([]);
+      expect(getHueGuideIntervals(displayP3, color)).toEqual([{ start: 0, end: 1 }]);
       expect(color).toEqual(colorSnapshot);
       expect(srgb.gamut).toBe("srgb");
       expect(displayP3.gamut).toBe("display-p3");
@@ -310,8 +310,8 @@ describe("OKLCH picker geometry and analysis", () => {
         values: [...table.chromaMax],
       }));
 
-      getHueGamutIntervals(tables.srgb, color);
-      getHueGamutIntervals(tables.displayP3, color);
+      getHueGuideIntervals(tables.srgb, color);
+      getHueGuideIntervals(tables.displayP3, color);
 
       expect(color).toEqual(colorSnapshot);
       for (const snapshot of snapshots) {
@@ -326,11 +326,11 @@ describe("OKLCH picker geometry and analysis", () => {
     it("rejects invalid analysis inputs and Hue table resolution", () => {
       const table = syntheticHueTable("srgb", [1, 1, 1, 1]);
 
-      expect(() => getHueGamutIntervals(table, { l: Number.NaN, c: 0.1 })).toThrow(/finite/);
-      expect(() => getHueGamutIntervals(table, { l: -0.1, c: 0.1 })).toThrow(/between 0 and 1/);
-      expect(() => getHueGamutIntervals(table, { l: 0.5, c: -0.1 })).toThrow(/non-negative/);
+      expect(() => getHueGuideIntervals(table, { l: Number.NaN, c: 0.1 })).toThrow(/finite/);
+      expect(() => getHueGuideIntervals(table, { l: -0.1, c: 0.1 })).toThrow(/between 0 and 1/);
+      expect(() => getHueGuideIntervals(table, { l: 0.5, c: -0.1 })).toThrow(/non-negative/);
       expect(() =>
-        getHueGamutIntervals(
+        getHueGuideIntervals(
           {
             gamut: "srgb",
             hueSteps: 2,
@@ -365,7 +365,7 @@ describe("OKLCH picker geometry and analysis", () => {
       ];
       const sample = () =>
         points.map((point) => {
-          const output: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
+          const output: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
           OKLAB_AB_PLANE.sampleField(point, 0.64, output, {
             input: [0, 0, 0],
             converted: [0, 0, 0],
@@ -376,7 +376,7 @@ describe("OKLCH picker geometry and analysis", () => {
       expect(sample()).toEqual(sample());
       expect(sample().every((color) => color.l === 0.64 && color.alpha === 1)).toBe(true);
 
-      const corner: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
+      const corner: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };
       OKLAB_AB_PLANE.sampleField({ x: 0, y: 0 }, 0.64, corner);
       expect(corner.c).toBeCloseTo(Math.hypot(0.4, 0.4), 11);
     });

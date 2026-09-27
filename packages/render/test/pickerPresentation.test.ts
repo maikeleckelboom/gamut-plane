@@ -9,7 +9,7 @@ import {
   isColorValue,
   oklabCoordinatesToPlanePoint,
   projectColorToPlane,
-  serializeColor,
+  serializeOklchSample,
   type ColorRepresentation,
   type DisplayGamut,
   type GamutStatus,
@@ -157,10 +157,7 @@ describe("shared picker presentation", () => {
     (view) => {
       const selected = value({ space: "oklch", channels: [0.62, 0.24, 270], alpha: 0.5 });
       const presentation = createPickerPresentation(selected, view, "srgb", visible);
-      const guideChroma = Math.min(
-        0.24,
-        getMaximumChromaFromTable(PICKER_GAMUT_TABLES.srgb, 0.62, 270),
-      );
+      const guideChroma = getMaximumChromaFromTable(PICKER_GAMUT_TABLES.srgb, 0.62, 270);
       expect(presentation.targetGuidePoint).not.toBeNull();
       expect(presentation.targetGuideCss).toContain("oklch(");
       if (view === "oklch") {
@@ -180,7 +177,7 @@ describe("shared picker presentation", () => {
     const presentation = createPickerPresentation(selected, "oklab", "srgb", visible);
     const [, a, b] = presentation.oklab.representation.channels;
     const [l, c, h] = convertOklabToOklch([0.5, a, b]);
-    const expected = serializeColor({
+    const expected = serializeOklchSample({
       l: l!,
       c: Number(c!.toPrecision(12)),
       h: Number(h!.toPrecision(12)),

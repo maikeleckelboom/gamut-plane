@@ -2,13 +2,9 @@ import { installAnimationFrameController } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  OKLCH_LIGHTNESS_CHROMA_PLANE,
-  getCachedGamutBoundaryTable,
-  parseCssColor,
-} from "@gamut-plane/core";
+import { OKLCH_LIGHTNESS_CHROMA_PLANE, getCachedGamutBoundaryTable } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
-import { planeValue } from "./colorValue";
+import { color, planeValue } from "./colorValue";
 
 const originalPixelRatio = window.devicePixelRatio;
 
@@ -39,7 +35,7 @@ describe("planar canvas backing store", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        ...planeValue(parseCssColor("oklch(62% 0.2 248)")),
+        ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
@@ -104,7 +100,7 @@ describe("planar canvas backing store", () => {
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
-        ...planeValue(parseCssColor("oklch(62% 0.2 248)")),
+        ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),

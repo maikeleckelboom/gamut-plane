@@ -4,7 +4,7 @@
 
 The standalone app imports Vue and core. Vue and React import core and the internal `@gamut-plane/render` package. Core has no dependency on any adapter or browser layer.
 
-- `packages/core` (`@gamut-plane/core`) owns framework-neutral color types, conversion, exact gamut membership, CSS serialization/parsing, plane geometry, keyboard math, boundary search and sampled-table analysis. It has no Vue, DOM or Canvas dependency.
+- `packages/core` (`@gamut-plane/core`) owns ColorValue authorship and observation, exact gamut analysis, CSS input/output policy, plane geometry, keyboard math, boundary search and sampled-guide interpolation. It has no Vue, DOM or Canvas dependency.
 - `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
 - `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer arbitration, numeric drafts, frame scheduling, local styling and component/consumer tests.
 - `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, numeric drafts, range/pointer lifecycle, scheduling and local styles. It has no Vue dependency. The standalone app remains Vue.

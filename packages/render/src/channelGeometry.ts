@@ -14,7 +14,7 @@ export interface LinearControlMarker {
   lane: LinearControlInterval["tone"];
   cssColor?: string;
 }
-export interface GamutThreshold {
+export interface GuideThreshold {
   position: number;
   tone: LinearControlInterval["tone"];
   insideSide: "left" | "right";
@@ -44,7 +44,7 @@ export function channelSections(
     return sections;
   });
 }
-export function channelThresholds(sections: readonly LinearControlInterval[]): GamutThreshold[] {
+export function channelThresholds(sections: readonly LinearControlInterval[]): GuideThreshold[] {
   return tones.flatMap((tone) => {
     const intervals = sections.filter((section) => section.tone === tone);
     return [...new Set(intervals.flatMap(({ start, end }) => [start, end]))]
@@ -62,10 +62,10 @@ export function channelThresholds(sections: readonly LinearControlInterval[]): G
   });
 }
 export function nearestThreshold(
-  thresholds: readonly GamutThreshold[],
+  thresholds: readonly GuideThreshold[],
   position: number,
-): GamutThreshold | null {
-  return thresholds.reduce<GamutThreshold | null>(
+): GuideThreshold | null {
+  return thresholds.reduce<GuideThreshold | null>(
     (nearest, threshold) =>
       !nearest || Math.abs(threshold.position - position) < Math.abs(nearest.position - position)
         ? threshold
@@ -77,7 +77,7 @@ export function channelWarning(
   position: number,
   width: number,
   markers: readonly LinearControlMarker[],
-  thresholds: readonly GamutThreshold[],
+  thresholds: readonly GuideThreshold[],
 ) {
   const normalized = Number.isFinite(position) ? position : 0;
   const nearest = nearestThreshold(

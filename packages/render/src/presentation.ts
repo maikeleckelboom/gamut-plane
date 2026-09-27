@@ -1,11 +1,14 @@
-import { serializeColor, type OklchColor, type PlanePoint } from "@gamut-plane/core";
+import { serializeOklchSample, type OklchSample, type PlanePoint } from "@gamut-plane/core";
 import { pointStyle } from "./geometry.js";
 
-export function colorGradient(segments: number, colorAt: (position: number) => OklchColor): string {
+export function colorGradient(
+  segments: number,
+  colorAt: (position: number) => OklchSample,
+): string {
   const stops: string[] = [];
   for (let index = 0; index <= segments; index++) {
     const position = index / segments;
-    stops.push(`${serializeColor(colorAt(position))} ${(position * 100).toFixed(3)}%`);
+    stops.push(`${serializeOklchSample(colorAt(position))} ${(position * 100).toFixed(3)}%`);
   }
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
