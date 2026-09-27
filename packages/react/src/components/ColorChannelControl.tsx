@@ -1,7 +1,7 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { gpAttribute, gpPart } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import {
   channelSections,
   channelThresholds,
@@ -17,7 +17,6 @@ import {
   type LinearControlMarker,
 } from "@gamut-plane/render";
 import { useCommitted } from "../hooks/useCommitted.js";
-import { mountRange } from "../interaction/rangeInteraction.js";
 import { NumericInput } from "./NumericInput.js";
 import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 

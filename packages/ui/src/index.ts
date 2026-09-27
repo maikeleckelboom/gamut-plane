@@ -10,3 +10,4 @@ export {
   type GpPart,
 } from "./parts.js";
 export { gamutWarningGlyph } from "./glyphs.js";
+export { mountRange, type RangeInput } from "./interaction/rangeInteraction.js";
