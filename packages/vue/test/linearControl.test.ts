@@ -300,6 +300,67 @@ describe("ColorChannelControl gamut annotations", () => {
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
   });
 
+  it("lets differing parent feedback replace pending Hue without publication or commit", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+    dispatchPointer(range, "pointerdown", 31);
+    range.value = "120";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    model.value = 270;
+    await nextTick();
+    frames.flush();
+    expect(model.value).toBe(270);
+    expect(range.value).toBe("270");
+    expect(updates).toEqual([]);
+    expect(commits).toEqual([]);
+    expect(control.emitted("range-interaction")).toEqual([[true], [false]]);
+    wrapper.unmount();
+  });
+
+  it("ends active preview once when differing parent feedback replaces a published Hue", async () => {
+    const frames = installAnimationFrameController();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+    dispatchPointer(range, "pointerdown", 32);
+    range.value = "210";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    frames.flush();
+    await nextTick();
+    expect(updates).toEqual([210]);
+    model.value = 270;
+    await nextTick();
+    dispatchPointer(range, "pointerup", 32);
+    dispatchPointer(range, "lostpointercapture", 32);
+    range.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+    frames.flush();
+    expect(model.value).toBe(270);
+    expect(range.value).toBe("270");
+    expect(updates).toEqual([210]);
+    expect(commits).toEqual([]);
+    expect(control.emitted("range-interaction")).toEqual([[true], [false]]);
+    wrapper.unmount();
+  });
+
+  it("disposes an active published preview without an interaction-end callback", async () => {
+    const frames = installAnimationFrameController();
+    const interaction = vi.fn();
+    const wrapper = mountControl({ modelValue: 180, onRangeInteraction: interaction });
+    const control = wrapper.getComponent(ColorChannelControl);
+    const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
+    dispatchPointer(range, "pointerdown", 33);
+    range.value = "210";
+    range.dispatchEvent(new Event("input", { bubbles: true }));
+    frames.flush();
+    expect(control.emitted("range-interaction")).toEqual([[true]]);
+    wrapper.unmount();
+    dispatchPointer(range, "lostpointercapture", 33);
+    range.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+    expect(interaction.mock.calls).toEqual([[true]]);
+  });
+
   it("preserves native range clamping and keyboard input commit behavior", () => {
     const frames = installAnimationFrameController();
     const order: string[] = [];

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
 import GamutPlane from "../src/components/GamutPlane.vue";
 import { color } from "./colorValue";
+import { dispatchPointer, installAnimationFrameController } from "./interactionHelpers";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -17,6 +18,52 @@ function emitted(
 }
 
 describe("Vue ColorValue instrument", () => {
+  it.each([false, true])(
+    "view change clears %s Hue preview work without stale range callbacks",
+    async (published) => {
+      const frames = installAnimationFrameController();
+      vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 320,
+        bottom: 320,
+        width: 320,
+        height: 320,
+        toJSON: () => ({}),
+      });
+      const wrapper = mount(GamutPlane, {
+        attachTo: document.body,
+        props: { modelValue: color(0.62, 0.2, 180) },
+      });
+      await flushPromises();
+      frames.flush();
+      const range = wrapper.get('[data-picker-control="h"] input[type="range"]')
+        .element as HTMLInputElement;
+      dispatchPointer(range, "pointerdown", 44);
+      range.value = "210";
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+      if (published) {
+        frames.flush();
+        await flushPromises();
+        frames.flush();
+        await flushPromises();
+        expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("preview");
+      }
+      await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+      frames.flush();
+      await flushPromises();
+      expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
+      expect(emitted(wrapper, "update:modelValue")).toHaveLength(published ? 1 : 0);
+      expect(emitted(wrapper, "commit")).toHaveLength(0);
+      await wrapper.get('[data-plane-option="oklch"]').trigger("click");
+      frames.flush();
+      await flushPromises();
+      expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
+      wrapper.unmount();
+    },
+  );
   it("accepts a non-OKLCH definition and switches view without authoring", async () => {
     const value = createColorValue({ space: "display-p3", channels: [0.7, 0.3, 0.2], alpha: 0.7 });
     if (!value.ok) throw new Error("Invalid test color");

@@ -183,7 +183,7 @@ test("Vue numeric change during composition completes the draft", async ({ page 
   await expect(page.locator("[data-commits]")).toHaveText("1");
 });
 
-test("Vue queued range input can publish after differing parent replacement", async ({ page }) => {
+test("Vue differing parent feedback interrupts queued range input", async ({ page }) => {
   await page.goto("/?single");
   const range = page.locator('[data-picker-control="h"] input[type="range"]');
   await range.evaluate(async (input: HTMLInputElement) => {
@@ -201,6 +201,40 @@ test("Vue queued range input can publish after differing parent replacement", as
   const definition = JSON.parse(
     (await page.locator("[data-definition]").getAttribute("data-definition"))!,
   );
-  expect(definition.channels[2]).toBe(120);
+  expect(definition.channels[2]).toBe(270);
+  await expect(range).toHaveValue("270");
+  await expect(page.locator("[data-commits]")).toHaveText("0");
+});
+
+test("Vue active Hue preview ends on differing parent replacement", async ({ page }) => {
+  await page.goto("/?single");
+  const range = page.locator('[data-picker-control="h"] input[type="range"]');
+  const field = page.locator("[data-picker-plane]");
+  await range.evaluate(async (input: HTMLInputElement) => {
+    input.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        pointerId: 8,
+        pointerType: "mouse",
+        button: 0,
+      }),
+    );
+    input.value = "210";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  await expect(field).toHaveAttribute("data-field-quality", "preview");
+  await page.getByRole("button", { name: "Replace first color" }).click();
+  await range.dispatchEvent("pointerup", { pointerId: 8, pointerType: "mouse" });
+  await range.dispatchEvent("lostpointercapture", { pointerId: 8, pointerType: "mouse" });
+  await range.dispatchEvent("blur");
+  await expect(range).toHaveValue("270");
+  await expect(field).toHaveAttribute("data-field-quality", "full");
+  const definition = JSON.parse(
+    (await page.locator("[data-definition]").getAttribute("data-definition"))!,
+  );
+  expect(definition.channels[2]).toBe(270);
   await expect(page.locator("[data-commits]")).toHaveText("0");
 });

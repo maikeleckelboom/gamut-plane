@@ -101,6 +101,44 @@ describe("native range lifecycle", () => {
     expect(ui.cancels).not.toHaveBeenCalled();
   });
 
+  it("lets differing parent feedback replace pending Hue without publication or commit", async () => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+    await event(range, "pointerdown");
+    await input(range, "120");
+    await ui.replace(color(0.62, 0.2, 270, 0.37));
+    await clock.flush();
+    expect(range.value).toBe("270");
+    expect(ui.changes).not.toHaveBeenCalled();
+    expect(ui.commits).not.toHaveBeenCalled();
+    expect(ui.cancels).not.toHaveBeenCalled();
+    expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
+  });
+
+  it("ends active preview once when differing parent feedback replaces a published Hue", async () => {
+    const clock = frames(),
+      ui = await host();
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+    await event(range, "pointerdown");
+    await input(range, "210");
+    await clock.flush();
+    await clock.flush();
+    expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("preview");
+    await ui.replace(color(0.62, 0.2, 270, 0.37));
+    await event(range, "pointerup");
+    await event(range, "lostpointercapture");
+    await event(range, "blur");
+    await clock.flush();
+    expect(range.value).toBe("270");
+    expect(ui.changes).toHaveBeenCalledOnce();
+    expect(ui.commits).not.toHaveBeenCalled();
+    expect(ui.cancels).not.toHaveBeenCalled();
+    expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
+  });
+
   it("coalesces to one latest live publication without committing", async () => {
     const ui = await range();
     for (const value of [110, 120, 130]) await input(ui.range, String(value));
@@ -168,6 +206,20 @@ describe("native range lifecycle", () => {
     await ui.clock.flush();
     expect(ui.clock.size).toBe(0);
     expect(ui.live).not.toHaveBeenCalled();
+    expect(ui.complete).not.toHaveBeenCalled();
+    expect(ui.cancel).not.toHaveBeenCalled();
+    expect(ui.interaction.mock.calls).toEqual([[true]]);
+  });
+  it("disposes an active published preview without an interaction-end callback", async () => {
+    const ui = await range();
+    await event(ui.range, "pointerdown");
+    await input(ui.range, "180");
+    await ui.clock.flush();
+    expect(ui.interaction.mock.calls).toEqual([[true]]);
+    await ui.unmount();
+    await event(ui.range, "lostpointercapture");
+    await event(ui.range, "blur");
+    expect(ui.live).toHaveBeenCalledExactlyOnceWith(180);
     expect(ui.complete).not.toHaveBeenCalled();
     expect(ui.cancel).not.toHaveBeenCalled();
     expect(ui.interaction.mock.calls).toEqual([[true]]);

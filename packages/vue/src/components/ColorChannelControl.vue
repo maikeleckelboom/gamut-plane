@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { gpAttribute, gpPart } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import { useResizeObserver } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
@@ -79,18 +79,8 @@ const numericMax = computed<number | undefined>(() => (props.overflowMax ? undef
 const trackElement = ref<HTMLElement>();
 const rangeElement = ref<HTMLInputElement>();
 const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
-let pendingRangeValue: number | null = null;
-let rangeRaf: number | null = null;
-let isUnmounted = false;
-let activeRangePointerId: number | null = null;
-let rangeInteractionReported = false;
-let lastPublishedRangeValue = boundedModelValue.value;
-const displayedRangeValue = computed(() =>
-  (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) ===
-  boundedModelValue.value
-    ? lastPublishedRangeValue
-    : boundedModelValue.value,
-);
+const displayedRangeValue = ref(boundedModelValue.value);
+let rangeBinding: ReturnType<typeof mountRange> | undefined;
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
@@ -132,6 +122,18 @@ function updateTrackBounds(): void {
 }
 
 onMounted(() => {
+  rangeBinding = mountRange(rangeElement.value!, () => ({
+    value: boundedModelValue.value,
+    min: props.min,
+    max: props.max,
+    normalizeValue: props.normalizeValue,
+    onInput: (value) => emit("update:modelValue", value),
+    onComplete: (value) => {
+      emit("update:modelValue", value);
+      emit("commit", value);
+    },
+    onInteraction: (active) => emit("range-interaction", active),
+  }));
   updateTrackBounds();
   useResizeObserver(trackElement, ([entry]) => {
     if (entry) updateTrackWidth(entry.contentRect.width);
@@ -142,83 +144,13 @@ function clamp(value: number): number {
   return Math.min(props.max, Math.max(props.min, value));
 }
 
-function updateFromRange(event: Event): void {
-  const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
-  if (!Number.isFinite(value)) return;
-  pendingRangeValue = clamp(value);
-  if (activeRangePointerId !== null && !rangeInteractionReported) {
-    rangeInteractionReported = true;
-    emit("range-interaction", true);
-  }
-  if (rangeRaf !== null) return;
-  rangeRaf = window.requestAnimationFrame(() => {
-    rangeRaf = null;
-    const next = pendingRangeValue;
-    pendingRangeValue = null;
-    if (next !== null && !isUnmounted) {
-      lastPublishedRangeValue = next;
-      emit("update:modelValue", next);
-    }
-  });
-}
-
-function clearPendingRange(): boolean {
-  const hadPendingValue = pendingRangeValue !== null;
-  if (rangeRaf !== null) window.cancelAnimationFrame(rangeRaf);
-  rangeRaf = null;
-  pendingRangeValue = null;
-  return hadPendingValue;
-}
-
-function cancelPendingRange(): void {
-  if (clearPendingRange() && rangeElement.value) {
-    rangeElement.value.value = String(clamp(lastPublishedRangeValue));
-  }
-}
-
-function commitFromRange(event: Event): void {
-  const value = (event.currentTarget as HTMLInputElement).valueAsNumber;
-  if (!Number.isFinite(value)) return;
-  const next = clamp(value);
-  clearPendingRange();
-  lastPublishedRangeValue = next;
-  emit("update:modelValue", next);
-  emit("commit", next);
-  finishRangeInteraction();
-}
-
-function beginRangeInteraction(event: PointerEvent): void {
+function markPointerFocus(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
-  if (activeRangePointerId !== null) return;
   rangeElement.value?.setAttribute("data-pointer-focus", "");
   rangeElement.value?.setAttribute(gpAttribute.pointerFocus, "");
-  activeRangePointerId = event.pointerId;
 }
 
-function finishRangeInteraction(): void {
-  activeRangePointerId = null;
-  if (!rangeInteractionReported) return;
-  rangeInteractionReported = false;
-  emit("range-interaction", false);
-}
-
-function finishRangePointer(event: PointerEvent): void {
-  if (event.pointerId === activeRangePointerId) finishRangeInteraction();
-}
-
-function cancelRangePointer(event?: PointerEvent): void {
-  if (event && event.pointerId !== activeRangePointerId) return;
-  cancelPendingRange();
-  finishRangeInteraction();
-}
-
-function blurRange(): void {
-  rangeElement.value?.removeAttribute("data-pointer-focus");
-  rangeElement.value?.removeAttribute(gpAttribute.pointerFocus);
-  cancelRangePointer();
-}
-
-function onRangeKeydown(): void {
+function clearPointerFocus(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
   rangeElement.value?.removeAttribute(gpAttribute.pointerFocus);
 }
@@ -227,18 +159,19 @@ function sectionStyle(section: LinearControlInterval): Record<string, string> {
   return { left: `${section.start * 100}%`, width: `${(section.end - section.start) * 100}%` };
 }
 
-watch(boundedModelValue, (value) => {
-  if (
-    pendingRangeValue === null &&
-    (props.normalizeValue?.(lastPublishedRangeValue) ?? lastPublishedRangeValue) !== value
-  )
-    lastPublishedRangeValue = value;
-});
+watch(
+  () => [props.modelValue, props.min, props.max, props.normalizeValue],
+  () => {
+    rangeBinding?.reconcile();
+    // Vue's value binding must reflect the controller's native value after feedback.
+    displayedRangeValue.value = rangeElement.value?.valueAsNumber ?? boundedModelValue.value;
+  },
+  { flush: "sync" },
+);
 
 onBeforeUnmount(() => {
-  isUnmounted = true;
-  cancelPendingRange();
-  finishRangeInteraction();
+  rangeBinding?.dispose();
+  rangeBinding = undefined;
 });
 </script>
 
@@ -329,14 +262,9 @@ onBeforeUnmount(() => {
         :min="min"
         :max="max"
         :step="step"
-        @input="updateFromRange"
-        @change="commitFromRange"
-        @pointerdown="beginRangeInteraction"
-        @pointerup="finishRangePointer"
-        @pointercancel="cancelRangePointer"
-        @lostpointercapture="cancelRangePointer"
-        @blur="blurRange"
-        @keydown="onRangeKeydown"
+        @pointerdown="markPointerFocus"
+        @blur="clearPointerFocus"
+        @keydown="clearPointerFocus"
       />
       <span
         v-if="boundaryPreviewSection && boundaryPreviewColor"
