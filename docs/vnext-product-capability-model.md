@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Public selection/check/guide APIs and generalized adapter integration remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Public selection/check/guide APIs remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -1469,3 +1469,94 @@ all-or-nothing throws. Vue/React production sources, v0.3 public APIs, unused OK
 generated gamut data, broad plane/sampler types, CSS and baselines remain frozen. These new scoped
 facts do not silently adopt partial presentation in current adapters. No ADR 0004 is needed: the
 implementation follows ADR 0003's existing ownership and independent-capability decision.
+
+## 35. Phase 2G: internal generalized adapter integration
+
+Starting state was clean `dev` at `83f40cf302a32f28907f073d0a0cd5a352bb22c3`, with exact-SHA
+[Phase 2F.1 CI 36352759402](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36352759402)
+successful in all three jobs. Local, tracking and remote `main` remained
+`bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were verified.
+
+### Runtime boundary and migration choice
+
+Choose the narrow unsupported sibling-entry option. Core's existing `internal/capabilities`
+entry adds `analyzeRequestedGamuts`; render's new matching entry exports `guideDefinitions`,
+`resolveEditorVisualSupport`, `resolveField`, `resolveRequestedGuides` and their directly needed
+types. Adapters use ordinary package resolution; Vue's library build explicitly externalizes
+both subpaths. Public roots, dependency sets and versions remain unchanged. Exact export
+inventories, root exclusion, browser-free Node execution and ES-only declarations are checked
+from each packed consumer graph.
+
+Reimplementing analysis/orchestration with public primitives would bypass the owner-local Phase
+2F contracts. A new central package would add an unnecessary owner over core/render/UI. Public
+root exports would prematurely promise consumer APIs. None of those alternatives is used.
+
+React was integrated first because committed props, controlled rejection, concurrent abandoned
+renders and root Strict Mode impose the stronger initial lifecycle proof. Vue then adopted the
+same bounded pure composition while preserving its own computed/model acceptance and resource
+lifecycles. The two small adapter-local modules are intentionally identical and share semantic
+tests. Their science remains delegated to core/render; there is no generic engine, subscription,
+counter, generation token, promise, persistent cache or mutable singleton.
+
+### Accepted revision and interaction ownership
+
+`resolveAcceptedRevision(source, state)` synchronously returns `source`, `state`, `contextKey`,
+`observation`, `checks`, `editor`, `field` and `guides`, in that dependency order. It accepts no
+external checks. Each requested guide receives only exact rows derived in the same call. Raw
+low-level rows still carry no independent provenance: the earlier adversarial misuse assertion
+is retained, now beside tests of both real production helpers. Defining-equal reconstruction
+can recompute results and remains valid feedback; identity never replaces `definingEquals`.
+
+The bridge uses `selectionFromCurrentView`, `legacyCheckedGamuts` and render-owned guide IDs.
+All four visibility combinations become canonical frozen requests; hidden guides do not remove
+checks. Neither `boundaryTarget` nor Canvas capability enters ordinary state or deterministic
+resolution. The current selector still exposes only OKLCH and OKLab. Observation-only RGB/P3,
+empty requests and partial numerical failures are pure-helper test cases, not new public UI.
+
+React derives a render revision from the accepted `useControllableView` result. The revision's
+source and semantic key enter imperative plane authority only through the existing committed
+child-props cell; channel callbacks likewise retain committed native-controller integration.
+Suspending a render with a different source and OKLab selection cannot replace committed OKLCH
+pointer/keyboard authority. No extra prop-mirroring state or revision reference is needed.
+
+Vue derives one computed revision from `modelValue`, the actual `defineModel` plane and guide
+booleans. With a bound plane update handler, an emit rejected by the parent leaves OKLCH accepted.
+Without that binding, Vue's existing local model behavior still accepts the request. There is
+no hidden generalized selection copy. Existing synchronous feedback and teardown remain native.
+
+Plane keys are `oklch:oklch-lc` and `oklab:oklab-ab`; range/numeric keys append qualified channel
+and operation IDs. The generic shared gesture controller is unchanged. A test-only alternate
+editor in the same representation proves interruption even with equal source and geometry.
+Actual accepted switches dispose equal-valued Lightness range/draft work; rejected requests keep
+the same controls and queued gesture. Teardown remains callback-silent.
+
+The Hue audit found that a temporary reference from a Hue edit rejected by the color parent
+could otherwise survive leaving and returning to its editor. References now reconcile from the
+accepted source on accepted semantic changes; React also guards child access until its matching
+context is committed. Normal value feedback, missing Hue, defining-equal replacement, Hue 360
+normalization and the existing Vue/React channel-path differences remain intact. This confines
+temporary references without redesigning Hue authorship or normalizing adapter differences.
+
+### Compatibility presentation and evidence
+
+Choose the staged legacy-presentation option. `createPickerPresentation` and
+`getBoundaryPresentation` still derive all v0.3 output from the accepted revision source. Their
+independent pure checks/projections never feed generalized guide resolution. The small amount
+of duplicate deterministic work is accepted without introducing a cache. Field sampling and
+contour loops never invoke adapter revision composition. Canvas readiness, rendering resources,
+VueUse resize/DPR/scroll ownership and initial SSR `pending` status remain separate.
+
+`acceptedRevisionContract.ts` runs the same scenarios through both public components: both initial
+views, all guide combinations, target independence, accepted switches in both directions,
+rejection with retained controls/gesture, outside-to-inside replacement with fresh marker truth,
+defining-equal feedback including signed zero/missing Hue, context-bound temporary Hue references,
+and queued teardown. Every captured production revision is checked against its own authored
+source; no test-only public prop or debug route was added. Existing current-composition contracts,
+frozen Phase 2C equivalence, visual baselines and real packed Nuxt/Next hydration/Strict Mode gates
+remain mandatory.
+
+No CSS, DOM composition, screenshots, generated gamut data, ColorValue semantics, mapping/output
+state, observation-only display, public generalized API or release publication is included.
+Phase 2H must deliberately design public request acceptance while retaining this revision
+boundary. A later observation-only/partial UI must also replace the legacy presentation's eager
+projections and throws explicitly; internal scoped facts do not silently authorize that change.

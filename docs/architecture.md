@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Phase 2F adds owner-local scoped core/render resolution alongside the frozen legacy presentation. Public adapter APIs and v0.3 presentation remain unchanged; generalized adapter integration and visual redesign remain future work.
+This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Phase 2F adds owner-local scoped core/render resolution alongside the frozen legacy presentation. Public adapter APIs and v0.3 presentation remain unchanged; Phase 2G now integrates generalized resolution internally; public generalized APIs and visual redesign remain future work.
 
 ## Layer boundaries
 
@@ -20,9 +20,14 @@ The app imports built public package entries. Its `@` alias resolves only app co
 
 All packages export built ESM JavaScript and declarations from `dist`. Core, render, UI and React use TypeScript compilation with Node-compatible relative import extensions. React's entry and component retain `"use client"`; React and its JSX runtime are external imports. Vue uses Vite library mode with Vue, VueUse, core, render and UI external; `vue-tsc` emits declarations. Public adapter exports restrict module access; internal declarations support adapter types without creating public subpaths.
 
-Core additionally declares `@gamut-plane/core/internal/capabilities`, built from `packages/core/src/capabilities/index.ts`. This is an **unsupported internal sibling-package contract**, not a consumer API or installation entry. Runtime exports remain only `editorDefinitions` and `geometryDefinitions`, with their `EditorDefinition`, `EditorId`, `GeometryDefinition`, `GeometryId` types. Phase 2D adds only the types `RepresentationDefinition`, `ChannelDefinition`, `ChannelId`, `EditOperationDefinition` and `EditOperationId` for UI's correlated metadata contracts. Render imports this declared package subpath at runtime; UI uses `import type`; core's root remains unchanged. The entry and its declarations require no DOM types or browser globals and are checked in an isolated packed core consumer. Adapter tarball tests resolve the transitive core artifact through ordinary package exports. Representation/channel and edit-operation runtime catalogs remain owner-local.
+Core additionally declares `@gamut-plane/core/internal/capabilities`, built from `packages/core/src/capabilities/index.ts`. This is an **unsupported internal sibling-package contract**, not a consumer API or installation entry. Its original runtime exports are `editorDefinitions` and `geometryDefinitions`, with their `EditorDefinition`, `EditorId`, `GeometryDefinition`, `GeometryId` types. Phase 2D adds only the types `RepresentationDefinition`, `ChannelDefinition`, `ChannelId`, `EditOperationDefinition` and `EditOperationId` for UI's correlated metadata contracts. Render imports this declared package subpath at runtime; UI uses `import type`; core's root remains unchanged. The entry and its declarations require no DOM types or browser globals and are checked in an isolated packed core consumer. Adapter tarball tests resolve the transitive core artifact through ordinary package exports. Representation/channel and edit-operation runtime catalogs remain owner-local.
 
-Phase 2F adds only the core-owned `GamutCheckResult` type to that internal entry, so render can accept supplied exact rows without duplicating their scientific contract. The collection function and render resolvers remain owner-local modules; no runtime export, manifest, dependency or public root API changes. Test-only composition can import their sources; future adapter integration must deliberately establish any additional sibling-package runtime entry it needs.
+Phase 2F added the core-owned `GamutCheckResult` type. Phase 2G additionally exports the existing
+`analyzeRequestedGamuts` function from that same unsupported entry. Render declares its matching
+`internal/capabilities` entry with exactly `guideDefinitions`, `resolveEditorVisualSupport`,
+`resolveField`, `resolveRequestedGuides` and directly related types. Packed Vue, React/Vite,
+Nuxt and Next graphs compile these entries with ES-only libraries and execute them in Node.
+Root exports remain unchanged. Neither UI nor render acquires a reverse dependency.
 
 Core is independently distributable with `@texel/color` as its one runtime dependency. Vue depends on core, render, UI and VueUse; Vue 3.5+ is a peer, never a second bundled runtime. VueUse owns ResizeObserver, DPR tracking and scoped scroll-listener cleanup outside the shared gesture. React depends on core, render and UI, with deliberate React / React DOM 19.3.x peers (tested 19.3.0). Each adapter retains lifecycle and resource integration; UI owns native range, numeric-draft and plane pointer policy.
 
@@ -97,7 +102,7 @@ Plane feedback uses `definingEquals`, so a separately constructed value with the
 
 `packages/ui/src/interaction/rangeInteraction.ts` is the single authored range controller. Its internal `RangeInput` describes authored value, bounds, optional normalization and live/completion/pointer-interaction callbacks. `mountRange` attaches native listeners after mount and returns `reconcile` and callback-silent `dispose`. Vue mirrors the controller's reconciled native value into its template binding; React uses its committed props and layout effect. Pointer-focus attributes remain adapter-owned. Pointer cancellation, capture loss and blur do not emit product `cancel`.
 
-`packages/ui/src/interaction/planeGesture.ts` owns the sole plane pointer state machine: ownership, exact origin, expected feedback, pending/latest point, one RAF, final synchronous publication, rollback, interruption and silent disposal. Its generic ports receive current authored value, stable `plane.id` view key, adapter geometry, core authorship/equality and adapter presentation/callback operations. The shared binding attaches pointer listeners after mount. Capture is still adapter-owned: React requires its methods, while Vue feature-detects them. The controller does not choose a common capture-failure policy. Each adapter retains its own zero-layout geometry fallback, marker/warning positioning and keyboard mapping. `ColorPlane.vue` retains VueUse ResizeObserver, DPR and scroll integration; React's `planeResources.ts` owns renderer, field RAF, resize/scroll, resolution tracking and presentation. Escape is handled on the focused surface only, not by a global key listener.
+`packages/ui/src/interaction/planeGesture.ts` owns the sole plane pointer state machine: ownership, exact origin, expected feedback, pending/latest point, one RAF, final synchronous publication, rollback, interruption and silent disposal. Its generic ports receive current authored value, accepted `representationId:editorId` semantic key, adapter geometry, core authorship/equality and adapter presentation/callback operations. The shared binding attaches pointer listeners after mount. Capture is still adapter-owned: React requires its methods, while Vue feature-detects them. The controller does not choose a common capture-failure policy. Each adapter retains its own zero-layout geometry fallback, marker/warning positioning and keyboard mapping. `ColorPlane.vue` retains VueUse ResizeObserver, DPR and scroll integration; React's `planeResources.ts` owns renderer, field RAF, resize/scroll, resolution tracking and presentation. Escape is handled on the focused surface only, not by a global key listener.
 
 The app checks native `writeText` rejection and the legacy `execCommand` boolean result before showing clipboard success. It uses VueUse for the feedback timeout. The installed VueUse clipboard helper does not expose the legacy fallback's failure result, so the app handles the write directly.
 
@@ -127,7 +132,37 @@ Render's `capabilities/editorResolution.ts` separates `resolveEditorVisualSuppor
 
 The sampled target marker requires the supplied matching exact check to succeed with `outside`. Missing checks, successful `inside`/`within-tolerance`, and failed exact checks have distinct marker results. No guide invokes hidden exact analysis. Empty guide requests do no observation or table sampling. Structural support records are never modified. Resolution is deterministic, DOM-free and outside sampling loops; Canvas readiness remains separately pending until adapter mount.
 
-The React-hosted `scopedCapabilityContract.test.ts` contains the **test-only** family composition over validated Phase 2E state. It derives one accepted resolution revision from one authored value and accepted state, including fresh exact rows for guide resolution. Raw owner-local rows have no independent source proof; manually mixing old outside checks with a new inside value remains an invalid low-level call. React/Vue must preserve the revision boundary during controlled parent updates. Neither core nor render imports UI; UI executes no science. Adapters remain the eventual runtime composition/acceptance boundary. The legacy `createPickerPresentation`/`getBoundaryPresentation`, eager projections, throws, unused OKLab Chroma output, broad plane/sampler type, generated tables, CSS and visual baselines are unchanged. Scoped failure here does not authorize graceful partial UI in current adapters. See the [Phase 2F record](vnext-product-capability-model.md#34-phase-2f-scoped-capability-resolution) for the next integration obligations.
+Both adapters now compose these families in their private `model/acceptedResolution.ts` modules.
+The small identical synchronous composition is deliberately adapter-local: no package owns all
+three lower layers and no new engine is needed. One accepted ColorValue and one frozen accepted
+state produce source, state, semantic context key, observation, checks, editor, field and guides.
+Only that call's newly computed exact rows enter guide resolution; callers cannot inject old
+rows. Defining-equal feedback may recompute while `definingEquals` still governs gesture ownership.
+The React-hosted `scopedCapabilityContract.test.ts` now exercises both production helpers,
+including observation-only fixtures and the retained adversarial low-level misuse proof.
+
+`selectionFromCurrentView` remains the product bridge; `legacyCheckedGamuts` stays independent
+of the canonical guide requests translated from the two visibility booleans. `boundaryTarget`
+and Canvas readiness stay separate. React renders from accepted `useControllableView` state and
+commits the revision's source/context through its existing child committed-props cells. No
+render-phase revision becomes native interaction authority. Vue uses one computed revision over
+`modelValue`, the actual `defineModel` plane and visibility props. A bound update listener with an
+unchanged parent prop rejects the request; without that binding Vue's existing local model
+acceptance remains intact.
+
+The plane gesture key is now `representationId:editorId`; control keys append channel and operation.
+Accepted context changes dispose old drafts/ranges and interrupt queued plane work, even when
+scalar values are equal. Rejected requests retain controls and gestures. Hue references are reset
+from the accepted source on an accepted context change, preventing a temporary reference from
+replaying into a later context; the existing framework-specific Hue editing paths remain intact.
+No controller or Canvas resource policy changes. VueUse continues to own existing resize/DPR/scroll
+mechanics; this migration adds no generic browser primitive.
+
+The legacy `createPickerPresentation`/`getBoundaryPresentation` path still independently derives
+the exact v0.3 visual output from the revision source. None of those separately recomputed rows
+enters generalized resolution. This bounded duplication preserves eager projections, throws,
+unused OKLab Chroma output, plane/sampler identity, generated tables, CSS and visual baselines.
+Scoped failures do not introduce partial UI. See the [Phase 2G record](vnext-product-capability-model.md#35-phase-2g-internal-generalized-adapter-integration).
 
 ## Generated tables
 

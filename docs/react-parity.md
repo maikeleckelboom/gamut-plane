@@ -18,10 +18,21 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `hooks/useControllableView.ts`         | Initial uncontrolled view and authoritative controlled view requests                                                                  |
 | `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                           |
 | `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                      |
+| `model/acceptedResolution.ts`          | Accepted legacy-state bridge and synchronous generalized revision; fresh exact rows belong only to their source/state                 |
 
 The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet, warning glyph geometry and separate plane/range/numeric DOM controllers to both adapters. `mountPlaneGesture` owns one pointer, origin/expected feedback, pending/latest point, coalesced live publication, synchronous final publication, exact rollback and callback-silent disposal. Its ports leave core authorship/equality, adapter geometry/presentation, capture, focus and keyboard outside UI. `mountRange` owns native range input/change distinction, live RAF, expected feedback, parent interruption, pointer preview and callback-silent disposal. `mountNumericInput` owns only draft metadata, composition/completion policy, value/precision reconciliation and silent disposal; the native number input owns text. React keeps committed-prop/layout-effect integration and pointer-focus hooks.
 
 There is no whole-product context, giant hook, render-time resource allocation or redundant color state. Event callbacks do not depend on consumer memoization. A suspended/abandoned render cannot replace committed callbacks. Mutable interaction and renderer resources belong to one mounted instance and are disposed silently.
+
+Phase 2G composes generalized resolution during render from the accepted view, then carries its
+source and `representationId:editorId` key through the existing committed child props. Controlled
+requests never update this authority without parent acceptance. Control keys additionally contain
+channel/operation identity. Vue implements the same deterministic composition in a computed value
+while retaining `defineModel` ownership and VueUse resources. The shared `acceptedRevisionContract`
+runs real components through rejection, both accepted transitions, outside-to-inside replacement,
+defining-equal feedback, all guide combinations, target independence and silent queued teardown.
+The React harness runs at the root of Strict Mode. The concurrent-render test suspends an OKLab
+revision and proves that subsequent native pointer/keyboard work still authors committed OKLCH.
 
 ## Shared visual extraction
 
