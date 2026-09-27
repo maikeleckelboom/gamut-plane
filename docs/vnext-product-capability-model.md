@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Public selection/check/guide APIs remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Phase 2H designs generalized presentation in section 36; that presentation is not implemented. Public selection/check/guide APIs remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -1557,6 +1557,540 @@ remain mandatory.
 
 No CSS, DOM composition, screenshots, generated gamut data, ColorValue semantics, mapping/output
 state, observation-only display, public generalized API or release publication is included.
-Phase 2H must deliberately design public request acceptance while retaining this revision
-boundary. A later observation-only/partial UI must also replace the legacy presentation's eager
-projections and throws explicitly; internal scoped facts do not silently authorize that change.
+Phase 2H first defines the internal generalized presentation contract in section 36. Public
+request acceptance remains a separate later design. A later observation-only/partial UI must
+also replace the legacy presentation's eager projections and throws explicitly; internal scoped
+facts do not silently authorize that change.
+
+## 36. Phase 2H design: generalized presentation contract
+
+**Design/review only; no generalized presentation implementation or public product change.**
+The verified starting point is clean `dev` at
+`032ed0ce2a7ac4452efdfe16cc051ca31d5f65c9`, equal to tracking and remote `dev`, with
+[exact-SHA Phase 2G CI 36354946381](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36354946381)
+successful. Local, tracking and remote `main` remain
+`bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Toolchain: Node 24.16.0 and pinned pnpm 11.9.0.
+This section follows ADR 0003's existing independent-family and ownership decisions; no new ADR
+or package is needed. Earlier phase records describe their historical implementation boundaries.
+
+The contract is: given one coherent accepted resolution revision, presentation exposes authored
+context, selected observation, exact checks, active editor, field and requested guides independently.
+No representation requires a plane, no failure removes unrelated facts, and presentation never
+reauthors the color. The accepted revision remains the provenance boundary.
+
+### 36.1 Source audit and actual consumers
+
+The audit reads the complete [picker presentation](../packages/render/src/pickerPresentation.ts),
+[boundary presentation](../packages/render/src/boundaryPresentation.ts),
+[visual serializers](../packages/render/src/presentation.ts),
+[channel geometry](../packages/render/src/channelGeometry.ts),
+[editor/field resolution](../packages/render/src/capabilities/editorResolution.ts),
+[guide resolution](../packages/render/src/capabilities/guideResolution.ts),
+[field support](../packages/render/src/capabilities/fieldSupport.ts) and
+[guide support](../packages/render/src/capabilities/guideSupport.ts).
+It also traces [UI state](../packages/ui/src/instrumentState.ts),
+[UI metadata](../packages/ui/src/instrumentMetadata.ts), both private `model/acceptedResolution.ts`
+modules, [React GamutPlane](../packages/react/src/GamutPlane.tsx),
+[Vue GamutPlane](../packages/vue/src/components/GamutPlane.vue), both `ColorPlane` and
+`ColorChannelControl` components, and React's `BoundaryTargetResult`/Vue's inline target panel.
+The [React parity record](react-parity.md) remains the current product/SSR coverage map.
+
+`createPickerPresentation` eagerly projects both editors and analyzes both gamuts, then throws
+if either projection or either analysis fails. Its boundary helper samples both reference guides
+even when hidden, but only computes visible interval overlays. The selected target controls its
+single extra marker, connector and Chroma annotation. The target panel remains present when that
+guide is hidden. Both orchestrators consume this object from the revision's source, but neither
+uses the revision's already-computed exact/field/guide results for that legacy visual work.
+
+There is more duplication outside the object: both `ColorPlane` components project again and
+build visible contours before SVG serialization. They constrain the displayed marker, format
+axis coordinates to three decimals in accessible labels, and integrate Canvas resources.
+`ColorChannelControl` merges/clamps interval sections, calculates thresholds and places warnings
+using measured width (with a deterministic initial width). Its native range is bounded while
+its numeric Chroma value can exceed 0.4. Therefore replacing only the top-level factory would
+not remove all duplicate visual computation.
+
+The following is the exhaustive returned-field ledger, including nested leaves. Buckets:
+**A** generalized deterministic fact; **B** current-editor visual detail; **C** legacy focused
+target; **D** UI copy/formatting or product interpretation; **E** adapter/browser resource fact.
+Mixed fields explicitly separate their owners. The destination is a design decision, not a claim
+that the existing code already follows it.
+
+| Existing returned field                               | Bucket and observed use                                                                   | Future owner / disposition                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `plane`                                               | B; both `ColorPlane`s use the combined geometry/sampler, labels, axes and contour builder | Active `EditorVisualSupport` and its nullable render `FieldSupport` supply technical references; resource hookup stays adapter-owned. Legacy axis copy moves only under a separately proved UI metadata migration; do not pass a universal plane for every representation.     |
+| `projection.point`                                    | A; raw active projected point, though current children reproject it                       | Reuse `FieldResolution.projection.point`; constrain a separate display point through the editor's geometry.                                                                                                                                                                    |
+| `projection.x`, `projection.y`, `projection.fixed`    | B derived views of A; OKLab a/b numbers and fixed-Lightness control                       | Read successful active field projection/representation and `fixedCoordinate`/`samplingFixed` in current editor detail; no second projection or flattened universal channel schema.                                                                                             |
+| `oklch` (`space`, `channels`, `alpha`)                | A core observation, B eager companion input; L/C controls use it                          | Selected observation stays core's correlated result. Any additional OKLCH observation needed by a legacy companion belongs to explicitly scoped detail preparation, not every generalized selection.                                                                           |
+| `oklab` (`plane`, `representation`, `point`)          | A core projection, B eager detail; a/b editing passes it to `oklabCoordinatePlanePoint`   | Active field projection plus adapter interaction wiring; eliminate the inactive projection only after equivalence.                                                                                                                                                             |
+| `gamutStatus.srgb`, `gamutStatus.displayP3`           | A, fixed pair; not read directly by either orchestrator, used inside the factory          | Direct requested `GamutCheckResult` rows from the revision. Preserve full analyses/errors and arbitrary requested subsets.                                                                                                                                                     |
+| `fieldHue`                                            | B; field slice, Hue control and gradients                                                 | Active OKLCH field's `samplingFixed` for drawing; null remains null in observation/fixed-coordinate facts. A numeric zero here is only a visual slice, not authored Hue.                                                                                                       |
+| `activeCss`                                           | B; root `--picker-active`                                                                 | Render-owned current visual swatch serialization; no compulsory swatch or extra conversion in generalized presentation.                                                                                                                                                        |
+| `markerCss`                                           | B; opaque selected marker in both fields                                                  | Current render detail keeps alpha forced to one for occlusion; never use it as authored alpha or output.                                                                                                                                                                       |
+| `targetGuidePoint`                                    | C; field marker/connector and warning obstacle                                            | Separate legacy target selection over an available per-guide `targetMarker`; preserve visibility/exact prerequisites.                                                                                                                                                          |
+| `targetGuideCss`                                      | C; opaque target marker color                                                             | Legacy target detail using render's visual serialization of the sampled reference.                                                                                                                                                                                             |
+| `targetGuideLabel`                                    | C/D; target marker title/accessibility label                                              | UI/product copy supplied at adapter composition.                                                                                                                                                                                                                               |
+| `markers[]`                                           | C; passed only to OKLCH Chroma, used for hidden labels and warning collisions             | Legacy target detail, not ordinary exact rows or universal controls. `id`, `tone: guide`, `lane` are legacy annotation/UI association; `position` is clamped visual Chroma geometry; `cssColor` is render serialization; `label` includes UI copy and four-decimal formatting. |
+| `hueIntervals[]`                                      | A/B; visible per-gamut overlays for Hue                                                   | Retain each guide's scoped form directly. Current detail attaches UI tone and flattens only available forms for that control; preserve null/failure/empty distinctions in the source facts.                                                                                    |
+| `lightnessIntervals[]`                                | A/B; OKLCH and fixed OKLab Lightness overlays                                             | Same per-guide reuse; normalization/merging/threshold placement remains current render channel geometry, not new science.                                                                                                                                                      |
+| `chromaIntervals[]`                                   | A/B; displayed only in OKLCH, still returned for OKLab                                    | Reuse the scoped normalized Chroma form; keep the unused OKLab legacy output until its compatibility contract is explicitly reduced.                                                                                                                                           |
+| `targetResult.target`                                 | C; panel target identity                                                                  | Legacy focused-reference input, separate from generalized selection/check/guide requests.                                                                                                                                                                                      |
+| `targetResult.targetLabel`                            | C/D; heading and accessible swatch/panel names                                            | UI/product gamut label policy.                                                                                                                                                                                                                                                 |
+| `targetResult.status`                                 | C selecting A; exact target data attribute and two-label panel                            | Select the matching accepted exact row in compatibility composition. The row remains three-state; panel interpretation stays separate.                                                                                                                                         |
+| `targetResult.guideChroma`, `targetResult.guideDelta` | C/D; four-decimal strings in target panel                                                 | Raw `reference.maximumChroma`/`deltaC` stay in render results; legacy UI formatting supplies these strings.                                                                                                                                                                    |
+| `targetResult.showGuideDelta`                         | C/D; `deltaC > 0` controls panel row                                                      | Legacy product display policy, not a new exact fact.                                                                                                                                                                                                                           |
+| `targetResult.swatchCss`                              | C; panel and Chroma boundary preview use sampled color with its alpha                     | Legacy target visual serialization in render; not an exact color output or mapping result.                                                                                                                                                                                     |
+| `warningVisible`                                      | D derived from A; all current warnings mean Display P3 `outside`                          | Current UI warning policy applied to a supplied successful exact row. Never replace canonical status/error with this boolean.                                                                                                                                                  |
+| `huePosition`                                         | B; normalized Hue warning position                                                        | Current OKLCH visual detail; normalization must not replace the raw observed/authored Hue.                                                                                                                                                                                     |
+| `chromaPosition`                                      | B; clamped Chroma warning position                                                        | Current OKLCH visual detail; clipping a marker does not clamp the observation or numeric value.                                                                                                                                                                                |
+| `hueGradient`                                         | B; Hue track, 72 segments and opaque samples                                              | Current render editable detail, retained with exact CSS output.                                                                                                                                                                                                                |
+| `lightnessGradient`                                   | B; OKLCH Lightness track, 12 segments and opaque samples                                  | Current render editable detail.                                                                                                                                                                                                                                                |
+| `chromaGradient`                                      | B; OKLCH Chroma track, 12 segments over 0–0.4 and opaque samples                          | Current render editable detail, independent of authored validity.                                                                                                                                                                                                              |
+| `fixedLightnessGradient`                              | B; OKLab fixed-Lightness track, 12 segments at observed a/b                               | Current render editable detail, preserving its alpha and 12-significant-digit converted C/H stabilization.                                                                                                                                                                     |
+| `hueHelp`                                             | D from observation; missing-Hue description                                               | UI/product copy from the existing null Hue fact.                                                                                                                                                                                                                               |
+| `chromaHelp`                                          | D from null Hue or L/C domain containment                                                 | UI/product copy. Current containment test can also fail for extended L; do not reinterpret this as a scientific Chroma-only failure. Preserve legacy wording until a separate copy change.                                                                                     |
+| `domainHelp`                                          | D from a/b domain containment                                                             | UI/product copy derived from `markerInDomain` when projection exists; a failed projection is a different state.                                                                                                                                                                |
+
+No **E** field is returned by this factory. Canvas `pending/srgb/display-p3/unavailable`, actual
+`RenderedFieldQuality`, DPR, surface/track sizes, preview-resource availability and observer/RAF
+lifecycle are in the adapters/renderer resource binding. A numeric default width or a CSS string
+does not turn those resources into a color capability result.
+
+`getBoundaryPresentation` additionally returns `guides.srgb`, `guides.displayP3` and `targetGuide`.
+The first two are sampled `PickerGuide` references (A), eagerly prepared to support C; `targetGuide`
+is the selected C reference. Its other six fields are the target point/CSS, markers and three
+interval collections accounted for above. `PickerGuide` carries `gamut`, `maximumChroma`, `deltaC`
+and `color` (sampled L/C/H/alpha). Its delta describes excursion beyond the sampled reference;
+it contains no exact membership status.
+
+### 36.2 Ownership and composition decision
+
+| Concern                                                                      | Authoritative owner and reason                                                                                                                            |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authored `ColorValue`, definition and alpha                                  | Core; adapter's accepted input/revision retains the only source. Presentation reads `definitionOf`, not a snapshot/reconstructed color.                   |
+| Selected observation and coordinate tuple                                    | Core `ColorResult<ColorRepresentation, ConversionError>`; no extra conversion in UI/presentation.                                                         |
+| Requested exact analyses                                                     | Core `GamutCheckResult`; adapter revision alone binds them to source.                                                                                     |
+| Editor identity, geometry math, edit operations                              | Core; render references them, UI admits/labels them, adapters execute edits.                                                                              |
+| Field visual support and value availability                                  | Render's `EditorVisualSupport`/`FieldResolution`, independent of Canvas availability.                                                                     |
+| Guide identity, relation, sampled forms and availability                     | Render's `GuideResolution` and per-form results, independent of field support and exact request selection.                                                |
+| Selection, checked IDs and requested guide preferences                       | UI policy; adapter accepts state. Presentation neither validates again nor modifies requests.                                                             |
+| Representation/channel labels, displayed symbols and inspection precision    | UI metadata/policy. Core owns technical channel identity, index, unit and symbol; UI chooses display wording/symbols without redefining those identities. |
+| Ordinary numeric bounds/steps/edit precision                                 | Existing UI companions; not validity constraints or automatic inspection formatting.                                                                      |
+| Warning interpretation and help strings                                      | UI/product policy over supplied primitives; adapters compose descriptions/IDs. No UI scientific calls or render imports are needed to choose text.        |
+| Gradient, SVG path, connector and visual swatch CSS serialization            | Render's deterministic visual helpers. Core retains its underlying serializers/math and exact output policies.                                            |
+| DOM, accessible composition, control drafts and accepted interaction context | Adapters, with existing UI controllers; presentation is neither an edit executor nor a new state owner.                                                   |
+| Canvas readiness, actual rendered quality, measurement/DPR/resources         | Adapter lifecycle and render resource binding, outside deterministic facts.                                                                               |
+| Target panel and target-only annotations                                     | Separate legacy compatibility composition, drawing on core/render facts and UI copy.                                                                      |
+
+Compare the composition alternatives:
+
+| Option                               | Evaluation                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A: render-owned generalized resolver | Appropriate for small visual transformations of core/render inputs, but the complete revision also contains UI-owned state. Passing the revision into render would reverse ownership; stripping it into a second almost-identical aggregate adds no value for direct results. Do not add this resolver.                             |
+| B: adapter-local pure composition    | **Selected.** Each adapter already owns the coherent revision and joins UI metadata without dependency reversal. The tiny projection is framework-neutral data, despite its private adapter location. Accept two small equivalent functions proved by the same test contract, as in Phase 2G; do not duplicate science/serializers. |
+| C: UI-owned presentation             | UI can choose labels/warning copy from IDs and supplied primitive facts. Housing the revision or render result graph there would introduce a render dependency; moving computations there would violate scientific ownership. Reject the aggregate owner.                                                                           |
+| D: central presentation package      | No evidence justifies a new owner/dependency graph for this small join. Reconsider only if substantial shared composition emerges after real product requirements.                                                                                                                                                                  |
+
+Dependency direction remains adapters → core/render/UI, render → core, UI → core **types only**.
+Render must not import `InstrumentViewState` or any adapter revision type. UI must not call
+`represent`, `analyzeGamut`, coordinate conversion, projection or guide sampling. Existing
+render serializers remain shared. No runtime export or new dependency is proposed in this phase.
+
+### 36.3 Contract: a readonly view of one revision
+
+The conceptual name `GeneralizedPresentation` describes the following small private adapter view,
+not a public API, new scientific model or universal descriptor. This TypeScript-like sketch uses
+existing result types through the actual adapter revision; it is not production code:
+
+```ts
+type AcceptedResolutionRevision = ReturnType<typeof resolveAcceptedRevision>;
+
+type GeneralizedPresentation = Readonly<{
+  authored: Readonly<{
+    representationId: ColorSpaceId;
+    alpha: number;
+  }>;
+  selection: AcceptedResolutionRevision["state"]["selection"];
+  observation: AcceptedResolutionRevision["observation"];
+  exactChecks: AcceptedResolutionRevision["checks"];
+  editor: AcceptedResolutionRevision["editor"];
+  field: AcceptedResolutionRevision["field"];
+  guides: AcceptedResolutionRevision["guides"];
+}>;
+```
+
+Derivation accepts exactly **one** accepted revision. `authored.representationId` and `alpha` are
+read from `definitionOf(revision.source)`; `selection` is the accepted pair by reference. Every
+other member is the corresponding existing result/collection by reference, with `checks` named
+`exactChecks` only for clarity. No structurally identical observation, exact, editor, field or
+guide alias is introduced in render. Consumers can take just one family; none must narrow a
+global branch before reading another. An implementation can use these member expressions
+directly if a helper adds no value, but both adapters must satisfy the same contract.
+
+The wrapper has no `ready`, `error`, global `supported`, `mode`, `source` copy, cached definition,
+target, environment status, callbacks, control schema or writable state. Accepted request arrays
+remain in `revision.state`; exact/guide rows already preserve their ordered request identities.
+Do not duplicate the arrays inside presentation. Empty exact rows mean no checks requested.
+Every requested guide retains a row even if ineffective. Presentation never drops it from state.
+
+`editor.kind === "no-editor-requested"` already identifies observation-only mode, agreeing with
+accepted `selection.editorId === null`. Storing another `editable/observation-only` discriminant
+could drift and would mislead for an active editor with unavailable field. Derive rendering from
+the existing unions instead. The private type is an aggregation of independent families, not an
+object that makes all outcomes succeed/fail together.
+
+The adapter composition trusts the revision's provenance. It does not accept separately supplied
+check rows, compare source objects, hash definitions, add revision IDs, or run science to verify
+coherence. React must still publish interaction authority only from committed child props; Vue
+retains computed/accepted-model semantics. Presentation evaluation never accepts a request or
+changes the semantic context key.
+
+**Type correlation:** core already preserves `observation.value.space ↔ channels` as a mapped
+discriminated union, including nullable OKLCH Hue. Keep that entire result and narrow its `space`
+after `ok`. Phase 2G infers the revision from a union-valued selection; TypeScript does not thereby
+correlate the separate selection property with the observation result. The synchronous revision
+contract supplies that runtime invariant, including the selected ID when observation fails.
+This is sufficient for current consumers; do not add an unchecked cast or a giant combined union.
+If a future consumer needs selection-based compile-time narrowing, strengthen correlation at the
+accepted revision's construction boundary with a focused generic/distributed proof, not by
+relabeling a result in presentation. No additional type-only test is needed for these existing
+indexed types in this design phase.
+
+### 36.4 Authored, observed and inspection-only semantics
+
+For an authored `OKLCH [0.62, 0.24, 270]` with selected `srgb/null`, authored context still says
+OKLCH and retains source alpha. A successful selected observation says `space: srgb` with its
+own raw `[r, g, b]` and alpha. Selecting sRGB never overwrites the source or changes the meaning
+of its defining channels. The generalized view only needs authored representation and alpha:
+alpha is still available if observation fails. If an inspector also displays defining coordinates,
+its adapter reads the existing immutable definition from the same revision; no full `ColorValue`
+copy or eager authored-coordinate panel is needed inside render presentation.
+
+All four explicit null-editor selections are normal: `oklch/null`, `oklab/null`, `srgb/null`,
+`display-p3/null`. Their selected core observation remains useful without a field. On success an
+inspection UI can choose `representationUi[observation.value.space].label`, read the existing
+correlated tuple and alpha, show each independently requested exact row, and list each requested
+guide's `no-editor` outcome. On observation failure it can still show the selected representation
+label, authored context/alpha, exact rows and guide outcomes without fabricated coordinates.
+Neither case runs `defaultSelection`, chooses `oklch-lc`, creates a plane or reports an unsupported
+representation merely because no editor was requested.
+
+Semantic pressure tests (no layout choice):
+
+| Selection                            | Inspector content supplied without new science                                                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `srgb/null`                          | UI label sRGB; successful tuple indices 0/1/2 as R/G/B; alpha; independent exact rows; retained requested guide outcomes; no active editor/field.                                                                                           |
+| `display-p3/null`                    | UI label Display P3 and that representation's own encoded R/G/B tuple, with the same independent alpha/check/guide handling. Do not label this tuple sRGB merely because symbols match.                                                     |
+| `oklch/null` versus `oklch/oklch-lc` | Same selected observation family and raw values for the same source. Only the editor/field/guide relationship changes. The editable case additionally supplies active field facts and its preserved current control detail.                 |
+| Conceptual OKLCH editor A versus B   | Both observe OKLCH, but resolve and present the active `editorId`/geometry/guide relation separately. Semantic interaction keys change even with equal scalar values. This is a test-only future fixture, not a production editor addition. |
+
+`representationUi` currently provides only representation IDs/labels. Existing companion metadata
+describes **editing** order H/L/C or fixed L/a/b, not general inspection order. A future UI-owned
+inspection metadata table needs representation-qualified channel IDs and tuple indices in core
+order (L/C/H, L/a/b, R/G/B), displayed channel labels/symbols, plus a separate alpha label/policy.
+Core already owns technical indices/symbols/domain semantics. Bind UI rows to its exported
+definition types and prove correspondence to its owner-local catalogs; do not import those runtime
+catalogs into UI or redefine conversion. Inspection metadata contains no editor/operation admission.
+Whether inspection uses fixed decimals, significant digits or scientific notation, how it displays
+signed zero/null Hue, and its precision remain future UI decisions. They must not silently inherit
+Hue precision 1 or other editor precision 4, impose editor bounds, or round-trip display strings
+back into authored state. There is no metadata implementation in this phase.
+
+### 36.5 Raw facts, extended values and formatting
+
+Generalized presentation preserves raw numbers and core result types. It neither calls `toFixed`
+for coordinate readouts nor clamps/normalizes/repairs them. Core observation may perform its
+defined conversion; presentation preserves its returned values exactly. Same-space observation
+retains non-normalized finite Hue, missing Hue where valid, extended coordinates and signed zero.
+Presentation cannot redefine `ColorValue` validity if a visual operation fails.
+
+| Stress                                                  | Required preservation and scoped visual consequence                                                                                                                             |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OKLCH L below 0 or above 1                              | Valid authored/selected coordinates survive. L/C field may be available with marker outside domain; contour/Lightness intervals may survive while bounded-L forms fail.         |
+| OKLCH C above 0.4                                       | Raw C survives; ordinary marker/range can be constrained separately. Extremely large C may overflow projection without invalidating selected observation.                       |
+| Finite Hue such as 720 or negative Hue                  | Preserve raw authored/same-space observation. Cyclic gradient/position interpretation is a current visual detail only.                                                          |
+| Null Hue at zero Chroma, including signed zero          | Preserve null and `Object.is`-significant zeros; `samplingFixed: 0` is an achromatic display slice, never a replacement observed Hue or authorization for chromatic edits.      |
+| OKLab L outside 0–1                                     | Observation/projection facts survive; field reports `fixed-lightness-out-of-range`, with no sampler clamp disguised as availability.                                            |
+| OKLab a/b outside disc or huge finite a/b               | Raw coordinates survive. Constrain a display marker only when a projection exists; conversion/projection failures remain scoped. A contour can survive failed OKLCH conversion. |
+| RGB below 0, above 1 or huge finite encoded coordinates | Do not clamp to a unit cube. Same-space observation may succeed while another observation or exact analysis fails numerically.                                                  |
+
+CSS/SVG serialization is different from numeric display formatting. `colorGradient`,
+`serializeOklchSample`, `pointStyle`, `geometryToSvgPath` and `guideConnectorStyle` serialize
+**visual** samples/geometry for markup. Keep their current deterministic precision: gradient
+positions to three decimals, point/connector percentages to eight, connector angle to ten, SVG
+viewbox coordinates to two, and fixed-Lightness converted C/H to twelve significant digits.
+These render helpers remain appropriate at a current visual boundary; no generalized observation
+needs a CSS swatch to count as available. Visual serialization limitations cannot replace a raw
+observation/error or create CSS/Hex output state. Legacy strict sampling/serialization throws
+remain confined to its compatibility path until explicitly retired.
+
+### 36.6 Exact checks and warning policy
+
+Choose **Option A: pass the revision's existing readonly `GamutCheckResult` rows directly**.
+Each row preserves `gamutId` and `ColorResult<GamutAnalysis, GamutAnalysisError>`, including the
+analysis payload. A wrapper containing the same fields adds no presentation value. Additional
+warning semantics are not part of canonical exact presentation.
+
+Keep successful `inside`, `within-tolerance` and `outside` distinct. A failed exact analysis is
+neither outside nor contained; an absent requested row is not success. Ordinary warning policy
+can use the successful Display P3 row's `status === "outside"` for today's warning and treat
+within-tolerance as visually contained. That is UI/current editable policy over a supplied result,
+not another analysis or global readiness flag. A generalized inspector must still be able to
+distinguish absent check, failed check and each of the three statuses. Legacy target DOM may keep
+its two labels while retaining `data-target-exact-status` exactly as today.
+
+Checks never imply guides; guides never imply checks. Without a matching check, sampled forms
+can remain available and the exact-dependent marker is `check-not-requested`. Matching failure
+retains `exact-unavailable`; another gamut's outside result cannot grant a marker. These facts
+already come from the same revision and must not be recomputed by presentation.
+
+### 36.7 Guides: retain resolution, serialize at the boundary
+
+`GuideResolution` is already the generalized presentation fact. Preserve its row identity,
+`no-editor`, `no-guide-for-editor` or `resolved`, and each existing form result. Do not invent
+aliases for these unions or attach all guides beneath `field.kind === "available"`.
+
+| Existing resolved form | Pass-through fact                                                                                                                       | Remaining display work and owner                                                                                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contour`              | Available `{ points: Float32Array, closed }` or the original scoped issue                                                               | `geometryToSvgPath` at the SVG boundary; use these points, never call `buildGamutContour` again. Adapter supplies DOM/accessibility.                                                                       |
+| `hueIntervals`         | `null`, scoped failure, or available interval array (possibly empty)                                                                    | For an applicable current control, attach its guide/gamut UI tone and feed available normalized intervals to existing channel geometry. Null is structural absence, never an empty successful computation. |
+| `lightnessIntervals`   | Independent scoped result, including `available []`                                                                                     | Same current interval/threshold/display geometry; preserve its availability independently of current Lightness.                                                                                            |
+| `chromaIntervals`      | Scoped normalized start/end intervals, already bounded to the current visual Chroma span                                                | No resampling or renormalizing science. Current OKLCH detail consumes it; the form can exist without a current OKLab Chroma control.                                                                       |
+| `reference`            | Scoped raw `PickerGuide` sampled result                                                                                                 | Visual swatch CSS when needed; UI formats raw maximum Chroma/delta. It is not exact membership, an authored color, mapping, or output.                                                                     |
+| `targetMarker`         | Available already-positioned/constrained `PlanePoint`, a form issue, `check-not-requested`, `exact-not-outside`, or `exact-unavailable` | Point CSS and optional connector geometry. Its historical name does not choose a global target; each requested guide owns its own fact. Choosing one legacy marker remains compatibility policy.           |
+
+Ordinary result order remains canonical request order. Current detail may associate guide IDs
+with Display P3/sRGB lanes and retain its established visual ordering, without sorting or mutating
+the accepted arrays. `channelSections` already creates its own normalized working sections;
+threshold/warning placement consumes them, never mutates a guide result or decides exact gamut.
+
+Boundary transformations still needed are per-guide visual CSS/SVG serialization, attaching
+current interval tones, merging sections, deriving thresholds and positioning annotations.
+Legacy-only transformations are eagerly sampling unrequested references, selecting one
+`boundaryTarget`, filtering its marker by old visibility booleans, constructing target marker IDs
+and strings, formatting target delta and producing the focused target panel. The generalized
+layer performs none of those selections or samples.
+
+### 36.8 Editor/field routing and absence/failure taxonomy
+
+Keep `EditorVisualSupport` separate from `FieldResolution`. A structurally active editor remains
+active if the selected observation or its field projection fails. No editor requested means no
+field requested. Missing renderer support and unavailable values are different from both.
+
+An adapter can decide from existing facts alone: null editor permits inspection without a field;
+active editor plus unsupported/unavailable field permits inspection and any independently usable
+editor details but no fabricated interactive plane; active editor plus available field provides
+geometry/sampling prerequisites for the current plane. Actual edit operations still enforce their
+own prerequisites (notably missing Hue), and DOM mounting/Canvas readiness remain separate.
+An available field is not proof that every possible edit or companion control is usable.
+No adapter needs to re-observe/project/sample just to choose those branches.
+
+| Presentation-relevant state                    | Existing source owner/type/discriminant                                                                 | Meaning for consumption                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| No editor requested                            | Render `EditorVisualSupport.kind = no-editor-requested`; accepted selection has null editor             | Normal observation-only state.                                                                       |
+| No field requested                             | Render `FieldResolution.kind = no-field-requested`                                                      | Do not construct a plane.                                                                            |
+| Active editor, field unsupported               | Render `EditorVisualSupport.kind = editor`, `field: null`; `FieldResolution.kind = field-unsupported`   | Preserve editor and guides; no Canvas field relation.                                                |
+| Field projection failed                        | Render `FieldResolution.kind = value-unavailable`, `reason = projection-failed`, core `ConversionError` | No invented point/fixed value.                                                                       |
+| Fixed coordinate unavailable                   | Render field `value-unavailable/fixed-lightness-out-of-range`                                           | Preserve successful projection, fixed coordinate and `markerInDomain`; no clamped replacement slice. |
+| Field available, marker outside domain         | Render field `available`, `markerInDomain: false`                                                       | Raw point/coordinates persist; constrain only display geometry.                                      |
+| Guide requested without editor                 | Render `GuideResolution.kind = no-editor`                                                               | Retain request/guide ID.                                                                             |
+| Guide unsupported for editor                   | Render guide `no-guide-for-editor`                                                                      | Retain request, other guide rows and active editor.                                                  |
+| Guide observation failed                       | Render `GuideFormResult` `value-unavailable/observation-failed` with core `ConversionError`             | Other forms may remain available.                                                                    |
+| Guide Lightness unavailable                    | Render form `value-unavailable/lightness-out-of-range` with raw `lightness`                             | Only forms requiring that bounded slice fail.                                                        |
+| Exact check not requested                      | No row in core requested-check collection                                                               | No implicit analysis; corresponding marker can say `check-not-requested`.                            |
+| Exact check unavailable                        | Core row `result.ok = false`, `GamutAnalysisError`                                                      | Preserve original failure; matching marker is `exact-unavailable`.                                   |
+| Exact inside                                   | Core `GamutAnalysis.status = inside`                                                                    | Matching marker `exact-not-outside` retains status.                                                  |
+| Exact within tolerance                         | Core `GamutAnalysis.status = within-tolerance`                                                          | Distinct scientific status even when warning is visually absent.                                     |
+| Exact outside                                  | Core `GamutAnalysis.status = outside`                                                                   | Marker additionally needs an available reference; outside alone guarantees no geometry.              |
+| Structurally absent guide form                 | Render `ResolvedGuideForms.hueIntervals = null` for OKLab                                               | Not requested-but-failed and not successful empty intervals.                                         |
+| Available empty guide form                     | Render `GuideFormResult.kind = available`, `value: []`                                                  | Successful computation; keep distinguishable from null/failure.                                      |
+| Selected observation failed                    | Core `ColorResult.ok = false`, `ConversionError`                                                        | Keep selected ID, authored context, independent exact/editor/field/guide results.                    |
+| Field available, Canvas unavailable or pending | Render field `available` plus separate adapter `CanvasColorSpaceStatus`                                 | Deterministic facts/inspection remain; resource state does not rewrite field availability.           |
+
+These are uses of existing unions/absence, not a proposal for a duplicate presentation error enum.
+Malformed input/admission rejection belongs before revision acceptance and is not an ordinary
+presentation state. Valid huge authored values are not malformed merely because operations fail.
+
+### 36.9 Legacy target and editable-detail coexistence
+
+Choose **editable-detail Option A**: preserve the two certified current editors' detail
+presentation during initial adoption. Generalized high-level facts coexist with current detail;
+do not design a universal plane/slider/number/gradient/warning/help/keyboard/gesture descriptor.
+Editor identity, semantic operations and UI companion metadata remain separate. Render can later
+factor narrow visual helpers where existing boundaries are clear; that is not a full generalized
+control architecture or a requirement to retain a monolithic legacy factory forever.
+
+Conceptually the adapter composes `GeneralizedPresentation` plus optional legacy editable detail
+and **separate `LegacyTargetPresentation`** for currently reachable v0.3 states. These are
+responsibility boundaries, not new production exports. Do not run the legacy factory for future
+observation-only or partially failed inspection merely to obtain generalized facts: its eager
+projections/throws would defeat the contract. Initial production adoption retains the current
+public state domain and its established failure behavior.
+
+`boundaryTarget` stays outside selection, checked gamuts and visible guides. Its compatibility
+path may pick a matching ordinary exact result already present (today both are always checked)
+and a requested guide reference/marker already present. A hidden target still needs its sampled
+reference for the always-visible target panel, while it must not gain a visible marker. That
+requires explicitly scoped legacy reference work **outside** ordinary requested-guide resolution,
+not adding an invisible ordinary guide or exact check. When refactoring, derive that missing
+reference once for the accepted source, only in compatibility preparation, retaining bounded-L
+legacy failures; share existing owner-local math rather than reproducing it in adapters/UI.
+Unrequested guide contours must never be generated just for the target panel.
+
+Likewise, additional OKLCH facts needed by the OKLab legacy track/target are explicit detail
+prerequisites, not selected observation or a compulsory second projection. Render owns any such
+bounded numerical preparation. Reuse already-resolved inputs when present; keep extra legacy
+work separate from the ordinary presentation view and its request arrays. None of it can replace
+or supply stale exact rows to the accepted revision. Do not design a generic optional-result bag
+or add provenance hashes to pass this compatibility data around.
+
+Changing only the target can change the target panel/marker/Chroma preview and current warning
+collision placement. It cannot change generalized ordinary facts or accepted state. Framework
+reevaluation can create an equivalent revision; reference identity across target updates is not
+a promised cache. The current target is not the future mapping destination. Mapping methods,
+mapping application/preview, output formats and CSS/Hex serializer state remain excluded.
+
+### 36.10 Immutability, typed arrays, SSR and work limits
+
+The future adapter view and newly allocated small authored-context record are readonly and
+shallow-frozen. Keep existing result/collection references and their readonly contracts. Current
+accepted state, definition and exact-row shells are frozen; not every nested render result is
+runtime-frozen, and the presentation contract must not falsely claim deep immutability. Treat
+borrowed nested objects/arrays as immutable by ownership, with mutation checks in the shared
+contract tests. Do not freeze borrowed graphs during render or allocate deep clones for safety.
+
+`Float32Array` contour buffers pass through unchanged and without copying. The type permits
+element writes, so consumer discipline/tests must forbid them; deep-freezing a nonempty typed
+array is not an immutability solution. Generated tables are also shared read-only data. Convert
+to SVG only at the display boundary, never to ordinary arrays per render. Existing keyed visual
+reuse may remain where certified; no new cache or cross-revision memoization is required.
+
+Presentation derivation adds no `represent`, `analyzeGamut`/`analyzeRequestedGamuts`, `resolveField`,
+`resolveRequestedGuides`, geometry projection, inactive-editor traversal or table sampling.
+It reads already-accepted facts. Existing Phase 2G resolution still has its own owner-local
+prerequisite work; this design does not claim those internal observations are already deduplicated.
+Removing legacy duplicate work is a later explicit migration with equivalence evidence.
+No guides requested means no ordinary guide work; no unrequested/inactive contours or eager
+conversion of all four representations. No presentation derivation belongs inside a field sample.
+
+All server-markup facts and optional visual serialization are deterministic and DOM-free. No
+Canvas probe, browser gamut detection, `window`, `document`, ResizeObserver, DPR or locale-dependent
+sorting enters the generalized view. Canvas capability remains separately `pending` on server and
+initial client, and can become unavailable while field facts stay available. Measured warning
+placement and actual field quality remain adapter resource updates. Keep current stable CSS/SVG
+precision and hydration node/ID/focus preservation; no new browser primitive or VueUse migration
+is involved in this design.
+
+### 36.11 Required scenario matrix and evidence
+
+These are design acceptance conclusions over existing scoped facts, **not a claim that a new
+presentation resolver or observation-only public UI has been tested**. Existing fixture sources:
+[core requested facts](../packages/core/test/capabilities/requestedFacts.test.ts),
+[render scoped resolution](../packages/render/test/scopedResolution.test.ts),
+[missing field support](../packages/render/test/missingFieldSupport.test.ts),
+[missing guide support](../packages/render/test/missingVisualSupport.test.ts),
+[both production revision helpers](../packages/react/test/scopedCapabilityContract.test.ts),
+and [accepted component revision contract](../packages/react/test/acceptedRevisionContract.ts).
+
+Unless a row overrides it, use authored OKLCH `[0.62, 0.24, 270]`, alpha 0.37, both checks and both
+guides. The matrix intentionally distinguishes future acceptance coverage from existing source
+fixtures; this phase adds no runtime resolver or test implementation.
+
+| Scenario                                                 | Selection / fixture                                                                                       | Required presentation conclusion and source evidence                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A — ordinary OKLCH editable                              | `oklch/oklch-lc`                                                                                          | Selected observation and exact rows succeed; editor active; field available; both guide rows resolved with independent forms. Production-helper suite A and scoped render tests supply facts; current H/L/C detail remains separate.                                                                                |
+| B — ordinary OKLab editable                              | `oklab/oklab-ab`                                                                                          | Same high-level families; Hue intervals structurally null, not a failed editor. Production-helper suite B and render form inventory.                                                                                                                                                                                |
+| C — OKLCH observation-only                               | `oklch/null`                                                                                              | Same OKLCH observation family as A; no editor/no field requested; both checks can remain; each requested guide retained as `no-editor`. Helper null-selection tests plus render retained-request test.                                                                                                              |
+| D — OKLab observation-only                               | `oklab/null`                                                                                              | Equivalent to C for OKLab; no fallback a/b editor. Same existing fixture families.                                                                                                                                                                                                                                  |
+| E — sRGB observation-only                                | `srgb/null`                                                                                               | Selected raw R/G/B/alpha plus exact rows and guide statuses suffice for inspection; no plane. Helper null-selection and retained-P3-guide tests.                                                                                                                                                                    |
+| F — Display P3 observation-only                          | `display-p3/null`                                                                                         | Same as E with Display P3 coordinates/identity, not sRGB relabeling. Helper null-selection tests.                                                                                                                                                                                                                   |
+| G — guide without check                                  | `oklch/oklch-lc`, P3 guide, empty checks                                                                  | Sampled contour/reference/intervals may succeed; marker is `check-not-requested`, not outside or hidden implicit analysis. Helper E and render call-count tests.                                                                                                                                                    |
+| H — check without guide                                  | One sRGB check, empty guides                                                                              | Exact row survives; no ordinary sampled guide/contour work. Helper F and empty-guide call-count test.                                                                                                                                                                                                               |
+| I — field unsupported, guide supported                   | Test-only missing OKLab field relation                                                                    | Editor/geometry survive, field `field-unsupported`, guide forms resolve independently including null Hue. Both missing-support fixtures prove no Canvas-field gate.                                                                                                                                                 |
+| J — extended OKLCH L                                     | `[1.2, 0.1, 40]`, and future symmetric negative-L coverage                                                | L/C field can be available outside domain; contour and Lightness intervals remain; Hue/reference/Chroma forms report bounded-L failure. In a/b, fixed L and contour are unavailable while Lightness intervals can survive. Render extended-L fixture; negative-L case is an added future acceptance requirement.    |
+| K — Chroma above visible range                           | `[0.5, 0.9, 40]`                                                                                          | Raw value preserved, field available with out-of-domain marker; no validity failure. At C `1e308`, projection can fail while contour/reference survive and Lightness intervals are `available []`. Both real render fixtures prevent collapsing failure/empty/domain cases.                                         |
+| L — OKLab outside disc                                   | `[0.5, 0.4, 0.4]`                                                                                         | Available field with raw outside marker; display may constrain it. At `[0.5, 1.3e308, 1.3e308]`, OKLab observation/contour survive failed OKLCH guide prerequisites; preserve scoped field projection failure where applicable. Render outside-disc and huge-a/b fixtures.                                          |
+| M — huge RGB numerical failure                           | sRGB `[2.5e128, 2.5e128, 0]`, selected P3/null                                                            | Definition remains valid; selected observation fails with `ConversionError` numerical-range; sRGB exact succeeds as outside; P3 exact fails with `GamutAnalysisError`; no editor/field; guide requests say no-editor. Core and production-helper G use this exact numerical fixture.                                |
+| N — failed selected observation, unrelated exact success | Same source as M; additionally select `oklch/oklch-lc` from sRGB `[1e308, 0, 0]` for active-editor stress | M proves independent exact success despite selected failure. The second fixture proves a separate case: structurally active editor with projection/observation unavailable; it need not have an exact success. Preserve editor, original errors and guide outcomes; never imply all families fail from one failure. |
+| O — exact analysis failure                               | sRGB `[1e308, 0, 0]`, selected `srgb/null`                                                                | Authored-space observation succeeds while both exact rows retain numerical failures. No result becomes outside. Core two-failure and same-space observation tests; render also retains a supplied matching error in `exact-unavailable`.                                                                            |
+| P — same state, new ColorValue                           | Ordinary source → OKLCH `[1.2, 0.8, 40]`                                                                  | New observation/check/field/guide facts with stable catalog editor/geometry/support identities. Helper H. Outside→inside replacement additionally removes exact-dependent marker availability; never reuse old checks.                                                                                              |
+| Q — defining-equal reconstructed source                  | New instance with the same defining channels/alpha, including signed-zero/missing-Hue cases               | Equivalent semantic facts; no identity-based rejection or special cache. Helper provenance/reconstruction and real component feedback tests retain source/gesture authority.                                                                                                                                        |
+| R — boundaryTarget change                                | Same accepted source/state; sRGB target ↔ P3 target                                                       | Ordinary generalized facts unchanged semantically; only legacy target/detail selection changes, including with guides hidden. Component contract tests target independence for all visibility combinations.                                                                                                         |
+
+Additional required proofs in implementation are tolerance-fringe status preservation, the
+null/failure/available-empty distinction, raw Hue/signed zero, no mutations or extra scientific
+calls, no contour-buffer copies, same-representation editor identity, and active-editor observation
+failure. The latter two are semantic tests; do not expand production editor admission to obtain them.
+
+The [frozen Phase 2C equivalence suite](../packages/render/test/presentationEquivalence.test.ts)
+compares every legacy output and gradient exactly against pre-migration fixtures for both views,
+both targets and all guide visibility combinations. It also locks existing extended-L/huge-RGB
+throws. Keep that compatibility evidence; generalized success with partial facts intentionally has
+a different domain from this legacy factory. Do not make generalized facts mimic its global throw.
+
+Existing Vue/React component presentation tests check numeric overflow, target status/swatches,
+warnings and actual render quality. Their `e2e/uiFoundation.spec.ts` suites cover the two views,
+P3-only/outside colors, hidden guides/target, widths and enlarged text with approved screenshots.
+Packed Nuxt/Next `e2e/hydration.spec.ts` withhold scripts to assert complete server markup, initial
+Canvas pending, raw authored coordinates and retained nodes/IDs/focus/values after hydration;
+Next root Strict Mode adds resource/commit proof. Those are the later adapter migration gates,
+not authorization to update baselines in this phase.
+
+### 36.12 Implementation sequence and retirement criteria
+
+The following work requires a subsequent implementation phase; none starts here.
+
+| Step                                                 | Concrete bounded work                                                                                                                                                                                                                                                                                                                                                                | Required evidence before advancing                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2H.1 — private presentation view                     | Add only the small pure adapter-local derivation beside accepted resolution (or equivalent direct family projections), with a shared contract test executed for both adapters. Reuse existing owner result types and serializers; no new package or render aggregate, no component adoption.                                                                                         | Observation-only cases, reference/tuple/error preservation, shallow immutability boundary, no scientific recomputation/DOM access. If type correlation becomes necessary, prove it at revision construction rather than casting in presentation.                                                            |
+| 2H.2 — complete semantic proof                       | Exercise every A–R row, tolerance/missing/raw values and unsupported relations; compare matching facts to accepted results. Keep the frozen whole-object legacy suite alongside these tests.                                                                                                                                                                                         | No fabricated editor/plane, no global failure, check/guide and field/guide independence, original arrays/buffers unchanged. Compare only corresponding generalized/legacy facts where domains match; preserve the legacy throw tests separately.                                                            |
+| 2H.3 — internal adapter adoption                     | React first, then Vue: consume generalized high-level families from the same accepted revision while current editable-detail and target paths continue. Keep only currently reachable public selections; do not implement an observation UI or new partial-state product behavior incidentally.                                                                                      | Shared real-component accepted-revision/current-composition tests, committed/abandoned render and rejected-request semantics, frozen v0.3 output, packed Vue/React and Nuxt/Next SSR/hydration, existing visuals without baseline changes.                                                                  |
+| 2H.4 — reduce duplicate legacy computation by family | Source exact facts from revision rows, active field projection from `field`, and visible guide forms/contours from `guides`, including child `ColorPlane` work. Factor preserved editor gradients/visual serialization and UI formatting into their stated owners. Prepare only missing legacy target references/companion prerequisites explicitly, never ordinary hidden requests. | Exact current-detail/target equivalence including hidden targets, unused OKLab outputs and throw boundary; call-count proof that checks/projections/contours are no longer repeated; raw numeric and buffer preservation. Any unsupported legacy edge remains isolated until proved, not silently repaired. |
+
+Do not let 2H.4 become a universal control rewrite. Each removed source of duplication must have
+an explicit consumer and equivalence proof, including imperatively restored marker/resource paths.
+New observation-only public exposure, request-acceptance APIs and compact redesign are separate
+product phases after these contracts are certified.
+
+`createPickerPresentation` and `getBoundaryPresentation` can be **reduced** by a family once its
+equivalence passes. They can be **retired** only when all of the following hold:
+
+- Every current exact fact comes from the accepted revision; warnings/target interpretation do
+  not analyze again, infer exact truth from samples, or hide failure as outside.
+- Current active field projection/marker facts come from scoped field resolution, including the
+  child plane's markup needs. Any interaction-time projection has its own justified input/lifecycle;
+  it must not become an alternate accepted-state presentation computation.
+- Every visible guide/contour/interval consumes scoped guide facts. The always-visible hidden
+  target reference has a separate minimal compatibility path; no extra ordinary requests.
+- Gradients, CSS/SVG geometry, marker occlusion and legacy unused detail outputs have explicit
+  owners; labels, numeric strings, warnings and help have explicit UI/product owners.
+- Target panel, swatches, marker/connector visibility and collision behavior remain exactly
+  equivalent for both targets and all visibility combinations. Boundary target still cannot
+  influence ordinary selection/check/guide state.
+- The frozen oracle remains independent, current-domain output and plane/sampler identities
+  remain exact, and legacy throws are explicitly preserved or a separately authorized product
+  change replaces them. No weakening of tests, precision, tolerances or visual baselines.
+- Both adapters retain public contracts, semantic interaction authority, SSR determinism,
+  hydration and resource lifecycle proof. Removal requires no reverse dependency or public export.
+
+### 36.13 Deferred decisions, non-goals and validation scope
+
+The architecture/ownership decisions above are resolved. Remaining product decisions are inspection
+precision/notation and null/signed-zero copy; final user-facing absence/error wording; whether and
+how a future inspection UI draws available guides without a Canvas field; and future same-representation
+editor requirements. These do not block presenting independent facts. A successful guide is not a
+mandate to draw it on an unavailable field. A concrete typed API for legacy detail preparation is
+deferred to the bounded extraction in 2H.4, constrained by the owners and retirement checks above.
+
+There are no public prop names/APIs, sRGB/P3 selector exposure, mapping/output workflows, new
+representations/editors, central control descriptors, runtime caches, package changes, CSS,
+generated-data or baseline changes here. No tabs/select/popover choice, panel order, compact
+dimensions, style, animation or disclosure interaction is decided. No production resolver or
+Vue/React adapter is edited. This phase only updates the design and its architecture cross-reference.
+
+For this documentation-only change, run `pnpm format`, `pnpm format:check`, `pnpm lint`,
+`pnpm typecheck`, `pnpm test` and `git diff --check`, then review the complete diff against the
+ownership/matrix/retirement contract. No additional local packed browser/SSR run is required when
+manifests, exports and runtime sources remain untouched. Push only `dev` and require every
+established CI job to pass on the exact final SHA; verify local/tracking/remote equality and a
+clean tree, with `main` unchanged. No merge, tag or release belongs to this design phase.

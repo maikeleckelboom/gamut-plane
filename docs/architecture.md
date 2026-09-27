@@ -164,6 +164,18 @@ enters generalized resolution. This bounded duplication preserves eager projecti
 unused OKLab Chroma output, plane/sampler identity, generated tables, CSS and visual baselines.
 Scoped failures do not introduce partial UI. See the [Phase 2G record](vnext-product-capability-model.md#35-phase-2g-internal-generalized-adapter-integration).
 
+The [Phase 2H presentation design](vnext-product-capability-model.md#36-phase-2h-design-generalized-presentation-contract)
+specifies a future small adapter-local readonly view of that coherent revision: authored
+representation/alpha, accepted selection, and the existing observation, exact-check, editor,
+field and guide results by reference. It introduces no global readiness/error state and no
+additional scientific computation. Observation-only selections and partial failures retain all
+independent facts; a missing field never removes a supported guide. Formatting/help/warning
+interpretation belongs to UI/product policy, while render retains deterministic visual serializers.
+Current editable detail and the focused legacy target remain separate compatibility responsibilities;
+Canvas readiness/resources remain adapter-owned. This is a design contract only, with no resolver,
+adapter or public API change. Its source audit, A–R scenarios and staged retirement criteria follow
+ADR 0003 without adding a package or reverse dependency.
+
 ## Generated tables
 
 The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.
