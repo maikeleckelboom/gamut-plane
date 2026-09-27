@@ -41,6 +41,7 @@ test("Hue drag past the right edge stays at the right endpoint", async ({ page }
   await expect(range).toHaveValue("360");
   await page.mouse.up();
 
+  await expect(range).toHaveAccessibleName("Hue");
   await expect(range).toHaveValue("360");
   await expect(page.locator(".coordinate-summary__values dd").last()).toHaveText("0.00°");
 });

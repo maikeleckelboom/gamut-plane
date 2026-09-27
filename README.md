@@ -104,7 +104,7 @@ pnpm --filter @gamut-plane/render pack --pack-destination $artifacts --json
 pnpm --filter @gamut-plane/vue pack --pack-destination $artifacts --json
 ```
 
-Use the filenames returned by `pnpm pack --json` and copy the tarballs into an `artifacts` directory in your Vue application. For the 0.2.0 candidate, add this override to that application's `pnpm-workspace.yaml`, merging it with any existing overrides:
+Use the filenames returned by `pnpm pack --json` and copy the tarballs into an `artifacts` directory in your Vue application. With the 0.2.0 private package artifacts, add this override to that application's `pnpm-workspace.yaml`, merging it with any existing overrides:
 
 ```yaml
 overrides:

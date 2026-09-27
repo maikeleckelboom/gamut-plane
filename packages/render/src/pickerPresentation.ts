@@ -23,13 +23,6 @@ import { colorGradient } from "./presentation.js";
 // CSS-only gradient precision keeps converted C/H stable across SSR and hydration.
 const GRADIENT_SIGNIFICANT_DIGITS = 12;
 
-export const hueGradient = colorGradient(72, (position) => ({
-  l: 0.8,
-  c: OKLCH_PICKER_MAX_CHROMA,
-  h: position * 360,
-  alpha: 1,
-}));
-
 /** Pure visual facts for either adapter. The input ColorValue remains the only authored color. */
 export function createPickerPresentation(
   value: ColorValue,

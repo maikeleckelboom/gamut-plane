@@ -25,7 +25,7 @@ export type {
   GuideThreshold,
 } from "./channelGeometry.js";
 export { colorGradient, guideConnectorStyle } from "./presentation.js";
-export { createPickerPresentation, hueGradient } from "./pickerPresentation.js";
+export { createPickerPresentation } from "./pickerPresentation.js";
 export {
   displayGamutLabel,
   getBoundaryPresentation,

@@ -49,6 +49,7 @@ describe("native range lifecycle", () => {
     await input(range, "360");
     await clock.flush();
     expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(0);
+    expect(range.getAttribute("aria-label")).toBe("Hue");
     expect(range.value).toBe("360");
 
     await event(range, "change");

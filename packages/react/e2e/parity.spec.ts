@@ -111,6 +111,7 @@ test("Hue drag past the right edge keeps the right thumb with normalized color f
   await expect(range).toHaveValue("360");
   await page.mouse.up();
 
+  await expect(range).toHaveAccessibleName("Hue");
   await expect(range).toHaveValue("360");
   expect(JSON.parse(await page.locator("[data-color]").innerText()).h).toBe(0);
 });

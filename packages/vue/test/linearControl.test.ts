@@ -84,6 +84,7 @@ describe("ColorChannelControl gamut annotations", () => {
     frames.flush();
     await nextTick();
     expect(model.value).toBe(0);
+    expect(range.getAttribute("aria-label")).toBe("Hue");
     expect(range.value).toBe("360");
 
     range.dispatchEvent(new Event("change", { bubbles: true }));
