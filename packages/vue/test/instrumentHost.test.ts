@@ -135,6 +135,7 @@ describe("reactive instrument host", () => {
       expect(context.drawImage).toHaveBeenCalled();
       expect(host.model.value).toEqual(origin);
       expect(host.commits).not.toHaveBeenCalled();
+      expect(host.cancel).toHaveBeenCalledTimes(1);
       host.wrapper.unmount();
     },
   );
@@ -167,6 +168,7 @@ describe("reactive instrument host", () => {
     host.pointer("pointerup");
     expect(host.model.value).toEqual(published);
     expect(host.commits).not.toHaveBeenCalled();
+    expect(host.cancel).toHaveBeenCalledTimes(1);
     host.wrapper.unmount();
   });
 });

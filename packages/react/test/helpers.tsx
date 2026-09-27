@@ -1,4 +1,4 @@
-import { act, createElement, useState, type ReactNode } from "react";
+import { act, createElement, useLayoutEffect, useState, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, vi } from "vitest";
 import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
@@ -97,8 +97,12 @@ export async function host(options: Partial<GamutPlaneProps> = {}) {
   const cancels = vi.fn<() => void>();
   const order: string[] = [];
   let replace: (color: ColorValue) => void = () => {};
+  let selected = options.value ?? initial;
   function Host() {
     const [value, setValue] = useState(options.value ?? initial);
+    useLayoutEffect(() => {
+      selected = value;
+    });
     replace = setValue;
     return createElement(GamutPlane, {
       ...options,
@@ -127,6 +131,7 @@ export async function host(options: Partial<GamutPlaneProps> = {}) {
     commits,
     cancels,
     order,
+    current: () => selected,
     replace: async (value: ColorValue) => {
       await act(async () => replace(value));
     },
