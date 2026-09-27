@@ -1,5 +1,15 @@
+// Frozen v0.3 composition from 0b82cef9e5a111a98d98e6a9ae0ab9d666b5cf2b.
+// Test oracle: only import paths differ; do not migrate this alongside production.
 import {
   OKLCH_PICKER_MAX_CHROMA,
+  OKLAB_AB_PLANE,
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
+  convertOklchToOklab,
+  getHueGuideIntervals,
+  getLightnessGuideIntervals,
+  getPickerGuide,
+  oklabCoordinatesToPlanePoint,
+  oklchCoordinatesToPlanePoint,
   serializeOklchSample,
   type DisplayGamut,
   type GamutStatus,
@@ -8,9 +18,8 @@ import {
   type PickerPlaneId,
   type PlanePoint,
 } from "@gamut-plane/core";
-import type { LinearControlInterval, LinearControlMarker } from "./channelGeometry.js";
-import { currentEditorByView, currentGuideByGamut } from "./capabilities/currentView.js";
-import { guideDefinitions, guideSupport } from "./capabilities/guideSupport.js";
+import type { LinearControlInterval, LinearControlMarker } from "../../src/channelGeometry.js";
+import { PICKER_GAMUT_TABLES } from "../../src/generated/gamutTables.js";
 
 export interface BoundaryGuideVisibility {
   srgb: boolean;
@@ -34,12 +43,28 @@ function visibleGamuts(visibility: BoundaryGuideVisibility): DisplayGamut[] {
   );
 }
 
+function tableFor(gamut: DisplayGamut) {
+  return gamut === "srgb" ? PICKER_GAMUT_TABLES.srgb : PICKER_GAMUT_TABLES.displayP3;
+}
+
 function guideFor(guides: BoundaryPresentation["guides"], gamut: DisplayGamut): PickerGuide {
   return gamut === "srgb" ? guides.srgb : guides.displayP3;
 }
 
 function gamutLabel(gamut: DisplayGamut): string {
   return gamut === "srgb" ? "sRGB" : "Display P3";
+}
+
+function positionGuide(color: OklchSample, view: PickerPlaneId): PlanePoint {
+  if (view === "oklch") {
+    return OKLCH_LIGHTNESS_CHROMA_PLANE.constrainPoint(
+      oklchCoordinatesToPlanePoint(color.l, color.c),
+    );
+  }
+  const coordinates = convertOklchToOklab(color);
+  return OKLAB_AB_PLANE.constrainPoint(
+    oklabCoordinatesToPlanePoint(coordinates[1]!, coordinates[2]!),
+  );
 }
 
 /** Shared target and visible-guide presentation for the Vue and React adapters. */
@@ -50,16 +75,10 @@ export function getBoundaryPresentation(
   visibility: BoundaryGuideVisibility,
   exactStatus: Readonly<{ srgb: GamutStatus; displayP3: GamutStatus }>,
 ): BoundaryPresentation {
-  const support = guideSupport[currentEditorByView[view]];
-  function sampleGuide(gamut: DisplayGamut): PickerGuide {
-    const id = currentGuideByGamut[gamut];
-    return support[id].forms.reference(color, guideDefinitions[id].table);
-  }
   const guides = {
-    srgb: sampleGuide("srgb"),
-    displayP3: sampleGuide("display-p3"),
+    srgb: getPickerGuide(color, PICKER_GAMUT_TABLES.srgb),
+    displayP3: getPickerGuide(color, PICKER_GAMUT_TABLES.displayP3),
   };
-  const targetSupport = support[currentGuideByGamut[target]];
   const targetGuide = guideFor(guides, target);
   const gamuts = visibleGamuts(visibility);
   const targetVisible = target === "srgb" ? visibility.srgb : visibility.displayP3;
@@ -68,9 +87,7 @@ export function getBoundaryPresentation(
     targetVisible && exactStatus[target === "srgb" ? "srgb" : "displayP3"] === "outside";
   const markerColor = showTargetGuide ? targetGuide.color : null;
   const targetGuideCss = markerColor ? serializeOklchSample({ ...markerColor, alpha: 1 }) : "";
-  const targetGuidePoint = markerColor
-    ? targetSupport.forms.targetMarker.position(markerColor)
-    : null;
+  const targetGuidePoint = markerColor ? positionGuide(markerColor, view) : null;
   const markers: LinearControlMarker[] = [];
   if (markerColor) {
     markers.push({
@@ -83,14 +100,12 @@ export function getBoundaryPresentation(
     });
   }
 
-  function intervals(form: "hueIntervals" | "lightnessIntervals"): LinearControlInterval[] {
-    return gamuts.flatMap((gamut) => {
-      const id = currentGuideByGamut[gamut];
-      const get = support[id].forms[form];
-      return get
-        ? get(guideDefinitions[id].table, color).map((interval) => ({ ...interval, tone: gamut }))
-        : [];
-    });
+  function intervals(
+    get: typeof getHueGuideIntervals | typeof getLightnessGuideIntervals,
+  ): LinearControlInterval[] {
+    return gamuts.flatMap((gamut) =>
+      get(tableFor(gamut), color).map((interval) => ({ ...interval, tone: gamut })),
+    );
   }
 
   return {
@@ -99,8 +114,8 @@ export function getBoundaryPresentation(
     targetGuidePoint,
     targetGuideCss,
     markers,
-    hueIntervals: intervals("hueIntervals"),
-    lightnessIntervals: intervals("lightnessIntervals"),
+    hueIntervals: view === "oklch" ? intervals(getHueGuideIntervals) : [],
+    lightnessIntervals: intervals(getLightnessGuideIntervals),
     chromaIntervals: gamuts.map((gamut) => ({
       start: 0,
       end: Math.min(

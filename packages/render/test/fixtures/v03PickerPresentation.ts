@@ -1,8 +1,13 @@
+// Frozen v0.3 composition from 0b82cef9e5a111a98d98e6a9ae0ab9d666b5cf2b.
+// Test oracle: only import paths differ; do not migrate this alongside production.
 import {
+  OKLAB_AB_PLANE,
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   analyzeGamut,
   convertOklabToOklch,
   normalizeHue,
+  projectColorToPlane,
   serializeOklchSample,
   type ColorValue,
   type DisplayGamut,
@@ -14,15 +19,11 @@ import {
   displayGamutLabel,
   getBoundaryPresentation,
   type BoundaryGuideVisibility,
-} from "./boundaryPresentation.js";
-import { colorGradient } from "./presentation.js";
-import { currentEditorByView } from "./capabilities/currentView.js";
-import { fieldSupport } from "./capabilities/fieldSupport.js";
+} from "./v03BoundaryPresentation.js";
+import { colorGradient } from "../../src/presentation.js";
 
 // CSS-only gradient precision keeps converted C/H stable across SSR and hydration.
 const GRADIENT_SIGNIFICANT_DIGITS = 12;
-const lchGeometry = fieldSupport["oklch-lc"].geometry;
-const labGeometry = fieldSupport["oklab-ab"].geometry;
 
 /** Pure visual facts for either adapter. The input ColorValue remains the only authored color. */
 export function createPickerPresentation(
@@ -31,13 +32,13 @@ export function createPickerPresentation(
   boundaryTarget: DisplayGamut,
   visibility: BoundaryGuideVisibility,
 ) {
-  const oklch = lchGeometry.project(value, lchGeometry.planeId);
-  const oklab = labGeometry.project(value, labGeometry.planeId);
+  const oklch = projectColorToPlane(value, "oklch");
+  const oklab = projectColorToPlane(value, "oklab");
   if (!oklch.ok || !oklab.ok) {
     throw new RangeError("Selected color cannot be projected into the instrument");
   }
-  const { plane, geometry } = fieldSupport[currentEditorByView[view]];
-  const active = geometry.planeId === "oklab" ? oklab.value : oklch.value;
+  const plane = view === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE;
+  const active = view === "oklab" ? oklab.value : oklch.value;
   const [l, c, observedHue] = oklch.value.representation.channels;
   const [, observedA, observedB] = oklab.value.representation.channels;
   // A hue-less observation stays hue-less. Only visual sampling needs a numeric slice.
@@ -58,7 +59,7 @@ export function createPickerPresentation(
     boundaryTarget === "srgb" ? gamutStatus.srgb : gamutStatus.displayP3;
   const targetLabel = displayGamutLabel(boundaryTarget);
   const projection =
-    geometry.planeId === "oklch"
+    view === "oklch"
       ? { point: active.point, x: c, y: l, fixed: fieldHue }
       : {
           point: active.point,
@@ -118,10 +119,10 @@ export function createPickerPresentation(
     chromaHelp:
       observedHue === null
         ? "Set Hue before increasing chroma."
-        : !lchGeometry.contains(oklch.value.point)
+        : !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(oklch.value.point)
           ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
           : undefined,
-    domainHelp: !labGeometry.contains(oklab.value.point)
+    domainHelp: !OKLAB_AB_PLANE.isPointInInstrumentDomain(oklab.value.point)
       ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
       : undefined,
   };
