@@ -9,3 +9,4 @@ export {
   gpStatus,
   type GpPart,
 } from "./parts.js";
+export { gamutWarningGlyph } from "./glyphs.js";

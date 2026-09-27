@@ -1,5 +1,5 @@
 import { PICKER_WARNING_GLYPH_SIZE } from "@gamut-plane/render";
-import { gpPart } from "@gamut-plane/ui";
+import { gamutWarningGlyph, gpPart } from "@gamut-plane/ui";
 
 export function GamutWarningGlyph() {
   return (
@@ -8,13 +8,13 @@ export function GamutWarningGlyph() {
       data-gp-part={gpPart.warningGlyph}
       width={PICKER_WARNING_GLYPH_SIZE}
       height={PICKER_WARNING_GLYPH_SIZE}
-      viewBox="0 0 16 16"
+      viewBox={gamutWarningGlyph.viewBox}
       fill="none"
       aria-hidden="true"
       focusable="false"
       data-gamut-warning-glyph=""
     >
-      <path d="M8 1.5 14.25 13.5H1.75Z" />
+      <path d={gamutWarningGlyph.path} />
     </svg>
   );
 }
