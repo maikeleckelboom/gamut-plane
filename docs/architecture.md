@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 instrument and the first vNext UI foundation slices. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) identifies what has been implemented and what remains deferred.
+This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work; Phase 2 product/capability and redesign work remains future work.
 
 ## Layer boundaries
 

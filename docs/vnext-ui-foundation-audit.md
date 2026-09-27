@@ -1,5 +1,7 @@
 # vNext UI foundation audit (Phase 1A)
 
+Status update: The implementation plan was completed through Phase 1B.4B. This file is retained as the original Phase 1A audit and baseline record; see the [Phase 1B foundation record](ui-foundation-phase-1b.md) for the completed implementation.
+
 Status: implementation plan, 2026-09-27. This document describes the clean `dev` tree at
 `b899e1d00f55b37e7def95af29a8868cce5b1c90` (`chore(tooling): centralize oxc configuration`).
 Local `main` was `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`, the released v0.3 baseline.

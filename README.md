@@ -28,15 +28,7 @@ pnpm dev
 
 Open the URL printed by Vite. The app runs entirely in the browser, with no backend, account, persistence, telemetry, or runtime network dependency.
 
-`pnpm dev` builds the packages before starting the app. After changing package code, run `pnpm build:packages` again. For continuous package development, run these watchers in separate terminals after the initial build:
-
-```powershell
-pnpm --filter @gamut-plane/core exec tsc -p tsconfig.build.json --watch
-pnpm --filter @gamut-plane/render exec tsc -p tsconfig.build.json --watch
-pnpm --filter @gamut-plane/vue exec vite build --watch
-```
-
-The Vue watcher rebuilds JavaScript and CSS. Run `pnpm build:packages` to refresh its declarations after API changes.
+`pnpm dev` performs an initial package build before starting the app. After changing reusable package code, run `pnpm build:packages` to refresh the full core/render/UI/adapter build and copied stylesheet output. Individual package watchers can help with narrow work, but there is currently no authoritative all-package watcher that reproduces the complete shared UI, stylesheet-copy and adapter build pipeline.
 
 ## Use the Vue component
 
@@ -144,13 +136,14 @@ The app's inspector copies full-precision OKLCH and `color()` values, plus quant
 
 ## Repository guide
 
-| Location          | Contents                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/core`   | ColorValue authorship, exact gamut status, mapping, serialization, and plane geometry            |
-| `packages/render` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables             |
-| `packages/vue`    | Complete Vue component, lifecycle, controls, interactions and styles                             |
-| `packages/react`  | Complete native React instrument, private controls/controllers and packed Vite/Next verification |
-| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                                   |
+| Location          | Contents                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/core`   | Authored color/domain truth, exact gamut analysis, mapping, serialization, and plane/domain math                                                                   |
+| `packages/render` | Canvas renderer, sampled visualization data, and shared presentation/geometry algorithms                                                                           |
+| `packages/ui`     | Private shared instrument anatomy, canonical stylesheet, glyph geometry, and framework-neutral interaction policies                                                |
+| `packages/vue`    | Vue native markup/component API, reactivity/lifecycle, adapter geometry/presentation, VueUse environment integration, and Canvas resource hookup                   |
+| `packages/react`  | React native markup/component API, committed lifecycle, adapter geometry/presentation, Canvas/environment resource integration, and packed React/Next verification |
+| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                                                                                                     |
 
 [Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Workers Static Assets and Workers Builds.
 
