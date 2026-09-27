@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
+import {
+  gpAttribute,
+  gpAxis,
+  gpGamut,
+  gpMarker,
+  gpPart,
+  mountPlaneGesture,
+  type PlaneGestureBinding,
+} from "@gamut-plane/ui";
 import {
   authorPlaneEdit,
   definingEquals,
@@ -80,12 +88,7 @@ const pixelRatio = ref(1);
 
 let renderer: FieldRenderer | null = null;
 let fieldRaf: number | null = null;
-let pointerRaf: number | null = null;
-let pendingPoint: PlanePoint | null = null;
-let activePointerId: number | null = null;
-let latestInteractionPoint: PlanePoint | null = null;
-let latestInteractionColor: ColorValue | null = null;
-let interactionOrigin: ColorValue | null = null;
+let gesture: PlaneGestureBinding | null = null;
 let boundsDirty = false;
 let isUnmounted = false;
 let isMounted = false;
@@ -245,119 +248,30 @@ function positionActiveAnnotations(point: PlanePoint): void {
   warning.style.visibility = "visible";
 }
 
-function emitLivePoint(point: PlanePoint): ColorValue | null {
-  pendingPoint = null;
-  positionActiveAnnotations(point);
+function authorPoint(value: ColorValue, point: PlanePoint): ColorValue | null {
   const result =
     props.plane.id === "oklch"
-      ? authorPlaneEdit(props.modelValue, {
+      ? authorPlaneEdit(value, {
           plane: "oklch",
           kind: "point",
           point,
           ...(props.editReference ? { reference: props.editReference } : {}),
         })
-      : authorPlaneEdit(props.modelValue, { plane: "oklab", kind: "point", point });
-  if (!result.ok) {
-    positionActiveAnnotations(boundedActivePoint.value);
-    return null;
-  }
-  const color = result.value;
-  if (activePointerId !== null) {
-    latestInteractionPoint = point;
-    latestInteractionColor = color;
-  }
-  emit("update:modelValue", color);
-  return color;
+      : authorPlaneEdit(value, { plane: "oklab", kind: "point", point });
+  return result.ok ? result.value : null;
 }
 
-function schedulePoint(point: PlanePoint): void {
-  pendingPoint = point;
-  latestInteractionPoint = point;
-  positionActiveAnnotations(point);
-  if (pointerRaf !== null) return;
-  pointerRaf = window.requestAnimationFrame(() => {
-    pointerRaf = null;
-    if (!isUnmounted && activePointerId !== null && pendingPoint) emitLivePoint(pendingPoint);
-  });
-}
-
-function cancelPendingPoint(): void {
-  if (pointerRaf !== null) window.cancelAnimationFrame(pointerRaf);
-  pointerRaf = null;
-  pendingPoint = null;
-}
-
-function onPointerDown(event: PointerEvent): void {
-  if (event.pointerType === "mouse" && event.button !== 0) return;
-  if (activePointerId !== null) return;
-  measureSurface();
-  const point = pointFromPointer(event);
-  if (!point || !surface.value) return;
-  event.preventDefault();
-  activePointerId = event.pointerId;
-  interactionOrigin = props.modelValue;
-  latestInteractionPoint = null;
-  latestInteractionColor = null;
-  surface.value.dataset.pointerFocus = "";
-  surface.value.setAttribute(gpAttribute.pointerFocus, "");
-  surface.value.focus({ preventScroll: true });
-  surface.value.setPointerCapture?.(event.pointerId);
-  schedulePoint(point);
-}
-
-function onPointerMove(event: PointerEvent): void {
-  if (event.pointerId !== activePointerId) return;
-  const point = pointFromPointer(event);
-  if (!point) return;
-  event.preventDefault();
-  schedulePoint(point);
-}
-
-function finishPointer(event: PointerEvent): void {
-  if (event.pointerId !== activePointerId) return;
-  const point = pointFromPointer(event) ?? pendingPoint ?? latestInteractionPoint;
-  endPointer();
-  if (point) {
-    const color = emitLivePoint(point);
-    if (color) emit("commit", color);
-  }
-}
-
-function endPointer(): void {
-  const pointerId = activePointerId;
-  cancelPendingPoint();
-  activePointerId = null;
-  latestInteractionPoint = null;
-  latestInteractionColor = null;
-  interactionOrigin = null;
-  if (pointerId !== null && surface.value?.hasPointerCapture?.(pointerId)) {
-    surface.value.releasePointerCapture(pointerId);
-  }
-}
-
-function cancelInteraction(rollback: boolean): void {
-  if (activePointerId === null) return;
-  const origin = interactionOrigin;
-  endPointer();
-  if (rollback && origin) emit("update:modelValue", origin);
-  const selected = rollback && origin ? origin : props.modelValue;
-  const projected = projectColorToPlane(selected, props.plane.id);
+function restorePresentation(value: ColorValue): void {
+  const projected = projectColorToPlane(value, props.plane.id);
   if (projected.ok) positionActiveAnnotations(props.plane.constrainPoint(projected.value.point));
-  emit("cancel");
 }
-
-function onPointerCancel(event: PointerEvent): void {
-  if (event.pointerId !== activePointerId) return;
-  cancelInteraction(true);
-}
-
 function onKeydown(event: KeyboardEvent): void {
   surface.value?.removeAttribute("data-pointer-focus");
   surface.value?.removeAttribute(gpAttribute.pointerFocus);
-  if (event.key === "Escape" && activePointerId !== null) {
+  if (event.key === "Escape" && gesture?.active) {
     event.preventDefault();
     event.stopPropagation();
-    cancelInteraction(true);
+    gesture.rollback();
     return;
   }
   let action: PickerPlaneKeyboardAction;
@@ -370,20 +284,12 @@ function onKeydown(event: KeyboardEvent): void {
   else return;
 
   event.preventDefault();
-  cancelInteraction(false);
+  gesture?.interrupt();
   const point = keyboardPlanePoint(activeProjection.value, action, event.shiftKey);
-  const result =
-    props.plane.id === "oklch"
-      ? authorPlaneEdit(props.modelValue, {
-          plane: "oklch",
-          kind: "point",
-          point,
-          ...(props.editReference ? { reference: props.editReference } : {}),
-        })
-      : authorPlaneEdit(props.modelValue, { plane: "oklab", kind: "point", point });
-  if (!result.ok) return;
-  emit("update:modelValue", result.value);
-  emit("commit", result.value);
+  const result = authorPoint(props.modelValue, point);
+  if (result === null) return;
+  emit("update:modelValue", result);
+  emit("commit", result);
 }
 
 function onBlur(): void {
@@ -394,16 +300,12 @@ function onBlur(): void {
 watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
 watch(
   () => props.plane,
-  () => cancelInteraction(false),
+  () => gesture?.reconcile(),
   { flush: "sync" },
 );
 watch(
   () => props.modelValue,
-  () => {
-    const expected = latestInteractionColor ?? interactionOrigin;
-    if (!expected || activePointerId === null) return;
-    if (!definingEquals(props.modelValue, expected)) cancelInteraction(false);
-  },
+  () => gesture?.reconcile(),
   { flush: "sync" },
 );
 watch(
@@ -421,6 +323,33 @@ watch(
 
 onMounted(() => {
   isMounted = true;
+  if (surface.value) {
+    const element = surface.value;
+    gesture = mountPlaneGesture<ColorValue, PlanePoint>(element, () => ({
+      value: props.modelValue,
+      viewKey: props.plane.id,
+      pointFromPointer: (event) => {
+        if (event.type === "pointerdown") measureSurface();
+        return pointFromPointer(event);
+      },
+      authorPoint,
+      definingEquals,
+      onPointerStart: (event) => {
+        element.dataset.pointerFocus = "";
+        element.setAttribute(gpAttribute.pointerFocus, "");
+        element.focus({ preventScroll: true });
+        element.setPointerCapture?.(event.pointerId);
+      },
+      onPointerEnd: (id) => {
+        if (element.hasPointerCapture?.(id)) element.releasePointerCapture(id);
+      },
+      onPreviewPoint: positionActiveAnnotations,
+      onValueChange: (value) => emit("update:modelValue", value),
+      onCommit: (value) => emit("commit", value),
+      onCancel: () => emit("cancel"),
+      onRestorePresentation: restorePresentation,
+    }));
+  }
   if (canvas.value) renderer = createFieldRenderer(canvas.value, publishCanvasColorSpace);
   const device = useDevicePixelRatio();
   watch(device.pixelRatio, (value) => (pixelRatio.value = value), { immediate: true });
@@ -448,7 +377,8 @@ onBeforeUnmount(() => {
   isUnmounted = true;
   if (fieldRaf !== null) window.cancelAnimationFrame(fieldRaf);
   fieldRaf = null;
-  endPointer();
+  gesture?.dispose();
+  gesture = null;
   renderer?.dispose();
   renderer = null;
 });
@@ -479,11 +409,6 @@ onBeforeUnmount(() => {
       :data-outside-instrument="
         props.plane.isPointInInstrumentDomain(activePoint) ? 'false' : 'true'
       "
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="finishPointer"
-      @pointercancel="onPointerCancel"
-      @lostpointercapture="onPointerCancel"
       @keydown="onKeydown"
       @blur="onBlur"
     >
