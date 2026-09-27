@@ -1,21 +1,142 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+
+type PackageManifest = {
+  name: string;
+  version: string;
+  private: boolean;
+  types?: string;
+  exports: Record<string, string | Record<string, string>>;
+  dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+};
+
+export type PackedArtifact = {
+  name: string;
+  version: string;
+  filename: string;
+  tarball: string;
+  sha256: string;
+  bytes: number;
+  files: string[];
+  manifest: PackageManifest;
+  source: PackageManifest;
+};
+
+function tar(args: string[]): string {
+  const result = spawnSync("tar", args, { encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout;
+}
+
+export async function packPrivateArtifact(
+  pnpm: string,
+  packageRoot: string,
+  destination: string,
+): Promise<PackedArtifact> {
+  await mkdir(destination, { recursive: true });
+  const source = JSON.parse(
+    await readFile(join(packageRoot, "package.json"), "utf8"),
+  ) as PackageManifest;
+  const result = spawnSync(
+    process.execPath,
+    [pnpm, "pack", "--pack-destination", destination, "--json"],
+    {
+      cwd: packageRoot,
+      encoding: "utf8",
+      windowsHide: true,
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const { filename: producedPath } = JSON.parse(result.stdout) as { filename: string };
+  const filename = basename(producedPath);
+  const tarball = resolve(destination, producedPath);
+  const files = tar(["-tf", tarball]).trim().split(/\r?\n/);
+  const manifest = JSON.parse(tar(["-xOf", tarball, "package/package.json"])) as PackageManifest;
+  assert.equal(manifest.name, source.name);
+  assert.equal(manifest.version, source.version);
+  assert.equal(manifest.private, true);
+  assert.ok(files.includes("package/LICENSE"));
+  assert.ok(files.includes("package/README.md"));
+  assert.ok(
+    files.every((file) => /^package\/(?:dist\/|package\.json$|README\.md$|LICENSE$)/.test(file)),
+  );
+  assert.ok(
+    files.every((file) => !/\.(?:map|vue|tsx?)$/.test(file) || /\.d\.(?:mts|cts|ts)$/.test(file)),
+  );
+  for (const dependencies of [
+    manifest.dependencies,
+    manifest.optionalDependencies,
+    manifest.peerDependencies,
+    manifest.devDependencies,
+  ]) {
+    assert.ok(
+      Object.values(dependencies ?? {}).every((value) => !/^(?:workspace|file|link):/.test(value)),
+    );
+  }
+  for (const entry of Object.values(manifest.exports)) {
+    for (const target of typeof entry === "string" ? [entry] : Object.values(entry)) {
+      assert.match(target, /^\.\/dist\//);
+      assert.ok(files.includes(`package/${target.slice(2)}`), `Missing export ${target}`);
+    }
+  }
+  if (manifest.types) assert.ok(files.includes(`package/${manifest.types.slice(2)}`));
+  if (manifest.exports["./style.css"]) assert.ok(files.includes("package/dist/style.css"));
+  const data = await readFile(tarball);
+  return {
+    name: manifest.name,
+    version: manifest.version,
+    filename,
+    tarball,
+    sha256: createHash("sha256").update(data).digest("hex"),
+    bytes: (await stat(tarball)).size,
+    files,
+    manifest,
+    source,
+  };
+}
+
+export function verifyPackedDependencyGraph(artifacts: readonly PackedArtifact[]) {
+  const versions = new Map(artifacts.map(({ name, version }) => [name, version]));
+  for (const { name, source, manifest } of artifacts) {
+    const sourceInternal = Object.keys(source.dependencies ?? {}).filter((dependency) =>
+      dependency.startsWith("@gamut-plane/"),
+    );
+    const packedInternal = Object.keys(manifest.dependencies ?? {}).filter((dependency) =>
+      dependency.startsWith("@gamut-plane/"),
+    );
+    assert.deepEqual(
+      packedInternal.sort(),
+      sourceInternal.sort(),
+      `${name} internal dependency set changed`,
+    );
+    for (const dependency of sourceInternal) {
+      assert.equal(
+        manifest.dependencies?.[dependency],
+        versions.get(dependency),
+        `${name} -> ${dependency}`,
+      );
+    }
+  }
+}
 
 /** Local tarball cache identities must change when same-version private artifacts change. */
 export async function addressConsumerArtifacts(
   consumer: string,
-  names: readonly string[],
+  artifacts: readonly PackedArtifact[],
   frozen = true,
 ) {
-  for (const name of names) {
-    const original = `artifacts/gamut-plane-${name}-0.1.0.tgz`;
+  for (const { filename } of artifacts) {
+    const original = `artifacts/${filename}`;
     const digest = createHash("sha256")
       .update(await readFile(join(consumer, original)))
       .digest("hex");
-    const addressed = `artifacts/${digest}/gamut-plane-${name}-0.1.0.tgz`;
+    const addressed = `artifacts/${digest}/${filename}`;
     await mkdir(dirname(join(consumer, addressed)), { recursive: true });
     await cp(join(consumer, original), join(consumer, addressed));
     for (const file of [
@@ -29,12 +150,13 @@ export async function addressConsumerArtifacts(
   }
 }
 
-export async function verifyInstalledArtifacts(consumer: string, names: readonly string[]) {
-  for (const name of names) {
-    const tarball = join(consumer, "artifacts", `gamut-plane-${name}-0.1.0.tgz`);
-    const listing = spawnSync("tar", ["-tf", tarball], { encoding: "utf8", windowsHide: true });
-    assert.equal(listing.status, 0, listing.stderr);
-    for (const file of listing.stdout.trim().split(/\r?\n/)) {
+export async function verifyInstalledArtifacts(
+  consumer: string,
+  artifacts: readonly PackedArtifact[],
+) {
+  for (const { name, tarball, files } of artifacts) {
+    const packageName = name.replace("@gamut-plane/", "");
+    for (const file of files) {
       if (file.endsWith("/")) continue;
       const packed = spawnSync("tar", ["-xOf", tarball, file], {
         windowsHide: true,
@@ -42,7 +164,7 @@ export async function verifyInstalledArtifacts(consumer: string, names: readonly
       });
       assert.equal(packed.status, 0);
       const installed = await readFile(
-        join(consumer, "node_modules", "@gamut-plane", name, file.replace(/^package\//, "")),
+        join(consumer, "node_modules", "@gamut-plane", packageName, file.replace(/^package\//, "")),
       );
       assert.ok(
         installed.equals(packed.stdout),

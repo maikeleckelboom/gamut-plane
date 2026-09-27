@@ -73,7 +73,7 @@ The browser suite ports Vue's embedding, rendering and accessibility contracts t
 
 `pnpm --filter @gamut-plane/react test:vite --keep` retains a successful fixture; `--lock` deliberately refreshes its checked-in registry graph. Failures always retain their fixture. `GAMUT_PLANE_EVIDENCE` copies browser evidence into the specified directory, also used by CI.
 
-All packed runners content-address the freshly packed private tarballs in the temporary manifests/lockfile. Registry versions/integrities remain frozen. Each installed private-package file is then compared byte-for-byte with the tarball inventory. This prevents pnpm's same-name/version artifact cache from silently validating older code. The canonical fixture manifests retain readable local artifact paths.
+All packed runners content-address the freshly packed private tarballs in the temporary manifests/lockfile. Registry versions/integrities remain frozen. Each installed private-package file is then compared byte-for-byte with the tarball inventory. This prevents pnpm's same-name/version artifact cache from silently validating older code. The checked-in fixture manifests retain readable local artifact paths.
 
 ## Packed Nuxt SSR and hydration
 

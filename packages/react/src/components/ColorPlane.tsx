@@ -106,7 +106,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const geometryStyle = {
     "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
-    "--picker-projection-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
+    "--picker-target-guide-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
   };
   return (
     <div
@@ -201,16 +201,16 @@ export function ColorPlane(props: ColorPlaneProps) {
         {guide && (
           <>
             <span
-              className="gpr-color-plane-projection-connector"
+              className="gpr-color-plane-target-guide-connector"
               style={guideConnectorStyle(activePoint, guide, plane.id === "oklab")}
               data-table-boundary-guide-connector=""
               aria-hidden="true"
             />
             <span
-              className="gpr-color-plane-marker gpr-color-plane-marker--projection"
+              className="gpr-color-plane-marker gpr-color-plane-marker--target-guide"
               style={presentationStyle({
                 ...pointStyle(guide),
-                "--projection-marker-color": targetGuideCss,
+                "--target-guide-marker-color": targetGuideCss,
               })}
               data-table-boundary-guide-marker=""
               data-marker-role="target-guide"

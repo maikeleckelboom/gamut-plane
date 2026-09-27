@@ -9,9 +9,9 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
-    "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.1.0.tgz",
-    "@gamut-plane/react": "file:artifacts/gamut-plane-react-0.1.0.tgz",
-    "@gamut-plane/render": "file:artifacts/gamut-plane-render-0.1.0.tgz",
+    "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.2.0.tgz",
+    "@gamut-plane/react": "file:artifacts/gamut-plane-react-0.2.0.tgz",
+    "@gamut-plane/render": "file:artifacts/gamut-plane-render-0.2.0.tgz",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

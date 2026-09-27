@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-  '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
+  '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
+  '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -14,14 +14,14 @@ importers:
   .:
     dependencies:
       '@gamut-plane/core':
-        specifier: file:artifacts/gamut-plane-core-0.1.0.tgz
-        version: file:artifacts/gamut-plane-core-0.1.0.tgz
+        specifier: file:artifacts/gamut-plane-core-0.2.0.tgz
+        version: file:artifacts/gamut-plane-core-0.2.0.tgz
       '@gamut-plane/render':
-        specifier: file:artifacts/gamut-plane-render-0.1.0.tgz
-        version: file:artifacts/gamut-plane-render-0.1.0.tgz
+        specifier: file:artifacts/gamut-plane-render-0.2.0.tgz
+        version: file:artifacts/gamut-plane-render-0.2.0.tgz
       '@gamut-plane/vue':
-        specifier: file:artifacts/gamut-plane-vue-0.1.0.tgz
-        version: file:artifacts/gamut-plane-vue-0.1.0.tgz(vue@3.5.42(typescript@6.0.3))
+        specifier: file:artifacts/gamut-plane-vue-0.2.0.tgz
+        version: file:artifacts/gamut-plane-vue-0.2.0.tgz(vue@3.5.42(typescript@6.0.3))
       nuxt:
         specifier: 4.5.2
         version: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@oxc-project/types@0.149.0)(@types/node@24.13.2)(@vue/compiler-sfc@3.5.42)(db0@0.3.4)(esbuild@0.28.2)(ioredis@5.11.1)(lightningcss@1.33.0)(magicast@0.5.4)(rolldown@1.2.8)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.8)(rollup@4.63.1))(rollup@4.63.1)(srvx@0.11.22)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.0(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2))(vue-tsc@3.3.5(typescript@6.0.3))
@@ -356,19 +356,19 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-core-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-core-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
 
-  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-render-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-render-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
 
-  '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.1.0.tgz':
-    resolution: {tarball: file:artifacts/gamut-plane-vue-0.1.0.tgz}
-    version: 0.1.0
+  '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-vue-0.2.0.tgz}
+    version: 0.2.0
     engines: {node: '>=24.0.0'}
     peerDependencies:
       vue: ^3.5.0
@@ -3499,18 +3499,18 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.1.0.tgz':
+  '@gamut-plane/core@file:artifacts/gamut-plane-core-0.2.0.tgz':
     dependencies:
       '@texel/color': 1.1.11
 
-  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.1.0.tgz':
+  '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
     dependencies:
-      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
-  '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.1.0.tgz(vue@3.5.42(typescript@6.0.3))':
+  '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.2.0.tgz(vue@3.5.42(typescript@6.0.3))':
     dependencies:
-      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.1.0.tgz
-      '@gamut-plane/render': file:artifacts/gamut-plane-render-0.1.0.tgz
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
+      '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
       '@vueuse/core': 14.3.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 

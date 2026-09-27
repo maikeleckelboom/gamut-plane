@@ -168,7 +168,7 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator('[data-gamut-range="srgb"]')).toHaveCount(0);
   await expect(page.locator("[data-slider-boundary-preview]")).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await expect(targetResult).toHaveAttribute("data-boundary-target", "srgb");
   await expect(selected).toHaveText(originalSelection ?? "");
 
@@ -176,12 +176,12 @@ test("target selection is exclusive, keyboard operable, and independent from vis
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
   await expect(page.locator("[data-gamut-range]")).toHaveCount(0);
   await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "sRGB" }).check();
   await p3Target.click();
   await expect(p3Target).toBeChecked();
   await expect(page.locator('[data-marker-role="target-guide"]')).toHaveCount(0);
-  await expect(page.locator(".color-plane__projection-connector")).toHaveCount(0);
+  await expect(page.locator(".color-plane__target-guide-connector")).toHaveCount(0);
   await expect(targetResult).toContainText("Guide C");
   await expect(selected).toHaveText(originalSelection ?? "");
 });
@@ -446,7 +446,7 @@ test("wide plane follows the workspace when the header wraps", async ({ page }) 
   const shortHeader = await measure();
   await description.evaluate((element) => {
     element.textContent =
-      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact membership checks. " +
+      "Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact gamut status checks. " +
       "The instrument remains usable when the project description takes more than one line.";
   });
   const wrappedHeader = await measure();
@@ -598,7 +598,7 @@ test("Hex copies the selected in-sRGB value without changing the authored color"
   await page.getByLabel("Chroma numeric value").fill("0");
   await page.getByLabel("Chroma numeric value").press("Enter");
 
-  const canonical = await page.locator('[data-css-representation="oklch"] code').textContent();
+  const copiedCss = await page.locator('[data-css-representation="oklch"] code').textContent();
   const hex = page.locator('[data-css-representation="hex"]');
   const value = await hex.locator("code").textContent();
   expect(value).toMatch(/^#[0-9A-F]{6}$/);
@@ -607,7 +607,7 @@ test("Hex copies the selected in-sRGB value without changing the authored color"
   await copy.click();
   await expect(copy).toHaveAccessibleName("Copied Hex value");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
-  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(canonical!);
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(copiedCss!);
 });
 
 test("keyboard-only navigation reaches boundary and copy controls with visible focus", async ({

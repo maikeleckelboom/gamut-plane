@@ -49,7 +49,7 @@ const gamutStatus = computed(() => {
     displayP3: displayP3.value.status,
   };
 });
-const oklchCanonicalCss = computed(() => {
+const oklchCopyCss = computed(() => {
   const output = serializeCss(oklch.value, { policy: "preserve-coordinates" });
   return output.ok ? output.value.text : null;
 });
@@ -71,7 +71,7 @@ const selectedCoordinates = computed(() => {
   ];
 });
 const srgbCssOutput = computed(() => strictCss("srgb"));
-const srgbCanonicalCss = computed(() =>
+const srgbCopyCss = computed(() =>
   srgbCssOutput.value.ok ? srgbCssOutput.value.value.text : null,
 );
 const hexOutput = computed(() => {
@@ -80,7 +80,7 @@ const hexOutput = computed(() => {
 });
 const hexColor = computed(() => (hexOutput.value.ok ? hexOutput.value.value.text : null));
 const displayP3CssOutput = computed(() => strictCss("display-p3"));
-const displayP3CanonicalCss = computed(() =>
+const displayP3CopyCss = computed(() =>
   displayP3CssOutput.value.ok ? displayP3CssOutput.value.value.text : null,
 );
 const hexUnavailable = computed(() =>
@@ -95,10 +95,10 @@ const displayP3Unavailable = computed(() =>
     : unavailableOutput(displayP3CssOutput.value.error.code, "display-p3"),
 );
 const srgbDisplayCss = computed(() =>
-  srgbCanonicalCss.value ? formatRgbCssForDisplay(srgbCanonicalCss.value) : null,
+  srgbCopyCss.value ? formatRgbCssForDisplay(srgbCopyCss.value) : null,
 );
 const displayP3DisplayCss = computed(() =>
-  displayP3CanonicalCss.value ? formatRgbCssForDisplay(displayP3CanonicalCss.value) : null,
+  displayP3CopyCss.value ? formatRgbCssForDisplay(displayP3CopyCss.value) : null,
 );
 // Visual previews only. These values never become selected state or copy output.
 const srgbBoundaryPreviewCss = computed(() =>
@@ -198,8 +198,8 @@ async function copyCss(
       <div class="project-identity">
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact
-          membership checks.
+          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact gamut
+          status checks.
         </p>
       </div>
     </header>
@@ -317,7 +317,7 @@ async function copyCss(
             <span>OKLCH</span>
             <span
               class="css-representation__swatch"
-              :style="{ backgroundColor: oklchCanonicalCss ?? undefined }"
+              :style="{ backgroundColor: oklchCopyCss ?? undefined }"
               aria-hidden="true"
             />
             <button
@@ -325,7 +325,7 @@ async function copyCss(
               data-copy-representation="oklch"
               :data-copied="isCopied('oklch') ? 'true' : 'false'"
               :aria-label="isCopied('oklch') ? 'Copied OKLCH CSS value' : 'Copy OKLCH CSS value'"
-              @click="copyCss('oklch', 'OKLCH', oklchCanonicalCss)"
+              @click="copyCss('oklch', 'OKLCH', oklchCopyCss)"
             >
               {{ isCopied("oklch") ? "Copied" : "Copy" }}
             </button>
@@ -376,25 +376,23 @@ async function copyCss(
             <span
               class="css-representation__swatch"
               :data-preview-kind="
-                srgbCanonicalCss ? 'output' : srgbBoundaryPreviewCss ? 'boundary' : 'none'
+                srgbCopyCss ? 'output' : srgbBoundaryPreviewCss ? 'boundary' : 'none'
               "
-              :style="{ backgroundColor: srgbCanonicalCss ?? srgbBoundaryPreviewCss ?? undefined }"
-              :role="!srgbCanonicalCss && srgbBoundaryPreviewCss ? 'img' : undefined"
-              :aria-hidden="srgbCanonicalCss || !srgbBoundaryPreviewCss ? 'true' : undefined"
+              :style="{ backgroundColor: srgbCopyCss ?? srgbBoundaryPreviewCss ?? undefined }"
+              :role="!srgbCopyCss && srgbBoundaryPreviewCss ? 'img' : undefined"
+              :aria-hidden="srgbCopyCss || !srgbBoundaryPreviewCss ? 'true' : undefined"
               :aria-label="
-                !srgbCanonicalCss && srgbBoundaryPreviewCss
-                  ? 'sRGB boundary color preview'
-                  : undefined
+                !srgbCopyCss && srgbBoundaryPreviewCss ? 'sRGB boundary color preview' : undefined
               "
             />
             <button
               type="button"
               data-copy-representation="srgb"
               :data-copied="isCopied('srgb') ? 'true' : 'false'"
-              :disabled="!srgbCanonicalCss"
-              :aria-describedby="srgbCanonicalCss ? undefined : 'srgb-copy-reason'"
+              :disabled="!srgbCopyCss"
+              :aria-describedby="srgbCopyCss ? undefined : 'srgb-copy-reason'"
               :aria-label="isCopied('srgb') ? 'Copied sRGB CSS value' : 'Copy sRGB CSS value'"
-              @click="copyCss('srgb', 'sRGB', srgbCanonicalCss)"
+              @click="copyCss('srgb', 'sRGB', srgbCopyCss)"
             >
               {{ isCopied("srgb") ? "Copied" : "Copy" }}
             </button>
@@ -412,17 +410,15 @@ async function copyCss(
             <span
               class="css-representation__swatch"
               :data-preview-kind="
-                displayP3CanonicalCss ? 'output' : displayP3BoundaryPreviewCss ? 'boundary' : 'none'
+                displayP3CopyCss ? 'output' : displayP3BoundaryPreviewCss ? 'boundary' : 'none'
               "
               :style="{
-                backgroundColor: displayP3CanonicalCss ?? displayP3BoundaryPreviewCss ?? undefined,
+                backgroundColor: displayP3CopyCss ?? displayP3BoundaryPreviewCss ?? undefined,
               }"
-              :role="!displayP3CanonicalCss && displayP3BoundaryPreviewCss ? 'img' : undefined"
-              :aria-hidden="
-                displayP3CanonicalCss || !displayP3BoundaryPreviewCss ? 'true' : undefined
-              "
+              :role="!displayP3CopyCss && displayP3BoundaryPreviewCss ? 'img' : undefined"
+              :aria-hidden="displayP3CopyCss || !displayP3BoundaryPreviewCss ? 'true' : undefined"
               :aria-label="
-                !displayP3CanonicalCss && displayP3BoundaryPreviewCss
+                !displayP3CopyCss && displayP3BoundaryPreviewCss
                   ? 'Display P3 boundary color preview'
                   : undefined
               "
@@ -431,12 +427,12 @@ async function copyCss(
               type="button"
               data-copy-representation="display-p3"
               :data-copied="isCopied('display-p3') ? 'true' : 'false'"
-              :disabled="!displayP3CanonicalCss"
-              :aria-describedby="displayP3CanonicalCss ? undefined : 'display-p3-copy-reason'"
+              :disabled="!displayP3CopyCss"
+              :aria-describedby="displayP3CopyCss ? undefined : 'display-p3-copy-reason'"
               :aria-label="
                 isCopied('display-p3') ? 'Copied Display P3 CSS value' : 'Copy Display P3 CSS value'
               "
-              @click="copyCss('display-p3', 'Display P3', displayP3CanonicalCss)"
+              @click="copyCss('display-p3', 'Display P3', displayP3CopyCss)"
             >
               {{ isCopied("display-p3") ? "Copied" : "Copy" }}
             </button>
@@ -453,7 +449,7 @@ async function copyCss(
           <p v-if="srgbUnavailable" id="srgb-copy-reason" class="sr-only">
             {{ srgbUnavailable.explanation }}
           </p>
-          <p v-if="!displayP3CanonicalCss" id="display-p3-copy-reason" class="sr-only">
+          <p v-if="!displayP3CopyCss" id="display-p3-copy-reason" class="sr-only">
             {{ displayP3Unavailable?.explanation }}
           </p>
           <p v-if="!clipboardSupported" class="copy-support">

@@ -69,7 +69,7 @@ The app checks native `writeText` rejection and the legacy `execCommand` boolean
 
 ## Exact facts and visualization guides
 
-Exact Display P3 and sRGB membership is calculated directly from the active color. It is not sampled from a contour.
+Exact three-state Display P3 and sRGB gamut status is calculated directly from the selected `ColorValue`. It is not sampled from a contour.
 
 `ColorValue` owns authored identity. `projectColorToPlane` observes it; `authorPlaneEdit` creates a new definition in the selected edit space. Plane geometry owns axes, constraints and contour coordinates. `packages/render/src/pickerPresentation.ts` derives observed OKLCH/OKLab representations, active and guide positions, field hue, gradients, status, intervals, markers, CSS and help text without storing state or authoring a color. A hue-less observation remains `h: null`; the field receives a separate numeric hue of `0`. Vue and React own lifecycle and temporary edit references.
 

@@ -1,15 +1,15 @@
 # Gamut Plane
 
-Gamut Plane provides complete native Vue and React OKLCH and OKLab instruments, with sampled sRGB and Display P3 gamut guides and exact membership checks. It includes a standalone Vue app for exploring colors and copying CSS values.
+Gamut Plane provides complete native Vue and React instruments for editing one `ColorValue`, with OKLCH and OKLab views, sampled sRGB and Display P3 guides, and exact gamut status. It includes a standalone Vue app for exploring colors and copying CSS values.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
-Both views edit the same OKLCH color:
+The selected `ColorValue` retains its defining representation. Changing views observes that value; an edit creates a new `ColorValue` authored in the edited plane:
 
 - **OKLCH:** lightness and chroma at a fixed hue.
 - **OKLab:** `a` and `b` at a fixed lightness.
 
-Switching views preserves the color, including alpha and out-of-gamut values. Gamut membership comes from direct color conversion; the drawn boundaries are sampled guides. Editing never silently maps a color into sRGB or Display P3.
+Alpha and ordinary out-of-gamut coordinates are preserved. `analyzeGamut` reports exact `inside`, `within-tolerance` or `outside` status independently of the sampled guides. Editing never silently maps into a display gamut; `mapToGamut` is explicit. Strict CSS and Hex output use explicit `serializeCss` and `serializeHex` policies and can reject a value.
 
 ![Gamut Plane showing OKLCH with Display P3 and sRGB boundaries](docs/assets/gamut-plane-desktop.png)
 
@@ -99,23 +99,23 @@ From this checkout, build and pack the Vue adapter and its private dependencies 
 $artifacts = Join-Path $env:TEMP "gamut-plane-artifacts"
 New-Item -ItemType Directory -Force -Path $artifacts
 pnpm build:packages
-pnpm --filter @gamut-plane/core pack --pack-destination $artifacts
-pnpm --filter @gamut-plane/render pack --pack-destination $artifacts
-pnpm --filter @gamut-plane/vue pack --pack-destination $artifacts
+pnpm --filter @gamut-plane/core pack --pack-destination $artifacts --json
+pnpm --filter @gamut-plane/render pack --pack-destination $artifacts --json
+pnpm --filter @gamut-plane/vue pack --pack-destination $artifacts --json
 ```
 
-Copy the tarballs into an `artifacts` directory in your Vue application. Add this override to that application's `pnpm-workspace.yaml`, merging it with any existing overrides:
+Use the filenames returned by `pnpm pack --json` and copy the tarballs into an `artifacts` directory in your Vue application. For the 0.2.0 candidate, add this override to that application's `pnpm-workspace.yaml`, merging it with any existing overrides:
 
 ```yaml
 overrides:
-  "@gamut-plane/core": "file:./artifacts/gamut-plane-core-0.1.0.tgz"
-  "@gamut-plane/render": "file:./artifacts/gamut-plane-render-0.1.0.tgz"
+  "@gamut-plane/core": "file:./artifacts/gamut-plane-core-0.2.0.tgz"
+  "@gamut-plane/render": "file:./artifacts/gamut-plane-render-0.2.0.tgz"
 ```
 
 Then install them from the application root:
 
 ```powershell
-pnpm add ./artifacts/gamut-plane-core-0.1.0.tgz ./artifacts/gamut-plane-render-0.1.0.tgz ./artifacts/gamut-plane-vue-0.1.0.tgz
+pnpm add ./artifacts/gamut-plane-core-0.2.0.tgz ./artifacts/gamut-plane-render-0.2.0.tgz ./artifacts/gamut-plane-vue-0.2.0.tgz
 ```
 
 The overrides resolve all unpublished transitive dependencies from their local artifacts. `pnpm test:package` exercises this installation in an isolated Vue consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping both dependency tarballs and overrides. `pnpm test:react-vite` verifies ordinary React consumption; `pnpm test:next` verifies Next App Router and root Strict Mode. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
@@ -134,7 +134,7 @@ The app's inspector copies full-precision OKLCH and `color()` values, plus quant
 
 ## Browser and rendering limits
 
-- Canvas 2D may grant Display P3, fall back to sRGB, or be unavailable. The component reports the granted context. Visible wide-gamut color also depends on the display; exact membership does not.
+- Canvas 2D may grant Display P3, fall back to sRGB, or be unavailable. The component reports the granted context. Visible wide-gamut color also depends on the display; exact gamut status does not.
 - Modern CSS color support is required. Without container queries, the component keeps its one-column layout.
 - Pointer updates are coalesced per frame. Visible-axis edits reuse the field and contours; fixed-axis edits redraw them. Hue dragging uses a lower-resolution preview. See [performance measurements and limits](docs/performance.md).
 - The normal ESM entry supports SSR and hydration. Controls, authored values, markers, SVG gamut guides and CSS field geometry render on the server; Canvas painting starts after mount. `pnpm test:nuxt` verifies the packed package in Nuxt development, production SSR and generated pages. See [Vue SSR usage](packages/vue/README.md#ssr-and-nuxt).
@@ -144,7 +144,7 @@ The app's inspector copies full-precision OKLCH and `color()` values, plus quant
 
 | Location          | Contents                                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/core`   | Framework-neutral color math, gamut membership, serialization, and plane geometry                |
+| `packages/core`   | ColorValue authorship, exact gamut status, mapping, serialization, and plane geometry            |
 | `packages/render` | Internal shared Canvas renderer, SVG/CSS geometry serialization and generated tables             |
 | `packages/vue`    | Complete Vue component, lifecycle, controls, interactions and styles                             |
 | `packages/react`  | Complete native React instrument, private controls/controllers and packed Vite/Next verification |

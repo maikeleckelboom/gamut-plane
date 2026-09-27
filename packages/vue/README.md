@@ -44,6 +44,8 @@ Boundary target selects the sampled-guide reference gamut. Target and visibility
 
 The `ColorValue` definition is authoritative. Changing coordinate view only observes it; real edits produce a new value defined in the edited plane. An absent neutral hue stays absent until a Hue edit establishes a direction. The field uses a presentation-only hue slice while direction is absent; chromatic OKLCH edits wait for a real Hue edit. Edits preserve alpha, and gamut guides do not clamp the authored color to a display gamut. Use `snapshotColor` and `restoreColor` from core at serialization boundaries.
 
+`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. Its OKLCH and OKLab views require that selected value to be numerically representable in both views. Core `ColorValue` intentionally permits a wider finite coordinate domain: for pathological finite coordinates, `represent` or `projectColorToPlane` can return `numerical-range`. The instrument never silently clamps, maps, normalizes or replaces such a value; choose a representable authored value before mounting it.
+
 Cancelling a plane drag restores its starting color. A parent replacement or view change ends the gesture without rollback; interrupted native ranges retain published values. Numeric drafts apply on completion and discard on Escape. See the [interaction lifecycle](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md#interaction-lifecycle) for details.
 
 ## Styling and embedding
@@ -60,7 +62,7 @@ Internal classes and other custom properties are not a theme API. Instances have
 
 ## Rendering and validation
 
-Canvas may grant Display P3, fall back to sRGB, or be unavailable. The capability event describes the granted context, not the display hardware. Exact membership is independent of painted output. Modern CSS color support is required; without container queries, the layout stays in one column.
+Canvas may grant Display P3, fall back to sRGB, or be unavailable. The capability event describes the granted context, not the display hardware. Exact gamut status is independent of painted output. Modern CSS color support is required; without container queries, the layout stays in one column.
 
 The normal ESM entry imports in Node without browser globals. Server output includes controls, labels, authored values, markers and SVG gamut guides. The stylesheet reserves the square field before JavaScript. Hydration retains that DOM and the authored color; it does not emit changes, commits or cancellations. Canvas capability stays `pending` until mounted initialization. Canvas painting requires JavaScript; server rasterization and a no-JavaScript interactive picker are not provided.
 

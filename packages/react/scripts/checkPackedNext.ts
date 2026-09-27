@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { finishConsumer } from "../../../scripts/packedConsumer.mts";
 import { prepareReactConsumer, installReactConsumer } from "./packedReact.ts";
 
-const { consumer, temporaryRoot, run } = await prepareReactConsumer("next", "next-consumer");
+const { consumer, temporaryRoot, run, artifacts } = await prepareReactConsumer(
+  "next",
+  "next-consumer",
+);
 let passed = false;
 try {
-  await installReactConsumer(consumer, run);
+  await installReactConsumer(consumer, run, artifacts);
   await run(["test:ssr"]);
   await run(["typecheck"]);
   await run(["test:browser"], consumer, { FIXTURE_MODE: "development" });

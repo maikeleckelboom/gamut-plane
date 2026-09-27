@@ -66,7 +66,7 @@ try {
   await writeFile(
     join(consumer, "consumer.mts"),
     `
-import { authorPlaneEdit, createColorValue, definitionOf, projectColorToPlane, represent, snapshotColor, restoreColor, definingEquals } from "@gamut-plane/core";
+import { analyzeGamut, authorPlaneEdit, createColorValue, definitionOf, projectColorToPlane, represent, serializeCss, serializeHex, snapshotColor, restoreColor, definingEquals } from "@gamut-plane/core";
 import type { ColorValue, ColorRepresentation } from "@gamut-plane/core";
 
 const source = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
@@ -83,6 +83,16 @@ if (!reauthored.ok || definitionOf(reauthored.value).space !== "oklab" || defini
 if (definitionOf(value).space !== "oklch") throw new Error("Packed observation changed authority");
 const restored = restoreColor(JSON.parse(JSON.stringify(snapshotColor(value))));
 if (!restored.ok || !definingEquals(value, restored.value)) throw new Error("Packed transport failed");
+const outputSource = createColorValue({ space: "srgb", channels: [0.2, 0.4, 0.6], alpha: 1 });
+if (!outputSource.ok) throw new Error("Packed output construction failed");
+const status = analyzeGamut(outputSource.value, "srgb-gamut");
+if (!status.ok || status.value.status !== "inside") throw new Error("Packed gamut analysis failed");
+const outputRepresentation = represent(outputSource.value, "srgb");
+if (!outputRepresentation.ok) throw new Error("Packed output representation failed");
+const css = serializeCss(outputRepresentation.value, { policy: "require-in-gamut", gamut: "srgb-gamut" });
+const hex = serializeHex(outputRepresentation.value, { alpha: "omit" });
+if (!css.ok || css.value.text !== "color(srgb 0.2 0.4 0.6 / 1)") throw new Error("Packed strict CSS output failed");
+if (!hex.ok || hex.value.text !== "#336699") throw new Error("Packed Hex output failed");
 `,
   );
   run(process.execPath, [pnpm, "install", "--ignore-scripts"], consumer);

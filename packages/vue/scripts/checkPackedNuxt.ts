@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {
   addressConsumerArtifacts,
+  packPrivateArtifact,
+  verifyPackedDependencyGraph,
   verifyInstalledArtifacts,
   createPnpmRunner,
   finishConsumer,
@@ -24,11 +26,16 @@ let passed = false;
 try {
   await cp(fixture, consumer, { recursive: true });
   await cp(join(packageRoot, "consumer/ssrSmoke.ts"), join(consumer, "ssrSmoke.ts"));
+  const artifacts = [];
   for (const name of ["core", "render", "vue"])
-    await run(
-      ["pack", "--pack-destination", join(consumer, "artifacts")],
-      resolve(packageRoot, "..", name),
+    artifacts.push(
+      await packPrivateArtifact(
+        pnpm,
+        resolve(packageRoot, "..", name),
+        join(consumer, "artifacts"),
+      ),
     );
+  verifyPackedDependencyGraph(artifacts);
   if (process.argv.includes("--lock")) {
     await run(["install", "--lockfile-only", "--frozen-lockfile=false"]);
     // Artifact bytes change with the tested tree. Registry resolutions remain frozen.
@@ -39,9 +46,9 @@ try {
     await writeFile(join(fixture, "pnpm-lock.yaml"), lock);
     await writeFile(join(consumer, "pnpm-lock.yaml"), lock);
   }
-  await addressConsumerArtifacts(consumer, ["core", "render", "vue"]);
+  await addressConsumerArtifacts(consumer, artifacts);
   await run(["install", "--frozen-lockfile"]);
-  await verifyInstalledArtifacts(consumer, ["core", "render", "vue"]);
+  await verifyInstalledArtifacts(consumer, artifacts);
   await run(["test:ssr"]);
   await run(["typecheck"]);
   await run(["test:browser"], consumer, { FIXTURE_MODE: "development" });

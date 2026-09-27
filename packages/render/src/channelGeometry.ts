@@ -21,7 +21,7 @@ export interface GuideThreshold {
 }
 const tones = ["display-p3", "srgb"] as const;
 
-/** Merge sampled visual intervals; exact membership is analyzed from ColorValue elsewhere. */
+/** Merge sampled visual intervals; exact gamut status is analyzed from ColorValue elsewhere. */
 export function channelSections(
   intervals: readonly LinearControlInterval[],
 ): LinearControlInterval[] {

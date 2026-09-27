@@ -224,7 +224,7 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="srgb"]')).toBeNull();
     expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -244,7 +244,7 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelector('[data-gamut-boundary="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-gamut-range="display-p3"]')).toBeNull();
     expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
 
     await ui.render(
       <GamutPlane
@@ -261,7 +261,7 @@ describe("public instrument contract", () => {
     expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(ui.element.querySelectorAll("[data-gamut-range]")).toHaveLength(0);
     expect(ui.element.querySelector('[data-marker-role="target-guide"]')).toBeNull();
-    expect(ui.element.querySelector(".gpr-color-plane-projection-connector")).toBeNull();
+    expect(ui.element.querySelector(".gpr-color-plane-target-guide-connector")).toBeNull();
     expect(get(ui.element, "[data-boundary-target-result]").textContent).toContain("Guide C");
     expect(snapshotColor(value).channels).toEqual([0.62, 0.42, 30]);
     expect(changes).not.toHaveBeenCalled();

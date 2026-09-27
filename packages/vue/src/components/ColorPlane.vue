@@ -137,7 +137,7 @@ const planeLabel = computed(() => {
 const instrumentStyle = {
   "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
-  "--picker-projection-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
+  "--picker-target-guide-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
 };
 
 function publishCanvasColorSpace(status: CanvasColorSpaceStatus): void {
@@ -543,17 +543,17 @@ onBeforeUnmount(() => {
       </svg>
       <span
         v-if="targetGuidePoint"
-        class="color-plane__projection-connector"
+        class="color-plane__target-guide-connector"
         :style="targetGuideConnectorStyle"
         data-table-boundary-guide-connector
         aria-hidden="true"
       />
       <span
         v-if="targetGuidePoint"
-        class="color-plane__marker color-plane__marker--projection"
+        class="color-plane__marker color-plane__marker--target-guide"
         :style="{
           ...targetGuideMarkerStyle,
-          '--projection-marker-color': targetGuideCss,
+          '--target-guide-marker-color': targetGuideCss,
         }"
         data-table-boundary-guide-marker
         data-marker-role="target-guide"

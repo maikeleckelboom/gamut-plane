@@ -39,7 +39,7 @@ function readMaximumChroma(table: GamutBoundaryTable, l: number, h: number): num
   return maximumChroma;
 }
 
-/** Interpolates one OKLCH table without claiming exact membership. */
+/** Interpolates one OKLCH table without claiming exact gamut status. */
 export function getPickerGuide(color: OklchSample, table: GamutBoundaryTable): PickerGuide {
   assertOklchSample(color);
   const maximumChroma = readMaximumChroma(table, color.l, color.h);

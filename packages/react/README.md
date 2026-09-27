@@ -1,6 +1,6 @@
 # @gamut-plane/react
 
-A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, a target guide and exact Display P3 status. Private, version `0.1.0`, and unpublished.
+A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, a target guide and exact Display P3 status. Private, version `0.2.0`, and unpublished.
 
 ## Controlled color
 
@@ -20,6 +20,8 @@ export function ColorEditor({ initial }: { initial: ColorValue }) {
 The parent owns the immutable `ColorValue`; there is no `defaultValue` or uncontrolled color mode. Construct it with `createColorValue` from `@gamut-plane/core`. Every edit preserves alpha and emits a new value defined in the edited plane. View changes only observe the current definition. Defining-equal feedback reconstructed by the parent retains an active gesture without stable object identity.
 
 Hue-less OKLCH neutrals stay hue-less until a real Hue edit establishes direction. The field's fallback hue slice is presentation only; chromatic OKLCH edits wait for that direction. Neither display-gamut membership nor the visible 0.4 chroma/disc limit clamps authored color. The Chroma numeric field supports values beyond its slider. Plane edits use core `authorPlaneEdit` and never round-trip through RGB or CSS.
+
+`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. Its OKLCH and OKLab views require that selected value to be numerically representable in both views. Core `ColorValue` intentionally permits a wider finite coordinate domain: for pathological finite coordinates, `represent` or `projectColorToPlane` can return `numerical-range`. The instrument never silently clamps, maps, normalizes or replaces such a value; choose a representable authored value before mounting it.
 
 ## Coordinate view
 

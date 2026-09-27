@@ -70,7 +70,7 @@ An OKLCH neutral may have a numeric defining hue or `null`. Edits preserve that 
 
 ## Sampled guides and numeric rendering
 
-`GamutBoundaryTable` stores sampled OKLCH boundary geometry. `getPickerGuide`, `getHueGuideIntervals`, and `getLightnessGuideIntervals` interpolate that table for visual guides. Contours and intervals are sampled geometry, never exact membership decisions. `findMaximumChroma` is a numeric boundary-search primitive used for table generation and presentation references; it is not the `analyzeGamut` status policy.
+`GamutBoundaryTable` stores sampled OKLCH boundary geometry. `getPickerGuide`, `getHueGuideIntervals`, and `getLightnessGuideIntervals` interpolate that table for visual guides. Contours and intervals are sampled geometry, never exact gamut-status decisions. `findMaximumChroma` is a numerical boundary search with `BOUNDARY_SEARCH_TOLERANCE` and finite iterations, used for table generation and presentation references. It does not provide mathematical boundary truth or the `analyzeGamut` status policy.
 
 `ColorRepresentation<"oklch">` is an immutable observation and can retain `h: null`. `OklchSample` is a mutable numeric render/presentation sample with a numeric hue. The field sampler writes into a reusable `OklchSample`; presentation deliberately chooses a numeric hue slice when an observation has no hue. `convertOklabToOklch` and `convertOklchToOklab` support reusable conversion arrays. `serializeOklchSample` emits precise OKLCH CSS for numeric samples in rendering; consumer CSS and Hex output policy belong to `serializeCss` and `serializeHex`.
 

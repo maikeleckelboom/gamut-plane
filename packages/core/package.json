@@ -1,8 +1,8 @@
 {
   "name": "@gamut-plane/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Framework-neutral OKLab, OKLCH, display-gamut, and color-plane mathematics for Gamut Plane.",
+  "description": "Framework-neutral ColorValue authorship, gamut analysis, mapping, output policy, and picker geometry.",
   "license": "MIT",
   "author": "Maikel Eckelboom",
   "repository": {

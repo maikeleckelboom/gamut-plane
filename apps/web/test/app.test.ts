@@ -138,7 +138,7 @@ describe("standalone application", () => {
     wrapper.unmount();
   });
 
-  it("displays bounded P3 precision while copying the canonical value", async () => {
+  it("displays bounded P3 precision while copying the full output value", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
 

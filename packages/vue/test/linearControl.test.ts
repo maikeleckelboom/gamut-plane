@@ -14,7 +14,7 @@ import {
   PICKER_WARNING_GLYPH_SIZE,
 } from "@gamut-plane/render";
 
-const WARNING_LABEL = "Outside primary Display P3. Canonical OKLCH is preserved.";
+const WARNING_LABEL = "Outside primary Display P3. Selected OKLCH is preserved.";
 
 function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl>["$props"]> = {}) {
   return mount(ColorChannelControl, {
@@ -33,7 +33,7 @@ function mountControl(overrides: Partial<InstanceType<typeof ColorChannelControl
   });
 }
 
-function mountCanonicalControl(initialValue = 180) {
+function mountSelectedControl(initialValue = 180) {
   const model = ref(initialValue);
   const updates: number[] = [];
   const commits: number[] = [];
@@ -41,7 +41,7 @@ function mountCanonicalControl(initialValue = 180) {
     setup() {
       return () =>
         h(ColorChannelControl, {
-          id: "canonical-control",
+          id: "selected-control",
           label: "Hue",
           channel: "H",
           modelValue: model.value,
@@ -133,9 +133,9 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("restores the canonical native value when pending pointer input is cancelled", () => {
+  it("restores the committed native value when pending pointer input is cancelled", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -161,7 +161,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("restores the latest published value and cannot publish a later cancelled value", async () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
     dispatchPointer(range, "pointerdown", 18);
@@ -189,7 +189,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("keeps a normally completed value through later blur and capture loss", async () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -217,7 +217,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("does not emit or roll back when cancellation has no pending range value", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -237,7 +237,7 @@ describe("ColorChannelControl gamut annotations", () => {
 
   it("restores pending native input on blur without reporting a pointer interaction", () => {
     const frames = installAnimationFrameController();
-    const { wrapper, model, updates, commits } = mountCanonicalControl();
+    const { wrapper, model, updates, commits } = mountSelectedControl();
     const control = wrapper.getComponent(ColorChannelControl);
     const range = wrapper.get('input[type="range"]').element as HTMLInputElement;
 
@@ -483,7 +483,7 @@ describe("ColorChannelControl gamut annotations", () => {
     wrapper.unmount();
   });
 
-  it("pins Chroma overflow visuals without changing the canonical numeric value", async () => {
+  it("pins Chroma overflow visuals without changing the authored numeric value", async () => {
     const wrapper = mountControl({
       id: "chroma-control",
       label: "Chroma",

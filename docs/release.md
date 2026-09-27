@@ -1,62 +1,45 @@
-# v0.1.0 release runbook
+# Release runbook
 
-This is the historical v0.1.0 application-release runbook. That tag already exists: do not replay the promotion/tagging steps or move/recreate it for adapter work. The current development architecture includes core, render and complete Vue/React instruments; all four packages remain private and unpublished. React parity is delivered to `dev` with normal commits and CI, without deployment, promotion or release.
+Use this procedure for an approved repository/application release. Record the intended tag from the release decision and its release-note document under `docs/releases/`; read the four private package versions from their current manifests. Replace angle-bracket placeholders below with those recorded values and paths before running commands. The Git tag and GitHub release identify the public application version. The private package versions identify local tarball artifacts and do not authorize npm publication. For the current candidate, the [v0.3.0 release and migration notes](releases/v0.3.0.md) record the decision.
 
-The sequence is: validate `dev`, deploy it as the temporary production candidate, record the verified URL, rerun `dev` CI, point Cloudflare production at `main`, merge, verify `main`, then tag and release.
+## 1. Fix the exact dev candidate
 
-## 1. Record the candidate
-
-Start on a clean `dev` checkout and fetch the remote state:
+Start with a clean `dev` checkout. Fetch and record the candidate, baseline, intended tag, package versions, and exact CI run:
 
 ```powershell
 git fetch --prune origin
 git status --short --branch --untracked-files=all
-git rev-parse dev
+$candidateSha = git rev-parse dev
 git rev-parse origin/dev
-git rev-parse origin/main
-git rev-list --left-right --count origin/main...origin/dev
-git ls-remote --tags origin refs/tags/v0.1.0
-gh release list --repo maikeleckelboom/gamut-plane
-gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl,licenseInfo
+$mainBaseline = git rev-parse origin/main
+git merge-base --is-ancestor origin/main $candidateSha
+Get-Content packages/core/package.json, packages/render/package.json, packages/vue/package.json, packages/react/package.json | Select-String '"name"|"version"|"private"'
+gh run list --workflow CI --branch dev --limit 10
 ```
 
-`dev` must equal `origin/dev`, and `origin/main` must be its ancestor: the first count from `rev-list` must be zero. Record both commit IDs. Stop if either branch moves unexpectedly or a `v0.1.0` tag or release already exists.
+Require `dev = origin/dev`, `main` ancestry, and all three required CI jobs on `$candidateSha`: **Static and unit validation**, **Browser, accessibility, and visual validation**, and **Packed SSR and hydration**. Confirm the intended tag/release does not already exist. If the candidate moves, start again with its new identity.
 
-Confirm all required CI jobs succeeded for that exact `dev` commit:
+## 2. Certify a clean checkout
 
-```powershell
-gh run list --workflow CI --branch dev --limit 5
-gh run watch <DEV_RUN_ID> --exit-status
-```
-
-Replace angle-bracket values in this runbook with the recorded IDs or paths before running commands.
-
-### Public repository checks
-
-The default branch is `main`. Before the first promotion, it lacks the README and MIT license present on `dev`, so the public landing page does not yet describe this candidate and GitHub reports no detected license. Keep `main` as the default branch; check its README and license detection after promotion.
-
-Review the candidate's tracked files and release assets for credentials, private URLs, local paths, temporary output, and unrelated product material. The source is already public, so this check is not a future visibility gate. Retain the [provenance record](provenance.md).
-
-The production endpoint is [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev). Verify that the existing Worker's production deployment matches the candidate commit.
-
-## 2. Run the clean-checkout gate
-
-Use a fresh clone with no copied `node_modules`, build output, or environment files. Check out the recorded candidate commit. Use Node.js 24 and the repository-pinned pnpm 11.9.0; check both versions before installing. A shared package-download cache is fine.
+Clone outside the working repository, detach at `$candidateSha`, and do not copy `node_modules`, build output, `.next`, `.nuxt`, generated consumers, or local environment files. A shared pnpm store is acceptable. Record tool versions, platform, relevant build environment, and each exit status. On Linux, install Chromium with `playwright install --with-deps chromium`.
 
 ```powershell
 git clone --branch dev https://github.com/maikeleckelboom/gamut-plane.git <CLEAN_DIRECTORY>
 cd <CLEAN_DIRECTORY>
-git checkout --detach <CANDIDATE_COMMIT>
+git checkout --detach <CANDIDATE_SHA>
 node --version
 pnpm --version
+git rev-parse HEAD
 pnpm install --frozen-lockfile
 pnpm --filter @gamut-plane/web exec playwright install chromium
 pnpm format:check
 pnpm lint
 pnpm typecheck
+pnpm --filter @gamut-plane/core typecheck:domain-nodom
 pnpm test
 pnpm check:gamut-tables
 pnpm build
+pnpm --filter @gamut-plane/core test:packed-domain
 pnpm check:build
 pnpm exec wrangler deploy --dry-run
 pnpm test:e2e
@@ -70,81 +53,55 @@ git diff --check
 git status --short --untracked-files=all
 ```
 
-On Linux, use `playwright install --with-deps chromium` to install browser system dependencies as CI does. See [Testing](testing.md) for test selection, snapshot policy, and retained failure evidence.
+The checkout must finish clean. Inspect and classify any failure; do not waive a gate. The package checks pack and inspect core/render/Vue/React, assert exact internal versions and exports, and compare installed private-package files byte for byte with the tarballs. Inspect archive inventories and hashes. Investigate audit findings against the shipped bundle and runtime dependency graph. Preserve failure logs and traces until resolved.
 
-Check every command's exit status. Record the candidate commit, tool versions, platform, environment variables affecting the build, and results. Investigate audit findings against the shipped bundle and package runtime graph before changing dependencies. Stop on unresolved failures. Keep failure logs and traces; remove the temporary checkout only after recording the results and stopping its servers.
+## 3. Review visuals and deployed candidate
 
-## 3. Review visual and accessibility evidence
+Inspect the [desktop screenshot](assets/gamut-plane-desktop.png), [social image](../apps/web/public/og/gamut-plane.png), favicon at 16/32 pixels, and [platform visual references](../apps/web/e2e/screenshots). Review axe results in both views and narrow layout, keyboard behavior, and 200% text. Regenerate only assets affected by an understood visual change and inspect every resulting diff.
 
-Inspect the [README screenshot](assets/gamut-plane-desktop.png), [Open Graph image](../apps/web/public/og/gamut-plane.png), [favicon](../apps/web/public/favicon.svg) at 16 and 32 pixels, and [Windows and Linux references](../apps/web/e2e/screenshots).
+Follow [Deployment](deployment.md) to deploy the exact `dev` candidate through Workers Builds as the temporary production branch. Verify the deployed commit and HTTPS URL, response headers, metadata, favicon/social image, both planes and guides, pointer and keyboard editing, copy behavior, narrow layout, 200% text, and browser console. Local production tests do not prove Cloudflare behavior. Record the candidate deployment evidence and repeat exact-`dev` CI/deployment verification after any candidate change.
 
-Check the axe results in OKLCH, OKLab, and narrow layouts, along with keyboard and 200% text tests. Resolve unexplained visual differences or serious/critical accessibility findings. Regenerate assets only for a corresponding visual change, and inspect the result.
+## 4. Promote the verified tree
 
-## 4. Deploy and verify `dev`
-
-Follow [Deployment](deployment.md) for the existing `gamut-plane` Worker's Workers Builds configuration. Select `dev` as the temporary production branch. Set the build command to `pnpm install --frozen-lockfile && pnpm build && pnpm check:build` and the deploy command to `pnpm exec wrangler deploy`. Configure the documented build variables, including `VITE_PUBLIC_SITE_URL` in **Settings > Build > Build Variables and Secrets**.
-
-Verify that Workers Builds automatically deploys the exact recorded `dev` candidate and serves the production endpoint successfully. Check `og:url`, `og:image`, and `twitter:image` against that endpoint.
-
-Verify the deployed commit, HTTPS URL, response headers, metadata, favicon, social image, both planes and boundaries, pointer and keyboard input, copy behavior, narrow layout, 200% text, and browser console. Use the deployed site for these checks; local production tests do not establish Cloudflare behavior.
-
-After verification, replace the README's production-demo status with the real link on `dev`. Set the repository homepage to the same URL:
-
-```powershell
-gh repo edit maikeleckelboom/gamut-plane --homepage <VERIFIED_PRODUCTION_URL>
-```
-
-Commit and push the README change. Wait for all required CI jobs for that exact `dev` commit and its updated Cloudflare production deployment, then repeat URL and commit verification. Record this final `dev` commit as the promotion candidate. Source, dependency, configuration, or asset changes require the affected validation to be repeated before promotion.
-
-## 5. Promote to `main`
-
-Fetch again and confirm that `origin/dev` is still the promotion candidate and `origin/main` is still the recorded baseline. In the Worker's **Settings > Build > Branch control**, change the production branch from `dev` to `main` immediately before promotion. Save the setting and leave automatic production builds enabled. Keep the GitHub default branch as `main`. Then merge without rewriting history:
+Fetch again and prove `origin/dev` still equals `$candidateSha` and `origin/main` still equals `$mainBaseline`. Immediately before promotion, change the Worker's production branch from `dev` back to `main` in **Settings > Build > Branch control**; leave automatic production builds enabled. Keep the GitHub default branch as `main`.
 
 ```powershell
 git switch main
 git pull --ff-only origin main
-git merge --no-ff origin/dev -m "chore(release): promote v0.1.0"
-git diff --exit-code origin/dev HEAD
+git merge --no-ff origin/dev -m "chore(release): promote <TAG>"
+git diff --exit-code <CANDIDATE_SHA> HEAD
 git push origin main
+$mainSha = git rev-parse HEAD
 ```
 
-The merge tree must match the promotion candidate. Stop before pushing if the comparison differs. Do not rebase, squash, amend, or force-push.
+The promoted Git tree must equal the certified candidate tree. Wait for all required CI jobs on exactly `$mainSha`, then confirm Cloudflare deployed that commit from `main` and repeat the production checks. Verify public README links and license detection. Do not tag while either proof is incomplete.
 
-## 6. Verify `main` CI and production
+## 5. Pack final private assets, tag, and release
 
-```powershell
-gh run list --workflow CI --branch main --limit 5
-gh run watch <MAIN_RUN_ID> --exit-status
-gh repo view --json visibility,defaultBranchRef,description,repositoryTopics,homepageUrl,licenseInfo
-```
-
-All required CI jobs must succeed for the exact new merge commit, including packed SSR and hydration. Confirm Cloudflare deployed that commit from `main`, and repeat the production checks from step 4. Verify the public README, its image and documentation links, the homepage, and MIT license detection. Resolve any mismatch before tagging.
-
-## 7. Tag and release
-
-With a clean `main` checkout at the successful promotion merge:
+From the verified promoted `main` tree, build and pack the four private packages into a clean output directory outside tracked source. Use `pnpm pack --json` output for each actual filename, inspect each manifest/inventory/internal dependency graph, and hash the final tarball bytes. Record filename, byte size, and SHA-256 for core, render, Vue, and React in `SHA256SUMS`. Candidate tarball hashes from `dev` are review evidence; these promoted-`main` files are the immutable release assets.
 
 ```powershell
+$artifactDirectory = '<ARTIFACT_DIRECTORY>'
+pnpm build:packages
+pnpm --filter @gamut-plane/core pack --pack-destination $artifactDirectory --json
+pnpm --filter @gamut-plane/render pack --pack-destination $artifactDirectory --json
+pnpm --filter @gamut-plane/vue pack --pack-destination $artifactDirectory --json
+pnpm --filter @gamut-plane/react pack --pack-destination $artifactDirectory --json
+Get-ChildItem -LiteralPath $artifactDirectory -Filter *.tgz | Sort-Object Name | ForEach-Object {
+  $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
+  "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
+} | Set-Content -LiteralPath (Join-Path $artifactDirectory 'SHA256SUMS')
 git status --short --branch --untracked-files=all
-git tag -a v0.1.0 -m "Gamut Plane v0.1.0"
-git push origin v0.1.0
-gh release create v0.1.0 --title "Gamut Plane v0.1.0" --notes-file <RELEASE_NOTES_FILE> --verify-tag
+git tag -a <TAG> -m "Gamut Plane <TAG>"
+git push origin <TAG>
+gh release create <TAG> --title "Gamut Plane <TAG>" --notes-file <RELEASE_NOTES_FILE> --verify-tag
+gh release upload <TAG> <CORE_TGZ> <RENDER_TGZ> <VUE_TGZ> <REACT_TGZ> <SHA256SUMS>
 ```
 
-Prepare release notes describing the two planes, exact membership and sampled guides, Canvas rendering limits, and the production URL. State that the npm packages remain unpublished. Do not move or recreate the tag after publication.
-
-In a logged-out browser session, check that the tag, release, source archives, production app, and social image are reachable. Repository visibility stays public throughout this procedure.
-
-## Package publication
-
-`@gamut-plane/core`, `@gamut-plane/render`, `@gamut-plane/vue` and `@gamut-plane/react` stay at `0.1.0` with `private: true`. Their built artifacts and tarball-consumer tests support local use. Adapter work and this application-release procedure do not authorize npm publication.
-
-A future package release needs a separate decision covering scope/name access, registry metadata, removal of private guards, core then render publication before the adapters, and registry-installed consumer checks.
+For the current v0.3.0 decision, the release assets are `gamut-plane-core-0.2.0.tgz`, `gamut-plane-render-0.2.0.tgz`, `gamut-plane-vue-0.2.0.tgz`, `gamut-plane-react-0.2.0.tgz`, and `SHA256SUMS`. These belong on the GitHub release; every package remains `private: true` and unpublished to npm. In a logged-out browser, verify the tag, release notes, all five assets, source archives, production app, and social image.
 
 ## Recovery
 
-- **Candidate deployment fails:** keep work on `dev`, fix the cause, repeat affected checks and CI, and redeploy. Do not promote a failed candidate.
-- **`main` CI or production fails:** do not tag or release. Investigate transient failures before rerunning them. Correct a defect with a new commit or revert the merge with a new commit. If needed, roll Cloudflare back to a previous successful production deployment; preview deployments are not rollback targets.
-- **Metadata is wrong:** correct it and repeat CI and deployment verification before tagging. After release, do not move the tag to change released source; use a follow-up release.
-
-Never reset or force-push a shared branch as a release recovery step.
+- Fix a failed candidate on `dev`, repeat affected verification and exact-SHA CI/deployment proof, and use the new candidate identity.
+- If `main` CI or production fails, do not tag. Diagnose and correct with a new commit or a revert commit; use a previous successful Cloudflare production deployment if rollback is needed.
+- Never reset or force-push a shared branch, and never move a released tag. Correct post-release metadata or source through a follow-up release.

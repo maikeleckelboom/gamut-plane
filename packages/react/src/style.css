@@ -177,14 +177,14 @@
 }
 
 .gamut-plane-react .gpr-color-plane-marker,
-.gamut-plane-react .gpr-color-plane-projection-connector,
+.gamut-plane-react .gpr-color-plane-target-guide-connector,
 .gamut-plane-react .gpr-color-plane-warning {
   position: absolute;
   pointer-events: none;
 }
 
 .gamut-plane-react .gpr-color-plane-marker,
-.gamut-plane-react .gpr-color-plane-projection-connector {
+.gamut-plane-react .gpr-color-plane-target-guide-connector {
   z-index: 4;
 }
 
@@ -210,16 +210,16 @@
     0 2px 7px oklch(0 0 0 / 0.72);
 }
 
-.gamut-plane-react .gpr-color-plane-marker--projection {
-  width: var(--picker-projection-marker-size, 11px);
-  height: var(--picker-projection-marker-size, 11px);
+.gamut-plane-react .gpr-color-plane-marker--target-guide {
+  width: var(--picker-target-guide-marker-size, 11px);
+  height: var(--picker-target-guide-marker-size, 11px);
   border: 1px solid oklch(0.98 0 0 / 0.9);
   border-radius: 50%;
-  background: var(--projection-marker-color, oklch(0.12 0 0 / 0.72));
+  background: var(--target-guide-marker-color, oklch(0.12 0 0 / 0.72));
   box-shadow: 0 0 0 1px oklch(0 0 0 / 0.6);
 }
 
-.gamut-plane-react .gpr-color-plane-projection-connector {
+.gamut-plane-react .gpr-color-plane-target-guide-connector {
   height: 1px;
   border-top: 1px dashed oklch(0.98 0 0 / 0.72);
   transform: translateY(-50%);

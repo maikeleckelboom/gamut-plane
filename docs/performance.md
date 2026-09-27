@@ -99,4 +99,4 @@ Use the following protocol when a renderer, sampling, or table algorithm change 
 7. Compare the same scenario and environment before and after the change. Treat a result smaller than normal run-to-run variance as inconclusive.
 8. Run unit, browser, and screenshot tests after instrumentation is removed or disabled.
 
-Any accepted performance optimization must preserve exact membership, plane geometry, boundary semantics, interaction cancellation, high-DPI sharpness, and the visible color-space capability report.
+Any accepted performance optimization must preserve exact gamut status, plane geometry, boundary semantics, interaction cancellation, high-DPI sharpness, and the visible color-space capability report.

@@ -71,4 +71,4 @@ The ordinary Vite consumer and Next App Router consumer install actual core/rend
 
 Next loads the server document and CSS while scripts are held, records actual nodes and relationships, then checks their retention after hydration. Both views include controls, guides, disclosure and legend before scripts. Root Strict Mode counts all plane/track observers and native plane/control/window/resolution listeners through setup/cleanup/setup and unmount. Teardown emits no edit, rollback, completion or cancellation.
 
-Use the [testing commands](testing.md) for reproducible evidence. Package versions and peer policies remain unchanged; publication, deployment, alpha controls, uncontrolled color and public composable primitives remain outside this work.
+Use the [testing commands](testing.md) for reproducible evidence. This parity record does not set package versions; publication, deployment, alpha controls, uncontrolled color and public composable primitives remain outside its scope.
