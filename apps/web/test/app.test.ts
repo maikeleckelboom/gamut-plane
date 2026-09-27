@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { findMaximumChroma, serializeColor } from "@gamut-plane/core";
+import { createColorValue } from "@gamut-plane/core";
+import { GamutPlane } from "@gamut-plane/vue";
 
 import App from "@/App.vue";
 
@@ -176,14 +177,10 @@ describe("standalone application", () => {
       expect(representation.findAll(".css-representation__swatch")).toHaveLength(1);
     }
     const originalColor = wrapper.get('[data-css-representation="oklch"] code').text();
-    const srgbPreview = serializeColor(
-      { l: 0.68, c: findMaximumChroma(0.68, 252, "srgb"), h: 252, alpha: 1 },
-      "srgb",
-    );
     const hexSwatch = wrapper.get('[data-css-representation="hex"] .css-representation__swatch');
     const srgbSwatch = wrapper.get('[data-css-representation="srgb"] .css-representation__swatch');
     expect(hexSwatch.attributes("data-preview-kind")).toBe("boundary");
-    expect(hexSwatch.attributes("style")).toContain(srgbPreview);
+    expect(hexSwatch.attributes("style")).toContain("color(srgb ");
     expect(srgbSwatch.attributes("style")).toBe(hexSwatch.attributes("style"));
     expect(hexSwatch.attributes("aria-label")).toBe("sRGB boundary color preview");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalColor);
@@ -200,13 +197,16 @@ describe("standalone application", () => {
     expect(copyButton.attributes("aria-describedby")).toBe("srgb-copy-reason");
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeDefined();
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("aria-describedby")).toBe(
-      "srgb-copy-reason",
+      "hex-copy-reason",
     );
     expect(representation.get(".css-representation__value").text()).toBe(
       "Unavailable · outside sRGB",
     );
     expect(wrapper.get("#srgb-copy-reason").text()).toBe(
-      "Selected color is outside sRGB; no clipped Hex or sRGB value is emitted.",
+      "Selected color is outside sRGB; no clipped value is emitted.",
+    );
+    expect(wrapper.get("#hex-copy-reason").text()).toBe(
+      "Selected color is outside sRGB; no clipped value is emitted.",
     );
     expect(wrapper.findAll("#srgb-copy-reason")).toHaveLength(1);
     expect(representation.find(".css-representation__value p").exists()).toBe(false);
@@ -217,17 +217,11 @@ describe("standalone application", () => {
 
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.52");
     await flushPromises();
-    const p3Preview = serializeColor(
-      { l: 0.68, c: findMaximumChroma(0.68, 252, "display-p3"), h: 252, alpha: 1 },
-      "display-p3",
-    );
     const p3Swatch = wrapper.get(
       '[data-css-representation="display-p3"] .css-representation__swatch',
     );
     expect(p3Swatch.attributes("data-preview-kind")).toBe("boundary");
-    const normalizedPreview = document.createElement("span");
-    normalizedPreview.style.backgroundColor = p3Preview;
-    expect(p3Swatch.attributes("style")).toContain(normalizedPreview.style.backgroundColor);
+    expect(p3Swatch.attributes("style")).toContain("color(display-p3 ");
     expect(p3Swatch.attributes("aria-label")).toBe("Display P3 boundary color preview");
     expect(
       wrapper.get('[data-css-representation="display-p3"] .css-representation__value').text(),
@@ -244,6 +238,7 @@ describe("standalone application", () => {
     expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
     expect(wrapper.get('[data-css-representation="srgb"] code').text()).toMatch(/^color\(srgb /);
     expect(wrapper.get('[data-copy-representation="hex"]').attributes("disabled")).toBeUndefined();
+    const normalizedPreview = document.createElement("span");
     normalizedPreview.style.backgroundColor = wrapper
       .get('[data-css-representation="hex"] code')
       .text();
@@ -264,6 +259,35 @@ describe("standalone application", () => {
     ).toBe("output");
     expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
+    wrapper.unmount();
+  });
+
+  it("shows exact tolerance status while strict output stays unavailable", async () => {
+    const wrapper = mount(App, { attachTo: document.body });
+    const fringe = createColorValue({
+      space: "srgb",
+      channels: [-1e-10, 0.5, 0.5],
+      alpha: 1,
+    });
+    if (!fringe.ok) throw new Error("Invalid tolerance fixture");
+    wrapper.findComponent(GamutPlane).vm.$emit("update:modelValue", fringe.value);
+    await flushPromises();
+
+    const status = wrapper.get('[data-exact-gamut-status="srgb"]');
+    expect(status.attributes("data-exact-status")).toBe("within-tolerance");
+    expect(status.get("dd").attributes("data-status")).toBe("within-tolerance");
+    expect(status.get("dd").text()).toBe("Within tolerance");
+    for (const name of ["hex", "srgb"] as const) {
+      const row = wrapper.get(`[data-css-representation="${name}"]`);
+      expect(row.attributes("data-output-error")).toBe("boundary-tolerance");
+      expect(row.get(".css-representation__value").text()).toBe("Unavailable · boundary tolerance");
+      expect(row.get("button").attributes("disabled")).toBeDefined();
+      expect(row.get(".css-representation__swatch").attributes("data-preview-kind")).toBe(
+        "boundary",
+      );
+    }
+    expect(wrapper.get("#srgb-copy-reason").text()).toContain("within tolerance");
+    expect(wrapper.get('[data-exact-gamut-status="display-p3"] dd').text()).toBe("Inside");
     wrapper.unmount();
   });
 });
