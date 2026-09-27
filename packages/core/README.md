@@ -48,7 +48,7 @@ if (created.ok) {
 }
 ```
 
-`mapToGamut(color, target, "oklch-chroma-reduction-v1")` is an explicit fixed-lightness/hue operation. `parseCssValue` accepts a limited numeric CSS literal profile and returns source text separately from the value. `serializeCss` consumes a representation with either a raw-coordinate or strict-gamut policy; `serializeHex` consumes an sRGB representation and explicitly quantizes to 8-bit channels. Use snapshots, rather than the runtime value, for JSON or SSR transport. The released `OklchColor` functions remain available for existing picker consumers.
+`mapToGamut(color, target, "oklch-chroma-reduction-v1")` is an explicit fixed-lightness/hue operation. `parseCssValue` accepts a limited numeric CSS literal profile and returns source text separately from the value. `serializeCss` consumes a representation with either a raw-coordinate or strict-gamut policy; `serializeHex` consumes an sRGB representation and explicitly quantizes to 8-bit channels. Use snapshots, rather than the runtime value, for JSON or SSR transport. General `OklchColor` conversion and serialization functions remain available independently of picker authorship.
 
 ## Plane editing
 
@@ -73,7 +73,7 @@ An OKLCH neutral may have a numeric defining hue or `null`. Edits preserve that 
 
 ## Math and guides
 
-`isColorInGamut` converts directly to linear-light RGB using `GAMUT_EPSILON`. `getPickerBoundaryAnalysis` combines unchanged exact status for both gamuts with one explicit `DisplayGamut` target result: sampled guide chroma/color, guide delta, normalized position and an outside-only projection. Boundary-table lookups and contours are interpolated guides and should not replace exact membership. The legacy plane helpers project views over `OklchColor`; the new ColorValue edit API keeps defining authority in the selected edit space.
+`isColorInGamut` converts directly to linear-light RGB using `GAMUT_EPSILON`. `getPickerBoundaryAnalysis` combines unchanged exact status for both gamuts with one explicit `DisplayGamut` target result: sampled guide chroma/color, guide delta, normalized position and an outside-only projection. Boundary-table lookups and contours are interpolated guides and should not replace exact membership. Plane geometry describes coordinates and constraints; the field sampler writes into a reusable numeric color. `ColorValue` remains the selected authority.
 
 See [Architecture](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md) for package boundaries and [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) for unit and packed-consumer checks.
 

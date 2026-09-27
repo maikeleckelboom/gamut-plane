@@ -5,8 +5,8 @@ import {
   projectColorToPlane,
   type ColorPlaneProjection,
   type ColorValue,
-  type PickerPlaneContract,
-  type OklchColor,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
   type PlaneEditReference,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
@@ -27,10 +27,12 @@ import {
 
 export interface PlaneInput {
   value: ColorValue;
-  plane: PickerPlaneContract;
-  presentationColor: OklchColor;
+  plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
+  fieldHue: number;
+  markerCss: string;
   getEditReference: () => PlaneEditReference | undefined;
-  projectionColor: OklchColor | null;
+  projectionPoint: PlanePoint | null;
+  projectionCss: string;
   interactionPreview: boolean;
   onValueChange: (value: ColorValue) => void;
   onValueCommit: ((value: ColorValue) => void) | undefined;
@@ -78,7 +80,7 @@ export function mountPlane(
   }
   function fixed(): number {
     return plane.id === "oklch"
-      ? current().presentationColor.h
+      ? current().fieldHue
       : projection(current().value).representation.channels[0];
   }
   let fieldInput = `${plane.id}:${fixed()}:${current().interactionPreview}`;
@@ -87,8 +89,7 @@ export function mountPlane(
     Object.assign(marker.style, pointStyle(point));
     if (localSize.width < PICKER_WARNING_GLYPH_SIZE || localSize.height < PICKER_WARNING_GLYPH_SIZE)
       return;
-    const projection = current().projectionColor;
-    const guide = projection ? plane.positionActivePoint(projection) : null;
+    const guide = current().projectionPoint;
     const placement = placePlanarWarning({
       activeCenter: { x: point.x * localSize.width, y: point.y * localSize.height },
       surfaceSize: localSize,

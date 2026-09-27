@@ -1,5 +1,5 @@
 import { createColorValue, type ColorValue, type OklchColor } from "@gamut-plane/core";
-import { observePickerPresentationColor } from "@gamut-plane/render";
+import { createPickerPresentation } from "@gamut-plane/render";
 
 export function color(l: number, c: number, h: number | null, alpha = 1): ColorValue {
   const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
@@ -13,5 +13,9 @@ export function fromOklch(value: OklchColor): ColorValue {
 
 export function planeValue(value: OklchColor) {
   const modelValue = fromOklch(value);
-  return { modelValue, presentationColor: observePickerPresentationColor(modelValue) };
+  const presentation = createPickerPresentation(modelValue, "oklch", "srgb", {
+    srgb: true,
+    displayP3: true,
+  });
+  return { modelValue, fieldHue: presentation.fieldHue, markerCss: presentation.markerCss };
 }

@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import {
-  OKLAB_AB_PLANE,
-  OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
   authorPlaneEdit,
   normalizeHue,
   oklabCoordinatePlanePoint,
-  projectColorToPlane,
   represent,
-  serializeColor,
   type ColorResult,
   type ColorValue,
   type DisplayGamut,
@@ -23,10 +19,8 @@ import "../style.css";
 import ColorChannelControl from "./ColorChannelControl.vue";
 import ColorPlane from "./ColorPlane.vue";
 import {
-  colorGradient,
-  displayGamutLabel,
-  getBoundaryPresentation,
-  observePickerPresentationColor,
+  createPickerPresentation,
+  hueGradient,
   PICKER_GAMUT_TABLES,
   type CanvasColorSpaceStatus,
 } from "@gamut-plane/render";
@@ -61,89 +55,13 @@ const titleId = `${instanceId}-instrument-title`;
 const PLANE_OPTIONS: readonly PickerPlaneId[] = ["oklch", "oklab"];
 const planeOptionButtons = new Map<PickerPlaneId, HTMLButtonElement>();
 const tables = PICKER_GAMUT_TABLES;
-const activePlaneContract = computed(() =>
-  plane.value === "oklab" ? OKLAB_AB_PLANE : OKLCH_LIGHTNESS_CHROMA_PLANE,
-);
-const presentationColor = computed(() => observePickerPresentationColor(props.modelValue));
-const oklchProjection = computed(() => {
-  const projected = projectColorToPlane(props.modelValue, "oklch");
-  if (!projected.ok) throw new RangeError("Selected color cannot be projected into OKLCH");
-  return projected.value;
-});
-const oklabProjection = computed(() => {
-  const projected = projectColorToPlane(props.modelValue, "oklab");
-  if (!projected.ok) throw new RangeError("Selected color cannot be projected into OKLab");
-  return projected.value;
-});
-const planeProjection = computed(() =>
-  plane.value === "oklch"
-    ? {
-        point: oklchProjection.value.point,
-        x: oklchProjection.value.representation.channels[1],
-        y: oklchProjection.value.representation.channels[0],
-        fixed: presentationColor.value.h,
-      }
-    : {
-        point: oklabProjection.value.point,
-        x: oklabProjection.value.representation.channels[1],
-        y: oklabProjection.value.representation.channels[2],
-        fixed: oklabProjection.value.representation.channels[0],
-      },
-);
-const boundary = computed(() =>
-  getBoundaryPresentation(presentationColor.value, plane.value, props.boundaryTarget, {
+const presentation = computed(() =>
+  createPickerPresentation(props.modelValue, plane.value, props.boundaryTarget, {
     srgb: props.showSrgbBoundary,
     displayP3: props.showDisplayP3Boundary,
   }),
 );
-const status = computed(() => boundary.value.analysis.status);
-const targetResult = computed(() => boundary.value.analysis.target);
-const targetLabel = computed(() => displayGamutLabel(props.boundaryTarget));
-const hueIntervals = computed(() => boundary.value.hueIntervals);
-const lightnessIntervals = computed(() => boundary.value.lightnessIntervals);
-const chromaControlMarkers = computed(() => boundary.value.markers);
-const chromaIntervals = computed(() => boundary.value.chromaIntervals);
-
-const hueGradient = computed(() =>
-  colorGradient(72, (position) => ({
-    l: 0.8,
-    c: OKLCH_PICKER_MAX_CHROMA,
-    h: position * 360,
-    alpha: 1,
-  })),
-);
-const lightnessGradient = computed(() =>
-  colorGradient(12, (position) => ({
-    l: position,
-    c: presentationColor.value.c,
-    h: presentationColor.value.h,
-    alpha: 1,
-  })),
-);
-const chromaGradient = computed(() =>
-  colorGradient(12, (position) => ({
-    l: presentationColor.value.l,
-    c: position * OKLCH_PICKER_MAX_CHROMA,
-    h: presentationColor.value.h,
-    alpha: 1,
-  })),
-);
-const oklabLightnessGradient = computed(() =>
-  colorGradient(12, (position) => OKLAB_AB_PLANE.editFixedAxis(presentationColor.value, position)),
-);
-
-const activeCss = computed(() => serializeColor(presentationColor.value));
-const isOutsideDisplayP3 = computed(() => !status.value.displayP3.inGamut);
 const primaryGamutWarning = "Outside Display P3";
-const hueWarningPosition = computed(() => normalizeHue(presentationColor.value.h) / 360);
-const chromaWarningPosition = computed(() =>
-  Math.min(1, Math.max(0, presentationColor.value.c / OKLCH_PICKER_MAX_CHROMA)),
-);
-const boundaryProjectionColor = computed(() => boundary.value.projectionColor);
-const instrumentStyle = computed<Record<string, string>>(() => ({
-  "--picker-active": activeCss.value,
-}));
-const boundaryGuideCss = computed(() => serializeColor(targetResult.value.boundaryGuide.color));
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
 watch(
@@ -158,22 +76,6 @@ watch(
   { immediate: true, flush: "sync" },
 );
 const fixedAxisFieldPreview = computed(() => plane.value === "oklch" && hueRangeDragging.value);
-const isOutsideOklchInstrumentDomain = computed(() => {
-  return !OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(oklchProjection.value.point);
-});
-const isOutsideOklabInstrumentDomain = computed(() => {
-  return !OKLAB_AB_PLANE.isPointInInstrumentDomain(oklabProjection.value.point);
-});
-const chromaHelp = computed(() =>
-  isOutsideOklchInstrumentDomain.value
-    ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
-    : undefined,
-);
-const oklabDomainHelp = computed(() =>
-  isOutsideOklabInstrumentDomain.value
-    ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
-    : undefined,
-);
 
 function selectPlane(value: PickerPlaneId): void {
   plane.value = value;
@@ -227,7 +129,7 @@ function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): 
       : {
           plane: "oklab" as const,
           kind: "point" as const,
-          point: oklabCoordinatePlanePoint(oklabProjection.value, channel, value),
+          point: oklabCoordinatePlanePoint(presentation.value.oklab, channel, value),
         };
   publish(authorPlaneEdit(props.modelValue, edit), complete);
 }
@@ -245,7 +147,7 @@ watch(
     class="plane-instrument"
     data-plane-instrument
     :data-active-plane="plane"
-    :style="instrumentStyle"
+    :style="{ '--picker-active': presentation.activeCss }"
     :aria-labelledby="titleId"
   >
     <h2 :id="titleId" class="sr-only">Color plane instrument</h2>
@@ -273,14 +175,16 @@ watch(
       <div class="plane-instrument__field">
         <ColorPlane
           :model-value="modelValue"
-          :presentation-color="presentationColor"
+          :field-hue="presentation.fieldHue"
+          :marker-css="presentation.markerCss"
           :edit-reference="hueReference"
-          :plane="activePlaneContract"
+          :plane="presentation.plane"
           :srgb-table="tables.srgb"
           :display-p3-table="tables.displayP3"
-          :boundary-projection-color="boundaryProjectionColor"
-          :boundary-projection-label="`${targetLabel} target boundary projection`"
-          :warning-visible="isOutsideDisplayP3"
+          :boundary-projection-point="presentation.projectionPoint"
+          :boundary-projection-css="presentation.projectionCss"
+          :boundary-projection-label="presentation.projectionLabel"
+          :warning-visible="presentation.warningVisible"
           :warning-label="primaryGamutWarning"
           :interaction-preview="fixedAxisFieldPreview"
           :show-srgb-boundary="showSrgbBoundary"
@@ -299,21 +203,17 @@ watch(
             :id="`${instanceId}-hue`"
             channel="H"
             label="Hue"
-            :model-value="presentationColor.h"
+            :model-value="presentation.fieldHue"
             :min="0"
             :max="360"
             :step="0.1"
             :precision="1"
             :gradient="hueGradient"
-            :intervals="hueIntervals"
-            :warning-visible="isOutsideDisplayP3"
+            :intervals="presentation.hueIntervals"
+            :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"
-            :warning-position="hueWarningPosition"
-            :help="
-              oklchProjection.representation.channels[2] === null
-                ? 'Hue is unset. Edit Hue to choose a direction.'
-                : undefined
-            "
+            :warning-position="presentation.huePosition"
+            :help="presentation.hueHelp"
             @update:model-value="editOklch('h', $event, false)"
             @commit="editOklch('h', $event, true)"
             @cancel="emit('cancel')"
@@ -324,16 +224,16 @@ watch(
             :id="`${instanceId}-lightness`"
             channel="L"
             label="Lightness"
-            :model-value="oklchProjection.representation.channels[0]"
+            :model-value="presentation.oklch.channels[0]"
             :min="0"
             :max="1"
             :step="0.001"
             :precision="4"
-            :gradient="lightnessGradient"
-            :intervals="lightnessIntervals"
-            :warning-visible="isOutsideDisplayP3"
+            :gradient="presentation.lightnessGradient"
+            :intervals="presentation.lightnessIntervals"
+            :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"
-            :warning-position="oklchProjection.representation.channels[0]"
+            :warning-position="presentation.oklch.channels[0]"
             @update:model-value="editOklch('l', $event, false)"
             @commit="editOklch('l', $event, true)"
             @cancel="emit('cancel')"
@@ -343,25 +243,21 @@ watch(
             :id="`${instanceId}-chroma`"
             channel="C"
             label="Chroma"
-            :model-value="oklchProjection.representation.channels[1]"
+            :model-value="presentation.oklch.channels[1]"
             :min="0"
             :max="OKLCH_PICKER_MAX_CHROMA"
             :step="0.001"
             :precision="4"
-            :gradient="chromaGradient"
-            :markers="chromaControlMarkers"
-            :intervals="chromaIntervals"
-            :boundary-preview-color="boundaryGuideCss"
+            :gradient="presentation.chromaGradient"
+            :markers="presentation.markers"
+            :intervals="presentation.chromaIntervals"
+            :boundary-preview-color="presentation.targetResult.swatchCss"
             :boundary-preview-tone="boundaryTarget"
             :overflow-max="true"
-            :warning-visible="isOutsideDisplayP3"
+            :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"
-            :warning-position="chromaWarningPosition"
-            :help="
-              oklchProjection.representation.channels[2] === null
-                ? 'Set Hue before increasing chroma.'
-                : chromaHelp
-            "
+            :warning-position="presentation.chromaPosition"
+            :help="presentation.chromaHelp"
             @update:model-value="editOklch('c', $event, false)"
             @commit="editOklch('c', $event, true)"
             @cancel="emit('cancel')"
@@ -373,17 +269,17 @@ watch(
             :id="`${instanceId}-oklab-lightness`"
             channel="L"
             label="OKLab lightness · fixed axis"
-            :model-value="planeProjection.fixed"
+            :model-value="presentation.projection.fixed"
             :min="0"
             :max="1"
             :step="0.001"
             :precision="4"
-            :gradient="oklabLightnessGradient"
-            :intervals="lightnessIntervals"
-            :warning-visible="isOutsideDisplayP3"
+            :gradient="presentation.fixedLightnessGradient"
+            :intervals="presentation.lightnessIntervals"
+            :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"
-            :warning-position="planeProjection.fixed"
-            :help="oklabDomainHelp"
+            :warning-position="presentation.projection.fixed"
+            :help="presentation.domainHelp"
             @update:model-value="editOklab('l', $event, false)"
             @commit="editOklab('l', $event, true)"
             @cancel="emit('cancel')"
@@ -393,10 +289,10 @@ watch(
             <label>
               <span>a</span>
               <NumericInput
-                :model-value="planeProjection.x"
+                :model-value="presentation.projection.x"
                 :precision="4"
-                :min="activePlaneContract.xAxis.min"
-                :max="activePlaneContract.xAxis.max"
+                :min="presentation.plane.xAxis.min"
+                :max="presentation.plane.xAxis.max"
                 :step="0.001"
                 inputmode="decimal"
                 data-oklab-coordinate="a"
@@ -409,10 +305,10 @@ watch(
             <label>
               <span>b</span>
               <NumericInput
-                :model-value="planeProjection.y"
+                :model-value="presentation.projection.y"
                 :precision="4"
-                :min="activePlaneContract.yAxis.min"
-                :max="activePlaneContract.yAxis.max"
+                :min="presentation.plane.yAxis.min"
+                :max="presentation.plane.yAxis.max"
                 :step="0.001"
                 inputmode="decimal"
                 data-oklab-coordinate="b"
@@ -430,29 +326,29 @@ watch(
           class="plane-instrument__target-result"
           data-boundary-target-result
           :data-boundary-target="boundaryTarget"
-          :aria-label="`${targetLabel} target boundary result`"
+          :aria-label="`${presentation.targetResult.targetLabel} target boundary result`"
         >
           <div class="plane-instrument__target-heading">
-            <span>Target · {{ targetLabel }}</span>
+            <span>Target · {{ presentation.targetResult.targetLabel }}</span>
             <span
               class="plane-instrument__target-swatch"
               data-boundary-guide-swatch
-              :style="{ background: boundaryGuideCss }"
-              :aria-label="`${targetLabel} sampled boundary-guide color ${boundaryGuideCss}`"
+              :style="{ background: presentation.targetResult.swatchCss }"
+              :aria-label="`${presentation.targetResult.targetLabel} sampled boundary-guide color ${presentation.targetResult.swatchCss}`"
               role="img"
             />
-            <strong :data-target-status="targetResult.inGamut ? 'inside' : 'outside'">
-              {{ targetResult.inGamut ? "Inside" : "Outside" }}
+            <strong :data-target-status="presentation.targetResult.inGamut ? 'inside' : 'outside'">
+              {{ presentation.targetResult.inGamut ? "Inside" : "Outside" }}
             </strong>
           </div>
           <dl>
             <div>
               <dt>Guide C</dt>
-              <dd>{{ targetResult.boundaryGuide.chroma.toFixed(4) }}</dd>
+              <dd>{{ presentation.targetResult.guideChroma }}</dd>
             </div>
-            <div v-if="targetResult.guideDeltaC > 0">
+            <div v-if="presentation.targetResult.showGuideDelta">
               <dt>ΔC</dt>
-              <dd>−{{ targetResult.guideDeltaC.toFixed(4) }}</dd>
+              <dd>−{{ presentation.targetResult.guideDelta }}</dd>
             </div>
           </dl>
         </section>

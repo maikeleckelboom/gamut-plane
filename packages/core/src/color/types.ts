@@ -1,8 +1,6 @@
 export type DisplayGamut = "srgb" | "display-p3";
 
-export type PickerPlane = "oklch" | "oklab";
-
-/** Canonical color state shared by the core package and the Vue instrument. */
+/** Numeric OKLCH value for general conversion, serialization and field sampling. */
 export interface OklchColor {
   l: number;
   c: number;

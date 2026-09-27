@@ -1,5 +1,5 @@
-import { convertOklabToOklch, convertOklchToOklab } from "../color/convert.js";
-import { assertOklchColor, normalizeHue, type OklchColor } from "../color/types.js";
+import { convertOklabToOklch } from "../color/convert.js";
+import { normalizeHue, type OklchColor } from "../color/types.js";
 import { getMaximumChromaFromTable } from "../gamut/boundary.js";
 import type { GamutBoundaryTable } from "../gamut/types.js";
 import {
@@ -10,8 +10,6 @@ import {
   isPointInRectangularInstrument,
   oklabCoordinatesFromPlanePoint,
   oklabCoordinatesToPlanePoint,
-  oklchCoordinatesFromPlanePoint,
-  oklchCoordinatesToPlanePoint,
   OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_PICKER_MAX_CHROMA,
   type PickerPlaneId,
@@ -22,12 +20,14 @@ export {
   clampPlanePointToInstrumentBounds,
   constrainOklabPlanePoint,
   isPointInOklabInstrumentDomain,
+  oklabCoordinatesToPlanePoint,
+  oklchCoordinatesToPlanePoint,
   OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_PICKER_MAX_CHROMA,
   type PickerPlaneId,
   type PlanePoint,
 } from "./geometry.js";
-export const OKLAB_NEUTRAL_RADIUS_EPSILON = 1e-7;
+const OKLAB_NEUTRAL_RADIUS_EPSILON = 1e-7;
 export const OKLAB_FIELD_ROW_COUNT = 80;
 export const OKLAB_FIELD_COLUMN_SAMPLES = 24;
 
@@ -41,55 +41,23 @@ export interface PickerPlaneAxis {
   max: number;
 }
 
-export type PlaneColorReference = Pick<OklchColor, "h" | "alpha">;
-
-export interface PickerPlaneProjection {
-  /** Raw canonical projection; it may sit outside the editable instrument domain. */
-  point: PlanePoint;
-  x: number;
-  y: number;
-  fixed: number;
-}
-
 export interface PickerPlaneSampleScratch {
   input: number[];
   converted: number[];
 }
 
-export type PickerPlaneKeyboardAction =
-  | "decrease-x"
-  | "increase-x"
-  | "increase-y"
-  | "decrease-y"
-  | "minimum-x"
-  | "maximum-x";
-
 export type PickerPlaneFieldSampling =
   | { kind: "column-gradient"; rowStep: number }
   | { kind: "disc-gradient"; rowCount: number; columnSamples: number };
 
-/**
- * Released OklchColor picker contract retained for the existing adapters.
- * ColorValue observation and authorship live separately in edit.ts.
- */
-export interface PickerPlaneContract {
+/** Coordinate geometry and labels consumed by instrument presentation. */
+export interface PickerPlaneGeometry {
   id: PickerPlaneId;
   label: string;
   xAxis: PickerPlaneAxis;
   yAxis: PickerPlaneAxis;
   fixedAxis: PickerPlaneAxis;
-  fieldSampling: PickerPlaneFieldSampling;
   gamutContourClosed: boolean;
-  project(color: OklchColor): PickerPlaneProjection;
-  unproject(point: PlanePoint, fixed: number, reference: PlaneColorReference): OklchColor;
-  sampleField(
-    point: PlanePoint,
-    fixed: number,
-    output: OklchColor,
-    scratch?: PickerPlaneSampleScratch,
-  ): OklchColor;
-  /** Positions display annotations, including any deliberate instrument-domain projection. */
-  positionActivePoint(color: OklchColor): PlanePoint;
   buildGamutContour(
     table: GamutBoundaryTable,
     fixed: number,
@@ -98,36 +66,18 @@ export interface PickerPlaneContract {
   ): Float32Array;
   constrainPoint(point: PlanePoint): PlanePoint;
   isPointInInstrumentDomain(point: PlanePoint): boolean;
-  /** Edits only the fixed axis while preserving both raw plane coordinates. */
-  editFixedAxis(color: OklchColor, fixed: number): OklchColor;
-  editFromKeyboard(
-    color: OklchColor,
-    action: PickerPlaneKeyboardAction,
-    coarse: boolean,
+}
+
+/** Numeric mutable sampling for the Canvas field. */
+export interface PickerPlaneFieldSampler {
+  id: PickerPlaneId;
+  fieldSampling: PickerPlaneFieldSampling;
+  sampleField(
+    point: PlanePoint,
+    fixed: number,
+    output: OklchColor,
+    scratch?: PickerPlaneSampleScratch,
   ): OklchColor;
-}
-
-function assertFiniteFixedAxis(value: number): void {
-  if (!Number.isFinite(value)) throw new TypeError("Fixed-axis value must be finite");
-}
-
-/** Projects a canonical OKLCH value into the rectangular instrument domain. */
-export function oklchToPlanePoint(color: OklchColor): PlanePoint {
-  assertOklchColor(color);
-  return oklchCoordinatesToPlanePoint(color.l, color.c);
-}
-
-/** Maps an instrument point to OKLCH while preserving the supplied hue and alpha. */
-export function planePointToOklch(point: PlanePoint, reference: PlaneColorReference): OklchColor {
-  const { l, c } = oklchCoordinatesFromPlanePoint(point);
-  const color: OklchColor = {
-    l,
-    c,
-    h: normalizeHue(reference.h),
-    alpha: reference.alpha,
-  };
-  assertOklchColor(color);
-  return color;
 }
 
 function resolveSampleCount(sampleCount: number): number {
@@ -168,11 +118,6 @@ export function buildLightnessChromaBoundaryPath(
   return path;
 }
 
-function projectOklch(color: OklchColor): PickerPlaneProjection {
-  const point = oklchToPlanePoint(color);
-  return { point, x: color.c, y: color.l, fixed: normalizeHue(color.h) };
-}
-
 function sampleOklchField(
   point: PlanePoint,
   fixed: number,
@@ -187,44 +132,7 @@ function sampleOklchField(
   return output;
 }
 
-function editOklchFromKeyboard(
-  color: OklchColor,
-  action: PickerPlaneKeyboardAction,
-  coarse: boolean,
-): OklchColor {
-  assertOklchColor(color);
-  const step = coarse ? 0.02 : 0.005;
-  const next: OklchColor = {
-    l: color.l,
-    c: color.c,
-    h: color.h,
-    alpha: color.alpha,
-  };
-
-  if (action === "decrease-x") next.c -= step;
-  else if (action === "increase-x") next.c += step;
-  else if (action === "increase-y") next.l += step;
-  else if (action === "decrease-y") next.l -= step;
-  else if (action === "minimum-x") next.c = 0;
-  else next.c = OKLCH_PICKER_MAX_CHROMA;
-
-  next.l = clampUnit(next.l);
-  next.c = Math.min(OKLCH_PICKER_MAX_CHROMA, Math.max(0, next.c));
-  return next;
-}
-
-function editOklchFixedHue(color: OklchColor, hue: number): OklchColor {
-  assertOklchColor(color);
-  assertFiniteFixedAxis(hue);
-  return {
-    l: color.l,
-    c: color.c,
-    h: normalizeHue(hue),
-    alpha: color.alpha,
-  };
-}
-
-export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
+export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneGeometry & PickerPlaneFieldSampler = {
   id: "oklch",
   label: "OKLCH",
   xAxis: {
@@ -238,32 +146,18 @@ export const OKLCH_LIGHTNESS_CHROMA_PLANE: PickerPlaneContract = {
   fixedAxis: { id: "hue", symbol: "H", label: "hue", min: 0, max: 360 },
   fieldSampling: { kind: "column-gradient", rowStep: 10 },
   gamutContourClosed: false,
-  project: projectOklch,
-  unproject: (point, _fixed, reference) => planePointToOklch(point, reference),
   sampleField: sampleOklchField,
-  positionActivePoint: (color) => clampPlanePointToInstrumentBounds(oklchToPlanePoint(color)),
   buildGamutContour: buildLightnessChromaBoundaryPath,
   constrainPoint: clampPlanePointToInstrumentBounds,
   isPointInInstrumentDomain: isPointInRectangularInstrument,
-  editFixedAxis: editOklchFixedHue,
-  editFromKeyboard: editOklchFromKeyboard,
 };
-
-export function oklchToOklabPlanePoint(color: OklchColor): PlanePoint {
-  const coordinates = convertOklchToOklab(color);
-  return oklabCoordinatesToPlanePoint(coordinates[1]!, coordinates[2]!);
-}
-
-function writeOklabPointToCanonical(
+function sampleOklabField(
   point: PlanePoint,
   fixed: number,
-  reference: PlaneColorReference,
   output: OklchColor,
   scratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] },
-  constrainToInstrument = true,
 ): OklchColor {
-  const sampledPoint = constrainToInstrument ? constrainOklabPlanePoint(point) : point;
-  const { a, b } = oklabCoordinatesFromPlanePoint(sampledPoint);
+  const { a, b } = oklabCoordinatesFromPlanePoint(point);
   const radius = Math.hypot(a, b);
   scratch.input[0] = clampUnit(fixed);
   scratch.input[1] = a;
@@ -273,44 +167,9 @@ function writeOklabPointToCanonical(
   output.l = clampUnit(scratch.converted[0] ?? Number.NaN);
   output.c = radius;
   output.h =
-    radius <= OKLAB_NEUTRAL_RADIUS_EPSILON
-      ? normalizeHue(reference.h)
-      : normalizeHue(scratch.converted[2] ?? Number.NaN);
-  output.alpha = reference.alpha;
-  assertOklchColor(output);
+    radius <= OKLAB_NEUTRAL_RADIUS_EPSILON ? 0 : normalizeHue(scratch.converted[2] ?? Number.NaN);
+  output.alpha = 1;
   return output;
-}
-
-export function oklabPlanePointToOklch(
-  point: PlanePoint,
-  fixed: number,
-  reference: PlaneColorReference,
-): OklchColor {
-  return writeOklabPointToCanonical(point, fixed, reference, {
-    l: 0,
-    c: 0,
-    h: 0,
-    alpha: reference.alpha,
-  });
-}
-
-function projectOklab(color: OklchColor): PickerPlaneProjection {
-  const coordinates = convertOklchToOklab(color);
-  return {
-    point: oklabCoordinatesToPlanePoint(coordinates[1]!, coordinates[2]!),
-    x: coordinates[1]!,
-    y: coordinates[2]!,
-    fixed: coordinates[0]!,
-  };
-}
-
-function sampleOklabField(
-  point: PlanePoint,
-  fixed: number,
-  output: OklchColor,
-  scratch?: PickerPlaneSampleScratch,
-): OklchColor {
-  return writeOklabPointToCanonical(point, fixed, { h: 0, alpha: 1 }, output, scratch, false);
 }
 
 export function buildOklabGamutContour(
@@ -350,50 +209,7 @@ export function buildOklabGamutContour(
   return contour;
 }
 
-function editOklabFromKeyboard(
-  color: OklchColor,
-  action: PickerPlaneKeyboardAction,
-  coarse: boolean,
-): OklchColor {
-  const projection = projectOklab(color);
-  const step = coarse ? 0.02 : 0.005;
-  let a = projection.x;
-  let b = projection.y;
-
-  if (action === "decrease-x") a -= step;
-  else if (action === "increase-x") a += step;
-  else if (action === "increase-y") b += step;
-  else if (action === "decrease-y") b -= step;
-  else {
-    const boundedB = Math.min(OKLAB_PICKER_AXIS_LIMIT, Math.max(-OKLAB_PICKER_AXIS_LIMIT, b));
-    const horizontalExtent = Math.sqrt(Math.max(0, OKLAB_PICKER_AXIS_LIMIT ** 2 - boundedB ** 2));
-    a = action === "minimum-x" ? -horizontalExtent : horizontalExtent;
-    b = boundedB;
-    return writeOklabPointToCanonical(
-      oklabCoordinatesToPlanePoint(a, b),
-      projection.fixed,
-      color,
-      { l: 0, c: 0, h: 0, alpha: color.alpha },
-      undefined,
-      false,
-    );
-  }
-
-  return oklabPlanePointToOklch(oklabCoordinatesToPlanePoint(a, b), projection.fixed, color);
-}
-
-function editOklabFixedLightness(color: OklchColor, lightness: number): OklchColor {
-  assertOklchColor(color);
-  assertFiniteFixedAxis(lightness);
-  return {
-    l: clampUnit(lightness),
-    c: color.c,
-    h: color.h,
-    alpha: color.alpha,
-  };
-}
-
-export const OKLAB_AB_PLANE: PickerPlaneContract = {
+export const OKLAB_AB_PLANE: PickerPlaneGeometry & PickerPlaneFieldSampler = {
   id: "oklab",
   label: "OKLab a/b",
   xAxis: {
@@ -417,13 +233,8 @@ export const OKLAB_AB_PLANE: PickerPlaneContract = {
     columnSamples: OKLAB_FIELD_COLUMN_SAMPLES,
   },
   gamutContourClosed: true,
-  project: projectOklab,
-  unproject: oklabPlanePointToOklch,
   sampleField: sampleOklabField,
-  positionActivePoint: (color) => constrainOklabPlanePoint(oklchToOklabPlanePoint(color)),
   buildGamutContour: buildOklabGamutContour,
   constrainPoint: constrainOklabPlanePoint,
   isPointInInstrumentDomain: isPointInOklabInstrumentDomain,
-  editFixedAxis: editOklabFixedLightness,
-  editFromKeyboard: editOklabFromKeyboard,
 };

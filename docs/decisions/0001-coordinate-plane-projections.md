@@ -1,15 +1,15 @@
-# 0001: Coordinate planes project canonical OKLCH
+# 0001: Coordinate planes observe ColorValue
 
 Status: accepted
 
 ## Decision
 
-Gamut Plane presents two first-class views over one canonical `OklchColor`:
+Gamut Plane presents two first-class views over one selected `ColorValue`:
 
 - OKLCH lightness/chroma at fixed hue;
 - OKLab `a`/`b` at fixed OKLab lightness.
 
-They are coordinate views, not separate color authorities. Switching planes changes view state only and must not round-trip or rewrite the active color.
+They are coordinate views, not separate color authorities. `projectColorToPlane` observes the selected value; `authorPlaneEdit` creates a new definition in the edited plane. Switching planes changes view state only and does not rewrite the active color.
 
 ## OKLCH lightness/chroma plane
 
@@ -24,9 +24,9 @@ Hue is the fixed axis. Each chroma column contains sampled lightness color rathe
 
 ## OKLab a/b plane
 
-The mapping projects canonical OKLCH through OKLab at fixed OKLab lightness. The square field shows colors outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
+The mapping observes OKLab coordinates at fixed OKLab lightness. The square field shows colors outside the circular `C = 0.4` editable domain; a neutral circle identifies that domain without masking the corners.
 
-Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw transient `a`/`b` coordinate even when the visible marker projects to the domain edge. Canonical colors supplied outside either active plane remain unchanged while their marker is positioned at the visible edge; last-bit normalized-coordinate noise at that edge is treated as in-domain. The disc is an instrument constraint, not an RGB gamut boundary.
+Pointer and `a`/`b` keyboard edits are constrained to the circular instrument domain. Fixed-lightness edits preserve the raw observed `a`/`b` coordinate even when the visible marker projects to the domain edge. Selected colors outside either active plane remain unchanged while their marker is positioned at the visible edge; last-bit normalized-coordinate noise at that edge is treated as in-domain. The disc is an instrument constraint, not an RGB gamut boundary.
 
 ## Gamut boundaries
 
@@ -35,7 +35,7 @@ Both planes show Display P3 and sRGB together:
 - Display P3 is the primary solid boundary;
 - sRGB is the secondary dashed boundary;
 - the active point may cross either boundary;
-- neither boundary clamps or replaces canonical OKLCH;
+- neither boundary clamps or replaces the selected `ColorValue`;
 - the explicit sRGB or Display P3 target remains independent from guide visibility, which controls all visual guide/projection overlays for that gamut.
 
 Boundary target is controlled projection/reference state and defaults to sRGB. Boundary visibility is independent view state, not an output-policy or target selector.
@@ -57,6 +57,6 @@ Interpolated geometry is visualization. It cannot be used as exact membership, s
 - Plane switching performs no color round trip.
 - Canvas capability changes painted preview colors only, never gamut truth.
 - Canvas backing dimensions follow the actual device pixel ratio and are invalidated when display resolution changes.
-- Core owns projection and sampling math. The Vue package owns the generated table artifact and reusable rendering buffers.
+- Core owns projection, edit and numeric sampling math. Render owns the generated table artifact, pure presentation and reusable Canvas buffers; framework adapters own lifecycle and temporary edit references.
 - Same-plane visible-axis movement does not invalidate the field or contours; fixed-axis movement does.
 - Additional editable coordinate spaces require a separate decision. This contract is not a plugin system.

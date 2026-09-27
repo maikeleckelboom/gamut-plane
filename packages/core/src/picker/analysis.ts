@@ -28,7 +28,7 @@ export interface PickerGamutStatusEntry {
 }
 
 export interface BoundaryGuidePoint {
-  /** Unclamped canonical/table chroma represented by this point. */
+  /** Unclamped observed/table chroma represented by this point. */
   chroma: number;
   /** Normalized position clamped only to the 0..0.4 instrument domain. */
   position: number;
@@ -56,9 +56,9 @@ export interface PickerBoundaryAnalysis {
 }
 
 export interface LightnessGamutInterval {
-  /** Inclusive canonical OKLCH lightness at the start of the interval. */
+  /** Inclusive observed OKLCH lightness at the start of the interval. */
   start: number;
-  /** Inclusive canonical OKLCH lightness at the end of the interval. */
+  /** Inclusive observed OKLCH lightness at the end of the interval. */
   end: number;
 }
 

@@ -4,7 +4,6 @@ import {
   OKLAB_AB_PLANE,
   OKLAB_FIELD_COLUMN_SAMPLES,
   OKLAB_FIELD_ROW_COUNT,
-  OKLAB_NEUTRAL_RADIUS_EPSILON,
   OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
@@ -13,7 +12,6 @@ import {
   clampPlanePointToInstrumentBounds,
   clearGamutBoundaryTableCache,
   constrainOklabPlanePoint,
-  convertOklchToOklab,
   getCachedGamutBoundaryTable,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
@@ -22,9 +20,8 @@ import {
   getPickerGamutStatus,
   isColorInGamut,
   isPointInOklabInstrumentDomain,
-  oklabPlanePointToOklch,
-  oklchToPlanePoint,
-  planePointToOklch,
+  oklabCoordinatesToPlanePoint,
+  oklchCoordinatesToPlanePoint,
   type DisplayGamut,
   type GamutBoundaryTable,
   type OklchColor,
@@ -81,79 +78,33 @@ describe("OKLCH picker geometry and analysis", () => {
     expect(() => clampPlanePointToInstrumentBounds({ x: Number.NaN, y: 0.5 })).toThrow(/finite/);
   });
 
-  it("roundtrips L/C while preserving hue and alpha in the neutral color model", () => {
-    const color: OklchColor = {
-      l: 0.37,
-      c: 0.29,
-      h: 312.5,
-      alpha: 0.45,
-    };
-
-    const point = oklchToPlanePoint(color);
-    expect(point.x).toBeCloseTo(0.725, 12);
-    expect(point.y).toBeCloseTo(0.63, 12);
-
-    const roundtrip = planePointToOklch(point, color);
-    expect(roundtrip.l).toBeCloseTo(color.l, 12);
-    expect(roundtrip.c).toBeCloseTo(color.c, 12);
-    expect(roundtrip.h).toBe(color.h);
-    expect(roundtrip.alpha).toBe(color.alpha);
-    expect(Object.keys(roundtrip).sort()).toEqual(["alpha", "c", "h", "l"]);
-  });
-
-  it("routes the generalized plane contract through the locked OKLCH behavior", () => {
+  it("samples the numeric OKLCH field and builds its fixed-hue contour", () => {
     const color: OklchColor = { l: 0.37, c: 0.29, h: 312.5, alpha: 0.45 };
-    const projection = OKLCH_LIGHTNESS_CHROMA_PLANE.project(color);
-
+    const point = oklchCoordinatesToPlanePoint(color.l, color.c);
     expect(OKLCH_LIGHTNESS_CHROMA_PLANE.id).toBe("oklch");
-    expect(projection).toEqual({
-      point: oklchToPlanePoint(color),
-      x: color.c,
-      y: color.l,
-      fixed: color.h,
-    });
-    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.positionActivePoint(color)).toEqual(projection.point);
-    expect(
-      OKLCH_LIGHTNESS_CHROMA_PLANE.unproject(projection.point, projection.fixed, color),
-    ).toEqual(planePointToOklch(projection.point, color));
-
     const sampled = { l: 0, c: 0, h: 0, alpha: 1 };
-    expect(
-      OKLCH_LIGHTNESS_CHROMA_PLANE.sampleField(projection.point, projection.fixed, sampled),
-    ).toBe(sampled);
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.sampleField(point, color.h, sampled)).toBe(sampled);
     expect(sampled).toEqual({ l: color.l, c: color.c, h: color.h, alpha: 1 });
     expect(OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour(tables.srgb, color.h, 17)).toEqual(
       buildLightnessChromaBoundaryPath(tables.srgb, color.h, 17),
     );
-    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.editFromKeyboard(color, "increase-x", false)).toEqual({
-      ...color,
-      c: color.c + 0.005,
-    });
-  });
-
-  it("keeps out-of-gamut chroma until the explicit instrument edge", () => {
-    const color = planePointToOklch({ x: 0.875, y: 0.5 }, { h: 20, alpha: 1 });
-    expect(color.l).toBe(0.5);
-    expect(color.c).toBeCloseTo(0.35, 12);
-    expect(color.h).toBe(20);
-    expect(color.alpha).toBe(1);
-    expect(getPickerGamutStatus(color, tables).displayP3.inGamut).toBe(false);
-
-    const bounded = planePointToOklch({ x: 2, y: -1 }, { h: 380, alpha: 0.8 });
-    expect(bounded).toEqual({ l: 1, c: 0.4, h: 20, alpha: 0.8 });
-
-    const beyondInstrument: OklchColor = { l: 0.5, c: 0.5, h: 20, alpha: 1 };
-    expect(oklchToPlanePoint(beyondInstrument).x).toBe(1.25);
   });
 
   it("treats normalized last-bit noise at the instrument edge as inside", () => {
-    const nearEdge: OklchColor = { l: 0.5, c: 0.4000000000000001, h: 37, alpha: 1 };
-    const outside: OklchColor = { ...nearEdge, c: 0.45 };
-
-    for (const plane of [OKLCH_LIGHTNESS_CHROMA_PLANE, OKLAB_AB_PLANE]) {
-      expect(plane.isPointInInstrumentDomain(plane.project(nearEdge).point)).toBe(true);
-      expect(plane.isPointInInstrumentDomain(plane.project(outside).point)).toBe(false);
-    }
+    expect(
+      OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain(
+        oklchCoordinatesToPlanePoint(0.5, 0.4000000000000001),
+      ),
+    ).toBe(true);
+    expect(
+      OKLAB_AB_PLANE.isPointInInstrumentDomain(oklabCoordinatesToPlanePoint(0.4000000000000001, 0)),
+    ).toBe(true);
+    expect(OKLCH_LIGHTNESS_CHROMA_PLANE.isPointInInstrumentDomain({ x: 1.125, y: 0.5 })).toBe(
+      false,
+    );
+    expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(oklabCoordinatesToPlanePoint(0.45, 0))).toBe(
+      false,
+    );
   });
 
   it("builds deterministic finite fixed-hue boundary geometry into reusable buffers", () => {
@@ -449,48 +400,6 @@ describe("OKLCH picker geometry and analysis", () => {
   });
 
   describe("OKLab a/b picker geometry", () => {
-    it("roundtrips canonical OKLCH through the projection within explicit tolerances", () => {
-      for (const color of [
-        { l: 0.63, c: 0.17, h: 28, alpha: 0.4 },
-        { l: 0.42, c: 0.31, h: 217.5, alpha: 1 },
-        { l: 0.81, c: 0.04, h: 335, alpha: 0.72 },
-      ] satisfies OklchColor[]) {
-        const snapshot = structuredClone(color);
-        const projection = OKLAB_AB_PLANE.project(color);
-        const roundtrip = OKLAB_AB_PLANE.unproject(projection.point, projection.fixed, color);
-
-        expect(roundtrip.l).toBeCloseTo(color.l, 11);
-        expect(roundtrip.c).toBeCloseTo(color.c, 11);
-        expect(roundtrip.h).toBeCloseTo(color.h, 9);
-        expect(roundtrip.alpha).toBe(color.alpha);
-        expect(color).toEqual(snapshot);
-      }
-    });
-
-    it.each([12, 143.75, 298])(
-      "preserves reference hue %s at the exact and near-neutral center",
-      (referenceHue) => {
-        const reference = { h: referenceHue, alpha: 0.65 };
-        const exact = oklabPlanePointToOklch({ x: 0.5, y: 0.5 }, 0.37, reference);
-        const nearA = OKLAB_NEUTRAL_RADIUS_EPSILON * 0.4;
-        const nearB = -OKLAB_NEUTRAL_RADIUS_EPSILON * 0.3;
-        const near = oklabPlanePointToOklch(
-          {
-            x: 0.5 + nearA / (OKLAB_PICKER_AXIS_LIMIT * 2),
-            y: 0.5 - nearB / (OKLAB_PICKER_AXIS_LIMIT * 2),
-          },
-          0.72,
-          reference,
-        );
-
-        expect(exact).toEqual({ l: 0.37, c: 0, h: referenceHue, alpha: 0.65 });
-        expect(near.l).toBeCloseTo(0.72, 12);
-        expect(near.c).toBeCloseTo(Math.hypot(nearA, nearB), 12);
-        expect(near.h).toBe(referenceHue);
-        expect(near.alpha).toBe(reference.alpha);
-      },
-    );
-
     it("locks the viewport to a,b ±0.4 and projects pointer overflow to the radial edge", () => {
       expect(OKLAB_PICKER_AXIS_LIMIT).toBe(0.4);
       expect(OKLAB_AB_PLANE.xAxis).toMatchObject({ min: -0.4, max: 0.4 });
@@ -499,71 +408,10 @@ describe("OKLCH picker geometry and analysis", () => {
 
       const bounded = constrainOklabPlanePoint({ x: 1.5, y: -0.5 });
       expect(Math.hypot(bounded.x - 0.5, bounded.y - 0.5)).toBeCloseTo(0.5, 12);
-      const color = oklabPlanePointToOklch(bounded, 0.6, { h: 245, alpha: 0.8 });
-      expect(color.c).toBeCloseTo(0.4, 11);
-      expect(color.alpha).toBe(0.8);
+      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(bounded)).toBe(true);
     });
 
-    it.each([
-      ["inside", { l: 0.63, c: 0.24, h: 218.5, alpha: 0.37 }],
-      ["outside", { l: 0.63, c: 0.52, h: 218.5, alpha: 0.37 }],
-    ] satisfies [string, OklchColor][])(
-      "edits only fixed OKLab L for a canonical color %s the instrument domain",
-      (_domain, color) => {
-        const before = convertOklchToOklab(color);
-        const edited = OKLAB_AB_PLANE.editFixedAxis(color, 0.27);
-        const after = convertOklchToOklab(edited);
-
-        expect(after[0]).toBeCloseTo(0.27, 12);
-        expect(after[1]).toBeCloseTo(before[1]!, 12);
-        expect(after[2]).toBeCloseTo(before[2]!, 12);
-        expect(edited.c).toBeCloseTo(color.c, 12);
-        expect(edited.h).toBeCloseTo(color.h, 12);
-        expect(edited.alpha).toBe(color.alpha);
-      },
-    );
-
-    it("resolves Home and End at horizontal disc extrema without changing in-domain b or L", () => {
-      const color: OklchColor = { l: 0.58, c: 0.5, h: 30, alpha: 0.62 };
-      const projection = OKLAB_AB_PLANE.project(color);
-      const expectedExtent = Math.sqrt(OKLAB_PICKER_AXIS_LIMIT ** 2 - projection.y ** 2);
-
-      const home = OKLAB_AB_PLANE.project(
-        OKLAB_AB_PLANE.editFromKeyboard(color, "minimum-x", false),
-      );
-      const end = OKLAB_AB_PLANE.project(
-        OKLAB_AB_PLANE.editFromKeyboard(color, "maximum-x", false),
-      );
-
-      expect(home.x).toBeCloseTo(-expectedExtent, 12);
-      expect(end.x).toBeCloseTo(expectedExtent, 12);
-      expect(home.y).toBeCloseTo(projection.y, 12);
-      expect(end.y).toBeCloseTo(projection.y, 12);
-      expect(home.fixed).toBeCloseTo(projection.fixed, 12);
-      expect(end.fixed).toBeCloseTo(projection.fixed, 12);
-      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(home.point)).toBe(true);
-      expect(OKLAB_AB_PLANE.isPointInInstrumentDomain(end.point)).toBe(true);
-      expect(
-        OKLAB_AB_PLANE.positionActivePoint(
-          OKLAB_AB_PLANE.editFromKeyboard(color, "maximum-x", false),
-        ),
-      ).toEqual(end.point);
-    });
-
-    it("uses the nearest vertical pole when canonical b is outside the horizontal disc domain", () => {
-      const color: OklchColor = { l: 0.41, c: 0.52, h: 90, alpha: 0.48 };
-
-      for (const action of ["minimum-x", "maximum-x"] as const) {
-        const edited = OKLAB_AB_PLANE.editFromKeyboard(color, action, false);
-        const projection = OKLAB_AB_PLANE.project(edited);
-        expect(projection.x).toBeCloseTo(0, 12);
-        expect(projection.y).toBeCloseTo(OKLAB_PICKER_AXIS_LIMIT, 12);
-        expect(projection.fixed).toBeCloseTo(color.l, 12);
-        expect(edited.alpha).toBe(color.alpha);
-      }
-    });
-
-    it("samples the genuine OKLab disc deterministically through canonical OKLCH", () => {
+    it("samples the numeric OKLab field deterministically", () => {
       expect(OKLAB_FIELD_ROW_COUNT).toBe(80);
       expect(OKLAB_FIELD_COLUMN_SAMPLES).toBe(24);
       const points = [
@@ -586,20 +434,7 @@ describe("OKLCH picker geometry and analysis", () => {
 
       const corner: OklchColor = { l: 0, c: 0, h: 0, alpha: 1 };
       OKLAB_AB_PLANE.sampleField({ x: 0, y: 0 }, 0.64, corner);
-      const editedCorner = OKLAB_AB_PLANE.unproject({ x: 0, y: 0 }, 0.64, { h: 20, alpha: 1 });
       expect(corner.c).toBeCloseTo(Math.hypot(0.4, 0.4), 11);
-      expect(editedCorner.c).toBeCloseTo(0.4, 11);
-    });
-
-    it("keeps an outside-gamut coordinate visible and editable without RGB clamping", () => {
-      const point = { x: 1, y: 0.5 };
-      const color = OKLAB_AB_PLANE.unproject(point, 0.6, { h: 210, alpha: 1 });
-
-      expect(color.c).toBeCloseTo(0.4, 11);
-      expect(isColorInGamut(color, "srgb")).toBe(false);
-      expect(isColorInGamut(color, "display-p3")).toBe(false);
-      expect(OKLAB_AB_PLANE.project(color).point.x).toBeCloseTo(1, 11);
-      expect(OKLAB_AB_PLANE.positionActivePoint(color).x).toBeCloseTo(1, 11);
     });
 
     it("builds deterministic finite closed contours and retains gamut association", () => {

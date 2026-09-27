@@ -8,7 +8,13 @@ import {
   OKLCH_PICKER_MAX_CHROMA,
   type PlanePoint,
 } from "./geometry.js";
-import type { PickerPlaneKeyboardAction } from "./plane.js";
+export type PickerPlaneKeyboardAction =
+  | "decrease-x"
+  | "increase-x"
+  | "increase-y"
+  | "decrease-y"
+  | "minimum-x"
+  | "maximum-x";
 
 /** Resolves keyboard movement in the observed plane; authorship remains with authorPlaneEdit. */
 export function keyboardPlanePoint(

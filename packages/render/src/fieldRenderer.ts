@@ -1,16 +1,15 @@
 import {
   serializeColor,
   type OklchColor,
-  type PickerPlaneContract,
+  type PickerPlaneFieldSampler,
   type PickerPlaneSampleScratch,
 } from "@gamut-plane/core";
 
 /** The context actually granted by the browser, not the display hardware. */
 export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
 export type RenderedFieldQuality = "full" | "preview";
-type PlaneFieldSampler = Pick<PickerPlaneContract, "id" | "fieldSampling" | "sampleField">;
 export interface FieldRenderInput {
-  plane: PlaneFieldSampler;
+  plane: PickerPlaneFieldSampler;
   fixed: number;
   pixelRatio: number;
   interactionPreview: boolean;
@@ -31,7 +30,7 @@ export function createFieldRenderer(
   let discFieldContext: CanvasRenderingContext2D | null = null;
   let columnPreviewBuffer: HTMLCanvasElement | null = null;
   let columnPreviewContext: CanvasRenderingContext2D | null = null;
-  let plane: PlaneFieldSampler;
+  let plane: PickerPlaneFieldSampler;
   let canvasColorSpace: CanvasColorSpaceStatus = "pending";
   let lastFieldKey = "";
   let quality: RenderedFieldQuality = "full";

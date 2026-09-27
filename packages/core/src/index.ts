@@ -6,7 +6,6 @@ export {
   type DisplayGamut,
   type OklabColor,
   type OklchColor,
-  type PickerPlane,
 } from "./color/types.js";
 export {
   colorFromVector,
@@ -63,22 +62,17 @@ export {
   OKLAB_AB_PLANE,
   OKLAB_FIELD_COLUMN_SAMPLES,
   OKLAB_FIELD_ROW_COUNT,
-  OKLAB_NEUTRAL_RADIUS_EPSILON,
   OKLAB_PICKER_AXIS_LIMIT,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   OKLCH_PICKER_MAX_CHROMA,
-  oklabPlanePointToOklch,
-  oklchToOklabPlanePoint,
-  oklchToPlanePoint,
-  planePointToOklch,
+  oklabCoordinatesToPlanePoint,
+  oklchCoordinatesToPlanePoint,
   type PickerPlaneAxis,
-  type PickerPlaneContract,
   type PickerPlaneFieldSampling,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
   type PickerPlaneId,
-  type PickerPlaneKeyboardAction,
-  type PickerPlaneProjection,
   type PickerPlaneSampleScratch,
-  type PlaneColorReference,
   type PlanePoint,
 } from "./picker/plane.js";
 export {
@@ -89,7 +83,11 @@ export {
   type PlaneEditError,
   type PlaneEditReference,
 } from "./picker/edit.js";
-export { keyboardPlanePoint, oklabCoordinatePlanePoint } from "./picker/keyboard.js";
+export {
+  keyboardPlanePoint,
+  oklabCoordinatePlanePoint,
+  type PickerPlaneKeyboardAction,
+} from "./picker/keyboard.js";
 
 export type { ColorResult } from "./result.js";
 export type {

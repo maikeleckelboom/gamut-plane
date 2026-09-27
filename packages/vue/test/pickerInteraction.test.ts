@@ -6,10 +6,11 @@ import {
   definingEquals,
   projectColorToPlane,
   type ColorValue,
-  type PickerPlaneContract,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
 } from "@gamut-plane/core";
 import { OKLAB_AB_PLANE, OKLCH_LIGHTNESS_CHROMA_PLANE } from "@gamut-plane/core";
-import { observePickerPresentationColor, PICKER_GAMUT_TABLES } from "@gamut-plane/render";
+import { createPickerPresentation, PICKER_GAMUT_TABLES } from "@gamut-plane/render";
 import ColorPlane from "../src/components/ColorPlane.vue";
 import { color } from "./colorValue";
 import { dispatchPointer, installAnimationFrameController } from "./interactionHelpers";
@@ -19,16 +20,25 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mountPlane(value: ColorValue, plane: PickerPlaneContract) {
+function presentation(value: ColorValue, plane: PickerPlaneGeometry) {
+  const model = createPickerPresentation(value, plane.id, "srgb", {
+    srgb: true,
+    displayP3: true,
+  });
+  return { fieldHue: model.fieldHue, markerCss: model.markerCss };
+}
+
+function mountPlane(value: ColorValue, plane: PickerPlaneGeometry & PickerPlaneFieldSampler) {
   const wrapper = mount(ColorPlane, {
     attachTo: document.body,
     props: {
       modelValue: value,
-      presentationColor: observePickerPresentationColor(value),
+      ...presentation(value, plane),
       plane,
       srgbTable: PICKER_GAMUT_TABLES.srgb,
       displayP3Table: PICKER_GAMUT_TABLES.displayP3,
-      boundaryProjectionColor: null,
+      boundaryProjectionPoint: null,
+      boundaryProjectionCss: "",
       boundaryProjectionLabel: "sRGB target boundary projection",
       warningVisible: false,
       warningLabel: "",
@@ -52,7 +62,7 @@ function emitted(wrapper: VueWrapper, event: "update:modelValue" | "commit"): Co
 async function feedback(wrapper: VueWrapper, value: ColorValue) {
   await wrapper.setProps({
     modelValue: value,
-    presentationColor: observePickerPresentationColor(value),
+    ...presentation(value, wrapper.props("plane")),
   });
 }
 

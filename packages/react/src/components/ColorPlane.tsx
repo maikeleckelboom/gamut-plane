@@ -1,7 +1,7 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { projectColorToPlane, serializeColor } from "@gamut-plane/core";
+import { projectColorToPlane } from "@gamut-plane/core";
 import {
   geometryToSvgPath,
   pointStyle,
@@ -30,8 +30,10 @@ export function ColorPlane(props: ColorPlaneProps) {
   const {
     plane,
     value,
-    presentationColor,
-    projectionColor,
+    fieldHue,
+    markerCss,
+    projectionPoint,
+    projectionCss,
     projectionLabel,
     warningVisible,
     showSrgbBoundary,
@@ -49,15 +51,14 @@ export function ColorPlane(props: ColorPlaneProps) {
   const projected = projectColorToPlane(value, plane.id);
   if (!projected.ok) throw new RangeError("Selected color cannot be projected into the plane");
   const projection = projected.value;
-  const fixed =
-    projection.plane === "oklch" ? presentationColor.h : projection.representation.channels[0];
+  const fixed = projection.plane === "oklch" ? fieldHue : projection.representation.channels[0];
   const x = projection.representation.channels[1];
   const y =
     projection.plane === "oklch"
       ? projection.representation.channels[0]
       : projection.representation.channels[2];
   const activePoint = plane.constrainPoint(projected.value.point);
-  const guide = projectionColor ? plane.positionActivePoint(projectionColor) : null;
+  const guide = projectionPoint;
   // Plane markers must occlude guides even when the authored color has transparency.
   const paths = useMemo(
     () => ({
@@ -209,7 +210,7 @@ export function ColorPlane(props: ColorPlaneProps) {
               className="gpr-color-plane-marker gpr-color-plane-marker--projection"
               style={presentationStyle({
                 ...pointStyle(guide),
-                "--projection-marker-color": serializeColor({ ...projectionColor!, alpha: 1 }),
+                "--projection-marker-color": projectionCss,
               })}
               data-table-boundary-guide-marker=""
               data-marker-role="target-boundary-projection"
@@ -234,7 +235,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
           style={presentationStyle({
             ...pointStyle(activePoint),
-            "--marker-color": serializeColor({ ...presentationColor, alpha: 1 }),
+            "--marker-color": markerCss,
           })}
           data-outside-display-p3={String(warningVisible)}
           data-active-marker=""

@@ -1,12 +1,18 @@
 import {
   OKLCH_PICKER_MAX_CHROMA,
+  OKLAB_AB_PLANE,
+  OKLCH_LIGHTNESS_CHROMA_PLANE,
+  convertOklchToOklab,
   getHueGamutIntervals,
   getLightnessGamutIntervals,
   getPickerBoundaryAnalysis,
+  oklabCoordinatesToPlanePoint,
+  oklchCoordinatesToPlanePoint,
   serializeColor,
   type DisplayGamut,
   type OklchColor,
   type PickerPlaneId,
+  type PlanePoint,
 } from "@gamut-plane/core";
 import type { LinearControlInterval, LinearControlMarker } from "./channelGeometry.js";
 import { PICKER_GAMUT_TABLES } from "./generated/gamutTables.js";
@@ -18,7 +24,7 @@ export interface BoundaryGuideVisibility {
 
 export interface BoundaryPresentation {
   analysis: ReturnType<typeof getPickerBoundaryAnalysis>;
-  projectionColor: OklchColor | null;
+  projectionPoint: PlanePoint | null;
   projectionCss: string;
   markers: LinearControlMarker[];
   hueIntervals: LinearControlInterval[];
@@ -44,6 +50,18 @@ function gamutLabel(gamut: DisplayGamut): string {
   return gamut === "srgb" ? "sRGB" : "Display P3";
 }
 
+function positionProjection(color: OklchColor, view: PickerPlaneId): PlanePoint {
+  if (view === "oklch") {
+    return OKLCH_LIGHTNESS_CHROMA_PLANE.constrainPoint(
+      oklchCoordinatesToPlanePoint(color.l, color.c),
+    );
+  }
+  const coordinates = convertOklchToOklab(color);
+  return OKLAB_AB_PLANE.constrainPoint(
+    oklabCoordinatesToPlanePoint(coordinates[1]!, coordinates[2]!),
+  );
+}
+
 /** Shared target and visible-guide presentation for the Vue and React adapters. */
 export function getBoundaryPresentation(
   color: OklchColor,
@@ -55,7 +73,8 @@ export function getBoundaryPresentation(
   const gamuts = visibleGamuts(visibility);
   const targetVisible = target === "srgb" ? visibility.srgb : visibility.displayP3;
   const projectionColor = targetVisible ? (analysis.target.projection?.color ?? null) : null;
-  const projectionCss = projectionColor ? serializeColor(projectionColor) : "";
+  const projectionCss = projectionColor ? serializeColor({ ...projectionColor, alpha: 1 }) : "";
+  const projectionPoint = projectionColor ? positionProjection(projectionColor, view) : null;
   const markers: LinearControlMarker[] = [];
   if (analysis.target.projection && targetVisible) {
     markers.push({
@@ -78,7 +97,7 @@ export function getBoundaryPresentation(
 
   return {
     analysis,
-    projectionColor,
+    projectionPoint,
     projectionCss,
     markers,
     hueIntervals: view === "oklch" ? intervals(getHueGamutIntervals) : [],

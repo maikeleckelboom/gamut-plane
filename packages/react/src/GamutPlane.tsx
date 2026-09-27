@@ -23,9 +23,12 @@ import {
   type PlaneEditError,
   type PlaneEditReference,
 } from "@gamut-plane/core";
-import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
+import {
+  createPickerPresentation,
+  hueGradient,
+  type CanvasColorSpaceStatus,
+} from "@gamut-plane/render";
 import { useControllableView } from "./hooks/useControllableView.js";
-import { instrumentModel, hueGradient } from "./model/instrumentModel.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
@@ -100,7 +103,7 @@ export function GamutPlane({
 }: GamutPlaneProps) {
   const [view, requestView] = useControllableView(controlledView, defaultView, onViewChange);
   const id = useId();
-  const model = instrumentModel(value, view, boundaryTarget, {
+  const model = createPickerPresentation(value, view, boundaryTarget, {
     srgb: showSrgbBoundary,
     displayP3: showDisplayP3Boundary,
   });
@@ -144,7 +147,7 @@ export function GamutPlane({
       {...dom}
       ref={ref}
       className={["gamut-plane-react", className].filter(Boolean).join(" ")}
-      style={presentationStyle({ ...safeStyle, ...model.style })}
+      style={presentationStyle({ ...safeStyle, "--picker-active": model.activeCss })}
       data-plane-instrument=""
       data-active-plane={view}
       aria-labelledby={`${id}-instrument-title`}
@@ -157,10 +160,12 @@ export function GamutPlane({
         <div className="gpr-plane-instrument-field">
           <ColorPlane
             value={value}
-            presentationColor={model.presentationColor}
+            fieldHue={model.fieldHue}
+            markerCss={model.markerCss}
             getEditReference={() => hueReference.current}
             plane={model.plane}
-            projectionColor={model.projectionColor}
+            projectionPoint={model.projectionPoint}
+            projectionCss={model.projectionCss}
             projectionLabel={model.projectionLabel}
             warningVisible={model.warningVisible}
             interactionPreview={view === "oklch" && huePreview}
@@ -182,7 +187,7 @@ export function GamutPlane({
                 id={`${id}-hue`}
                 channel="H"
                 label="Hue"
-                value={model.presentationColor.h}
+                value={model.fieldHue}
                 min={0}
                 max={360}
                 step={0.1}
@@ -191,11 +196,7 @@ export function GamutPlane({
                 intervals={model.hueIntervals}
                 warningPosition={model.huePosition}
                 normalizeValue={normalizeHue}
-                help={
-                  model.oklch.channels[2] === null
-                    ? "Hue is unset. Edit Hue to choose a direction."
-                    : undefined
-                }
+                help={model.hueHelp}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(value, {
@@ -270,11 +271,7 @@ export function GamutPlane({
                 boundaryPreviewColor={model.targetResult.swatchCss}
                 boundaryPreviewTone={boundaryTarget}
                 overflowMax
-                help={
-                  model.oklch.channels[2] === null
-                    ? "Set Hue before increasing chroma."
-                    : model.chromaHelp
-                }
+                help={model.chromaHelp}
                 warningPosition={model.chromaPosition}
                 onInput={(next) =>
                   edit(

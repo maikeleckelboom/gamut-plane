@@ -4,11 +4,10 @@ import {
   definingEquals,
   keyboardPlanePoint,
   projectColorToPlane,
-  serializeColor,
   type ColorValue,
-  type OklchColor,
   type GamutBoundaryTable,
-  type PickerPlaneContract,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
   type PlaneEditReference,
@@ -41,12 +40,14 @@ import {
 const props = withDefaults(
   defineProps<{
     modelValue: ColorValue;
-    presentationColor: OklchColor;
+    fieldHue: number;
+    markerCss: string;
     editReference?: PlaneEditReference;
-    plane: PickerPlaneContract;
+    plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
     srgbTable: GamutBoundaryTable;
     displayP3Table: GamutBoundaryTable;
-    boundaryProjectionColor: OklchColor | null;
+    boundaryProjectionPoint: PlanePoint | null;
+    boundaryProjectionCss: string;
     boundaryProjectionLabel: string;
     warningVisible: boolean;
     warningLabel: string;
@@ -96,29 +97,17 @@ const activeProjection = computed(() => {
   return projected.value;
 });
 const fixedAxis = computed(() =>
-  props.plane.id === "oklch"
-    ? props.presentationColor.h
-    : activeProjection.value.representation.channels[0],
+  props.plane.id === "oklch" ? props.fieldHue : activeProjection.value.representation.channels[0],
 );
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.constrainPoint(activePoint.value));
-const boundaryProjectionPoint = computed<PlanePoint | null>(() => {
-  if (!props.boundaryProjectionColor) return null;
-  return props.plane.positionActivePoint(props.boundaryProjectionColor);
-});
-
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
 const boundaryProjectionMarkerStyle = computed(() =>
-  boundaryProjectionPoint.value ? pointStyle(boundaryProjectionPoint.value) : undefined,
+  props.boundaryProjectionPoint ? pointStyle(props.boundaryProjectionPoint) : undefined,
 );
 // Plane markers must occlude guides even when the authored color has transparency.
-const boundaryProjectionCss = computed(() =>
-  props.boundaryProjectionColor
-    ? serializeColor({ ...props.boundaryProjectionColor, alpha: 1 })
-    : "",
-);
 const boundaryProjectionConnectorStyle = computed(() => {
-  const guide = boundaryProjectionPoint.value;
+  const guide = props.boundaryProjectionPoint;
   if (!guide) return undefined;
   const active = boundedActivePoint.value;
   return projectionConnectorStyle(active, guide, props.plane.id === "oklab");
@@ -140,7 +129,6 @@ const displayP3Path = computed(() =>
       )
     : "",
 );
-const activeCss = computed(() => serializeColor({ ...props.presentationColor, alpha: 1 }));
 const planeLabel = computed(() => {
   const channels = activeProjection.value.representation.channels;
   const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${channels[1].toFixed(3)}. Vertical ${props.plane.yAxis.label} ${props.plane.id === "oklch" ? channels[0].toFixed(3) : (channels[2] as number).toFixed(3)}. Arrow keys adjust the selected point.${props.plane.id === "oklch" && channels[2] === null ? " Set Hue before increasing chroma." : ""}`;
@@ -226,7 +214,7 @@ function positionActiveAnnotations(point: PlanePoint): void {
     return;
   }
 
-  const boundaryProjection = boundaryProjectionPoint.value;
+  const boundaryProjection = props.boundaryProjectionPoint;
   const placement = placePlanarWarning({
     activeCenter: {
       x: point.x * surfaceLocalSize.width,
@@ -422,7 +410,10 @@ watch(pixelRatio, () => {
   scheduleFieldDraw();
 });
 watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
-watch(boundaryProjectionPoint, () => positionActiveAnnotations(boundedActivePoint.value));
+watch(
+  () => props.boundaryProjectionPoint,
+  () => positionActiveAnnotations(boundedActivePoint.value),
+);
 
 onMounted(() => {
   isMounted = true;
@@ -584,7 +575,7 @@ onBeforeUnmount(() => {
       <span
         ref="marker"
         class="color-plane__marker color-plane__marker--active"
-        :style="{ ...markerStyle, '--marker-color': activeCss }"
+        :style="{ ...markerStyle, '--marker-color': markerCss }"
         :data-outside-display-p3="warningVisible ? 'true' : 'false'"
         data-active-marker
         data-marker-role="active-color"

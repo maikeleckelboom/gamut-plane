@@ -16,7 +16,7 @@ describe("shared boundary presentation", () => {
 
       expect(model.analysis.target.target).toBe(target);
       expect(model.analysis.target.projection).not.toBeNull();
-      expect(model.projectionColor).toBeNull();
+      expect(model.projectionPoint).toBeNull();
       expect(model.projectionCss).toBe("");
       expect(model.markers).toEqual([]);
       expect(new Set(model.hueIntervals.map((interval) => interval.tone))).toEqual(
@@ -40,7 +40,7 @@ describe("shared boundary presentation", () => {
     expect(model.lightnessIntervals).toEqual([]);
     expect(model.chromaIntervals).toEqual([]);
     expect(model.markers).toEqual([]);
-    expect(model.projectionColor).toBeNull();
+    expect(model.projectionPoint).toBeNull();
     expect(model.analysis.target.projection).not.toBeNull();
     expect(model.analysis.status.srgb.inGamut).toBe(false);
     expect(model.analysis.status.displayP3.inGamut).toBe(false);
@@ -57,10 +57,10 @@ describe("shared boundary presentation", () => {
         displayP3: true,
       });
       expect(hidden.markers).toEqual([]);
-      expect(hidden.projectionColor).toBeNull();
+      expect(hidden.projectionPoint).toBeNull();
       expect(hidden.analysis.target.projection).toEqual(visible.analysis.target.projection);
       expect(visible.markers.map((marker) => marker.lane)).toEqual([target]);
-      expect(visible.projectionColor).toEqual(visible.analysis.target.projection?.color);
+      expect(visible.projectionPoint).not.toBeNull();
       expect(hidden.chromaIntervals.map((interval) => interval.tone)).not.toContain(target);
     }
   });

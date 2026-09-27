@@ -68,7 +68,7 @@ function assertOklabVector(vector: readonly number[]): void {
 }
 
 /**
- * Converts canonical OKLCH to OKLab coordinates. Optional arrays keep the
+ * Converts numeric OKLCH to OKLab coordinates. Optional arrays keep the
  * renderer's hot path allocation-free.
  */
 export function convertOklchToOklab(

@@ -8,7 +8,8 @@ import {
   getCachedGamutBoundaryTable,
   definitionOf,
   type ColorValue,
-  type PickerPlaneContract,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
 } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
 import PlaneInstrument from "../src/components/GamutPlane.vue";
@@ -27,7 +28,7 @@ describe("renderer invalidation contracts", () => {
     createLinearGradient.mockClear();
 
     const buildGamutContour = vi.fn(OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour);
-    const plane: PickerPlaneContract = {
+    const plane: PickerPlaneGeometry & PickerPlaneFieldSampler = {
       ...OKLCH_LIGHTNESS_CHROMA_PLANE,
       buildGamutContour,
     };
@@ -39,7 +40,8 @@ describe("renderer invalidation contracts", () => {
         plane,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
+        boundaryProjectionPoint: null,
+        boundaryProjectionCss: "",
         boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
@@ -110,7 +112,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
+        boundaryProjectionPoint: null,
+        boundaryProjectionCss: "",
         boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
@@ -181,7 +184,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
+        boundaryProjectionPoint: null,
+        boundaryProjectionCss: "",
         boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",
@@ -229,7 +233,8 @@ describe("renderer invalidation contracts", () => {
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         srgbTable: getCachedGamutBoundaryTable("srgb", options),
         displayP3Table: getCachedGamutBoundaryTable("display-p3", options),
-        boundaryProjectionColor: null,
+        boundaryProjectionPoint: null,
+        boundaryProjectionCss: "",
         boundaryProjectionLabel: "sRGB target boundary projection",
         warningVisible: false,
         warningLabel: "",

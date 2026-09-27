@@ -8,7 +8,7 @@ export type SerializationSpace = "oklch" | DisplayGamut;
 
 /**
  * Serializes through @texel/color. RGB serialization refuses out-of-gamut
- * values so the canonical color is never silently clipped.
+ * values so the supplied color is never silently clipped.
  */
 export function serializeColor(color: OklchColor, space: SerializationSpace = "oklch"): string {
   if (space === "oklch") return serialize(colorToVector(color), OKLCH, OKLCH);

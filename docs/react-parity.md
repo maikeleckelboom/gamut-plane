@@ -18,7 +18,6 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `components/GamutWarningGlyph.tsx`     | Decorative warning SVG                                                                                                                                                |
 | `hooks/useControllableView.ts`         | Initial uncontrolled view and authoritative controlled view requests                                                                                                  |
 | `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                                                           |
-| `model/instrumentModel.ts`             | Pure orchestration over core target analysis and render's visibility-filtered boundary presentation, plus gradients, help and readout models                          |
 | `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                                                      |
 | `style.css`                            | Package-local accepted instrument geometry, type hierarchy, controls/focus and container layout                                                                       |
 
@@ -26,9 +25,9 @@ There is no whole-product context, giant hook, render-time resource allocation o
 
 ## Shared visual extraction
 
-Both adapters consume render's `boundaryPresentation.ts`, `pickerWarningPlacement.ts` and `planeInstrumentStyle.ts`. The boundary model selects one explicit target and filters its visual projection and guide intervals/markers from independent visibility state; target branching is not duplicated in framework code. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry. `presentation.ts` consolidates CSS gradient and projection-connector construction. These functions own pure presentation only.
+Both adapters consume render's pure `pickerPresentation.ts`, plus its warning and geometry helpers. The shared presentation derives observations, numeric field hue, target result, visual projection, guide intervals/markers, gradients and help without framework state or authored-color authority. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry. `presentation.ts` constructs CSS gradients and projection connectors.
 
-Core math, generated table settings/bytes and Canvas sampling algorithms are unchanged. The table digest is `sha256:4c73cef992515b5876e309f7bce90cd418217c7a576f54cfcead380eb416ce15`. Vue changes are limited to these shared helpers and explicit scientific RTL direction, with its existing suites retained and a packed RTL regression added.
+Generated table settings/bytes and Canvas sampling algorithms remain unchanged. The table digest is `sha256:4c73cef992515b5876e309f7bce90cd418217c7a576f54cfcead380eb416ce15`.
 
 ## Vue product oracle
 
@@ -36,7 +35,7 @@ Paths in the first column are under `packages/vue`. React test paths are under `
 
 | Vue contract / oracle                                                                                                                                                           | React or shared proof                                                                                                                        | Classification                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `test/planeInstrument.test.ts`: complete canonical channel edits, alpha, both views and a/b unprojection                                                                        | `test/planeInteraction.test.tsx`, `numericInput.test.tsx`, `rangeInteraction.test.tsx`; packed `e2e/embedding.spec.ts`, `parity.spec.ts`     | Equivalent React tests                         |
+| `test/planeInstrument.test.ts`: complete ColorValue channel edits, alpha, both views and a/b geometry                                                                           | `test/planeInteraction.test.tsx`, `numericInput.test.tsx`, `rangeInteraction.test.tsx`; packed `e2e/embedding.spec.ts`, `parity.spec.ts`     | Equivalent React tests                         |
 | Same suite: Hue preview activation/completion/interruption, no preview in other modes                                                                                           | `rangeInteraction.test.tsx`, `planeInteraction.test.tsx`; packed `e2e/rendering.spec.ts`                                                     | Equivalent React tests                         |
 | Same suite: target result, boundary disclosure, marker roles, hidden-target visibility and exact/sample overlap                                                                 | `publicApi.test.tsx`, `presentation.test.tsx`, `planeInteraction.test.tsx`; shared render model and packed browser visibility proof          | Equivalent React tests plus shared pure model  |
 | `test/pickerInteraction.test.ts`: rectangular/disc gestures, final point, rollback, keyboard and radial bounds                                                                  | `planeInteraction.test.tsx`; packed embedding cancellation and native editing                                                                | Equivalent React tests                         |

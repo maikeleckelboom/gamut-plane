@@ -25,7 +25,7 @@ export type {
   GamutThreshold,
 } from "./channelGeometry.js";
 export { colorGradient, projectionConnectorStyle } from "./presentation.js";
-export { observePickerPresentationColor } from "./colorValuePresentation.js";
+export { createPickerPresentation, hueGradient } from "./pickerPresentation.js";
 export {
   displayGamutLabel,
   getBoundaryPresentation,
