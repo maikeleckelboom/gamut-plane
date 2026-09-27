@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Public selection/check/guide APIs and scoped availability remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Public selection/check/guide APIs and generalized adapter integration remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -1295,3 +1295,128 @@ bridge with different semantics and is rejected as an extra ordinary-state field
 adapter or render behavior, public API, DOM or stylesheet changes in this phase. The next migration
 boundary is scoped availability followed by deliberate adapter state ownership and public API
 design, retaining parent ColorValue authority and semantic interaction invalidation.
+
+## 34. Phase 2F: scoped capability resolution
+
+Implemented beside the frozen v0.3 presentation. The verified starting point was clean `dev` at
+`fe6a001854f121570dce960537806b30636f4a84`, with successful exact-SHA [Phase 2E CI
+36347996817](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36347996817). Local,
+tracking and remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. The toolchain
+remains Node 24.16.0 and pinned pnpm 11.9.0.
+
+### Terminology and ownership
+
+Structural **support** means an implemented technical/visual relation. A missing field or guide
+relation is **unsupported**, not invalid authored color or invalid product state. A null editor
+is **no request**, not an error. **Value-unavailable** means an implemented operation cannot
+produce its result for the current coordinates. Existing scientific failures keep their real
+`ConversionError` or `GamutAnalysisError`; there is no universal error enum or global ready flag.
+
+Core still owns observation and exact analysis, render owns field/guide relations and sampled
+availability, UI owns accepted request validation/admission, and adapters will compose families.
+Resolution accepts validated stable IDs without repeating UI parsing, admission or canonicalization.
+It does not write to ColorValue, selections or requested arrays, and it stores no derived results
+in `InstrumentViewState`.
+
+### Implemented owner-local APIs
+
+| Owner  | Operation                                                                                        | Scoped facts                                                                                                                                                   |
+| ------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core   | Existing `represent(value, representationId)`                                                    | Correlated `ColorResult<ColorRepresentation<S>, ConversionError>`; no editor input or fallback needed                                                          |
+| Core   | `analyzeRequestedGamuts(value, requested)` in `capabilities/requestedGamuts.ts`                  | Readonly `GamutCheckResult` rows with core `GamutId` and `ColorResult<GamutAnalysis, GamutAnalysisError>`                                                      |
+| Render | `resolveEditorVisualSupport(editorId)` in `capabilities/editorResolution.ts`                     | `no-editor-requested`, or core editor/geometry plus nullable render field support                                                                              |
+| Render | `resolveField(value, support)` in the same module                                                | `no-field-requested`, `field-unsupported`, `available`, or scoped `value-unavailable`; raw projection/fixed-coordinate facts retained when projection succeeds |
+| Render | `resolveRequestedGuides(value, support, requested, checks)` in `capabilities/guideResolution.ts` | One ordered row per request: `no-editor`, `no-field`, `no-guide-for-editor`, or `resolved` with per-form outcomes                                              |
+
+The collection calls the unchanged single-gamut analyzer independently with the original value,
+preserves supplied canonical order and never drops failure rows. Empty input means zero analyses.
+The helper stays owner-local; only its `GamutCheckResult` type crosses the existing unsupported
+internal core capability entry for render's input contract. Its runtime exports remain exactly
+`editorDefinitions` and `geometryDefinitions`. No root API, package manifest, dependency or
+additional subpath changes. Render resolution modules also remain internal. Tests may compose
+source modules without establishing a shipped central resolver.
+
+### Field and fixed-coordinate facts
+
+Only the active field's geometry projects the color. Structural editor resolution is independent
+of values. Current fields reuse Phase 2C's exact geometry/sampler identities and its runtime proof
+for the broad legacy combined plane type. Missing support is explicitly handled without admitting
+invented editor IDs; tests temporarily omit known relations without adding a production registry.
+
+`FieldResolution` preserves a failed projection's `ConversionError`. Successful projections retain
+their observed representation, raw point, fixed-coordinate fact and `markerInDomain`. Chroma beyond
+0.4 and an OKLab point outside its disc do not erase observation or reject the field; a future
+presentation may constrain a marker separately. No availability operation clamps authored data.
+
+Missing OKLCH Hue stays null. `samplingFixed: 0` records the existing achromatic display slice,
+not an authored direction or a claim that every edit is available. Existing missing-Hue edit
+prerequisites remain unchanged. OKLab uses observed fixed Lightness. When it lies outside 0–1,
+the new field resolver reports `fixed-lightness-out-of-range` and retains projection facts instead
+of silently relying on the legacy sampler's clamp. This does not change that sampler or current
+adapter behavior.
+
+### Independent guide forms and exact truth
+
+`GuideFormResult<T>` retains either an available output or a typed observation failure / explicit
+out-of-range Lightness. `ResolvedGuideForms` has contour, Hue intervals, Lightness intervals,
+Chroma intervals, sampled reference and exact-dependent target marker. OKLab Hue intervals are
+`null` because Phase 2C has no such form; the other five supported forms remain independent.
+Available empty intervals mean a successful sample found no intervals, not a capability failure.
+
+| Form                           | Actual prerequisites                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| L/C contour                    | Observed Hue, or the existing achromatic zero slice; independent of authored Lightness/Chroma bounds |
+| a/b contour                    | Observed OKLab fixed Lightness in 0–1; independent of OKLCH conversion and raw marker projection     |
+| Hue intervals                  | OKLCH L/C, with Lightness in 0–1; structurally absent for a/b                                        |
+| Lightness intervals            | Finite nonnegative observed Chroma and numeric sampling Hue; does not need current Lightness in 0–1  |
+| Reference and Chroma intervals | OKLCH sample with Lightness in 0–1 and unchanged generated table                                     |
+| Target marker                  | Available sampled reference plus supplied matching successful exact `outside` result                 |
+
+Each requested guide keeps its own row and original ID. Unsupported requests survive for a later
+editor switch. A guide without a checked gamut can still have contour/reference/interval results;
+the marker reports `check-not-requested`. A supplied successful `inside` or `within-tolerance`
+check yields `exact-not-outside`, not render failure. A failed matching check yields
+`exact-unavailable` with its original error. Another gamut's result cannot grant the marker.
+No implicit exact checks, mapping or ColorValue construction occur in guide sampling.
+
+An empty guide request returns before observing coordinates or sampling a table, even when checks
+exist. Prerequisites are resolved lazily once per requested collection, with no persistent cache.
+Resolution has no DOM, Canvas probe, locale sorting or mutable global state. Support catalogs stay
+unchanged. Canvas/environment readiness remains an adapter resource concern, initially pending;
+field sampling still receives its pre-resolved numeric sampler and reuses existing scratch.
+
+### Evidence and migration findings
+
+Core tests cover empty/single/both requests, order, row identity, original-value arguments, retained
+failures, all observation representations and authorship preservation. The concrete sRGB definition
+`[2.5e128, 2.5e128, 0]` fails Display P3 observation/analysis with `numerical-range` while its sRGB
+analysis succeeds. This proves independent results using the real analyzer, without a fake status.
+
+Render tests cover current and missing structural relations, exact-dependent marker conditions,
+no hidden analysis, no work for empty guides, missing Hue, Chroma overflow and outside-disc
+projection. Extended OKLCH Lightness preserves L/C contour and Lightness intervals while
+reference/Hue forms are unavailable. Huge encoded RGB preserves authored-space observation when
+projection fails. Huge OKLab a/b can preserve its contour despite OKLCH numerical failure. A raw
+field marker projection can overflow while guide forms still succeed.
+
+The test-only [cross-layer suite](../packages/react/test/scopedCapabilityContract.test.ts) starts
+from validated Phase 2E state and covers A–H: ordinary OKLCH and OKLab, all four observation-only
+representations, RGB plus retained P3 guide request, guide without checks, check without guides,
+independent numerical failures, and unchanged state with a new value. Static identities remain
+stable while dynamic facts update. Compile-time proofs retain representation/tuple correlation,
+core gamut/editor identity, render guide identity and owner error types, and reject product
+metadata as a render selector or hypothetical editors as field support. Packed core declarations
+check the new type with ES-only libraries and unchanged runtime/root exports.
+
+The next integration boundary is deliberate adapter composition and accepted-state lifecycle.
+Adapters must bind all derived results to the same authored value, keep Canvas readiness separate,
+retain requested preferences, and invalidate semantic interaction state on accepted context changes.
+Any runtime package exports needed for that composition require an explicit decision then. No
+control-level disabling, help-state design, output/mapping availability or public generalized API
+is implemented here.
+
+Legacy `createPickerPresentation` and `getBoundaryPresentation` retain eager projections and
+all-or-nothing throws. Vue/React production sources, v0.3 public APIs, unused OKLab Chroma outputs,
+generated gamut data, broad plane/sampler types, CSS and baselines remain frozen. These new scoped
+facts do not silently adopt partial presentation in current adapters. No ADR 0004 is needed: the
+implementation follows ADR 0003's existing ownership and independent-capability decision.
