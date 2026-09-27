@@ -2,6 +2,8 @@ import {
   projectColorToPlane,
   type ColorPlaneProjection,
   type ColorValue,
+  type PickerPlaneFieldSampler,
+  type PickerPlaneGeometry,
   type PlanePoint,
 } from "@gamut-plane/core";
 import {
@@ -17,7 +19,14 @@ import {
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
-import type { PlaneInput } from "./planeInteraction.js";
+
+export interface PlaneResourceInput {
+  value: ColorValue;
+  plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
+  fieldHue: number;
+  targetGuidePoint: PlanePoint | null;
+  interactionPreview: boolean;
+}
 
 /** React's committed Canvas, environment, geometry, and marker binding. */
 export function mountPlaneResources(
@@ -25,7 +34,7 @@ export function mountPlaneResources(
   canvas: HTMLCanvasElement,
   marker: HTMLSpanElement,
   warning: HTMLSpanElement,
-  current: () => PlaneInput,
+  current: () => PlaneResourceInput,
   onCapability: (status: CanvasColorSpaceStatus) => void,
   onQuality: (quality: RenderedFieldQuality) => void,
 ) {

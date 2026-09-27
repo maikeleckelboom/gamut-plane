@@ -1,10 +1,10 @@
 # Phase 1B shared UI foundation
 
-This is the first implementation slice of [ADR 0002](decisions/0002-vnext-instrument-architecture.md), following the [Phase 1A audit](vnext-ui-foundation-audit.md). Phase 1B.2 added one shared range controller; Phase 1B.3 adds one shared numeric-draft controller. The instrument still presents the approved v0.3 design. Plane gestures remain adapter-owned; color truth and rendering algorithms remain in core and render.
+This is the first implementation slice of [ADR 0002](decisions/0002-vnext-instrument-architecture.md), following the [Phase 1A audit](vnext-ui-foundation-audit.md). Phase 1B.2 added one shared range controller; Phase 1B.3 added one shared numeric-draft controller; Phase 1B.4B added one shared plane pointer gesture controller after the [1B.4A parity freeze](plane-controller-decomposition.md). The instrument still presents the approved v0.3 design. Color truth and rendering algorithms remain in core and render.
 
 ## Authority and distribution
 
-`@gamut-plane/ui` is a private workspace package with no runtime dependency on Vue, React, core or render. Its range and numeric controllers use native DOM APIs only after an adapter mounts them, so importing the package during SSR has no browser side effects. Its source remains small:
+`@gamut-plane/ui` is a private workspace package with no runtime dependency on Vue, React, core or render. Its range, numeric and plane controllers use native DOM APIs only after an adapter mounts them, so importing the package during SSR has no browser side effects. Its source remains small:
 
 | Source                                              | Authority                                                                                                   |
 | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -13,6 +13,7 @@ This is the first implementation slice of [ADR 0002](decisions/0002-vnext-instru
 | `packages/ui/src/style.css`                         | Sole authored instrument stylesheet and current semantic `--gp-*` tokens                                    |
 | `packages/ui/src/interaction/rangeInteraction.ts`   | Native range input/change, coalescing, parent feedback, pointer preview, interruption and silent disposal   |
 | `packages/ui/src/interaction/numericInteraction.ts` | Native numeric draft metadata, completion, composition, parent/precision reconciliation and silent disposal |
+| `packages/ui/src/interaction/planeGesture.ts`       | One pointer, expected feedback, latest point, final publication, exact rollback, interruption and disposal  |
 | `packages/ui/src/index.ts`                          | Internal exports used by the adapters                                                                       |
 
 The UI build copies the authored sheet to `packages/ui/dist/style.css`. Each adapter build copies those exact bytes to its own `dist/style.css`. Both public consumer imports remain `@gamut-plane/vue/style.css` and `@gamut-plane/react/style.css`; consumers never import UI directly. The packed Vite, Nuxt and Next fixtures install UI from a local tarball as an adapter dependency, inspect installed files against the tarball and load CSS through the adapter entry. The Vite packed gates additionally compare both installed stylesheets against the authored source.
@@ -22,6 +23,8 @@ The root contract is `data-gp-root` with `data-gp-view="oklch|oklab"`. Parts are
 The other canonical state attributes are `data-gp-gamut` (`srgb|display-p3`), `data-gp-marker` (`active|target-guide`), `data-gp-axis` (`x|y`), `data-gp-channel` (`h|l|c`), `data-gp-status` (`inside|within-tolerance|outside`), `data-gp-warning`, `data-gp-overflow` and `data-gp-pointer-focus`. The last three are presence or boolean states as emitted by the existing presentation. `data-gp-visually-hidden` is an additional accessibility styling hook shared by both adapters, not a new instrument part or visual state. Adapter classes and existing test hooks remain where compatibility requires them, but the authored sheet selects the common semantic contract.
 
 Warning size and placement stay in render; only the duplicated triangle path and `viewBox` moved to UI. Core remains authoritative for `ColorValue`, exact gamut status and mapping. Each adapter keeps its native markup, IDs, product callbacks, lifecycle, SSR integration and Canvas setup. The native numeric text stays in the input itself. No framework-neutral DOM renderer or new public adapter API was introduced.
+
+The plane gesture takes opaque authored values and constrained points through ports. Core still owns projection, authorship, defining equality, plane constraints and keyboard math. Vue and React retain their different DOM geometry fallbacks, marker/warning presentation, keyboard/focus handling and Canvas/environment lifecycle. Pointer capture remains behind adapter callbacks: Vue checks for optional methods, React requires them. Vue retains VueUse resize, DPR and scroll primitives; a VueUse gesture primitive would not own the frozen product arbitration. The shared controller attaches pointer listeners only when mounted and has no server-side DOM access.
 
 ## Comparable parity fixtures
 

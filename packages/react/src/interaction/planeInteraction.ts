@@ -3,25 +3,18 @@ import {
   definingEquals,
   keyboardPlanePoint,
   type ColorValue,
-  type PickerPlaneFieldSampler,
-  type PickerPlaneGeometry,
   type PlaneEditReference,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@gamut-plane/core";
 import { gpAttribute, mountPlaneGesture } from "@gamut-plane/ui";
 import type { CanvasColorSpaceStatus, RenderedFieldQuality } from "@gamut-plane/render";
-import { mountPlaneResources } from "./planeResources.js";
+import { mountPlaneResources, type PlaneResourceInput } from "./planeResources.js";
 
-export interface PlaneInput {
-  value: ColorValue;
-  plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
-  fieldHue: number;
+export interface PlaneInput extends PlaneResourceInput {
   markerCss: string;
   getEditReference: () => PlaneEditReference | undefined;
-  targetGuidePoint: PlanePoint | null;
   targetGuideCss: string;
-  interactionPreview: boolean;
   onValueChange: (value: ColorValue) => void;
   onValueCommit: ((value: ColorValue) => void) | undefined;
   onCancel: (() => void) | undefined;

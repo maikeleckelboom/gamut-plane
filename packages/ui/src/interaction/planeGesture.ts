@@ -50,10 +50,10 @@ export function mountPlaneGesture<Value, Point>(
   function publish(point: Point, owned: boolean): Value | null {
     if (disposed) return null;
     current().onPreviewPoint(point);
-    if (disposed) return null;
+    if (disposed || (owned && pointerId === null)) return null;
     const input = current();
     const result = input.authorPoint(input.value, point);
-    if (disposed) return null;
+    if (disposed || (owned && pointerId === null)) return null;
     if (result === null) {
       current().onRestorePresentation(current().value);
       return null;

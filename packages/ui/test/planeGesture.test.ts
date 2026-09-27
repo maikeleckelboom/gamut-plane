@@ -17,6 +17,7 @@ function fixture() {
   let viewKey = "oklch";
   let authorFails = false;
   let onChange: ((next: Value) => void) | undefined;
+  let onPreview: ((point: Point) => void) | undefined;
   const changes: Value[] = [];
   const commits: Value[] = [];
   const restored: Value[] = [];
@@ -38,7 +39,10 @@ function fixture() {
     definingEquals: (left, right) => left.definition === right.definition,
     onPointerStart: (event) => log.push(`start:${event.pointerId}`),
     onPointerEnd: (id) => log.push(`end:${id}`),
-    onPreviewPoint: (point) => log.push(`preview:${point.id}`),
+    onPreviewPoint: (point) => {
+      log.push(`preview:${point.id}`);
+      onPreview?.(point);
+    },
     onValueChange: (next) => {
       changes.push(next);
       log.push(`change:${next.definition}`);
@@ -92,6 +96,9 @@ function fixture() {
     },
     setOnChange(callback: (next: Value) => void) {
       onChange = callback;
+    },
+    setOnPreview(callback: (point: Point) => void) {
+      onPreview = callback;
     },
     failAuthorship() {
       authorFails = true;
@@ -329,6 +336,17 @@ describe("shared plane pointer gesture", () => {
     expect(f.changes.map((value) => value.definition)).toEqual(["2"]);
     expect(f.log.filter((entry) => entry === "cancel")).toHaveLength(1);
     expect(f.commits).toHaveLength(0);
+    f.gesture.dispose();
+  });
+
+  it("does not author when frame preview interrupts ownership", () => {
+    const f = fixture();
+    f.pointer("pointerdown");
+    f.setOnPreview(() => f.gesture.interrupt());
+    f.flush();
+    expect(f.changes).toHaveLength(0);
+    expect(f.commits).toHaveLength(0);
+    expect(f.log.filter((entry) => entry === "cancel")).toHaveLength(1);
     f.gesture.dispose();
   });
 });

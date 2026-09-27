@@ -4,21 +4,22 @@ The Vue and React adapters implement the same closed instrument over core's exac
 
 ## Private source responsibilities
 
-| Module under `packages/react/src`      | Ownership                                                                                                                                                             |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GamutPlane.tsx`                       | Public props, stable IDs, active model, root integration, channel callback wiring and product composition                                                             |
-| `components/ColorPlane.tsx`            | Canvas/SVG/marker/target-guide/warning DOM, accessible surface, committed controller/renderer lifecycle                                                               |
-| `interaction/planeInteraction.ts`      | One pointer, origin/expected feedback, latest point, pointer/field RAFs, synchronous completion, cancellation/reconciliation, bounds/resize/DPR tracking and disposal |
-| `components/ColorChannelControl.tsx`   | A complete linear control: label, range, numeric field, intervals, ticks, threshold context, measured warning placement                                               |
-| `components/NumericInput.tsx`          | Native numeric markup, committed props and layout lifecycle for UI's shared draft controller                                                                          |
-| `components/CoordinateViewControl.tsx` | Horizontal radiogroup, roving tab stop, wrapping arrow navigation and focus                                                                                           |
-| `components/BoundaryTargetResult.tsx`  | Always-visible target status, sampled guide chroma/delta and actual guide-color swatch                                                                                |
-| `components/GamutWarningGlyph.tsx`     | Decorative warning SVG                                                                                                                                                |
-| `hooks/useControllableView.ts`         | Initial uncontrolled view and authoritative controlled view requests                                                                                                  |
-| `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                                                           |
-| `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                                                      |
+| Module under `packages/react/src`      | Ownership                                                                                                                             |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GamutPlane.tsx`                       | Public props, stable IDs, active model, root integration, channel callback wiring and product composition                             |
+| `components/ColorPlane.tsx`            | Canvas/SVG/marker/target-guide/warning DOM, accessible surface, committed controller/renderer lifecycle                               |
+| `interaction/planeInteraction.ts`      | Committed value/core authorship ports, adapter capture/focus, keyboard mapping and UI gesture integration                             |
+| `interaction/planeResources.ts`        | Canvas renderer, field RAF, DOM geometry, marker/warning presentation, ResizeObserver, scroll/resize, DPR/media tracking and disposal |
+| `components/ColorChannelControl.tsx`   | A complete linear control: label, range, numeric field, intervals, ticks, threshold context, measured warning placement               |
+| `components/NumericInput.tsx`          | Native numeric markup, committed props and layout lifecycle for UI's shared draft controller                                          |
+| `components/CoordinateViewControl.tsx` | Horizontal radiogroup, roving tab stop, wrapping arrow navigation and focus                                                           |
+| `components/BoundaryTargetResult.tsx`  | Always-visible target status, sampled guide chroma/delta and actual guide-color swatch                                                |
+| `components/GamutWarningGlyph.tsx`     | Decorative warning SVG                                                                                                                |
+| `hooks/useControllableView.ts`         | Initial uncontrolled view and authoritative controlled view requests                                                                  |
+| `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                           |
+| `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                      |
 
-The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet, warning glyph geometry and separate range/numeric DOM controllers to both adapters. Its internal `mountRange` owns native range input/change distinction, live RAF, expected feedback, parent interruption, pointer preview and callback-silent disposal. `mountNumericInput` owns only draft metadata, composition/completion policy, value/precision reconciliation and silent disposal; the native number input owns text. React keeps committed-prop/layout-effect integration and pointer-focus hooks.
+The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet, warning glyph geometry and separate plane/range/numeric DOM controllers to both adapters. `mountPlaneGesture` owns one pointer, origin/expected feedback, pending/latest point, coalesced live publication, synchronous final publication, exact rollback and callback-silent disposal. Its ports leave core authorship/equality, adapter geometry/presentation, capture, focus and keyboard outside UI. `mountRange` owns native range input/change distinction, live RAF, expected feedback, parent interruption, pointer preview and callback-silent disposal. `mountNumericInput` owns only draft metadata, composition/completion policy, value/precision reconciliation and silent disposal; the native number input owns text. React keeps committed-prop/layout-effect integration and pointer-focus hooks.
 
 There is no whole-product context, giant hook, render-time resource allocation or redundant color state. Event callbacks do not depend on consumer memoization. A suspended/abandoned render cannot replace committed callbacks. Mutable interaction and renderer resources belong to one mounted instance and are disposed silently.
 
