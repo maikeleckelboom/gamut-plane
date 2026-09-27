@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  OKLCH_PICKER_MAX_CHROMA,
   authorPlaneEdit,
   normalizeHue,
   oklabCoordinatePlanePoint,
@@ -13,7 +12,7 @@ import {
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import { computed, ref, useId, watch } from "vue";
-import { gpPart } from "@gamut-plane/ui";
+import { gpPart, editorUi, currentViewOptions, representationUi } from "@gamut-plane/ui";
 import NumericInput from "./NumericInput.vue";
 
 import ColorChannelControl from "./ColorChannelControl.vue";
@@ -51,7 +50,8 @@ const plane = defineModel<PickerPlaneId>("plane", { default: "oklch" });
 const instanceId = useId();
 const titleId = `${instanceId}-instrument-title`;
 
-const PLANE_OPTIONS: readonly PickerPlaneId[] = ["oklch", "oklab"];
+const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
+const [fixedLightness, a, b] = editorUi["oklab-ab"].companions;
 const planeOptionButtons = new Map<PickerPlaneId, HTMLButtonElement>();
 const tables = PICKER_GAMUT_TABLES;
 const presentation = computed(() =>
@@ -92,9 +92,10 @@ function movePlaneSelection(value: PickerPlaneId, event: KeyboardEvent): void {
   else return;
 
   event.preventDefault();
-  const currentIndex = PLANE_OPTIONS.indexOf(value);
-  const nextIndex = (currentIndex + direction + PLANE_OPTIONS.length) % PLANE_OPTIONS.length;
-  const next = PLANE_OPTIONS[nextIndex];
+  const currentIndex = currentViewOptions.indexOf(value);
+  const nextIndex =
+    (currentIndex + direction + currentViewOptions.length) % currentViewOptions.length;
+  const next = currentViewOptions[nextIndex];
   if (!next) return;
   selectPlane(next);
   planeOptionButtons.get(next)?.focus();
@@ -156,7 +157,7 @@ watch(
     <div class="plane-instrument__view-control" :data-gp-part="gpPart.viewControl">
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
         <button
-          v-for="option in PLANE_OPTIONS"
+          v-for="option in currentViewOptions"
           :key="option"
           :ref="(element) => setPlaneOptionButton(option, element)"
           type="button"
@@ -168,7 +169,7 @@ watch(
           @click="selectPlane(option)"
           @keydown="movePlaneSelection(option, $event)"
         >
-          {{ option === "oklab" ? "OKLab" : "OKLCH" }}
+          {{ representationUi[option].label }}
         </button>
       </div>
     </div>
@@ -202,14 +203,15 @@ watch(
       <div class="plane-instrument__controls" :data-gp-part="gpPart.controls">
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
+            :key="`${hue.channelId}:${hue.operationId}`"
             :id="`${instanceId}-hue`"
-            channel="H"
-            label="Hue"
+            :channel="hue.symbol"
+            :label="hue.label"
             :model-value="presentation.fieldHue"
-            :min="0"
-            :max="360"
-            :step="0.1"
-            :precision="1"
+            :min="hue.sliderRange.min"
+            :max="hue.sliderRange.max"
+            :step="hue.step"
+            :precision="hue.precision"
             :gradient="presentation.hueGradient"
             :normalize-value="normalizeHue"
             :intervals="presentation.hueIntervals"
@@ -224,14 +226,15 @@ watch(
           />
 
           <ColorChannelControl
+            :key="`${lightness.channelId}:${lightness.operationId}`"
             :id="`${instanceId}-lightness`"
-            channel="L"
-            label="Lightness"
+            :channel="lightness.symbol"
+            :label="lightness.label"
             :model-value="presentation.oklch.channels[0]"
-            :min="0"
-            :max="1"
-            :step="0.001"
-            :precision="4"
+            :min="lightness.sliderRange.min"
+            :max="lightness.sliderRange.max"
+            :step="lightness.step"
+            :precision="lightness.precision"
             :gradient="presentation.lightnessGradient"
             :intervals="presentation.lightnessIntervals"
             :warning-visible="presentation.warningVisible"
@@ -243,20 +246,21 @@ watch(
           />
 
           <ColorChannelControl
+            :key="`${chroma.channelId}:${chroma.operationId}`"
             :id="`${instanceId}-chroma`"
-            channel="C"
-            label="Chroma"
+            :channel="chroma.symbol"
+            :label="chroma.label"
             :model-value="presentation.oklch.channels[1]"
-            :min="0"
-            :max="OKLCH_PICKER_MAX_CHROMA"
-            :step="0.001"
-            :precision="4"
+            :min="chroma.sliderRange.min"
+            :max="chroma.sliderRange.max"
+            :step="chroma.step"
+            :precision="chroma.precision"
             :gradient="presentation.chromaGradient"
             :markers="presentation.markers"
             :intervals="presentation.chromaIntervals"
             :boundary-preview-color="presentation.targetResult.swatchCss"
             :boundary-preview-tone="boundaryTarget"
-            :overflow-max="true"
+            :overflow-max="!('max' in chroma.numericBounds)"
             :warning-visible="presentation.warningVisible"
             :warning-label="primaryGamutWarning"
             :warning-position="presentation.chromaPosition"
@@ -269,14 +273,15 @@ watch(
 
         <template v-else>
           <ColorChannelControl
+            :key="`${fixedLightness.channelId}:${fixedLightness.operationId}`"
             :id="`${instanceId}-oklab-lightness`"
-            channel="L"
-            label="OKLab lightness · fixed axis"
+            :channel="fixedLightness.symbol"
+            :label="fixedLightness.label"
             :model-value="presentation.projection.fixed"
-            :min="0"
-            :max="1"
-            :step="0.001"
-            :precision="4"
+            :min="fixedLightness.sliderRange.min"
+            :max="fixedLightness.sliderRange.max"
+            :step="fixedLightness.step"
+            :precision="fixedLightness.precision"
             :gradient="presentation.fixedLightnessGradient"
             :intervals="presentation.lightnessIntervals"
             :warning-visible="presentation.warningVisible"
@@ -294,32 +299,34 @@ watch(
           >
             <span>Editable coordinate</span>
             <label>
-              <span>a</span>
+              <span>{{ a.label }}</span>
               <NumericInput
+                :key="`${a.channelId}:${a.operationId}`"
                 :model-value="presentation.projection.x"
-                :precision="4"
-                :min="presentation.plane.xAxis.min"
-                :max="presentation.plane.xAxis.max"
-                :step="0.001"
+                :precision="a.precision"
+                :min="a.numericBounds.min"
+                :max="a.numericBounds.max"
+                :step="a.step"
                 inputmode="decimal"
                 data-oklab-coordinate="a"
-                aria-label="OKLab a numeric value"
+                :aria-label="a.numericLabel"
                 @update:model-value="editOklab('a', $event, false)"
                 @commit="editOklab('a', $event, true)"
                 @cancel="emit('cancel')"
               />
             </label>
             <label>
-              <span>b</span>
+              <span>{{ b.label }}</span>
               <NumericInput
+                :key="`${b.channelId}:${b.operationId}`"
                 :model-value="presentation.projection.y"
-                :precision="4"
-                :min="presentation.plane.yAxis.min"
-                :max="presentation.plane.yAxis.max"
-                :step="0.001"
+                :precision="b.precision"
+                :min="b.numericBounds.min"
+                :max="b.numericBounds.max"
+                :step="b.step"
                 inputmode="decimal"
                 data-oklab-coordinate="b"
-                aria-label="OKLab b numeric value"
+                :aria-label="b.numericLabel"
                 @update:model-value="editOklab('b', $event, false)"
                 @commit="editOklab('b', $event, true)"
                 @cancel="emit('cancel')"
