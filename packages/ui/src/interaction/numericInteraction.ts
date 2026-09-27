@@ -8,7 +8,9 @@ export interface NumericInputState {
 }
 
 /** Native number input owns temporary text and bad-input state; only interaction metadata is shared. */
-export function mountNumericInput(element: HTMLInputElement, current: () => NumericInputState) {
+export function mountNumericInput(target: HTMLInputElement, current: () => NumericInputState) {
+  let element: HTMLInputElement | null = target;
+  let readCurrent: (() => NumericInputState) | null = current;
   let dirty = false;
   let composing = false;
   let revision = 0;
@@ -16,19 +18,23 @@ export function mountNumericInput(element: HTMLInputElement, current: () => Nume
 
   function reset() {
     dirty = false;
+    if (!element || !readCurrent) return;
+    const state = readCurrent();
     // Direct assignment also clears the browser's internal bad-input buffer.
-    element.value = current().value.toFixed(current().precision);
+    element.value = state.value.toFixed(state.precision);
   }
   function edit() {
     revision++;
     dirty = true;
   }
   function complete() {
-    if (disposed || !dirty || composing) return;
+    const input = element;
+    const access = readCurrent;
+    if (disposed || !input || !access || !dirty || composing) return;
     dirty = false;
     const completedRevision = revision;
-    const numeric = element.valueAsNumber;
-    const state = current();
+    const numeric = input.valueAsNumber;
+    const state = access();
     if (Number.isFinite(numeric))
       state.onComplete(Math.min(state.max ?? Infinity, Math.max(state.min, numeric)));
     queueMicrotask(() => {
@@ -45,7 +51,7 @@ export function mountNumericInput(element: HTMLInputElement, current: () => Nume
       event.stopPropagation();
       revision++;
       reset();
-      current().onCancel?.();
+      readCurrent?.().onCancel?.();
     }
   }
   function compositionStart() {
@@ -68,16 +74,19 @@ export function mountNumericInput(element: HTMLInputElement, current: () => Nume
       reset();
     },
     dispose() {
-      if (disposed) return;
+      const input = element;
+      if (disposed || !input) return;
       disposed = true;
       revision++;
       dirty = composing = false;
-      element.removeEventListener("input", edit);
-      element.removeEventListener("change", complete);
-      element.removeEventListener("blur", complete);
-      element.removeEventListener("keydown", key);
-      element.removeEventListener("compositionstart", compositionStart);
-      element.removeEventListener("compositionend", compositionEnd);
+      input.removeEventListener("input", edit);
+      input.removeEventListener("change", complete);
+      input.removeEventListener("blur", complete);
+      input.removeEventListener("keydown", key);
+      input.removeEventListener("compositionstart", compositionStart);
+      input.removeEventListener("compositionend", compositionEnd);
+      element = null;
+      readCurrent = null;
     },
   };
 }
