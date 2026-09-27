@@ -13,6 +13,7 @@ import {
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import { computed, ref, useId, watch } from "vue";
+import { gpPart } from "@gamut-plane/ui";
 import NumericInput from "./NumericInput.vue";
 import "../style.css";
 
@@ -144,20 +145,23 @@ watch(
 <template>
   <section
     class="plane-instrument"
+    data-gp-root
+    :data-gp-view="plane"
     data-plane-instrument
     :data-active-plane="plane"
     :style="{ '--picker-active': presentation.activeCss }"
     :aria-labelledby="titleId"
   >
-    <h2 :id="titleId" class="sr-only">Color plane instrument</h2>
+    <h2 :id="titleId" class="sr-only" data-gp-visually-hidden>Color plane instrument</h2>
 
-    <div class="plane-instrument__view-control">
+    <div class="plane-instrument__view-control" :data-gp-part="gpPart.viewControl">
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
         <button
           v-for="option in PLANE_OPTIONS"
           :key="option"
           :ref="(element) => setPlaneOptionButton(option, element)"
           type="button"
+          :data-gp-part="gpPart.viewOption"
           role="radio"
           :aria-checked="plane === option"
           :tabindex="plane === option ? 0 : -1"
@@ -170,8 +174,8 @@ watch(
       </div>
     </div>
 
-    <div class="plane-instrument__workspace">
-      <div class="plane-instrument__field">
+    <div class="plane-instrument__workspace" :data-gp-part="gpPart.workspace">
+      <div class="plane-instrument__field" :data-gp-part="gpPart.field">
         <ColorPlane
           :model-value="modelValue"
           :field-hue="presentation.fieldHue"
@@ -196,7 +200,7 @@ watch(
         <slot name="field-legend" />
       </div>
 
-      <div class="plane-instrument__controls">
+      <div class="plane-instrument__controls" :data-gp-part="gpPart.controls">
         <template v-if="plane === 'oklch'">
           <ColorChannelControl
             :id="`${instanceId}-hue`"
@@ -284,7 +288,11 @@ watch(
             @commit="editOklab('l', $event, true)"
             @cancel="emit('cancel')"
           />
-          <div class="plane-instrument__coordinate-readout" aria-label="Editable OKLab coordinates">
+          <div
+            class="plane-instrument__coordinate-readout"
+            :data-gp-part="gpPart.coordinateReadout"
+            aria-label="Editable OKLab coordinates"
+          >
             <span>Editable coordinate</span>
             <label>
               <span>a</span>
@@ -324,15 +332,18 @@ watch(
 
         <section
           class="plane-instrument__target-result"
+          :data-gp-part="gpPart.targetResult"
+          :data-gp-status="presentation.targetResult.status"
           data-boundary-target-result
           :data-boundary-target="boundaryTarget"
           :aria-label="`${presentation.targetResult.targetLabel} target boundary result`"
           :data-target-exact-status="presentation.targetResult.status"
         >
-          <div class="plane-instrument__target-heading">
+          <div class="plane-instrument__target-heading" :data-gp-part="gpPart.targetHeading">
             <span>Target · {{ presentation.targetResult.targetLabel }}</span>
             <span
               class="plane-instrument__target-swatch"
+              :data-gp-part="gpPart.targetSwatch"
               data-boundary-guide-swatch
               :style="{ background: presentation.targetResult.swatchCss }"
               :aria-label="`${presentation.targetResult.targetLabel} sampled boundary-guide color ${presentation.targetResult.swatchCss}`"

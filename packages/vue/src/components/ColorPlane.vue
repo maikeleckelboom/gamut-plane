@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
 import {
   authorPlaneEdit,
   definingEquals,
@@ -298,6 +299,7 @@ function onPointerDown(event: PointerEvent): void {
   latestInteractionPoint = null;
   latestInteractionColor = null;
   surface.value.dataset.pointerFocus = "";
+  surface.value.setAttribute(gpAttribute.pointerFocus, "");
   surface.value.focus({ preventScroll: true });
   surface.value.setPointerCapture?.(event.pointerId);
   schedulePoint(point);
@@ -351,6 +353,7 @@ function onPointerCancel(event: PointerEvent): void {
 
 function onKeydown(event: KeyboardEvent): void {
   surface.value?.removeAttribute("data-pointer-focus");
+  surface.value?.removeAttribute(gpAttribute.pointerFocus);
   if (event.key === "Escape" && activePointerId !== null) {
     event.preventDefault();
     event.stopPropagation();
@@ -385,6 +388,7 @@ function onKeydown(event: KeyboardEvent): void {
 
 function onBlur(): void {
   surface.value?.removeAttribute("data-pointer-focus");
+  surface.value?.removeAttribute(gpAttribute.pointerFocus);
 }
 
 watch([() => props.plane, fixedAxis], () => scheduleFieldDraw());
@@ -453,6 +457,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="color-plane"
+    :data-gp-part="gpPart.plane"
     data-picker-plane
     :data-plane-id="plane.id"
     :data-field-quality="renderedFieldQuality"
@@ -466,6 +471,7 @@ onBeforeUnmount(() => {
     <div
       ref="surface"
       class="color-plane__surface"
+      :data-gp-part="gpPart.surface"
       role="application"
       tabindex="0"
       :aria-label="planeLabel"
@@ -481,15 +487,17 @@ onBeforeUnmount(() => {
       @keydown="onKeydown"
       @blur="onBlur"
     >
-      <canvas ref="canvas" aria-hidden="true" />
+      <canvas ref="canvas" :data-gp-part="gpPart.canvas" aria-hidden="true" />
       <span
         v-if="plane.id === 'oklab'"
         class="color-plane__domain-boundary"
+        :data-gp-part="gpPart.domainBoundary"
         data-instrument-domain="disc"
         aria-hidden="true"
       />
       <svg
         class="color-plane__gamut"
+        :data-gp-part="gpPart.gamutGuides"
         :viewBox="`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`"
         preserveAspectRatio="none"
         role="group"
@@ -499,6 +507,8 @@ onBeforeUnmount(() => {
           v-if="showDisplayP3Boundary"
           :d="displayP3Path"
           class="color-plane__boundary color-plane__boundary--p3"
+          :data-gp-part="gpPart.gamutBoundary"
+          :data-gp-gamut="gpGamut.displayP3"
           data-gamut-boundary="display-p3"
           vector-effect="non-scaling-stroke"
           aria-hidden="true"
@@ -507,6 +517,8 @@ onBeforeUnmount(() => {
           v-if="showDisplayP3Boundary"
           :d="displayP3Path"
           class="color-plane__boundary-hit"
+          :data-gp-part="gpPart.boundaryHit"
+          :data-gp-gamut="gpGamut.displayP3"
           data-gamut-boundary-hit="display-p3"
           vector-effect="non-scaling-stroke"
           aria-label="Display P3 gamut boundary"
@@ -516,6 +528,8 @@ onBeforeUnmount(() => {
           v-if="showSrgbBoundary"
           :d="srgbPath"
           class="color-plane__boundary color-plane__boundary--srgb"
+          :data-gp-part="gpPart.gamutBoundary"
+          :data-gp-gamut="gpGamut.srgb"
           data-gamut-boundary="srgb"
           vector-effect="non-scaling-stroke"
           aria-hidden="true"
@@ -524,6 +538,8 @@ onBeforeUnmount(() => {
           v-if="showSrgbBoundary"
           :d="srgbPath"
           class="color-plane__boundary-hit"
+          :data-gp-part="gpPart.boundaryHit"
+          :data-gp-gamut="gpGamut.srgb"
           data-gamut-boundary-hit="srgb"
           vector-effect="non-scaling-stroke"
           aria-label="sRGB gamut boundary"
@@ -532,6 +548,7 @@ onBeforeUnmount(() => {
         <circle
           v-if="plane.id === 'oklab'"
           class="color-plane__boundary-hit"
+          :data-gp-part="gpPart.boundaryHit"
           data-gamut-boundary-hit="instrument-domain"
           cx="500"
           cy="500"
@@ -544,6 +561,7 @@ onBeforeUnmount(() => {
       <span
         v-if="targetGuidePoint"
         class="color-plane__target-guide-connector"
+        :data-gp-part="gpPart.guideConnector"
         :style="targetGuideConnectorStyle"
         data-table-boundary-guide-connector
         aria-hidden="true"
@@ -551,6 +569,8 @@ onBeforeUnmount(() => {
       <span
         v-if="targetGuidePoint"
         class="color-plane__marker color-plane__marker--target-guide"
+        :data-gp-part="gpPart.marker"
+        :data-gp-marker="gpMarker.targetGuide"
         :style="{
           ...targetGuideMarkerStyle,
           '--target-guide-marker-color': targetGuideCss,
@@ -565,6 +585,8 @@ onBeforeUnmount(() => {
         ref="warningMarker"
         v-show="warningVisible"
         class="color-plane__warning"
+        :data-gp-part="gpPart.warning"
+        :data-gp-warning="String(warningVisible)"
         data-gamut-warning="planar"
         :data-visible="warningVisible ? 'true' : 'false'"
         style="visibility: hidden"
@@ -575,6 +597,8 @@ onBeforeUnmount(() => {
       <span
         ref="marker"
         class="color-plane__marker color-plane__marker--active"
+        :data-gp-part="gpPart.marker"
+        :data-gp-marker="gpMarker.active"
         :style="{ ...markerStyle, '--marker-color': markerCss }"
         :data-outside-display-p3="warningVisible ? 'true' : 'false'"
         data-active-marker
@@ -584,14 +608,32 @@ onBeforeUnmount(() => {
         role="img"
       />
     </div>
-    <span v-if="canvasColorSpace === 'srgb'" class="color-plane__render-mode"> sRGB canvas </span>
-    <span v-else-if="canvasColorSpace === 'unavailable'" class="color-plane__render-mode">
+    <span
+      v-if="canvasColorSpace === 'srgb'"
+      class="color-plane__render-mode"
+      :data-gp-part="gpPart.renderStatus"
+    >
+      sRGB canvas
+    </span>
+    <span
+      v-else-if="canvasColorSpace === 'unavailable'"
+      class="color-plane__render-mode"
+      :data-gp-part="gpPart.renderStatus"
+    >
       canvas unavailable
     </span>
-    <span class="color-plane__axis color-plane__axis--lightness">
+    <span
+      class="color-plane__axis color-plane__axis--lightness"
+      :data-gp-part="gpPart.axis"
+      :data-gp-axis="gpAxis.y"
+    >
       {{ plane.yAxis.symbol }} · {{ plane.yAxis.label }}
     </span>
-    <span class="color-plane__axis color-plane__axis--chroma">
+    <span
+      class="color-plane__axis color-plane__axis--chroma"
+      :data-gp-part="gpPart.axis"
+      :data-gp-axis="gpAxis.x"
+    >
       {{ plane.xAxis.symbol }} · {{ plane.xAxis.label }}
     </span>
   </div>

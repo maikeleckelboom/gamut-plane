@@ -11,7 +11,13 @@ export default defineConfig({
       cssFileName: "style",
     },
     rolldownOptions: {
-      external: ["vue", "@vueuse/core", "@gamut-plane/core", "@gamut-plane/render"],
+      external: [
+        "vue",
+        "@vueuse/core",
+        "@gamut-plane/core",
+        "@gamut-plane/render",
+        "@gamut-plane/ui",
+      ],
     },
   },
 });

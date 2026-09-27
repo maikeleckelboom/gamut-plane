@@ -2,6 +2,7 @@ packages: []
 overrides:
   "@gamut-plane/core": "file:artifacts/gamut-plane-core-0.2.0.tgz"
   "@gamut-plane/render": "file:artifacts/gamut-plane-render-0.2.0.tgz"
+  "@gamut-plane/ui": "file:artifacts/gamut-plane-ui-0.2.0.tgz"
   postcss: 8.5.25
 allowBuilds:
   esbuild: true

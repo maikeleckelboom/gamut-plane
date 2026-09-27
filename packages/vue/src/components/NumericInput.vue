@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
+import { gpPart } from "@gamut-plane/ui";
 
 const props = defineProps<{
   modelValue: number;
@@ -67,6 +68,7 @@ watch(() => props.modelValue, reset);
   <input
     ref="input"
     type="number"
+    :data-gp-part="gpPart.numericInput"
     inputmode="decimal"
     :value="draft"
     :min="min"

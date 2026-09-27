@@ -27,7 +27,7 @@ try {
   await cp(fixture, consumer, { recursive: true });
   await cp(join(packageRoot, "consumer/ssrSmoke.ts"), join(consumer, "ssrSmoke.ts"));
   const artifacts = [];
-  for (const name of ["core", "render", "vue"])
+  for (const name of ["core", "render", "ui", "vue"])
     artifacts.push(
       await packPrivateArtifact(
         pnpm,

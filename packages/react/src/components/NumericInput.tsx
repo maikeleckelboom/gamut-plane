@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ComponentPropsWithoutRef } from "react";
 import { useCommitted } from "../hooks/useCommitted.js";
+import { gpPart } from "@gamut-plane/ui";
 
 interface NumericInputProps extends Omit<
   ComponentPropsWithoutRef<"input">,
@@ -103,6 +104,7 @@ export function NumericInput(props: NumericInputProps) {
       {...dom}
       ref={input}
       type="number"
+      data-gp-part={gpPart.numericInput}
       inputMode="decimal"
       dir="ltr"
       defaultValue={value.toFixed(precision)}

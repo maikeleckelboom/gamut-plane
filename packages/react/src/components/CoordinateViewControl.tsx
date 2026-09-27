@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent } from "react";
 import type { GamutPlaneView } from "../GamutPlane.js";
+import { gpPart } from "@gamut-plane/ui";
 
 const options = ["oklch", "oklab"] as const;
 
@@ -20,12 +21,13 @@ export function CoordinateViewControl({
     buttons.current.get(next)?.focus();
   }
   return (
-    <div className="gpr-plane-instrument-view-control">
+    <div className="gpr-plane-instrument-view-control" data-gp-part={gpPart.viewControl}>
       <div role="radiogroup" aria-label="Coordinate view" aria-orientation="horizontal">
         {options.map((option) => (
           <button
             key={option}
             type="button"
+            data-gp-part={gpPart.viewOption}
             role="radio"
             ref={(element) => {
               if (element) buttons.current.set(option, element);

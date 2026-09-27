@@ -7,6 +7,7 @@ settings:
 overrides:
   '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
   '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
+  '@gamut-plane/ui': file:artifacts/gamut-plane-ui-0.2.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -19,6 +20,9 @@ importers:
       '@gamut-plane/render':
         specifier: file:artifacts/gamut-plane-render-0.2.0.tgz
         version: file:artifacts/gamut-plane-render-0.2.0.tgz
+      '@gamut-plane/ui':
+        specifier: file:artifacts/gamut-plane-ui-0.2.0.tgz
+        version: file:artifacts/gamut-plane-ui-0.2.0.tgz
       '@gamut-plane/vue':
         specifier: file:artifacts/gamut-plane-vue-0.2.0.tgz
         version: file:artifacts/gamut-plane-vue-0.2.0.tgz(vue@3.5.42(typescript@6.0.3))
@@ -363,6 +367,11 @@ packages:
 
   '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
     resolution: {tarball: file:artifacts/gamut-plane-render-0.2.0.tgz}
+    version: 0.2.0
+    engines: {node: '>=24.0.0'}
+
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-ui-0.2.0.tgz}
     version: 0.2.0
     engines: {node: '>=24.0.0'}
 
@@ -3507,10 +3516,13 @@ snapshots:
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz': {}
+
   '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.2.0.tgz(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
       '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
+      '@gamut-plane/ui': file:artifacts/gamut-plane-ui-0.2.0.tgz
       '@vueuse/core': 14.3.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 

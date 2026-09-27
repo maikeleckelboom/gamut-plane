@@ -2,6 +2,7 @@ import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { projectColorToPlane } from "@gamut-plane/core";
+import { gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
 import {
   geometryToSvgPath,
   pointStyle,
@@ -111,6 +112,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   return (
     <div
       className="gpr-color-plane"
+      data-gp-part={gpPart.plane}
       data-picker-plane=""
       data-plane-id={plane.id}
       data-field-quality={quality}
@@ -124,24 +126,30 @@ export function ColorPlane(props: ColorPlaneProps) {
       <div
         ref={surface}
         className="gpr-color-plane-surface"
+        data-gp-part={gpPart.surface}
         role="application"
         tabIndex={0}
-        onBlur={(event) => event.currentTarget.removeAttribute("data-pointer-focus")}
+        onBlur={(event) => {
+          event.currentTarget.removeAttribute("data-pointer-focus");
+          event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
+        }}
         dir="ltr"
         aria-label={label}
         data-render-color-space={capability}
         data-outside-instrument={String(!plane.isPointInInstrumentDomain(projected.value.point))}
       >
-        <canvas ref={canvas} aria-hidden="true" />
+        <canvas ref={canvas} data-gp-part={gpPart.canvas} aria-hidden="true" />
         {plane.id === "oklab" && (
           <span
             className="gpr-color-plane-domain-boundary"
+            data-gp-part={gpPart.domainBoundary}
             data-instrument-domain="disc"
             aria-hidden="true"
           />
         )}
         <svg
           className="gpr-color-plane-gamut"
+          data-gp-part={gpPart.gamutGuides}
           viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
           preserveAspectRatio="none"
           role="group"
@@ -152,6 +160,8 @@ export function ColorPlane(props: ColorPlaneProps) {
               <path
                 d={paths.p3}
                 className="gpr-color-plane-boundary gpr-color-plane-boundary--p3"
+                data-gp-part={gpPart.gamutBoundary}
+                data-gp-gamut={gpGamut.displayP3}
                 data-gamut-boundary="display-p3"
                 vectorEffect="non-scaling-stroke"
                 aria-hidden="true"
@@ -159,6 +169,8 @@ export function ColorPlane(props: ColorPlaneProps) {
               <path
                 d={paths.p3}
                 className="gpr-color-plane-boundary-hit"
+                data-gp-part={gpPart.boundaryHit}
+                data-gp-gamut={gpGamut.displayP3}
                 data-gamut-boundary-hit="display-p3"
                 vectorEffect="non-scaling-stroke"
                 aria-label="Display P3 gamut boundary"
@@ -171,6 +183,8 @@ export function ColorPlane(props: ColorPlaneProps) {
               <path
                 d={paths.srgb}
                 className="gpr-color-plane-boundary gpr-color-plane-boundary--srgb"
+                data-gp-part={gpPart.gamutBoundary}
+                data-gp-gamut={gpGamut.srgb}
                 data-gamut-boundary="srgb"
                 vectorEffect="non-scaling-stroke"
                 aria-hidden="true"
@@ -178,6 +192,8 @@ export function ColorPlane(props: ColorPlaneProps) {
               <path
                 d={paths.srgb}
                 className="gpr-color-plane-boundary-hit"
+                data-gp-part={gpPart.boundaryHit}
+                data-gp-gamut={gpGamut.srgb}
                 data-gamut-boundary-hit="srgb"
                 vectorEffect="non-scaling-stroke"
                 aria-label="sRGB gamut boundary"
@@ -188,6 +204,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           {plane.id === "oklab" && (
             <circle
               className="gpr-color-plane-boundary-hit"
+              data-gp-part={gpPart.boundaryHit}
               data-gamut-boundary-hit="instrument-domain"
               cx="500"
               cy="500"
@@ -202,12 +219,15 @@ export function ColorPlane(props: ColorPlaneProps) {
           <>
             <span
               className="gpr-color-plane-target-guide-connector"
+              data-gp-part={gpPart.guideConnector}
               style={guideConnectorStyle(activePoint, guide, plane.id === "oklab")}
               data-table-boundary-guide-connector=""
               aria-hidden="true"
             />
             <span
               className="gpr-color-plane-marker gpr-color-plane-marker--target-guide"
+              data-gp-part={gpPart.marker}
+              data-gp-marker={gpMarker.targetGuide}
               style={presentationStyle({
                 ...pointStyle(guide),
                 "--target-guide-marker-color": targetGuideCss,
@@ -223,6 +243,8 @@ export function ColorPlane(props: ColorPlaneProps) {
         <span
           ref={warning}
           className="gpr-color-plane-warning"
+          data-gp-part={gpPart.warning}
+          data-gp-warning={String(warningVisible)}
           data-gamut-warning="planar"
           data-visible={String(warningVisible)}
           style={{ display: warningVisible ? undefined : "none", visibility: "hidden" }}
@@ -233,6 +255,8 @@ export function ColorPlane(props: ColorPlaneProps) {
         <span
           ref={marker}
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
+          data-gp-part={gpPart.marker}
+          data-gp-marker={gpMarker.active}
           style={presentationStyle({
             ...pointStyle(activePoint),
             "--marker-color": markerCss,
@@ -246,14 +270,22 @@ export function ColorPlane(props: ColorPlaneProps) {
         />
       </div>
       {(capability === "srgb" || capability === "unavailable") && (
-        <span className="gpr-color-plane-render-mode">
+        <span className="gpr-color-plane-render-mode" data-gp-part={gpPart.renderStatus}>
           {capability === "srgb" ? "sRGB canvas" : "canvas unavailable"}
         </span>
       )}
-      <span className="gpr-color-plane-axis gpr-color-plane-axis--lightness">
+      <span
+        className="gpr-color-plane-axis gpr-color-plane-axis--lightness"
+        data-gp-part={gpPart.axis}
+        data-gp-axis={gpAxis.y}
+      >
         {plane.yAxis.symbol} · {plane.yAxis.label}
       </span>
-      <span className="gpr-color-plane-axis gpr-color-plane-axis--chroma">
+      <span
+        className="gpr-color-plane-axis gpr-color-plane-axis--chroma"
+        data-gp-part={gpPart.axis}
+        data-gp-axis={gpAxis.x}
+      >
         {plane.xAxis.symbol} · {plane.xAxis.label}
       </span>
     </div>

@@ -11,6 +11,7 @@ import {
   type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@gamut-plane/core";
+import { gpAttribute } from "@gamut-plane/ui";
 import {
   createFieldRenderer,
   pointStyle,
@@ -206,6 +207,7 @@ export function mountPlane(
     origin = current().value;
     expected = null;
     surface.dataset.pointerFocus = "";
+    surface.setAttribute(gpAttribute.pointerFocus, "");
     surface.focus({ preventScroll: true });
     surface.setPointerCapture(event.pointerId);
     schedule(next);
@@ -231,6 +233,7 @@ export function mountPlane(
   }
   function key(event: KeyboardEvent) {
     surface.removeAttribute("data-pointer-focus");
+    surface.removeAttribute(gpAttribute.pointerFocus);
     if (event.key === "Escape" && activePointer !== null) {
       event.preventDefault();
       event.stopPropagation();

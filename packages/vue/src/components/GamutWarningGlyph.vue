@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { PICKER_WARNING_GLYPH_SIZE } from "@gamut-plane/render";
+import { gpPart } from "@gamut-plane/ui";
 </script>
 
 <template>
   <svg
     class="gamut-warning-glyph"
+    :data-gp-part="gpPart.warningGlyph"
     :width="PICKER_WARNING_GLYPH_SIZE"
     :height="PICKER_WARNING_GLYPH_SIZE"
     viewBox="0 0 16 16"

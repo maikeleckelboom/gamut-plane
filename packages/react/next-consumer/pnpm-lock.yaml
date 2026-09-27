@@ -7,6 +7,7 @@ settings:
 overrides:
   '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
   '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
+  '@gamut-plane/ui': file:artifacts/gamut-plane-ui-0.2.0.tgz
   postcss: 8.5.25
 
 importers:
@@ -22,6 +23,9 @@ importers:
       '@gamut-plane/render':
         specifier: file:artifacts/gamut-plane-render-0.2.0.tgz
         version: file:artifacts/gamut-plane-render-0.2.0.tgz
+      '@gamut-plane/ui':
+        specifier: file:artifacts/gamut-plane-ui-0.2.0.tgz
+        version: file:artifacts/gamut-plane-ui-0.2.0.tgz
       next:
         specifier: 16.3.4
         version: 16.3.4(@playwright/test@1.61.1)(@types/node@24.13.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -77,6 +81,11 @@ packages:
 
   '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
     resolution: {tarball: file:artifacts/gamut-plane-render-0.2.0.tgz}
+    version: 0.2.0
+    engines: {node: '>=24.0.0'}
+
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz':
+    resolution: {tarball: file:artifacts/gamut-plane-ui-0.2.0.tgz}
     version: 0.2.0
     engines: {node: '>=24.0.0'}
 
@@ -720,12 +729,15 @@ snapshots:
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
       '@gamut-plane/render': file:artifacts/gamut-plane-render-0.2.0.tgz
+      '@gamut-plane/ui': file:artifacts/gamut-plane-ui-0.2.0.tgz
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
   '@gamut-plane/render@file:artifacts/gamut-plane-render-0.2.0.tgz':
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
+
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz': {}
 
   '@img/colour@1.1.0':
     optional: true

@@ -41,7 +41,7 @@ function runPnpm(args: string[], cwd: string): string {
 let passed = false;
 try {
   const artifacts = [];
-  for (const name of ["core", "render", "vue"]) {
+  for (const name of ["core", "render", "ui", "vue"]) {
     const root = resolve(packageRoot, "..", name);
     const artifact = await packPrivateArtifact(pnpm, root, packed);
     const { manifest, tarball, files } = artifact;
@@ -57,6 +57,7 @@ try {
         "@vueuse/core",
         "@gamut-plane/core",
         "@gamut-plane/render",
+        "@gamut-plane/ui",
       ]) {
         assert.ok(js.includes(`from "${dependency}"`), `${dependency} must remain external`);
       }
@@ -97,7 +98,7 @@ try {
     installPolicy,
     (await readFile(installPolicy, "utf8")).replace(
       "overrides:\n",
-      `overrides:\n  '@gamut-plane/core': 'file:${coreTarball}'\n  '@gamut-plane/render': 'file:${relative(consumer, artifacts[1]!.tarball).split(sep).join("/")}'\n`,
+      `overrides:\n  '@gamut-plane/core': 'file:${coreTarball}'\n  '@gamut-plane/render': 'file:${relative(consumer, artifacts[1]!.tarball).split(sep).join("/")}'\n  '@gamut-plane/ui': 'file:${relative(consumer, artifacts[2]!.tarball).split(sep).join("/")}'\n`,
     ),
   );
   console.log(`Isolated consumer: ${consumer}`);

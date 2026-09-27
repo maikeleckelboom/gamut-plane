@@ -1,6 +1,7 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { gpAttribute, gpPart } from "@gamut-plane/ui";
 import {
   channelSections,
   channelThresholds,
@@ -121,12 +122,15 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
   return (
     <div
       className="gpr-channel-control"
+      data-gp-part={gpPart.channel}
+      data-gp-channel={channel.toLowerCase()}
+      data-gp-overflow={String(value < min || value > max)}
       data-picker-control={channel.toLowerCase()}
       data-instrument-overflow={String(value < min || value > max)}
       data-warning-visible={String(warningVisible)}
       style={presentationStyle(geometryStyle)}
     >
-      <header className="gpr-channel-control-header">
+      <header className="gpr-channel-control-header" data-gp-part={gpPart.channelHeader}>
         <label htmlFor={id}>
           <span>{channel}</span>
           {label}
@@ -144,13 +148,24 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           onCancel={onCancel}
         />
       </header>
-      <div ref={track} className="gpr-channel-control-track" dir="ltr">
-        <span className="gpr-channel-control-field" style={{ backgroundImage: gradient }} />
+      <div
+        ref={track}
+        className="gpr-channel-control-track"
+        data-gp-part={gpPart.channelTrack}
+        dir="ltr"
+      >
+        <span
+          className="gpr-channel-control-field"
+          data-gp-part={gpPart.channelField}
+          style={{ backgroundImage: gradient }}
+        />
         <span className="gpr-channel-control-gamut-ranges" aria-hidden="true">
           {sections.map((section, index) => (
             <span
               key={`${section.tone}-${index}`}
               className={`gpr-channel-control-gamut-range gpr-channel-control-gamut-range--${section.tone}`}
+              data-gp-part={gpPart.gamutInterval}
+              data-gp-gamut={section.tone}
               style={{
                 left: `${section.start * 100}%`,
                 width: `${(section.end - section.start) * 100}%`,
@@ -162,12 +177,14 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           ))}
         </span>
         {markers.map((marker) => (
-          <span key={marker.id} className="gpr-sr-only">
+          <span key={marker.id} className="gpr-sr-only" data-gp-visually-hidden="">
             {marker.label}
           </span>
         ))}
         <span
           className="gpr-channel-control-warning"
+          data-gp-part={gpPart.warning}
+          data-gp-warning={String(warningVisible)}
           style={warningStyle}
           data-gamut-warning="linear"
           data-warning-channel={channel.toLowerCase()}
@@ -183,6 +200,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           ref={range}
           id={id}
           className="gpr-channel-control-range"
+          data-gp-part={gpPart.nativeRange}
           dir="ltr"
           type="range"
           aria-label={label}
@@ -193,17 +211,24 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           step={step}
           onBlur={(event) => {
             event.currentTarget.removeAttribute("data-pointer-focus");
+            event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
           }}
           onPointerDown={(event) => {
-            if (event.pointerType !== "mouse" || event.button === 0)
+            if (event.pointerType !== "mouse" || event.button === 0) {
               event.currentTarget.dataset.pointerFocus = "";
+              event.currentTarget.setAttribute(gpAttribute.pointerFocus, "");
+            }
           }}
-          onKeyDown={(event) => event.currentTarget.removeAttribute("data-pointer-focus")}
+          onKeyDown={(event) => {
+            event.currentTarget.removeAttribute("data-pointer-focus");
+            event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
+          }}
         />
         {boundaryPreviewSection && boundaryPreviewColor && (
           <span className="gpr-channel-control-boundary-preview-position" aria-hidden="true">
             <span
               className="gpr-channel-control-boundary-preview"
+              data-gp-part={gpPart.boundaryPreview}
               style={{
                 left: `${boundaryPreviewSection.end * 100}%`,
                 background: boundaryPreviewColor,
@@ -219,7 +244,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
         </p>
       )}
       {warningId && (
-        <span id={warningId} className="gpr-sr-only">
+        <span id={warningId} className="gpr-sr-only" data-gp-visually-hidden="">
           Outside Display P3
         </span>
       )}

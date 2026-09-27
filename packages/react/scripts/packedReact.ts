@@ -26,7 +26,7 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
   if (kind === "react-vite")
     await cp(join(packageRoot, "e2e"), join(consumer, "e2e"), { recursive: true });
   const artifacts: PackedArtifact[] = [];
-  for (const name of ["core", "render", "react"]) {
+  for (const name of ["core", "render", "ui", "react"]) {
     const artifact = await packPrivateArtifact(
       pnpm,
       resolve(packageRoot, "..", name),

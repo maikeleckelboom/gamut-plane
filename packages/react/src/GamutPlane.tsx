@@ -24,6 +24,7 @@ import {
   type PlaneEditReference,
 } from "@gamut-plane/core";
 import { createPickerPresentation, type CanvasColorSpaceStatus } from "@gamut-plane/render";
+import { gpPart } from "@gamut-plane/ui";
 import { useControllableView } from "./hooks/useControllableView.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
@@ -145,15 +146,17 @@ export function GamutPlane({
       className={["gamut-plane-react", className].filter(Boolean).join(" ")}
       style={presentationStyle({ ...safeStyle, "--picker-active": model.activeCss })}
       data-plane-instrument=""
+      data-gp-root=""
+      data-gp-view={view}
       data-active-plane={view}
       aria-labelledby={`${id}-instrument-title`}
     >
-      <h2 id={`${id}-instrument-title`} className="gpr-sr-only">
+      <h2 id={`${id}-instrument-title`} className="gpr-sr-only" data-gp-visually-hidden="">
         Color plane instrument
       </h2>
       <CoordinateViewControl view={view} onViewChange={requestView} />
-      <div className="gpr-plane-instrument-workspace">
-        <div className="gpr-plane-instrument-field">
+      <div className="gpr-plane-instrument-workspace" data-gp-part={gpPart.workspace}>
+        <div className="gpr-plane-instrument-field" data-gp-part={gpPart.field}>
           <ColorPlane
             value={value}
             fieldHue={model.fieldHue}
@@ -174,7 +177,7 @@ export function GamutPlane({
           />
           {legend}
         </div>
-        <div className="gpr-plane-instrument-controls">
+        <div className="gpr-plane-instrument-controls" data-gp-part={gpPart.controls}>
           {view === "oklch" ? (
             <>
               <ColorChannelControl
@@ -333,6 +336,7 @@ export function GamutPlane({
               />
               <div
                 className="gpr-plane-instrument-coordinate-readout"
+                data-gp-part={gpPart.coordinateReadout}
                 aria-label="Editable OKLab coordinates"
               >
                 <span>Editable coordinate</span>

@@ -37,6 +37,7 @@
   "dependencies": {
     "@gamut-plane/core": "workspace:*",
     "@gamut-plane/render": "workspace:*",
+    "@gamut-plane/ui": "workspace:*",
     "@vueuse/core": "14.3.0"
   },
   "devDependencies": {

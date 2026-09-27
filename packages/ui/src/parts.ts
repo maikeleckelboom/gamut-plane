@@ -47,6 +47,7 @@ export const gpAttribute = {
   warning: "data-gp-warning",
   overflow: "data-gp-overflow",
   pointerFocus: "data-gp-pointer-focus",
+  visuallyHidden: "data-gp-visually-hidden",
 } as const;
 
 export const gpMarker = { active: "active", targetGuide: "target-guide" } as const;

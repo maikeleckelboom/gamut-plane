@@ -29,6 +29,64 @@ for (const state of states) {
       });
     const host = page.locator(".parity-instance");
     const root = host.locator("[data-plane-instrument]");
+    await expect(root).toHaveAttribute("data-gp-root", "");
+    await expect(root).toHaveAttribute("data-gp-view", state.name === "oklab" ? "oklab" : "oklch");
+    const part = (name: string) => root.locator(`[data-gp-part="${name}"]`);
+    for (const name of [
+      "view-control",
+      "workspace",
+      "field",
+      "controls",
+      "plane",
+      "surface",
+      "canvas",
+      "gamut-guides",
+      "marker",
+      "warning",
+      "warning-glyph",
+      "channel",
+      "channel-header",
+      "numeric-input",
+      "channel-track",
+      "channel-field",
+      "native-range",
+      "target-result",
+      "target-heading",
+      "target-swatch",
+    ])
+      expect(await part(name).count(), `${state.name}: ${name}`).toBeGreaterThan(0);
+    await expect(part("view-option")).toHaveCount(2);
+    await expect(part("axis")).toHaveCount(2);
+    await expect(root.locator('[data-gp-part="axis"][data-gp-axis="x"]')).toHaveCount(1);
+    await expect(root.locator('[data-gp-part="axis"][data-gp-axis="y"]')).toHaveCount(1);
+    await expect(part("surface")).toHaveAttribute("role", "application");
+    await expect(part("surface")).toHaveAttribute("aria-label", /.+/);
+    await expect(part("canvas")).toHaveAttribute("aria-hidden", "true");
+    await expect(part("field").locator("[data-legend]")).toHaveCount(1);
+    await expect(root.locator('[data-gp-part="marker"][data-gp-marker="active"]')).toHaveCount(1);
+    await expect(part("target-result")).toHaveAttribute("data-gp-status", state.srgb);
+    await expect(root.locator('[data-gp-part="warning"][data-gp-warning]')).not.toHaveCount(0);
+    await expect(root.locator('[data-gp-part="channel"][data-gp-channel]')).not.toHaveCount(0);
+    await expect(root.locator("[data-gp-visually-hidden]")).not.toHaveCount(0);
+    const titleId = await root.getAttribute("aria-labelledby");
+    expect(titleId).toBeTruthy();
+    await expect(root.locator(`[id="${titleId}"]`)).toHaveCount(1);
+    if (state.name === "oklab") {
+      await expect(part("domain-boundary")).toHaveCount(1);
+      await expect(part("coordinate-readout")).toHaveCount(1);
+    } else {
+      await expect(part("domain-boundary")).toHaveCount(0);
+      await expect(part("coordinate-readout")).toHaveCount(0);
+    }
+    if (state.srgb === "outside") {
+      await expect(
+        root.locator('[data-gp-part="marker"][data-gp-marker="target-guide"]'),
+      ).toHaveCount(1);
+      await expect(part("guide-connector")).toHaveCount(1);
+      await expect(part("boundary-preview")).toHaveCount(1);
+    }
+    if (state.name === "guides-hidden") await expect(part("gamut-interval")).toHaveCount(0);
+    else expect(await part("gamut-interval").count()).toBeGreaterThan(0);
     await expect(host).toHaveAttribute("data-srgb-status", state.srgb);
     await expect(host).toHaveAttribute("data-p3-status", state.p3);
     await expect(root).toHaveAttribute(

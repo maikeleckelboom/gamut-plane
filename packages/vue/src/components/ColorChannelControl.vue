@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { gpAttribute, gpPart } from "@gamut-plane/ui";
 import { useResizeObserver } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
@@ -190,6 +191,7 @@ function beginRangeInteraction(event: PointerEvent): void {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   if (activeRangePointerId !== null) return;
   rangeElement.value?.setAttribute("data-pointer-focus", "");
+  rangeElement.value?.setAttribute(gpAttribute.pointerFocus, "");
   activeRangePointerId = event.pointerId;
 }
 
@@ -212,11 +214,13 @@ function cancelRangePointer(event?: PointerEvent): void {
 
 function blurRange(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
+  rangeElement.value?.removeAttribute(gpAttribute.pointerFocus);
   cancelRangePointer();
 }
 
 function onRangeKeydown(): void {
   rangeElement.value?.removeAttribute("data-pointer-focus");
+  rangeElement.value?.removeAttribute(gpAttribute.pointerFocus);
 }
 
 function sectionStyle(section: LinearControlInterval): Record<string, string> {
@@ -241,12 +245,15 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="channel-control"
+    :data-gp-part="gpPart.channel"
+    :data-gp-channel="channel.toLowerCase()"
+    :data-gp-overflow="String(isOutsideInstrument)"
     :data-picker-control="channel.toLowerCase()"
     :data-instrument-overflow="isOutsideInstrument ? 'true' : 'false'"
     :data-warning-visible="warningVisible ? 'true' : 'false'"
     :style="instrumentStyle"
   >
-    <header class="channel-control__header">
+    <header class="channel-control__header" :data-gp-part="gpPart.channelHeader">
       <label :for="id">
         <span>{{ channel }}</span>
         {{ label }}
@@ -266,13 +273,24 @@ onBeforeUnmount(() => {
       />
     </header>
 
-    <div ref="trackElement" class="channel-control__track" @pointerenter="updateTrackBounds">
-      <span class="channel-control__field" :style="{ backgroundImage: gradient }" />
+    <div
+      ref="trackElement"
+      class="channel-control__track"
+      :data-gp-part="gpPart.channelTrack"
+      @pointerenter="updateTrackBounds"
+    >
+      <span
+        class="channel-control__field"
+        :data-gp-part="gpPart.channelField"
+        :style="{ backgroundImage: gradient }"
+      />
       <span class="channel-control__gamut-ranges" aria-hidden="true">
         <span
           v-for="(section, index) in guideSections"
           :key="`${section.tone}-range-${index}`"
           class="channel-control__gamut-range"
+          :data-gp-part="gpPart.gamutInterval"
+          :data-gp-gamut="section.tone"
           :class="`channel-control__gamut-range--${section.tone}`"
           :style="sectionStyle(section)"
           :data-gamut-range="section.tone"
@@ -280,10 +298,14 @@ onBeforeUnmount(() => {
           :data-range-end="section.end"
         />
       </span>
-      <span v-for="marker in markers" :key="marker.id" class="sr-only">{{ marker.label }}</span>
+      <span v-for="marker in markers" :key="marker.id" class="sr-only" data-gp-visually-hidden>{{
+        marker.label
+      }}</span>
       <span
         v-show="warningVisible"
         class="channel-control__warning"
+        :data-gp-part="gpPart.warning"
+        :data-gp-warning="String(warningVisible)"
         :style="warningStyle"
         data-gamut-warning="linear"
         :data-warning-channel="channel.toLowerCase()"
@@ -299,6 +321,7 @@ onBeforeUnmount(() => {
         ref="rangeElement"
         :id="id"
         class="channel-control__range"
+        :data-gp-part="gpPart.nativeRange"
         type="range"
         :aria-describedby="describedBy"
         :aria-label="label"
@@ -322,6 +345,7 @@ onBeforeUnmount(() => {
       >
         <span
           class="channel-control__boundary-preview"
+          :data-gp-part="gpPart.boundaryPreview"
           :style="{
             left: `${boundaryPreviewSection.end * 100}%`,
             background: boundaryPreviewColor,
@@ -332,7 +356,12 @@ onBeforeUnmount(() => {
     </div>
 
     <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>
-    <span v-if="warningDescriptionId" :id="warningDescriptionId" class="sr-only">
+    <span
+      v-if="warningDescriptionId"
+      :id="warningDescriptionId"
+      class="sr-only"
+      data-gp-visually-hidden
+    >
       {{ warningLabel }}
     </span>
   </div>
