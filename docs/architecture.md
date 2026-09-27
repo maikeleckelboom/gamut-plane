@@ -1,5 +1,7 @@
 # Architecture
 
+This document describes the released v0.3 architecture. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted vNext direction; its future structure is not implemented here.
+
 ## Layer boundaries
 
 The standalone app imports Vue and core. Vue and React import core and the internal `@gamut-plane/render` package. Core has no dependency on any adapter or browser layer.
