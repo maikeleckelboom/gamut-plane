@@ -29,8 +29,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "typecheck:domain-nodom": "tsc -p tsconfig.domain-nodom.json",
     "test:packed-domain": "node scripts/checkPackedDomain.ts",
-    "test": "vitest run",
-    "lint": "oxlint src test scripts"
+    "test": "vitest run"
   },
   "dependencies": {
     "@texel/color": "1.1.11"

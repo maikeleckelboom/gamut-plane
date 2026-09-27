@@ -29,7 +29,6 @@
   "scripts": {
     "build": "node scripts/prepareBuild.ts && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "lint": "oxlint src test scripts next-consumer consumer e2e *.config.ts",
     "test:package": "node scripts/checkPackedNext.ts",
     "test": "vitest run",
     "test:vite": "node scripts/checkPackedVite.ts"

@@ -22,7 +22,6 @@
     "build": "node scripts/clean.ts && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "pnpm check:gamut-tables && vitest run",
-    "lint": "oxlint src test scripts",
     "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
     "generate:gamut-tables": "node scripts/generateGamutTables.ts"
   },

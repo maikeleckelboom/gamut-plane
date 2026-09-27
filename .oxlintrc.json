@@ -1,0 +1,85 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "style": "off",
+    "pedantic": "off",
+    "restriction": "off",
+    "nursery": "off",
+    "perf": "off"
+  },
+  "plugins": [
+    "eslint",
+    "typescript",
+    "oxc",
+    "unicorn",
+    "import",
+    "react",
+    "vue",
+    "vitest",
+    "jsx-a11y",
+    "node",
+    "nextjs"
+  ],
+  "env": {
+    "builtin": true
+  },
+  "rules": {
+    "eslint/no-shadow": "off",
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.css", "@fontsource-variable/**"] }],
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "jsx-a11y/no-noninteractive-tabindex": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/rules-of-hooks": "error",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-array-sort": "off",
+    "vitest/expect-expect": [
+      "error",
+      {
+        "assertFunctionNames": [
+          "expect",
+          "expectTypeOf",
+          "assert",
+          "assertType",
+          "expectWithinSurface",
+          "expectClearOfActive"
+        ]
+      }
+    ],
+    "vitest/no-conditional-expect": "off",
+    "vitest/require-mock-type-parameters": "off"
+  },
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "apps/web/src/**",
+        "packages/react/src/**",
+        "packages/vue/src/**",
+        "packages/react/consumer/**",
+        "packages/vue/consumer/**",
+        "packages/react/next-consumer/app/**",
+        "packages/vue/nuxt-consumer/app/**"
+      ],
+      "env": { "browser": true }
+    },
+    {
+      "files": ["scripts/**", "**/scripts/**", "**/*.config.ts", "**/ssrSmoke.ts", "**/e2e/**"],
+      "env": { "node": true }
+    },
+    {
+      "files": ["**/test/**"],
+      "env": { "vitest": true, "node": true, "browser": true },
+      "rules": { "react/no-danger-with-children": "off" }
+    },
+    {
+      "files": ["packages/react/e2e/browserFixture.ts"],
+      "rules": { "react/rules-of-hooks": "off" }
+    }
+  ]
+}
