@@ -29,7 +29,7 @@ On Linux, use `playwright install --with-deps chromium` to include browser syste
 | `pnpm test:react-vite`    | Locked isolated React tarballs, types, Node SSR, production Vite build and full browser parity |
 | `pnpm audit --prod`       | Advisories in the resolved production dependency graph                                         |
 
-`typecheck`, `test`, and `test:package` build the packages first. Build the app before running production checks. The [release runbook](release.md#2-run-the-clean-checkout-gate) gives the complete clean-checkout sequence. CI runs static/unit validation followed by browser/accessibility/visual validation on Ubuntu 24.04; the production dependency audit is an additional local release check.
+`typecheck`, `test`, and `test:package` build the packages first. Build the app before running production checks. The [release runbook](release.md#2-certify-a-clean-checkout) gives the complete clean-checkout sequence. CI runs static/unit validation followed by browser/accessibility/visual validation on Ubuntu 24.04; the production dependency audit is an additional local release check.
 
 Oxfmt is the sole formatter (`pnpm format`, `pnpm format:check`), including CSS and Vue files. Oxlint is the JavaScript/TypeScript and framework-script linter (`pnpm lint`); it does not check CSS semantics or Vue template semantics. TypeScript and Vue TypeScript checking remain under `pnpm typecheck`. Root Oxc configs apply to the entire repository, including future workspace packages.
 
