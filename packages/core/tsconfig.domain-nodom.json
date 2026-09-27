@@ -8,6 +8,8 @@
     "noEmit": true
   },
   "include": [
+    "src/capabilities/**/*.ts",
+    "test/capabilities/*.types.ts",
     "src/result.ts",
     "src/color/representation.ts",
     "src/color/value.ts",
