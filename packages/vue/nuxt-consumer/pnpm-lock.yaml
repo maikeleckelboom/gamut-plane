@@ -3516,7 +3516,9 @@ snapshots:
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
-  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz': {}
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz':
+    dependencies:
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
   '@gamut-plane/vue@file:artifacts/gamut-plane-vue-0.2.0.tgz(vue@3.5.42(typescript@6.0.3))':
     dependencies:

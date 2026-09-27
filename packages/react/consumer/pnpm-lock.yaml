@@ -472,7 +472,9 @@ snapshots:
     dependencies:
       '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
-  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz': {}
+  '@gamut-plane/ui@file:artifacts/gamut-plane-ui-0.2.0.tgz':
+    dependencies:
+      '@gamut-plane/core': file:artifacts/gamut-plane-core-0.2.0.tgz
 
   '@napi-rs/wasm-runtime@1.2.4(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:

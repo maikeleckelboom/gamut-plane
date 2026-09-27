@@ -3,6 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { cp, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 type PackageManifest = {
   name: string;
@@ -87,6 +88,20 @@ export async function packPrivateArtifact(
   }
   if (manifest.types) assert.ok(files.includes(`package/${manifest.types.slice(2)}`));
   if (manifest.exports["./style.css"]) assert.ok(files.includes("package/dist/style.css"));
+  if (manifest.name === "@gamut-plane/ui") {
+    assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ["@gamut-plane/core"]);
+    for (const file of files.filter((file) => file.endsWith(".js"))) {
+      assert.doesNotMatch(
+        tar(["-xOf", tarball, file]),
+        /@gamut-plane\/(?:core|render)|@texel\/color/,
+        `UI runtime must remain independent of scientific/render code: ${file}`,
+      );
+    }
+    assert.match(
+      tar(["-xOf", tarball, "package/dist/instrumentMetadata.d.ts"]),
+      /import type .* from "@gamut-plane\/core\/internal\/capabilities"/,
+    );
+  }
   const data = await readFile(tarball);
   return {
     name: manifest.name,
@@ -173,6 +188,60 @@ export async function verifyInstalledArtifacts(
     }
   }
   console.log("Every installed private-package file matches its freshly packed artifact.");
+  await verifyInstalledUiMetadata(consumer);
+}
+
+/** Check the actual installed declaration graph, even when a host enables skipLibCheck. */
+async function verifyInstalledUiMetadata(consumer: string) {
+  await writeFile(
+    join(consumer, "metadataContract.mts"),
+    `
+import { currentPrimaryEditors, currentEditorByView, editorUi, representationUi } from "@gamut-plane/ui";
+import type { ChannelId, EditOperationId, EditorId, RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
+for (const representation of Object.values(representationUi)) representation.id satisfies RepresentationDefinition["id"];
+for (const editor of currentPrimaryEditors) {
+  editor.id satisfies EditorId;
+  for (const control of editor.companions) {
+    control.channelId satisfies ChannelId;
+    control.operationId satisfies EditOperationId;
+  }
+}
+// @ts-expect-error metadata does not admit RGB primary selection
+currentEditorByView.srgb;
+if (currentPrimaryEditors.map((editor) => editor.id).join() !== "oklch-lc,oklab-ab") throw new Error("Packed primary exposure changed");
+if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw new Error("Packed metadata is mutable");
+if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
+`,
+  );
+  await writeFile(
+    join(consumer, "tsconfig.metadata.json"),
+    JSON.stringify({
+      compilerOptions: {
+        target: "ES2023",
+        module: "NodeNext",
+        moduleResolution: "NodeNext",
+        lib: ["ES2023", "DOM"],
+        types: [],
+        strict: true,
+        skipLibCheck: false,
+        noEmit: true,
+      },
+      include: ["metadataContract.mts"],
+    }),
+  );
+  const tsc = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../node_modules/typescript/bin/tsc",
+  );
+  for (const args of [[tsc, "-p", "tsconfig.metadata.json"], ["metadataContract.mts"]]) {
+    const result = spawnSync(process.execPath, args, {
+      cwd: consumer,
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+  }
+  console.log("Packed UI metadata declarations and browser-free Node import passed.");
 }
 
 export function createPnpmRunner(
