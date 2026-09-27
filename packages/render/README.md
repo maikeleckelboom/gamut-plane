@@ -5,3 +5,11 @@ Private internal dependency providing framework-neutral rendering primitives and
 The renderer has instance-local resources and synchronous drawing. Adapters allocate it during committed lifecycle setup and own measurements, observers, frame scheduling and disposal. `createPickerPresentation` is a shared pure derivation of observations, field hue, exact statuses from `analyzeGamut(original ColorValue)`, sampled guides, gradients, warnings, CSS and help text; it owns no authored identity or framework state. A hue-less observation stays `null` while the numeric field hue falls back to `0` only for visual sampling. Shared helpers place warnings, merge intervals and thresholds, and serialize target-guide connectors. The OKLab fixed-lightness gradient varies observed `[L, a, b]` numerically before CSS serialization, with CSS-only stop precision stabilized for SSR. Field sampling uses one mutable numeric color and reusable scratch, without `ColorValue` allocation. This package imports safely in Node; calling its browser renderer requires a mounted Canvas. Core remains free of DOM and framework dependencies.
 
 The checked-in tables retain their sampling settings and digest. They are approximate visualization guides, not exact gamut tests. Run `pnpm --filter @gamut-plane/render check:gamut-tables` to verify them. This package and its dependencies remain unpublished; consumers of adapter tarballs must install its artifact too.
+
+`@gamut-plane/render/internal/capabilities` is an unsupported sibling-adapter contract. It exports
+only `guideDefinitions`, `resolveEditorVisualSupport`, `resolveField`, `resolveRequestedGuides`
+and their directly needed `GuideId`, `EditorVisualSupport`, `FieldResolution`, `GuideResolution`
+types. It is deterministic and DOM-free; field support and guide support remain independent.
+Adapters compose one accepted source/state revision and must supply its freshly derived exact
+rows to guide resolution. Raw check rows carry no independent provenance. This entry adds no
+consumer API, mutable registry or Canvas readiness state; root exports remain unchanged.

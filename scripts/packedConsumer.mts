@@ -88,6 +88,13 @@ export async function packPrivateArtifact(
   }
   if (manifest.types) assert.ok(files.includes(`package/${manifest.types.slice(2)}`));
   if (manifest.exports["./style.css"]) assert.ok(files.includes("package/dist/style.css"));
+  if (manifest.name === "@gamut-plane/core" || manifest.name === "@gamut-plane/render") {
+    assert.deepEqual(Object.keys(manifest.exports).sort(), [".", "./internal/capabilities"]);
+    assert.deepEqual(manifest.exports["./internal/capabilities"], {
+      types: "./dist/capabilities/index.d.ts",
+      import: "./dist/capabilities/index.js",
+    });
+  }
   if (manifest.name === "@gamut-plane/ui") {
     assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ["@gamut-plane/core"]);
     for (const file of files.filter((file) => file.endsWith(".js"))) {
@@ -189,6 +196,86 @@ export async function verifyInstalledArtifacts(
   }
   console.log("Every installed private-package file matches its freshly packed artifact.");
   await verifyInstalledUiMetadata(consumer);
+  await verifyInstalledCapabilities(consumer);
+}
+
+/** Resolve and execute the same unsupported sibling contracts from each actual packed graph. */
+async function verifyInstalledCapabilities(consumer: string) {
+  await writeFile(
+    join(consumer, "capabilitiesContract.mts"),
+    `
+import { createColorValue, represent } from "@gamut-plane/core";
+import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
+import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequestedGuides } from "@gamut-plane/render/internal/capabilities";
+import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
+const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
+if (!source.ok) throw new Error("Invalid packed capability source");
+const ids: readonly GuideId[] = Object.values(guideDefinitions).map((guide) => guide.id);
+const observation = represent(source.value, "oklch");
+const checks = analyzeRequestedGamuts(source.value, ["display-p3-gamut", "srgb-gamut"]);
+const editor: EditorVisualSupport = resolveEditorVisualSupport("oklch-lc");
+const field: FieldResolution = resolveField(source.value, editor);
+const guides: readonly GuideResolution[] = resolveRequestedGuides(source.value, editor, ids, checks);
+if (!observation.ok || field.kind !== "available" || checks.length !== 2) throw new Error("Packed resolution failed");
+if (guides.some((row) => row.kind !== "resolved" || row.forms.targetMarker.kind !== "exact-not-outside")) throw new Error("Packed exact provenance failed");
+// @ts-expect-error render guide identities remain distinct from gamut identities
+const wrongGuide: GuideId = "srgb-gamut";
+// @ts-expect-error core's new runtime contract is not public root API
+type RootAnalysis = typeof import("@gamut-plane/core").analyzeRequestedGamuts;
+void wrongGuide;
+`,
+  );
+  await writeFile(
+    join(consumer, "capabilitiesRuntime.mjs"),
+    `
+import assert from "node:assert/strict";
+import * as core from "@gamut-plane/core";
+import * as coreInternal from "@gamut-plane/core/internal/capabilities";
+import * as render from "@gamut-plane/render";
+import * as renderInternal from "@gamut-plane/render/internal/capabilities";
+assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "editorDefinitions", "geometryDefinitions"]);
+assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
+for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
+for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
+assert.equal(typeof globalThis.window, "undefined");
+assert.equal(typeof globalThis.document, "undefined");
+`,
+  );
+  await writeFile(
+    join(consumer, "tsconfig.capabilities.json"),
+    JSON.stringify({
+      compilerOptions: {
+        target: "ES2023",
+        module: "NodeNext",
+        moduleResolution: "NodeNext",
+        lib: ["ES2023"],
+        types: [],
+        strict: true,
+        skipLibCheck: false,
+        noEmit: true,
+      },
+      include: ["capabilitiesContract.mts"],
+    }),
+  );
+  const tsc = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../node_modules/typescript/bin/tsc",
+  );
+  for (const args of [
+    [tsc, "-p", "tsconfig.capabilities.json"],
+    ["capabilitiesContract.mts"],
+    ["capabilitiesRuntime.mjs"],
+  ]) {
+    const result = spawnSync(process.execPath, args, {
+      cwd: consumer,
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+  }
+  console.log(
+    "Packed core/render internal inventories, root exclusion, no-DOM declarations and Node resolution passed.",
+  );
 }
 
 /** Check the actual installed declaration graph, even when a host enables skipLibCheck. */
