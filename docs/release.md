@@ -1,6 +1,6 @@
 # Release runbook
 
-Use this procedure for an approved repository/application release. Record the intended tag from the release decision and its release-note document under `docs/releases/`; read the four private package versions from their current manifests. Replace angle-bracket placeholders below with those recorded values and paths before running commands. The Git tag and GitHub release identify the public application version. The private package versions identify local tarball artifacts and do not authorize npm publication. For the current candidate, the [v0.3.0 release and migration notes](releases/v0.3.0.md) record the decision.
+Use this procedure for an approved repository/application release. Record the intended tag from the release decision and its release-note document under `docs/releases/`; read the five private package versions from their current manifests. Replace angle-bracket placeholders below with those recorded values and paths before running commands. The Git tag and GitHub release identify the public application version. The private package versions identify local tarball artifacts and do not authorize npm publication. The [v0.3.0 release and migration notes](releases/v0.3.0.md) are a previous-release example, with the four-package topology that existed at that release.
 
 ## 1. Fix the exact dev candidate
 
@@ -13,7 +13,7 @@ $candidateSha = git rev-parse dev
 git rev-parse origin/dev
 $mainBaseline = git rev-parse origin/main
 git merge-base --is-ancestor origin/main $candidateSha
-Get-Content packages/core/package.json, packages/render/package.json, packages/vue/package.json, packages/react/package.json | Select-String '"name"|"version"|"private"'
+Get-Content packages/core/package.json, packages/render/package.json, packages/ui/package.json, packages/vue/package.json, packages/react/package.json | Select-String '"name"|"version"|"private"'
 gh run list --workflow CI --branch dev --limit 10
 ```
 
@@ -53,7 +53,7 @@ git diff --check
 git status --short --untracked-files=all
 ```
 
-The checkout must finish clean. Inspect and classify any failure; do not waive a gate. The package checks pack and inspect core/render/Vue/React, assert exact internal versions and exports, and compare installed private-package files byte for byte with the tarballs. Inspect archive inventories and hashes. Investigate audit findings against the shipped bundle and runtime dependency graph. Preserve failure logs and traces until resolved.
+The checkout must finish clean. Inspect and classify any failure; do not waive a gate. The package checks pack and inspect core/render/UI/Vue/React, assert exact internal versions and exports, and compare installed private-package files byte for byte with the tarballs. Inspect archive inventories and hashes. Investigate audit findings against the shipped bundle and runtime dependency graph. Preserve failure logs and traces until resolved.
 
 ## 3. Review visuals and deployed candidate
 
@@ -78,13 +78,14 @@ The promoted Git tree must equal the certified candidate tree. Wait for all requ
 
 ## 5. Pack final private assets, tag, and release
 
-From the verified promoted `main` tree, build and pack the four private packages into a clean output directory outside tracked source. Use `pnpm pack --json` output for each actual filename, inspect each manifest/inventory/internal dependency graph, and hash the final tarball bytes. Record filename, byte size, and SHA-256 for core, render, Vue, and React in `SHA256SUMS`. Candidate tarball hashes from `dev` are review evidence; these promoted-`main` files are the immutable release assets.
+From the verified promoted `main` tree, build and pack the five private packages into a clean output directory outside tracked source. Use `pnpm pack --json` output for each actual filename, inspect each manifest/inventory/internal dependency graph, and hash the final tarball bytes. Record filename, byte size, and SHA-256 for core, render, UI, Vue, and React in `SHA256SUMS`. Candidate tarball hashes from `dev` are review evidence; these promoted-`main` files are the immutable release assets.
 
 ```powershell
 $artifactDirectory = '<ARTIFACT_DIRECTORY>'
 pnpm build:packages
 pnpm --filter @gamut-plane/core pack --pack-destination $artifactDirectory --json
 pnpm --filter @gamut-plane/render pack --pack-destination $artifactDirectory --json
+pnpm --filter @gamut-plane/ui pack --pack-destination $artifactDirectory --json
 pnpm --filter @gamut-plane/vue pack --pack-destination $artifactDirectory --json
 pnpm --filter @gamut-plane/react pack --pack-destination $artifactDirectory --json
 Get-ChildItem -LiteralPath $artifactDirectory -Filter *.tgz | Sort-Object Name | ForEach-Object {
@@ -95,10 +96,10 @@ git status --short --branch --untracked-files=all
 git tag -a <TAG> -m "Gamut Plane <TAG>"
 git push origin <TAG>
 gh release create <TAG> --title "Gamut Plane <TAG>" --notes-file <RELEASE_NOTES_FILE> --verify-tag
-gh release upload <TAG> <CORE_TGZ> <RENDER_TGZ> <VUE_TGZ> <REACT_TGZ> <SHA256SUMS>
+gh release upload <TAG> <CORE_TGZ> <RENDER_TGZ> <UI_TGZ> <VUE_TGZ> <REACT_TGZ> <SHA256SUMS>
 ```
 
-For the current v0.3.0 decision, the release assets are `gamut-plane-core-0.2.0.tgz`, `gamut-plane-render-0.2.0.tgz`, `gamut-plane-vue-0.2.0.tgz`, `gamut-plane-react-0.2.0.tgz`, and `SHA256SUMS`. These belong on the GitHub release; every package remains `private: true` and unpublished to npm. In a logged-out browser, verify the tag, release notes, all five assets, source archives, production app, and social image.
+The previous v0.3.0 release has four historical package tarballs: `gamut-plane-core-0.2.0.tgz`, `gamut-plane-render-0.2.0.tgz`, `gamut-plane-vue-0.2.0.tgz`, and `gamut-plane-react-0.2.0.tgz`, plus `SHA256SUMS`. Future releases following this runbook upload all five package tarballs and `SHA256SUMS`: six assets before optional files. Every package remains `private: true` and unpublished to npm. In a logged-out browser, verify the tag, release notes, all required assets, source archives, production app, and social image.
 
 ## Recovery
 
