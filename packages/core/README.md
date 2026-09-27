@@ -79,3 +79,9 @@ The exact gamut-analysis tolerance and boundary-search tolerance both currently 
 See [Architecture](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md) for package boundaries and [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) for unit and packed-consumer checks.
 
 [MIT License](LICENSE).
+
+`@gamut-plane/core/internal/capabilities` is an unsupported sibling-package contract, separate
+from the consumer root API. Its runtime exports are `editorDefinitions`, `geometryDefinitions`
+and `analyzeRequestedGamuts`. The latter retains one exact result or native failure per requested
+gamut, always analyzing the supplied authored ColorValue. Adapters own source provenance across
+their synchronous accepted-resolution revisions. This internal entry requires no DOM types.

@@ -74,7 +74,7 @@ import { analyzeGamut, authorPlaneEdit, createColorValue, definitionOf, projectC
 import type { ColorValue, ColorRepresentation } from "@gamut-plane/core";
 import * as root from "@gamut-plane/core";
 import * as capabilities from "@gamut-plane/core/internal/capabilities";
-import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
+import { analyzeRequestedGamuts, editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
 import type { EditorId, EditorDefinition, GeometryId, GeometryDefinition, ChannelDefinition, ChannelId, RepresentationDefinition, EditOperationDefinition, EditOperationId } from "@gamut-plane/core/internal/capabilities";
 import type { GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
 
@@ -85,8 +85,8 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface expanded");
-if ("editorDefinitions" in root || "geometryDefinitions" in root) throw new Error("Internal capabilities leaked into root");
+if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
 const editorId: EditorId = "oklch-lc";
 const editor: EditorDefinition = editorDefinitions[editorId];
 const geometryId: GeometryId = editor.geometryId;
@@ -116,6 +116,8 @@ void [representation, hueChannel, wrongHueChannel, displayLabel];
 const source = createColorValue({ space: "oklch", channels: [0.6, -0, null], alpha: 0.372913 });
 if (!source.ok) throw new Error("Packed construction failed");
 const value: ColorValue = source.value;
+const requestedChecks: readonly GamutCheckResult[] = analyzeRequestedGamuts(value, ["display-p3-gamut", "srgb-gamut"]);
+if (requestedChecks.length !== 2 || requestedChecks.some((row) => !row.result.ok)) throw new Error("Packed requested analysis failed");
 const definition: ColorRepresentation = definitionOf(value);
 if (definition.space !== "oklch" || !Object.is(definition.channels[1], -0)) throw new Error("Packed defining coordinates changed");
 const observed = represent(value, "srgb");
