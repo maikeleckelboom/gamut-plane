@@ -12,3 +12,8 @@ export {
 export { gamutWarningGlyph } from "./glyphs.js";
 export { mountRange, type RangeInput } from "./interaction/rangeInteraction.js";
 export { mountNumericInput, type NumericInputState } from "./interaction/numericInteraction.js";
+export {
+  mountPlaneGesture,
+  type PlaneGestureInput,
+  type PlaneGestureBinding,
+} from "./interaction/planeGesture.js";
