@@ -71,6 +71,15 @@ describe("numeric draft lifecycle", () => {
     await event(ui.input, "blur");
     expect(ui.complete).not.toHaveBeenCalled();
   });
+  it("resets a dirty draft on precision-only change", async () => {
+    const ui = await numeric();
+    await input(ui.input, "-0.17");
+    await ui.render(<NumericInput {...ui.props} precision={2} />);
+    expect(ui.input.value).toBe("0.20");
+    await event(ui.input, "blur");
+    expect(ui.complete).not.toHaveBeenCalled();
+    expect(ui.cancel).not.toHaveBeenCalled();
+  });
   it.each([
     ["-0.25", -0.25],
     ["-1", -0.4],
