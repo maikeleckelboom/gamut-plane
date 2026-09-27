@@ -42,6 +42,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
       preview = true;
       current().onInteraction?.(true);
     }
+    if (disposed) return;
     if (frame !== null) return;
     frame = window.requestAnimationFrame(() => {
       frame = null;
@@ -79,6 +80,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
   element.addEventListener("blur", interrupt);
   return {
     reconcile() {
+      if (disposed) return;
       const value = current().value;
       if (value === previous) return;
       previous = value;
@@ -90,6 +92,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
       }
     },
     dispose() {
+      if (disposed) return;
       disposed = true;
       clear();
       pointer = null;
