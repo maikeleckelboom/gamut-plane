@@ -12,6 +12,7 @@ import type { CanvasColorSpaceStatus, RenderedFieldQuality } from "@gamut-plane/
 import { mountPlaneResources, type PlaneResourceInput } from "./planeResources.js";
 
 export interface PlaneInput extends PlaneResourceInput {
+  semanticContextKey: string;
   markerCss: string;
   getEditReference: () => PlaneEditReference | undefined;
   targetGuideCss: string;
@@ -62,7 +63,7 @@ export function mountPlane(
 
   const gesture = mountPlaneGesture<ColorValue, PlanePoint>(surface, () => ({
     value: current().value,
-    viewKey: current().plane.id,
+    viewKey: current().semanticContextKey,
     pointFromPointer: (event) => {
       if (event.type === "pointerdown") resources.measure();
       return resources.point(event);

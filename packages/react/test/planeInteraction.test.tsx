@@ -165,16 +165,23 @@ describe("ColorValue plane interaction", () => {
         ui.schedule(
           <StrictMode>
             <Suspense fallback={<p>Pending</p>}>
-              <GamutPlane value={color(0.62, 0.3, 45, 0.37)} onValueChange={abandoned} />
+              <GamutPlane
+                value={color(0.62, 0.3, 45, 0.37)}
+                view="oklab"
+                onValueChange={abandoned}
+              />
               <Suspend />
             </Suspense>
           </StrictMode>,
         ),
       );
     });
+    await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
+    await clock.flush();
     await event(surface, "keydown", { key: "ArrowLeft" });
     expect(abandoned).not.toHaveBeenCalled();
-    expect(definitionOf(first.mock.calls[0]![0]).space).toBe("oklch");
+    expect(first).toHaveBeenCalledTimes(2);
+    for (const [value] of first.mock.calls) expect(definitionOf(value).space).toBe("oklch");
   });
 
   it("keeps one pointer, previews immediately, then publishes the final point before commit", async () => {
