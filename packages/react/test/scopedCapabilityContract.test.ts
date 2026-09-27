@@ -2,41 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   createColorValue,
   definingEquals,
-  represent,
   snapshotColor,
   type ColorRepresentation,
-  type ColorValue,
 } from "@gamut-plane/core";
 import {
   validateInstrumentViewState,
   type InstrumentSelection,
   type InstrumentViewState,
 } from "@gamut-plane/ui";
-import { analyzeRequestedGamuts } from "../../core/src/capabilities/requestedGamuts.js";
 import {
-  resolveEditorVisualSupport,
-  resolveField,
-} from "../../render/src/capabilities/editorResolution.js";
-import { resolveRequestedGuides } from "../../render/src/capabilities/guideResolution.js";
-import { guideDefinitions, type GuideId } from "../../render/src/capabilities/guideSupport.js";
-
-// Test-only future adapter revision. Callers cannot inject rows from a previous value.
-// No runtime package acquires cross-family authority.
-function resolveAcceptedRevision(value: ColorValue, state: InstrumentViewState<GuideId>) {
-  const observation = represent(value, state.selection.representationId);
-  const checks = analyzeRequestedGamuts(value, state.checkedGamuts);
-  const editor = resolveEditorVisualSupport(state.selection.editorId);
-  return {
-    source: value,
-    state,
-    observation,
-    checks,
-    editor,
-    field: resolveField(value, editor),
-    guides: resolveRequestedGuides(value, editor, state.visibleGuides, checks),
-  };
-}
-
+  resolveRequestedGuides,
+  guideDefinitions,
+  type GuideId,
+} from "@gamut-plane/render/internal/capabilities";
+import { resolveAcceptedRevision as reactRevision } from "../src/model/acceptedResolution.js";
+import { resolveAcceptedRevision as vueRevision } from "../../vue/src/model/acceptedResolution.js";
 const allGuides = Object.values(guideDefinitions).map((definition) => definition.id);
 const bothChecks = ["display-p3-gamut", "srgb-gamut"] as const;
 const bothGuides = ["display-p3-boundary", "srgb-boundary"] as const;
@@ -59,7 +39,10 @@ function color(definition: ColorRepresentation) {
 }
 const ordinary = color({ space: "oklch", channels: [0.62, 0.24, 270], alpha: 0.37 });
 
-describe("validated Phase 2E state composed with independent Phase 2F facts", () => {
+describe.each([
+  ["React", reactRevision],
+  ["Vue", vueRevision],
+] as const)("%s production composition of scoped facts", (_adapter, resolveAcceptedRevision) => {
   it.each([
     { name: "A — OKLCH L/C", selection: { representationId: "oklch", editorId: "oklch-lc" } },
     { name: "B — OKLab a/b", selection: { representationId: "oklab", editorId: "oklab-ab" } },
