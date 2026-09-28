@@ -182,6 +182,9 @@ are allocated. Projection performs no science or capability resolution. The priv
 does not change component rendering; later duplicate legacy work requires per-family equivalence
 and call-count evidence.
 
+Phase 2H.1 implements that private adapter-local view in both React and Vue with shared contract
+tests. Neither component consumes it yet; the legacy presentation still drives rendering.
+
 ## Generated tables
 
 The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.

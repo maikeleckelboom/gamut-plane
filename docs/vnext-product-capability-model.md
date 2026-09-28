@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Phase 2H designs generalized presentation in section 36; that presentation is not implemented. Public selection/check/guide APIs remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Phase 2H designs generalized presentation in section 36; Phase 2H.1 now implements its private accepted view without component adoption. Public selection/check/guide APIs remain later work.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -2204,3 +2204,18 @@ ownership/matrix/retirement contract. No additional local packed browser/SSR run
 manifests, exports and runtime sources remain untouched. Push only `dev` and require every
 established CI job to pass on the exact final SHA; verify local/tracking/remote equality and a
 clean tree, with `main` unchanged. No merge, tag or release belongs to this design phase.
+
+### 36.14 Phase 2H.1 implementation record
+
+React and Vue each now define the private `AcceptedPresentationView` type and
+`presentAcceptedRevision(revision)` helper in `packages/react/src/model/acceptedPresentation.ts`
+and `packages/vue/src/model/acceptedPresentation.ts`. No accepted-revision type strengthening was
+needed. Each helper reads `definitionOf(revision.source)`, shallow-freezes only its new authored
+record and outer view, and borrows selection, observation, exact checks, editor, field, guides and
+contour buffers by exact reference. The shared contract in
+`packages/react/test/acceptedPresentationContract.ts` runs from both adapter test packages and
+checks identity, no mutation, scoped failures, raw values, observation-only selections and zero
+new science or capability resolution after revision construction.
+
+No component consumes the view yet. Existing `createPickerPresentation(...)` use and public package
+surfaces remain unchanged; component adoption and exhaustive Phase 2H.2 coverage are later work.
