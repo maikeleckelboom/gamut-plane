@@ -2218,4 +2218,30 @@ checks identity, no mutation, scoped failures, raw values, observation-only sele
 new science or capability resolution after revision construction.
 
 No component consumes the view yet. Existing `createPickerPresentation(...)` use and public package
-surfaces remain unchanged; component adoption and exhaustive Phase 2H.2 coverage are later work.
+surfaces remain unchanged; component adoption remains later work, and the exhaustive Phase 2H.2
+coverage is recorded below.
+
+### 36.15 Phase 2H.2 semantic certification record
+
+The shared `acceptedPresentationContract.ts` now exercises the private React and Vue projections
+against every A–R scenario in §36.11. The production `acceptedPresentation.ts` helpers did not
+change. Editable OKLCH/OKLab, all four observation-only representations, independent empty and
+one-sided check/guide requests, test-only missing field support, extended Lightness (positive and
+negative), Chroma overflow, OKLab outside-disc coordinates, numerical observation and exact-analysis
+failures, fresh accepted sources, defining-equal reconstruction and legacy target independence retain
+their owner-native results. The hypothetical same-representation alternate editor stays a test-only
+pass-through fixture; it does not establish a new admitted editor or observation tuple.
+
+Additional assertions preserve raw Hue 720 and negative Hue, signed zero, missing Hue, extended
+Lightness/Chroma/RGB and outside-disc OKLab coordinates. Exact `inside`, `within-tolerance`,
+`outside`, failure and absence stay distinct. Guide forms retain structural null, unavailable value,
+available empty and populated values, plus `check-not-requested`, `exact-unavailable`,
+`exact-not-outside` and available markers. Successful, observation-only and partial-failure branches
+borrow all six accepted families and resolved form/contour buffers by identity without mutation.
+After each of four precomputed success/failure revisions, projection adds no observation, exact
+analysis, field/guide resolution, plane projection, contour building or guide sampling calls.
+The outer view still has exactly seven fields and no target, environment or component state.
+
+This remains certification of the private projection only. React and Vue components continue to
+consume their existing presentation path; component adoption and duplicate-work removal remain
+Phase 2H.3 and 2H.4 respectively.
