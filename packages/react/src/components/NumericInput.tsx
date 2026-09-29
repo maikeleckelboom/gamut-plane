@@ -16,7 +16,8 @@ interface NumericInputProps extends Omit<
   | "step"
 > {
   value: number;
-  min: number;
+  context?: string | undefined;
+  min?: number | undefined;
   max?: number | undefined;
   step: number;
   precision: number;
@@ -26,7 +27,7 @@ interface NumericInputProps extends Omit<
 
 /** The native number input owns its temporary text/bad-input/IME buffer. */
 export function NumericInput(props: NumericInputProps) {
-  const { value, min, max, step, precision, onComplete, onCancel, ...dom } = props;
+  const { value, min, max, step, precision, onComplete, onCancel, context, ...dom } = props;
   const input = useRef<HTMLInputElement>(null);
   const current = useCommitted({ value, precision, min, max, onComplete, onCancel });
   const binding = useRef<ReturnType<typeof mountNumericInput> | null>(null);
@@ -40,7 +41,7 @@ export function NumericInput(props: NumericInputProps) {
   }, [current]);
   useLayoutEffect(() => {
     binding.current?.reconcile();
-  }, [value, precision]);
+  }, [value, precision, context]);
   return (
     <input
       {...dom}

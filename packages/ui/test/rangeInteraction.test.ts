@@ -69,6 +69,34 @@ afterEach(() => {
 });
 
 describe("shared native range interaction", () => {
+  it("installs dynamic DOM bounds before clamping a replacement value", () => {
+    const element = document.createElement("input");
+    element.type = "range";
+    element.step = "any";
+    element.min = "-0.1";
+    element.max = "0.1";
+    element.value = "0.1";
+    const state = {
+      value: 0.1,
+      min: -0.1,
+      max: 0.1,
+      onInput: vi.fn(),
+      onComplete: vi.fn(),
+      onInteraction: undefined,
+    };
+    const binding = mountRange(element, () => state);
+    Object.assign(state, { value: 0.35, min: -0.35, max: 0.35 });
+    binding.reconcile();
+    expect(element.min).toBe("-0.35");
+    expect(element.max).toBe("0.35");
+    expect(element.valueAsNumber).toBe(0.35);
+    Object.assign(state, { value: -0.25, min: -0.25, max: 0.25 });
+    binding.reconcile();
+    expect(element.valueAsNumber).toBe(-0.25);
+    expect(state.onInput).not.toHaveBeenCalled();
+    expect(state.onComplete).not.toHaveBeenCalled();
+    binding.dispose();
+  });
   it("reports the actual thumb through pending work, normalized feedback, and replacement", () => {
     const f = fixture((value) => value % 360);
     f.dispatch("input", 360);

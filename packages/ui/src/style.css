@@ -469,48 +469,11 @@
   min-width: 0;
 }
 
-[data-gp-root] [data-gp-part="coordinate-readout"] {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-  align-items: center;
-  gap: 8px 12px;
-  padding-block: 4px;
-  font-size: 0.8125rem;
-}
-
-[data-gp-root] [data-gp-part="coordinate-readout"] > span {
-  grid-column: 1 / -1;
-  color: var(--gp-quiet);
-}
-
-[data-gp-root] [data-gp-part="coordinate-readout"] label {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-  color: var(--gp-quiet);
-}
-
-[data-gp-root] [data-gp-part="coordinate-readout"] input {
-  width: 100%;
-  min-width: 0;
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 4px;
-  background: var(--gp-surface-2);
-  color: var(--gp-foreground);
-  font: 0.8125rem/1.2 var(--gp-cv-font-mono);
-  text-align: right;
-}
-
-[data-gp-root] [data-gp-part="coordinate-readout"] input:focus-visible {
-  border-color: var(--gp-user-accent);
-  outline: 2px solid var(--gp-user-accent);
-  outline-offset: 1px;
-}
-
 @media (forced-colors: active) {
+  [data-gp-root] [data-gp-part="native-range"]:focus-visible:not([data-gp-pointer-focus]) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
   [data-gp-root] [data-gp-part="surface"]:focus-visible:not([data-gp-pointer-focus]) {
     border-color: Highlight;
     outline-color: Highlight;
@@ -755,4 +718,15 @@
   left: calc(50% + var(--gp-warning-offset-x, 18px));
   top: calc(50% + var(--gp-warning-offset-y, -18px));
   transform: translate(-50%, -50%);
+}
+
+/* A missing slice has no usable position. Overflow uses the native clamped endpoint. */
+[data-gp-root] [data-gp-unavailable="true"] [data-gp-part="native-range"]::-webkit-slider-thumb {
+  visibility: hidden;
+}
+[data-gp-root] [data-gp-unavailable="true"] [data-gp-part="native-range"]::-moz-range-thumb {
+  visibility: hidden;
+}
+[data-gp-root] [data-gp-part="native-range"]:disabled {
+  cursor: default;
 }

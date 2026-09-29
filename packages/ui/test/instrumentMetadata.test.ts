@@ -30,9 +30,9 @@ describe("current instrument metadata", () => {
         ["oklch.c", "oklch-channel-patch", "range-and-number", "Chroma"],
       ],
       [
-        ["oklab.l", "oklab-channel-patch", "range-and-number", "OKLab lightness · fixed axis"],
-        ["oklab.a", "oklab-disc-coordinate", "number", "a"],
-        ["oklab.b", "oklab-disc-coordinate", "number", "b"],
+        ["oklab.l", "oklab-channel-patch", "range-and-number", "Lightness"],
+        ["oklab.a", "oklab-disc-coordinate", "range-and-number", "a"],
+        ["oklab.b", "oklab-disc-coordinate", "range-and-number", "b"],
       ],
     ]);
     for (const editor of currentPrimaryEditors) {
@@ -58,8 +58,8 @@ describe("current instrument metadata", () => {
       ],
       [
         [{ min: 0, max: 1 }, { min: 0, max: 1 }, 0.001, 4],
-        [null, { min: -0.4, max: 0.4 }, 0.001, 4],
-        [null, { min: -0.4, max: 0.4 }, 0.001, 4],
+        ["geometry", "geometry", 0.001, 4],
+        ["geometry", "geometry", 0.001, 4],
       ],
     ]);
   });

@@ -27,7 +27,6 @@ export type CompanionBinding = {
 
 type NumericPresentation = Readonly<{
   label: string;
-  numericBounds: Readonly<{ min: number; max?: number }>;
   step: number;
   precision: number;
 }>;
@@ -35,13 +34,21 @@ type NumericPresentation = Readonly<{
 /** Input mechanism is separate from semantic authorship. No executor or value-derived facts. */
 export type CompanionControl = CompanionBinding &
   NumericPresentation &
+  Readonly<{
+    controlKind: "range-and-number";
+    symbol: "H" | "L" | "C" | "a" | "b";
+  }> &
   (
     | Readonly<{
-        controlKind: "range-and-number";
-        symbol: "H" | "L" | "C";
         sliderRange: Readonly<{ min: number; max: number }>;
+        numericBounds: Readonly<{ min: number; max?: number }>;
       }>
-    | Readonly<{ controlKind: "number"; symbol: "a" | "b"; numericLabel: string }>
+    | Readonly<{
+        operationId: "oklab-disc-coordinate";
+        sliderRange: "geometry";
+        numericBounds: "geometry";
+        accessibleLabel: string;
+      }>
   );
 
 export type EditorUi = {
@@ -71,7 +78,6 @@ const unitBounds = Object.freeze({ min: 0, max: 1 });
 const hueBounds = Object.freeze({ min: 0, max: 360 });
 const chromaSliderRange = Object.freeze({ min: 0, max: 0.4 });
 const chromaNumericBounds = Object.freeze({ min: 0 });
-const discNumericBounds = Object.freeze({ min: -0.4, max: 0.4 });
 
 export const editorUi = Object.freeze({
   "oklch-lc": Object.freeze({
@@ -126,7 +132,7 @@ export const editorUi = Object.freeze({
         operationId: "oklab-channel-patch",
         controlKind: "range-and-number",
         symbol: "L",
-        label: "OKLab lightness · fixed axis",
+        label: "Lightness",
         sliderRange: unitBounds,
         numericBounds: unitBounds,
         step: 0.001,
@@ -135,22 +141,24 @@ export const editorUi = Object.freeze({
       Object.freeze({
         channelId: "oklab.a",
         operationId: "oklab-disc-coordinate",
-        controlKind: "number",
+        controlKind: "range-and-number",
         symbol: "a",
         label: "a",
-        numericLabel: "OKLab a numeric value",
-        numericBounds: discNumericBounds,
+        accessibleLabel: "OKLab a",
+        sliderRange: "geometry",
+        numericBounds: "geometry",
         step: 0.001,
         precision: 4,
       }),
       Object.freeze({
         channelId: "oklab.b",
         operationId: "oklab-disc-coordinate",
-        controlKind: "number",
+        controlKind: "range-and-number",
         symbol: "b",
         label: "b",
-        numericLabel: "OKLab b numeric value",
-        numericBounds: discNumericBounds,
+        accessibleLabel: "OKLab b",
+        sliderRange: "geometry",
+        numericBounds: "geometry",
         step: 0.001,
         precision: 4,
       }),

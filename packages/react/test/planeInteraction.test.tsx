@@ -57,7 +57,7 @@ describe("ColorValue plane interaction", () => {
     await event(chroma, "keydown", { key: "Enter" });
     expect(definitionOf(ui.commits.mock.calls.at(-1)![0]).space).toBe("oklch");
     await selectRepresentation(ui.element, "oklab");
-    const a = get<HTMLInputElement>(ui.element, '[data-oklab-coordinate="a"]');
+    const a = get<HTMLInputElement>(ui.element, '[aria-label="OKLab a numeric value"]');
     await input(a, "-0.13");
     await event(a, "keydown", { key: "Enter" });
     const final = ui.commits.mock.calls.at(-1)![0];

@@ -4,7 +4,8 @@ import { gpPart, mountNumericInput } from "@gamut-plane/ui";
 
 const props = defineProps<{
   modelValue: number;
-  min: number;
+  context?: string | undefined;
+  min?: number | undefined;
   max?: number | undefined;
   step: number;
   precision: number;
@@ -41,7 +42,7 @@ onMounted(() => {
 });
 
 watch(
-  () => [props.modelValue, props.precision],
+  () => [props.modelValue, props.precision, props.context],
   () => binding?.reconcile(),
   { flush: "sync" },
 );

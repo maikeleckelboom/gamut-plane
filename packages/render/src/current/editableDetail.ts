@@ -1,3 +1,4 @@
+import { editOperationDefinitions } from "@gamut-plane/core/internal/capabilities";
 import {
   OKLCH_PICKER_MAX_CHROMA,
   convertOklabToOklch,
@@ -57,10 +58,37 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
       })),
     };
   }
-  const [, a, b] = field.projection.representation.channels;
+  const projection = field.projection;
+  const [labL, a, b] = projection.representation.channels;
+  const coordinateDetail = (coordinate: "a" | "b") => {
+    const range = editOperationDefinitions["oklab-disc-coordinate"].directRange(
+      projection,
+      coordinate,
+    );
+    return {
+      range,
+      gradient: range
+        ? colorGradient(12, (position) => {
+            const scalar = range.min + position * (range.max - range.min);
+            const [l, c, h] = convertOklabToOklch([
+              labL,
+              coordinate === "a" ? scalar : a,
+              coordinate === "b" ? scalar : b,
+            ]);
+            return {
+              l: l!,
+              c: Number(c!.toPrecision(12)),
+              h: Number(h!.toPrecision(12)),
+              alpha: field.projection.representation.alpha,
+            };
+          })
+        : "none",
+    };
+  };
   return {
     ...common,
     view: "oklab" as const,
+    coordinates: { a: coordinateDetail("a"), b: coordinateDetail("b") },
     fixedLightnessGradient: colorGradient(12, (position) => {
       const [stopL, stopC, stopH] = convertOklabToOklch([position, a, b]);
       return {

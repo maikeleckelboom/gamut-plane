@@ -10,6 +10,22 @@ export interface PlanePoint {
 export const OKLCH_PICKER_MAX_CHROMA = 0.4;
 export const OKLAB_PICKER_AXIS_LIMIT = OKLCH_PICKER_MAX_CHROMA;
 
+/** A scalar slice through the editor disc, independent of authored validity or any gamut. */
+export function oklabDirectCoordinateRange(
+  counterpart: number,
+): Readonly<{ min: number; max: number }> | null {
+  const fixed = Math.abs(counterpart);
+  if (!Number.isFinite(fixed) || fixed > OKLAB_PICKER_AXIS_LIMIT) return null;
+  // Factoring avoids cancellation near the edge; exact boundary slices are the singleton zero.
+  const rawExtent = Math.sqrt(
+    (OKLAB_PICKER_AXIS_LIMIT - fixed) * (OKLAB_PICKER_AXIS_LIMIT + fixed),
+  );
+  // Cross-engine observation noise must not change SSR bounds. Round inward, never outside
+  // the disc, at a resolution far finer than the direct control's 0.001 editing step.
+  const extent = Math.floor(rawExtent * 1e12) / 1e12;
+  return { min: extent === 0 ? 0 : -extent, max: extent };
+}
+
 const NORMALIZED_PLANE_DOMAIN_EPSILON = Number.EPSILON * 16;
 
 export function assertFinitePoint(point: PlanePoint): void {

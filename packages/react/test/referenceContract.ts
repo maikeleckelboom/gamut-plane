@@ -263,7 +263,7 @@ export function referenceContract(
             selection: { representationId: "oklab", editorId: "oklab-ab" },
           });
           expect(host.element.querySelectorAll('[data-gp-marker="reference"]')).toHaveLength(1);
-          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(1);
+          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(3);
           const line = host.element.querySelector('[data-gp-part="reference-connector"]')!;
           expect(line.getAttribute("x1")).not.toBe(line.getAttribute("x2"));
           expect(line.getAttribute("y1")).not.toBe(line.getAttribute("y2"));

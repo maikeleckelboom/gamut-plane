@@ -23,7 +23,6 @@ export const gpPart = {
   channelField: "channel-field",
   nativeRange: "native-range",
   gamutInterval: "gamut-interval",
-  coordinateReadout: "coordinate-readout",
   representationControl: "representation-control",
   authorshipContext: "authorship-context",
   inspectionReadout: "inspection-readout",

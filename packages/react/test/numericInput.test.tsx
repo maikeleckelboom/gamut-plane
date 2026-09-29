@@ -142,7 +142,7 @@ describe("numeric draft lifecycle", () => {
   });
   it("keeps direct OKLab coordinate edits on the disc without overflow help", async () => {
     const ui = await host({ defaultState: editingState("oklab") });
-    const coordinate = get<HTMLInputElement>(ui.element, '[data-oklab-coordinate="a"]');
+    const coordinate = get<HTMLInputElement>(ui.element, '[aria-label="OKLab a numeric value"]');
     await input(coordinate, "0.8");
     await event(coordinate, "change");
 

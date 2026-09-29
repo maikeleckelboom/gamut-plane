@@ -97,7 +97,6 @@ export const generalizedCopy = Object.freeze({
   area: "Area",
   inspectionOnly: "Inspecting",
   coordinates: "Coordinates",
-  oklabCoordinates: "Editable OKLab coordinates",
   coordinatesUnavailable: "Coordinates unavailable for this color.",
   planeUnavailable: "Editing plane unavailable for this color.",
   alpha: "Alpha",

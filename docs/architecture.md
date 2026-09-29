@@ -63,3 +63,38 @@ Vue and React use the same UI controllers but own their framework-specific commi
 Core tests own science and typed geometry/operation contracts. Render tests own field/guide forms and geometry-keyed caches. UI tests own admission, state, order, copy, and controller policies. Adapter tests own native composition and framework lifecycle; shared semantics use a common contract where useful. The standalone web suite owns full product browser, accessibility, responsive, and visual references. Packed Vue/Vite and React/Vite prove installed artifacts and a representative interaction; packed Nuxt and Next prove SSR/hydration, with Next root Strict Mode. See [Testing](testing.md) and the [React parity map](react-parity.md).
 
 Mapping, output workflows, a new shipped editor/representation, plugin registration, and a compact vNext redesign are outside the current instrument API.
+
+## Direct editor coordinates
+
+An admitted editor may expose direct 1D companion controls for its editable coordinates.
+OKLCH exposes H/L/C beside its L/C plane; OKLab exposes L/a/b beside its a/b plane.
+The subdued plane-axis labels identify the 2D geometry and remain visible independently
+of the direct-control notation rail. The separate editable OKLab coordinate block is removed.
+
+Core's internal `oklab-disc-coordinate` capability resolves each direct range from the fixed
+counterpart: a spans `[-sqrt(r*r - b*b), +sqrt(r*r - b*b)]`, and b uses the corresponding
+slice at fixed a. Core rounds endpoints inward to 12 decimal places to keep DOM bounds
+stable across server/browser observation noise without admitting points outside the disc.
+The radius comes from core's admitted disc geometry. A counterpart exactly
+at the radius permits only zero; a counterpart beyond it makes that direct slice unavailable.
+Range availability is separate from authored coordinate validity. Overflow retains the real
+numeric value while the native thumb stays clamped at the nearest endpoint; unavailable slices retain a read-only numeric value and
+an accessible recovery explanation. The plane can still author an in-domain point.
+
+Direct scalar authorship bounds only the edited channel and then uses the existing OKLab
+channel edit, preserving the counterpart, Lightness and alpha exactly. This avoids round-trip
+noise from normalized plane points changing the active slice during a drag. The existing
+`oklabCoordinatePlanePoint()` and plane/keyboard point semantics are unchanged. Numeric completion
+uses the same dynamic endpoints as the range. Continuous native tracks allow exact zero and
+endpoints, with the shared controller retaining 0.001 arrow increments and Home/End.
+Counterpart changes interrupt pending range work and numeric drafts without remounting controls.
+The shared range controller installs accepted DOM bounds before writing the clamped value,
+including when Vue reconciles props before patching its DOM. This keeps both thumbs stable
+during coupled plane edits at the disc edge.
+
+Render owns the a/b gradients, sampling the scalar slice with accepted L and the counterpart
+fixed, through the existing OKLab-to-OKLCH serialization path and alpha convention. Gradients
+are presentation only. No gamut selection, exact result, sampled boundary, clipping or mapping
+determines these ranges. No a/b gamut intervals are supplied. Exact Reference warnings appear
+only at truthful current thumb positions. These are internal capabilities; no public headless
+API is introduced.

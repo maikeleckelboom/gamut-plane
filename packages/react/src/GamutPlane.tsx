@@ -29,6 +29,8 @@ import {
 import {
   gpPart,
   editorUi,
+  directCoordinateHelp,
+  directCoordinateContext,
   currentEditorHelp,
   generalizedCopy,
   authorshipContextCopy,
@@ -37,7 +39,6 @@ import {
 import { useGeneralizedState } from "./hooks/useGeneralizedState.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
-import { NumericInput } from "./components/NumericInput.js";
 import {
   GeneralizedComparison,
   GeneralizedInspection,
@@ -153,7 +154,6 @@ export function GamutPlane(props: GamutPlaneProps) {
     accepted.exactChecks,
   );
   const warning = referenceWarning(acceptedState.referenceGamutId, accepted.exactChecks);
-  const y = field?.projection.coordinates.y ?? 0;
   const hueReference = useRef<PlaneEditReference | undefined>(undefined);
   const acceptedHue = oklch?.channels[2] ?? null;
   const hueReferenceContext = useRef(revision.contextKey);
@@ -178,15 +178,6 @@ export function GamutPlane(props: GamutPlaneProps) {
     }
     onValueChange(result.value);
     if (complete) onValueCommit?.(result.value);
-  }
-  function requireOklabProjection() {
-    if (field?.projection.representationId !== "oklab")
-      throw new Error("OKLab coordinate edit requires the accepted OKLab field");
-    return {
-      plane: "oklab" as const,
-      representation: field.projection.representation,
-      point: field.projection.point,
-    };
   }
   const dom = Object.fromEntries(
     Object.entries(rootProps).filter(
@@ -401,45 +392,54 @@ export function GamutPlane(props: GamutPlaneProps) {
                     )
                   }
                 />
-                <div
-                  className="gpr-plane-instrument-coordinate-readout"
-                  data-gp-part={gpPart.coordinateReadout}
-                  aria-label={generalizedCopy.oklabCoordinates}
-                >
-                  <span>{generalizedCopy.coordinates}</span>
-                  {[a, b].map((control) => (
-                    <label
+                {[a, b].map((control) => {
+                  const coordinate = detail.coordinates[control.symbol];
+                  const channels = field.projection.representation.channels;
+                  const scalar = channels[control.symbol === "a" ? 1 : 2]!;
+                  return (
+                    <ColorChannelControl
                       key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
-                    >
-                      <span>{control.label}</span>
-                      <NumericInput
-                        value={
-                          control.symbol === "a" ? field.projection.representation.channels[1] : y
-                        }
-                        precision={control.precision}
-                        min={control.numericBounds.min}
-                        max={control.numericBounds.max}
-                        step={control.step}
-                        data-oklab-coordinate={control.symbol}
-                        aria-label={control.numericLabel}
-                        onComplete={(next) =>
-                          edit(
-                            coordinateOperation.author(revision.source, {
-                              ...coordinateOperation.request,
-                              point: coordinateOperation.toPoint(
-                                requireOklabProjection(),
-                                control.symbol,
-                                next,
-                              ),
-                            }),
-                            true,
-                          )
-                        }
-                        onCancel={onCancel}
-                      />
-                    </label>
-                  ))}
-                </div>
+                      {...shared}
+                      id={`${id}-oklab-${control.symbol}`}
+                      channel={control.symbol}
+                      label={control.label}
+                      accessibleLabel={control.accessibleLabel}
+                      value={scalar}
+                      min={coordinate.range?.min}
+                      max={coordinate.range?.max}
+                      step={control.step}
+                      precision={control.precision}
+                      gradient={coordinate.gradient}
+                      intervals={[]}
+                      continuous
+                      coordinateContext={directCoordinateContext(
+                        control.symbol,
+                        field.projection.representation,
+                      )}
+                      help={directCoordinateHelp(control.symbol, coordinate.range)}
+                      onInput={(next) =>
+                        edit(
+                          coordinateOperation.authorCoordinate(
+                            revision.source,
+                            control.symbol,
+                            next,
+                          ),
+                          false,
+                        )
+                      }
+                      onComplete={(next) =>
+                        edit(
+                          coordinateOperation.authorCoordinate(
+                            revision.source,
+                            control.symbol,
+                            next,
+                          ),
+                          true,
+                        )
+                      }
+                    />
+                  );
+                })}
               </>
             ))}
           {accepted.authored.representationId !== accepted.selection.representationId && (

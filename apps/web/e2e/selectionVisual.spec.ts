@@ -45,7 +45,7 @@ for (const width of [320, 390, 440, 480])
       },
     });
   });
-test("inspection, Hue native endpoints and numeric-only coordinates", async ({ page }) => {
+test("inspection, Hue native endpoints and direct coordinates", async ({ page }) => {
   const root = await ready(page, 440);
   const hue = root.getByRole("slider", { name: "Hue", exact: true });
   await hue.focus();
@@ -63,8 +63,8 @@ test("inspection, Hue native endpoints and numeric-only coordinates", async ({ p
   await expect(root).toHaveScreenshot("shell-inspect-display-p3.png");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.getByRole("option", { name: "OKLab", exact: true }).click();
-  await expect(root.locator('[data-gp-part="channel-symbol"]')).toHaveCount(1);
-  await expect(root.locator('[data-gp-part="channel-symbol"]')).toHaveText("L");
+  await expect(root.locator('[data-gp-part="channel-symbol"]')).toHaveCount(3);
+  await expect(root.locator('[data-gp-part="channel-symbol"]')).toHaveText(["L", "a", "b"]);
   await expect(root.getByLabel("OKLab a numeric value")).toBeVisible();
   await expect(root.getByLabel("OKLab b numeric value")).toBeVisible();
 });

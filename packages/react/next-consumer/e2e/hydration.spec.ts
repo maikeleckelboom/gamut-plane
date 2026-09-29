@@ -117,7 +117,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
             ].map((el) => el.value),
             presentation: [
               ...document.querySelectorAll(
-                "[data-gp-part='representation-control'], [data-gp-part='exact-results']",
+                "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
               ),
             ].map((el) => el.outerHTML),
             focus: document.activeElement,
@@ -156,7 +156,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         ].map((el) => el.value),
         presentation: [
           ...document.querySelectorAll(
-            "[data-gp-part='representation-control'], [data-gp-part='exact-results']",
+            "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
           ),
         ].map((el) => el.outerHTML),
         focus: document.activeElement === before.focus,

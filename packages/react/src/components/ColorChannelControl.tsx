@@ -16,11 +16,14 @@ import { NumericInput } from "./NumericInput.js";
 
 export interface ColorChannelControlProps {
   id: string;
-  channel: "H" | "L" | "C";
+  channel: "H" | "L" | "C" | "a" | "b";
   label: string;
   value: number;
-  min: number;
-  max: number;
+  min?: number | undefined;
+  max?: number | undefined;
+  coordinateContext?: string | undefined;
+  accessibleLabel?: string;
+  continuous?: boolean;
   step: number;
   precision: number;
   gradient: string;
@@ -59,12 +62,15 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     onComplete,
     onCancel,
   } = props;
+  const available = min !== undefined && max !== undefined;
   const range = useRef<HTMLInputElement>(null);
   const current = useCommitted({
     ...props,
+    context: props.coordinateContext,
+    keyboardStep: props.continuous ? props.step : undefined,
     onInteraction: props.onInteraction,
     onNativeValue: (nativeValue: number) => {
-      const position = rangeWarningStyle(nativeValue, min, max);
+      const position = available ? rangeWarningStyle(nativeValue, min, max) : null;
       if (position)
         range.current?.parentElement?.style.setProperty(
           "--gp-range-warning-position",
@@ -73,12 +79,12 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     },
   });
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
-  const bounded = Math.min(max, Math.max(min, value));
+  const bounded = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, value));
   const sections = channelSections(intervals);
   const helpId = help ? `${id}-help` : undefined;
   const warningId = props.warning ? `${id}-warning` : undefined;
   const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
-  const warningStyle = rangeWarningStyle(value, min, max);
+  const warningStyle = available ? rangeWarningStyle(value, min, max) : null;
   useLayoutEffect(() => {
     const mounted = mountRange(range.current!, () => current.current!);
     binding.current = mounted;
@@ -95,18 +101,22 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
       className="gpr-channel-control"
       data-gp-part={gpPart.channel}
       data-gp-channel={channel.toLowerCase()}
-      data-gp-overflow={String(value < min || value > max)}
+      data-gp-overflow={String(available && (value < min || value > max))}
+      data-gp-unavailable={String(!available)}
       data-picker-control={channel.toLowerCase()}
-      data-instrument-overflow={String(value < min || value > max)}
+      data-instrument-overflow={String(available && (value < min || value > max))}
       style={presentationStyle(geometryStyle)}
     >
       <header className="gpr-channel-control-header" data-gp-part={gpPart.channelHeader}>
         <label htmlFor={id}>{label}</label>
         <NumericInput
           className="gpr-channel-control-number"
-          aria-label={`${label} numeric value`}
+          aria-label={`${props.accessibleLabel ?? label} numeric value`}
           aria-describedby={describedBy}
           value={value}
+          readOnly={!available}
+          aria-disabled={!available || undefined}
+          context={props.coordinateContext}
           min={min}
           max={overflowMax ? undefined : max}
           step={step}
@@ -162,12 +172,18 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           data-gp-part={gpPart.nativeRange}
           dir="ltr"
           type="range"
-          aria-label={label}
+          aria-label={props.accessibleLabel ?? label}
+          aria-valuetext={
+            available && (value < min || value > max)
+              ? `${value.toFixed(precision)} (outside direct range)`
+              : undefined
+          }
+          disabled={!available || min === max}
           aria-describedby={describedBy}
           defaultValue={bounded}
           min={min}
           max={max}
-          step={step}
+          step={props.continuous ? "any" : step}
           onBlur={(event) => {
             event.currentTarget.removeAttribute("data-pointer-focus");
             event.currentTarget.removeAttribute(gpAttribute.pointerFocus);

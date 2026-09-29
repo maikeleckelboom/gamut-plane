@@ -1,7 +1,7 @@
 export interface NumericInputState {
   value: number;
   precision: number;
-  min: number;
+  min?: number | undefined;
   max?: number | undefined;
   onComplete: (value: number) => void;
   onCancel?: (() => void) | undefined;
@@ -36,7 +36,7 @@ export function mountNumericInput(target: HTMLInputElement, current: () => Numer
     const numeric = input.valueAsNumber;
     const state = access();
     if (Number.isFinite(numeric))
-      state.onComplete(Math.min(state.max ?? Infinity, Math.max(state.min, numeric)));
+      state.onComplete(Math.min(state.max ?? Infinity, Math.max(state.min ?? -Infinity, numeric)));
     queueMicrotask(() => {
       if (!disposed && revision === completedRevision) reset();
     });

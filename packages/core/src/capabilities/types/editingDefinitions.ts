@@ -17,6 +17,7 @@ import type {
   PickerPlaneKeyboardAction,
 } from "../../picker/keyboard.js";
 import type { ChannelDefinition } from "./representationDefinitions.js";
+import type { resolveOklabDirectRange, authorOklabDirectCoordinate } from "../directCoordinate.js";
 
 type ChannelOf<R extends ColorSpaceId> = Extract<ChannelDefinition, { representationId: R }>["id"];
 
@@ -130,6 +131,8 @@ interface EditOperationContracts {
       pointOperationId: "oklab-ab-point";
       /** Existing helper scalar-preclamps, then radially constrains the coupled point. */
       toPoint: typeof oklabCoordinatePlanePoint;
+      directRange: typeof resolveOklabDirectRange;
+      authorCoordinate: typeof authorOklabDirectCoordinate;
     }>;
 }
 

@@ -17,10 +17,13 @@ const props = withDefaults(
   defineProps<{
     id: string;
     label: string;
-    channel: "L" | "C" | "H";
+    channel: "L" | "C" | "H" | "a" | "b";
     modelValue: number;
-    min: number;
-    max: number;
+    min?: number | undefined;
+    max?: number | undefined;
+    coordinateContext?: string | undefined;
+    accessibleLabel?: string;
+    continuous?: boolean;
     step: number;
     gradient: string;
     normalizeValue?: (value: number) => number;
@@ -50,10 +53,13 @@ const warningId = computed(() => (props.warning ? `${props.id}-warning` : undefi
 const describedBy = computed(
   () => [helpId.value, warningId.value].filter(Boolean).join(" ") || undefined,
 );
-const warningStyle = computed(() => rangeWarningStyle(props.modelValue, props.min, props.max));
+const available = computed(() => props.min !== undefined && props.max !== undefined);
+const warningStyle = computed(() =>
+  available.value ? rangeWarningStyle(props.modelValue, props.min!, props.max!) : null,
+);
 const boundedModelValue = computed(() => clamp(props.modelValue));
 const isOutsideInstrument = computed(
-  () => props.modelValue < props.min || props.modelValue > props.max,
+  () => available.value && (props.modelValue < props.min! || props.modelValue > props.max!),
 );
 const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
 const rangeElement = ref<HTMLInputElement>();
@@ -81,6 +87,8 @@ onMounted(() => {
     value: boundedModelValue.value,
     min: props.min,
     max: props.max,
+    context: props.coordinateContext,
+    keyboardStep: props.continuous ? props.step : undefined,
     ...(props.normalizeValue ? { normalizeValue: props.normalizeValue } : {}),
     onInput: (value) => emit("update:modelValue", value),
     onComplete: (value) => {
@@ -89,7 +97,9 @@ onMounted(() => {
     },
     onInteraction: (active) => emit("range-interaction", active),
     onNativeValue: (nativeValue) => {
-      const position = rangeWarningStyle(nativeValue, props.min, props.max);
+      const position = available.value
+        ? rangeWarningStyle(nativeValue, props.min!, props.max!)
+        : null;
       if (position)
         rangeElement.value?.parentElement?.style.setProperty(
           "--gp-range-warning-position",
@@ -100,7 +110,7 @@ onMounted(() => {
 });
 
 function clamp(value: number): number {
-  return Math.min(props.max, Math.max(props.min, value));
+  return Math.min(props.max ?? Infinity, Math.max(props.min ?? -Infinity, value));
 }
 
 function markPointerFocus(event: PointerEvent): void {
@@ -119,7 +129,7 @@ function sectionStyle(section: LinearControlInterval): Record<string, string> {
 }
 
 watch(
-  () => [props.modelValue, props.min, props.max, props.normalizeValue],
+  () => [props.modelValue, props.min, props.max, props.normalizeValue, props.coordinateContext],
   () => {
     rangeBinding?.reconcile();
   },
@@ -138,6 +148,7 @@ onBeforeUnmount(() => {
     :data-gp-part="gpPart.channel"
     :data-gp-channel="channel.toLowerCase()"
     :data-gp-overflow="String(isOutsideInstrument)"
+    :data-gp-unavailable="String(!available)"
     :data-picker-control="channel.toLowerCase()"
     :data-instrument-overflow="isOutsideInstrument ? 'true' : 'false'"
     :style="instrumentStyle"
@@ -148,9 +159,12 @@ onBeforeUnmount(() => {
       </label>
       <NumericInput
         class="channel-control__number"
-        :aria-label="`${label} numeric value`"
+        :aria-label="`${accessibleLabel ?? label} numeric value`"
         :aria-describedby="describedBy"
         :model-value="modelValue"
+        :readonly="!available"
+        :aria-disabled="!available || undefined"
+        :context="coordinateContext"
         :precision="precision"
         :min="min"
         :max="numericMax"
@@ -202,11 +216,17 @@ onBeforeUnmount(() => {
         :data-gp-part="gpPart.nativeRange"
         type="range"
         :aria-describedby="describedBy"
-        :aria-label="label"
+        :aria-label="accessibleLabel ?? label"
+        :aria-valuetext="
+          isOutsideInstrument
+            ? `${modelValue.toFixed(precision)} (outside direct range)`
+            : undefined
+        "
+        :disabled="!available || min === max"
         v-initial-value
         :min="min"
         :max="max"
-        :step="step"
+        :step="continuous ? 'any' : step"
         @pointerdown="markPointerFocus"
         @blur="clearPointerFocus"
         @keydown="clearPointerFocus"

@@ -99,7 +99,7 @@ describe("Vue ColorValue instrument", () => {
     await wrapper.setProps({ modelValue: oklch });
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
-    const coordinate = wrapper.get('[data-oklab-coordinate="a"]');
+    const coordinate = wrapper.get('[aria-label="OKLab a numeric value"]');
     (coordinate.element as HTMLInputElement).value = "-0.13";
     await coordinate.trigger("input");
     await coordinate.trigger("keydown", { key: "Enter" });

@@ -1,4 +1,5 @@
 import { normalizeHue } from "../color/types.js";
+import { resolveOklabDirectRange, authorOklabDirectCoordinate } from "./directCoordinate.js";
 import { authorPlaneEdit } from "../picker/edit.js";
 import { oklabCoordinatePlanePoint } from "../picker/keyboard.js";
 import type { PlaneEditReference } from "../picker/edit.js";
@@ -67,6 +68,8 @@ export const editOperationDefinitions: EditOperationDefinitions = Object.freeze(
     pointOperationId: "oklab-ab-point",
     request: labPoint,
     toPoint: oklabCoordinatePlanePoint,
+    directRange: resolveOklabDirectRange,
+    authorCoordinate: authorOklabDirectCoordinate,
     author: authorPlaneEdit,
   }),
 });

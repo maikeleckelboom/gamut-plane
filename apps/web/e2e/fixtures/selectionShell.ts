@@ -14,7 +14,14 @@ import "@gamut-plane/vue/style.css";
 
 document.body.style.cssText =
   "margin:24px;background:#15171a;color:white;font-family:Arial,sans-serif";
-const created = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+const query = new URLSearchParams(location.search);
+const created = query.has("lab")
+  ? createColorValue({
+      space: "oklab",
+      channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
+      alpha: 0.37,
+    })
+  : createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!created.ok) throw Error("fixture");
 const initial = created.value;
 const alternate = { id: "test-hc", representationId: "oklch", label: "Hue / Chroma" } as const;

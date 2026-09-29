@@ -16,6 +16,8 @@ import { computed, getCurrentInstance, onBeforeUpdate, ref, shallowRef, useId, w
 import {
   gpPart,
   editorUi,
+  directCoordinateHelp,
+  directCoordinateContext,
   representationUi,
   currentEditorHelp,
   canonicalInstrumentState,
@@ -35,7 +37,6 @@ import {
 } from "@gamut-plane/ui";
 import { coordinatesOptions, validateSelection, type ShellSelection } from "@gamut-plane/ui";
 import SelectionContext from "./SelectionContext.vue";
-import NumericInput from "./NumericInput.vue";
 import { resolveAcceptedRevision } from "../model/acceptedResolution.js";
 import { presentAcceptedRevision } from "../model/acceptedPresentation.js";
 
@@ -170,7 +171,6 @@ const unavailableGuides = computed(() =>
       guide.forms.contour.kind !== "available",
   ),
 );
-const y = computed(() => field.value?.projection.coordinates.y ?? 0);
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
 watch(
@@ -255,17 +255,6 @@ function editOklch(channel: "l" | "c" | "h", value: number, complete: boolean): 
   }
 }
 
-function requireOklabProjection() {
-  const projection = field.value?.projection;
-  if (projection?.representationId !== "oklab")
-    throw new Error("OKLab coordinate edit requires the accepted OKLab field");
-  return {
-    plane: "oklab" as const,
-    representation: projection.representation,
-    point: projection.point,
-  };
-}
-
 function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): void {
   if (channel === "l") {
     const operation = editOperationDefinitions[fixedLightness.operationId];
@@ -279,13 +268,7 @@ function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): 
   } else {
     const control = channel === "a" ? a : b;
     const operation = editOperationDefinitions[control.operationId];
-    publish(
-      operation.author(revision.value.source, {
-        ...operation.request,
-        point: operation.toPoint(requireOklabProjection(), channel, value),
-      }),
-      complete,
-    );
+    publish(operation.authorCoordinate(revision.value.source, channel, value), complete);
   }
 }
 
@@ -462,47 +445,31 @@ watch(
               @commit="editOklab('l', $event, true)"
               @cancel="emit('cancel')"
             />
-            <div
-              class="plane-instrument__coordinate-readout"
-              :data-gp-part="gpPart.coordinateReadout"
-              :aria-label="generalizedCopy.oklabCoordinates"
-            >
-              <span>{{ generalizedCopy.coordinates }}</span>
-              <label>
-                <span>{{ a.label }}</span>
-                <NumericInput
-                  :key="`${revision.contextKey}:${a.channelId}:${a.operationId}`"
-                  :model-value="field.projection.representation.channels[1]"
-                  :precision="a.precision"
-                  :min="a.numericBounds.min"
-                  :max="a.numericBounds.max"
-                  :step="a.step"
-                  inputmode="decimal"
-                  data-oklab-coordinate="a"
-                  :aria-label="a.numericLabel"
-                  @update:model-value="editOklab('a', $event, false)"
-                  @commit="editOklab('a', $event, true)"
-                  @cancel="emit('cancel')"
-                />
-              </label>
-              <label>
-                <span>{{ b.label }}</span>
-                <NumericInput
-                  :key="`${revision.contextKey}:${b.channelId}:${b.operationId}`"
-                  :model-value="y"
-                  :precision="b.precision"
-                  :min="b.numericBounds.min"
-                  :max="b.numericBounds.max"
-                  :step="b.step"
-                  inputmode="decimal"
-                  data-oklab-coordinate="b"
-                  :aria-label="b.numericLabel"
-                  @update:model-value="editOklab('b', $event, false)"
-                  @commit="editOklab('b', $event, true)"
-                  @cancel="emit('cancel')"
-                />
-              </label>
-            </div>
+            <ColorChannelControl
+              v-for="control in [a, b]"
+              :key="`${revision.contextKey}:${control.channelId}:${control.operationId}`"
+              :id="`${instanceId}-oklab-${control.symbol}`"
+              :channel="control.symbol"
+              :label="control.label"
+              :accessible-label="control.accessibleLabel"
+              :model-value="
+                field.projection.representation.channels[control.symbol === 'a' ? 1 : 2]!
+              "
+              :min="detail.coordinates[control.symbol].range?.min"
+              :max="detail.coordinates[control.symbol].range?.max"
+              :step="control.step"
+              :precision="control.precision"
+              :gradient="detail.coordinates[control.symbol].gradient"
+              :continuous="true"
+              :coordinate-context="
+                directCoordinateContext(control.symbol, field.projection.representation)
+              "
+              :help="directCoordinateHelp(control.symbol, detail.coordinates[control.symbol].range)"
+              :warning="warning"
+              @update:model-value="editOklab(control.symbol, $event, false)"
+              @commit="editOklab(control.symbol, $event, true)"
+              @cancel="emit('cancel')"
+            />
           </template>
         </template>
 

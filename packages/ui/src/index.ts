@@ -67,3 +67,5 @@ export {
   type PlaneGestureInput,
   type PlaneGestureBinding,
 } from "./interaction/planeGesture.js";
+
+export { directCoordinateHelp, directCoordinateContext } from "./directCoordinateControl.js";

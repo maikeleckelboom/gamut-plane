@@ -83,7 +83,12 @@ describe("standalone application", () => {
     expect(wrapper.get('[data-plane-id="oklab"]').exists()).toBe(true);
     expect(wrapper.get(".output-demo").attributes("aria-labelledby")).toBe("output-demo-title");
     expect(wrapper.get("#output-demo-title").text()).toBe("Output examples");
-    expect(wrapper.get("[data-gp-part='coordinate-readout']").text()).toContain("Coordinates");
+    expect(wrapper.find("[data-gp-part='coordinate-readout']").exists()).toBe(false);
+    expect(wrapper.findAll("[data-gp-part='channel-symbol']").map((node) => node.text())).toEqual([
+      "L",
+      "a",
+      "b",
+    ]);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(true);
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
 
