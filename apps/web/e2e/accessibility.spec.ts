@@ -17,10 +17,10 @@ test("editable, alternate editor, and observation states remain accessible", asy
   await page.goto("/");
   await expect(page.locator("[data-gp-root]")).toBeVisible();
   await expectNoHighImpactViolations(page);
-  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   await expect(page.locator("[data-active-plane='oklab']")).toBeVisible();
   await expectNoHighImpactViolations(page);
-  await page.getByLabel("Color space", { exact: true }).selectOption("srgb");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
   await expect(
     page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),
   ).toBeVisible();
@@ -35,7 +35,9 @@ test("narrow layout, landmarks, and exact status retain their semantics", async 
   await expect(page.getByRole("complementary", { name: "Output examples" })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 1, name: "Gamut Plane" })).toHaveCount(1);
   await page.getByText("Gamuts", { exact: true }).click();
-  await page.getByRole("group", { name: "Check color in" }).getByLabel("sRGB").check();
-  await expect(page.locator("[data-gp-part='exact-result']")).toContainText(/Inside|Outside/);
+  await page.getByLabel("sRGB Status", { exact: true }).check();
+  await expect(page.locator("[data-gp-part='exact-result']").first()).toContainText(
+    /Inside|Outside/,
+  );
   await expectNoHighImpactViolations(page);
 });

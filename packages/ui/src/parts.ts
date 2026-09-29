@@ -11,6 +11,8 @@ export const gpPart = {
   gamutBoundary: "gamut-boundary",
   boundaryHit: "boundary-hit",
   marker: "marker",
+  referenceConnector: "reference-connector",
+  referenceWarning: "reference-warning",
   axis: "axis",
   renderStatus: "render-status",
   channel: "channel",
@@ -48,6 +50,6 @@ export const gpAttribute = {
   visuallyHidden: "data-gp-visually-hidden",
 } as const;
 
-export const gpMarker = { active: "active" } as const;
+export const gpMarker = { active: "active", reference: "reference" } as const;
 export const gpAxis = { x: "x", y: "y" } as const;
 export const gpGamut = { srgb: "srgb", displayP3: "display-p3" } as const;

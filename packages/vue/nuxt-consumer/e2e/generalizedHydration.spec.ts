@@ -31,7 +31,7 @@ test("generalized observation-only server HTML hydrates in place and restores re
     const html = await response!.text();
     expect(html).toContain("sRGB coordinates");
     expect(html).toContain('data-gp-part="exact-result"');
-    expect(html).toContain("sRGB boundary");
+    expect(html).toContain('aria-label="sRGB Boundary"');
     const root = page.locator("[data-gp-root]");
     await expect(root.locator("canvas")).toHaveCount(0);
     await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
@@ -68,7 +68,7 @@ test("generalized observation-only server HTML hydrates in place and restores re
   ).toBe(true);
   const root = page.locator("[data-gp-root]");
   const definition = await page.locator("[data-definition]").getAttribute("data-definition");
-  await root.getByLabel("Color space").selectOption("oklch");
+  await root.getByLabel("Coordinates", { exact: true }).selectOption("oklch");
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);

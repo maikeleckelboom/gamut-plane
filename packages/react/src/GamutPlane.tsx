@@ -24,6 +24,7 @@ import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
 import {
   generalizedEditableDetail,
   generalizedGuideDisplay,
+  referenceDisplay,
 } from "@gamut-plane/render/internal/current";
 import {
   gpPart,
@@ -31,6 +32,7 @@ import {
   currentEditorHelp,
   generalizedCopy,
   authorshipContextCopy,
+  referenceWarning,
 } from "@gamut-plane/ui";
 import { useGeneralizedState } from "./hooks/useGeneralizedState.js";
 import { ColorPlane } from "./components/ColorPlane.js";
@@ -144,6 +146,13 @@ export function GamutPlane(props: GamutPlaneProps) {
         )
       : null;
   const guides = generalizedGuideDisplay(accepted.guides);
+  const reference = referenceDisplay(
+    acceptedState.referenceGamutId,
+    accepted.guides,
+    field,
+    accepted.exactChecks,
+  );
+  const warning = referenceWarning(acceptedState.referenceGamutId, accepted.exactChecks);
   const y = field?.projection.coordinates.y ?? 0;
   const hueReference = useRef<PlaneEditReference | undefined>(undefined);
   const acceptedHue = oklch?.channels[2] ?? null;
@@ -191,7 +200,7 @@ export function GamutPlane(props: GamutPlaneProps) {
   const safeStyle = Object.fromEntries(
     Object.entries(style ?? {}).filter(([key]) => !/^--(?:picker-|gp-)/.test(key)),
   );
-  const shared = { onCancel };
+  const shared = { onCancel, warning };
   return (
     <section
       {...dom}
@@ -224,6 +233,8 @@ export function GamutPlane(props: GamutPlaneProps) {
               semanticContextKey={revision.contextKey}
               field={field}
               guides={guides}
+              reference={reference}
+              warning={warning}
               markerCss={detail.markerCss}
               getEditReference={getHueReference}
               plane={field.plane}

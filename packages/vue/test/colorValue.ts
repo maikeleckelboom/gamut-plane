@@ -15,6 +15,7 @@ export function planeValue(modelValue: ColorValue, view: PickerPlaneId = "oklch"
   const revision = resolveAcceptedRevision(modelValue, {
     selection: { representationId: view, editorId: view === "oklch" ? "oklch-lc" : "oklab-ab" },
     checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    referenceGamutId: null,
     visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   });
   const visual = generalizedEditableDetail(

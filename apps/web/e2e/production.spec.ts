@@ -93,10 +93,10 @@ test("the production build preserves generalized editing, inspection, and respon
   await page.mouse.click(bounds!.x + bounds!.width * 0.7, bounds!.y + bounds!.height * 0.4);
   await expect(channels).not.toHaveText(beforePointer ?? "");
 
-  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   await expect(page.getByRole("application", { name: /OKLab a\/b plane/ })).toBeVisible();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
-  await page.getByLabel("Color space", { exact: true }).selectOption("srgb");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
   await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(
     page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),

@@ -12,6 +12,12 @@ import { editorDefinitions, type EditorId } from "@gamut-plane/core/internal/cap
 import { PICKER_GAMUT_TABLES } from "../generated/gamutTables.js";
 
 export type GuideId = "srgb-boundary" | "display-p3-boundary";
+
+/** Explicit primary spatial Reference policy; never inferred from guide inventory order. */
+export const referenceGuidePolicy = Object.freeze({
+  "srgb-gamut": "srgb-boundary",
+  "display-p3-gamut": "display-p3-boundary",
+} as const satisfies Readonly<Partial<Record<GamutId, GuideId>>>);
 export interface GuideDefinition {
   readonly id: GuideId;
   readonly gamutId: GamutId;

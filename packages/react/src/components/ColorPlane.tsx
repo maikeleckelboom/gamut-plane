@@ -1,8 +1,12 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { GeneralizedGuideDisplay } from "@gamut-plane/render/internal/current";
+import type {
+  GeneralizedGuideDisplay,
+  ReferenceDisplay,
+} from "@gamut-plane/render/internal/current";
 import { currentEditorCopy, gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
+import { exactGamutUi, referenceWarningGlyphPath } from "@gamut-plane/ui";
 import {
   pointStyle,
   VIEWBOX_SIZE,
@@ -15,6 +19,8 @@ import { useCommitted } from "../hooks/useCommitted.js";
 
 interface ColorPlaneProps extends PlaneInput {
   guides: GeneralizedGuideDisplay;
+  reference?: ReferenceDisplay | null;
+  warning?: string | null;
   onCanvasColorSpaceChange: ((status: CanvasColorSpaceStatus) => void) | undefined;
 }
 
@@ -32,6 +38,13 @@ export function ColorPlane(props: ColorPlaneProps) {
   const x = projection.coordinates.x;
   const y = projection.coordinates.y;
   const activePoint = field.geometry.constrain(projection.point);
+  const spatialReference =
+    props.reference?.showSpatial && props.reference.spatial.kind === "available"
+      ? props.reference.spatial
+      : null;
+  const referenceLabel = props.reference
+    ? `Sampled ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
+    : "";
   useLayoutEffect(() => {
     const mounted = mountPlane(
       surface.current!,
@@ -86,7 +99,7 @@ export function ColorPlane(props: ColorPlaneProps) {
           event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
         }}
         dir="ltr"
-        aria-label={label}
+        aria-label={`${label}${props.warning ? ` ${props.warning}.` : ""}`}
         data-render-color-space={capability}
         data-outside-instrument={String(!field.markerInDomain)}
       >
@@ -166,7 +179,31 @@ export function ColorPlane(props: ColorPlaneProps) {
               role="img"
             />
           )}
+          {spatialReference && (
+            <line
+              data-gp-part={gpPart.referenceConnector}
+              x1={activePoint.x * VIEWBOX_SIZE}
+              y1={activePoint.y * VIEWBOX_SIZE}
+              x2={spatialReference.point.x * VIEWBOX_SIZE}
+              y2={spatialReference.point.y * VIEWBOX_SIZE}
+              vectorEffect="non-scaling-stroke"
+              aria-hidden="true"
+            />
+          )}
         </svg>
+        {spatialReference && (
+          <span
+            data-gp-part={gpPart.marker}
+            data-gp-marker={gpMarker.reference}
+            style={presentationStyle({
+              ...pointStyle(spatialReference.point),
+              "--marker-color": spatialReference.markerCss,
+            })}
+            title={referenceLabel}
+            aria-label={referenceLabel}
+            role="img"
+          />
+        )}
         <span
           ref={marker}
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
@@ -181,7 +218,21 @@ export function ColorPlane(props: ColorPlaneProps) {
           title="Selected color"
           aria-label="Selected color"
           role="img"
-        />
+        >
+          {props.warning && (
+            <svg
+              data-gp-part={gpPart.referenceWarning}
+              data-gamut-warning="planar"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d={referenceWarningGlyphPath} />
+            </svg>
+          )}
+        </span>
       </div>
       {(capability === "srgb" || capability === "unavailable") && (
         <span className="gpr-color-plane-render-mode" data-gp-part={gpPart.renderStatus}>

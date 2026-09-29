@@ -13,6 +13,7 @@ onMounted(() => {
 const state = ref<GamutPlaneState>({
   selection: { representationId: "srgb", editorId: null },
   checkedGamuts: ["srgb-gamut"],
+  referenceGamutId: null,
   visibleGuides: ["srgb-boundary"],
 });
 </script>

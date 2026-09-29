@@ -1,11 +1,12 @@
 import type { GamutId } from "@gamut-plane/core";
-import type { ChannelDefinition } from "@gamut-plane/core/internal/capabilities";
+import type { ChannelDefinition, GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
 import { representationUi } from "./instrumentMetadata.js";
 import {
   canonicalCheckedGamuts,
   canonicalVisibleGuides,
   defaultSelection,
   validateInstrumentViewState,
+  validateReferenceGamut,
   type InstrumentViewState,
   type RepresentationId,
 } from "./instrumentState.js";
@@ -89,7 +90,7 @@ export function orderedExactChecks<T extends Readonly<{ gamutId: GamutId }>>(
 
 export const generalizedCopy = Object.freeze({
   instrument: "Color instrument",
-  representation: "Color space",
+  representation: "Coordinates",
   editCoordinates: "Edit color",
   inspectionOnly: "Inspecting",
   coordinates: "Coordinates",
@@ -99,8 +100,10 @@ export const generalizedCopy = Object.freeze({
   alpha: "Alpha",
   comparison: "Gamuts",
   disclosure: "Gamuts",
-  exactChecks: "Check color in",
-  visibleGuides: "Show boundaries",
+  exactChecks: "Status",
+  visibleGuides: "Boundary",
+  reference: "Reference",
+  noReference: "No Reference",
   boundaryPaused: "Boundaries paused",
   guidesPending: "Requested boundaries appear when editing a color space.",
   guidesUnavailable: "Some requested boundaries cannot be drawn here.",
@@ -132,8 +135,9 @@ export function initialInstrumentState<G extends string>(
 ): InstrumentViewState<G> {
   return Object.freeze({
     selection: defaultSelection("oklch"),
-    checkedGamuts: Object.freeze([]),
+    checkedGamuts: Object.freeze(["display-p3-gamut", "srgb-gamut"] as const),
     visibleGuides: Object.freeze([...visibleGuides]),
+    referenceGamutId: "srgb-gamut",
   });
 }
 
@@ -185,3 +189,27 @@ export function requestVisibleGuide<G extends string>(
   if (!result.ok) throw new TypeError(`Invalid GamutPlane state: ${result.issue.code}`);
   return Object.freeze({ ...state, visibleGuides: result.value });
 }
+
+export function requestReferenceGamut<G extends string>(
+  state: InstrumentViewState<G>,
+  referenceGamutId: GamutId | null,
+): InstrumentViewState<G> {
+  const result = validateReferenceGamut(referenceGamutId);
+  if (!result.ok) throw new TypeError(`Invalid GamutPlane state: ${result.issue.code}`);
+  return Object.freeze({ ...state, referenceGamutId: result.value });
+}
+
+/** Only accepted, explicitly requested exact outside results warn. No sampled inputs. */
+export function referenceWarning(
+  referenceGamutId: GamutId | null,
+  checks: readonly GamutCheckResult[],
+): string | null {
+  if (referenceGamutId === null) return null;
+  const check = checks.find((row) => row.gamutId === referenceGamutId);
+  return check?.result.ok && check.result.value.status === "outside"
+    ? `Outside ${exactGamutUi[referenceGamutId].label}`
+    : null;
+}
+
+/** Same triangle geometry in native Vue/React markup. */
+export const referenceWarningGlyphPath = "M8 1.5 14.25 13.5H1.75Z";

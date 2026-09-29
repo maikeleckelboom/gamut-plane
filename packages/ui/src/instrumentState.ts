@@ -23,6 +23,7 @@ export type InstrumentViewState<G extends string> = Readonly<{
   selection: InstrumentSelection;
   checkedGamuts: readonly GamutId[];
   visibleGuides: readonly G[];
+  referenceGamutId: GamutId | null;
 }>;
 
 export type StateResult<T> =
@@ -39,7 +40,8 @@ export type StateIssue = Readonly<{
     | "invalid-checked-gamuts"
     | "unknown-gamut"
     | "invalid-visible-guides"
-    | "unknown-guide";
+    | "unknown-guide"
+    | "reference-not-admitted";
 }>;
 
 export type SelectionFacts<E extends EditorIdentity = ProductEditor> = Readonly<{
@@ -59,6 +61,20 @@ const currentGamutIds = Object.freeze([
   "display-p3-gamut",
   "srgb-gamut",
 ] as const satisfies readonly GamutId[]);
+
+/** Product admission, deliberately separate from the technical gamut inventory. */
+export const admittedReferenceGamuts = Object.freeze([
+  "srgb-gamut",
+  "display-p3-gamut",
+] as const satisfies readonly GamutId[]);
+
+export function validateReferenceGamut(input: unknown): StateResult<GamutId | null> {
+  if (input === null) return Object.freeze({ ok: true, value: null });
+  const admitted = admittedReferenceGamuts.find((id) => id === input);
+  return admitted === undefined
+    ? failure("reference-not-admitted")
+    : Object.freeze({ ok: true, value: admitted });
+}
 
 function record(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -180,7 +196,7 @@ export function validateInstrumentViewState<G extends string>(
   input: unknown,
   knownGuides: readonly G[],
 ): StateResult<InstrumentViewState<G>> {
-  if (!record(input, ["selection", "checkedGamuts", "visibleGuides"]))
+  if (!record(input, ["selection", "checkedGamuts", "visibleGuides", "referenceGamutId"]))
     return failure("invalid-state-shape");
   const selection = validateSelection(input.selection);
   if (!selection.ok) return selection;
@@ -188,12 +204,15 @@ export function validateInstrumentViewState<G extends string>(
   if (!checkedGamuts.ok) return checkedGamuts;
   const visibleGuides = canonicalVisibleGuides(input.visibleGuides, knownGuides);
   if (!visibleGuides.ok) return visibleGuides;
+  const reference = validateReferenceGamut(input.referenceGamutId);
+  if (!reference.ok) return reference;
   return Object.freeze({
     ok: true,
     value: Object.freeze({
       selection: selection.value,
       checkedGamuts: checkedGamuts.value,
       visibleGuides: visibleGuides.value,
+      referenceGamutId: reference.value,
     }),
   });
 }
@@ -218,6 +237,7 @@ export function instrumentViewStatesEqual<G extends string>(
 ): boolean {
   return (
     selectionsEqual(a.selection, b.selection) &&
+    a.referenceGamutId === b.referenceGamutId &&
     a.checkedGamuts.length === b.checkedGamuts.length &&
     a.checkedGamuts.every((id, index) => id === b.checkedGamuts[index]) &&
     a.visibleGuides.length === b.visibleGuides.length &&

@@ -7,6 +7,8 @@ export interface RangeInput {
   onInput: (value: number) => void;
   onComplete: (value: number) => void;
   onInteraction: ((active: boolean) => void) | undefined;
+  /** Presentation follows the native thumb, including normalized endpoints such as Hue 360. */
+  onNativeValue?: (value: number) => void;
 }
 
 /** Native input is live; native change is completion, independently of React event names. */
@@ -19,6 +21,9 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
   let published = current().value;
   let previous = current().value;
   const clamp = (value: number) => Math.min(current().max, Math.max(current().min, value));
+  function position() {
+    current().onNativeValue?.(element.valueAsNumber);
+  }
   function clear() {
     const hadPending = pending !== null;
     if (frame !== null) window.cancelAnimationFrame(frame);
@@ -33,11 +38,13 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
   }
   function interrupt() {
     if (clear()) element.value = String(clamp(published));
+    position();
     finish();
   }
   function input() {
     if (!Number.isFinite(element.valueAsNumber)) return;
     pending = clamp(element.valueAsNumber);
+    position();
     if (pointer !== null && !preview) {
       preview = true;
       current().onInteraction?.(true);
@@ -58,6 +65,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
     const next = clamp(element.valueAsNumber);
     clear();
     published = next;
+    position();
     current().onComplete(next);
     finish();
   }
@@ -82,7 +90,10 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
     reconcile() {
       if (disposed) return;
       const value = current().value;
-      if (value === previous) return;
+      if (value === previous) {
+        position();
+        return;
+      }
       previous = value;
       const expected = current().normalizeValue?.(published) ?? published;
       if (value !== expected) {
@@ -90,6 +101,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
         published = value;
         if (pending === null) element.value = String(clamp(value));
       }
+      position();
     },
     dispose() {
       if (disposed) return;

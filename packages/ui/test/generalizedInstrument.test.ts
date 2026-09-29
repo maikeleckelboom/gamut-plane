@@ -12,10 +12,11 @@ import {
 const guides = ["display-p3-boundary", "srgb-boundary"] as const;
 
 describe("public instrument state requests", () => {
-  it("can initialize requested guides without requesting exact checks", () => {
+  it("composes the default statuses, requested boundaries and sRGB Reference", () => {
     const initial = initialInstrumentState(guides);
     expect(initial.visibleGuides).toEqual(guides);
-    expect(initial.checkedGamuts).toEqual([]);
+    expect(initial.checkedGamuts).toEqual(["display-p3-gamut", "srgb-gamut"]);
+    expect(initial.referenceGamutId).toBe("srgb-gamut");
     expect(Object.isFrozen(initial.visibleGuides)).toBe(true);
   });
 
@@ -52,10 +53,12 @@ describe("public instrument state requests", () => {
     const input = {
       selection: { representationId: "srgb", editorId: null },
       checkedGamuts: [] as string[],
+      referenceGamutId: null,
       visibleGuides: [] as string[],
     };
     expect(canonicalInstrumentState(input, guides)).toMatchObject({
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     });
     expect(() =>

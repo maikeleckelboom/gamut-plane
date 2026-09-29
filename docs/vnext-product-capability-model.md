@@ -14,7 +14,7 @@ This document describes the current generalized instrument contract. [ADR 0003](
 | Guide          | Requested sampled contour/interval reference geometry, independently available by form.                             |
 | Output         | Explicit host serialization or mapping workflow, outside instrument state.                                          |
 
-The public state is `{ selection: { representationId, editorId }, checkedGamuts, visibleGuides }`. Arrays of IDs are validated, deduplicated, sorted, and frozen. An invalid dimension rejects the entire request. A controlled request is a proposal until accepted by the parent; local state accepts its own requests. Authored color is a separate controlled value and is not republished when only state changes.
+The public state is `{ selection: { representationId, editorId }, checkedGamuts, visibleGuides, referenceGamutId }`. Arrays of IDs are validated, deduplicated, sorted, and frozen. An invalid dimension rejects the entire request. A controlled request is a proposal until accepted by the parent; local state accepts its own requests. Authored color is a separate controlled value and is not republished when only state changes.
 
 ## Admission and cardinality
 
@@ -28,12 +28,16 @@ Geometry identity is independent of representation identity. The OKLCH lightness
 
 This separation permits another editor for a known representation without pretending that the representation has only one plane. It does not imply that every technical geometry is a product choice or that all future geometries are rectangular.
 
-## Independent checks and guides
+## Independent Status, Boundary and Reference
 
-Any of zero, one, or both exact checks may be requested. The local product default requests both visual boundaries and no exact checks. The accepted revision analyzes the original `ColorValue` only for requested check IDs. A failed result is unavailable, not outside. The state transport order is canonical ID order; the UI intentionally displays sRGB then Display P3. Guides use sampled data and may have independent contour, interval, and reference availability. An unavailable guide remains requested; inspection can show that the guide will appear with an editor. No guide requests a hidden exact analysis, and no check implies a guide.
+Any of zero, one, or both exact checks may be requested. The local product default requests both visual boundaries and both exact statuses, with sRGB as Reference. The accepted revision analyzes the original `ColorValue` only for requested check IDs. A failed result is unavailable, not outside. The state transport order is canonical ID order; the UI intentionally displays sRGB then Display P3. Guides use sampled data and may have independent contour, interval, and reference availability. An unavailable guide remains requested; inspection can show that the guide will appear with an editor. No guide requests a hidden exact analysis, and no check implies a guide.
+
+Reference is semantic focus on one product-admitted gamut (`srgb-gamut`, `display-p3-gamut`) or null. UI owns this explicit admission policy; technically known future gamuts are not automatically admitted. Render owns the explicit gamut-to-primary-guide policy. Reference requests neither exact analysis nor guide sampling: only a matching requested guide's available sampled Reference can produce a connector/swatch, and only if its endpoint projects truthfully into an available editor field. Projection failure is represented independently from the retained sampled fact, without clamping or fallback. Reference remains valid in inspection-only or spatially unavailable states.
+
+Spatial feedback appears only for a sampled boundary excursion, with accepted exact Inside/Within tolerance suppressing it. This is presentation policy, not a substitute for exact membership. Warnings consume only accepted exact `outside` for the explicitly checked Reference gamut. They ignore sampled delta, intervals and contour geometry. Reference changes preserve authored ColorValue, alpha, defining/provenance semantics, editor context, numeric drafts, active gestures and hue edit reference. The Coordinates selector performs no hidden analysis. See [Reference focus](architecture.md#reference-focus) for implementation owners and failure behavior.
 
 The standalone app's CSS/Hex output uses explicit serialization policies and reports unavailable values separately. Mapping is explicit in core. Neither output destination nor mapping belongs to the instrument state.
 
 ## Current boundary
 
-The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a color-space context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a gamut disclosure. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.
+The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a Coordinates context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a gamut disclosure. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.

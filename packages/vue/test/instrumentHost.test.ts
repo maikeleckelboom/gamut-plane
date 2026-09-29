@@ -12,6 +12,7 @@ function mountHost(controlled = false) {
   const state = ref<GamutPlaneState>({
     selection: { representationId: "oklch", editorId: "oklch-lc" },
     checkedGamuts: [],
+    referenceGamutId: null,
     visibleGuides: [],
   });
   const commits = vi.fn();

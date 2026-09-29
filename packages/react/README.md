@@ -15,7 +15,8 @@ export function ColorEditor({ initial }: { initial: ColorValue }) {
   const [color, setColor] = useState(initial);
   const [state, setState] = useState<GamutPlaneState>({
     selection: { representationId: "oklch", editorId: "oklch-lc" },
-    checkedGamuts: [],
+    checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    referenceGamutId: "srgb-gamut",
     visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   });
   return (
@@ -35,7 +36,9 @@ export function ColorEditor({ initial }: { initial: ColorValue }) {
 
 Native `section` props, `className`, `style`, and `ref` are supported without overriding owned semantics. Import `GamutPlaneProps`, `GamutPlaneSelection`, `GamutPlaneGamutId`, and `GamutPlaneGuideId` when needed. The supported CSS customization is `--gamut-plane-accent`; import the stylesheet once.
 
-The default local state selects `oklch-lc` with both sampled boundaries visible and no exact checks. State is a complete atomic object. A request to `onStateChange` is frozen and canonical; the component displays it only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Explicit empty arrays remain empty.
+The default local state selects `oklch-lc` with both exact statuses and sampled boundaries requested, with sRGB as Reference. State is a complete atomic object. A request to `onStateChange` is frozen and canonical; the component displays it only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Explicit empty arrays remain empty.
+
+Reference is independent semantic focus on sRGB, Display P3, or `null`. It enables neither Status nor Boundary. A requested boundary can supply one sampled Reference swatch and connector for a boundary excursion when its endpoint fits the current editor geometry. Accepted exact Inside or Within tolerance suppresses that spatial feedback; with Status disabled, only the sampled excursion controls it. Only an accepted exact `outside` result for the explicitly checked Reference gamut produces a warning. The Gamuts disclosure groups Status, Boundary, Reference and requested exact results by gamut, with a No Reference radio option. The Coordinates selector only changes how the same authored color is observed.
 
 The public product admits `oklch-lc` for OKLCH and `oklab-ab` for OKLab. Each also allows `editorId: null` for inspection. sRGB and Display P3 are inspection only. An admitted editor is distinct from technical capability existence; the component never exposes an unadmitted editor merely because its geometry exists. The preferred editor is used only when choosing a default, never to replace a valid explicit choice. The compact UI shows an Edit color checkbox when a representation has an admitted editor; a multi-editor choice can join the context row when one is shipped.
 

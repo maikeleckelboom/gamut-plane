@@ -1,15 +1,15 @@
-import type { GamutId } from "@gamut-plane/core";
-import type { GuideId } from "@gamut-plane/render";
+import { useId } from "react";
+import { referenceGuidePolicy } from "@gamut-plane/render/internal/capabilities";
 import {
   currentRepresentationOptions,
   currentAdmittedEditorsForRepresentation,
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
-  orderedExactChecks,
+  admittedReferenceGamuts,
+  requestReferenceGamut,
   formatInspectionNumber,
   gpPart,
-  guidePreferenceUi,
   inspectionUi,
   representationUi,
   requestCheckedGamut,
@@ -119,9 +119,6 @@ export function GeneralizedInspection({ accepted }: { accepted: AcceptedPresenta
   );
 }
 
-const gamutIds = ["srgb-gamut", "display-p3-gamut"] as const satisfies readonly GamutId[];
-const guideIds = ["srgb-boundary", "display-p3-boundary"] as const satisfies readonly GuideId[];
-
 export function GeneralizedComparison({
   accepted,
   state,
@@ -135,6 +132,7 @@ export function GeneralizedComparison({
   readOnly: boolean;
   hasPlane: boolean;
 }) {
+  const referenceName = useId();
   const unavailableGuides = accepted.guides.filter(
     (guide) => !hasPlane || guide.kind !== "resolved" || guide.forms.contour.kind !== "available",
   );
@@ -149,45 +147,84 @@ export function GeneralizedComparison({
           <span>{generalizedCopy.disclosure}</span>
           {unavailableGuides.length > 0 && <small>{generalizedCopy.boundaryPaused}</small>}
         </summary>
-        <fieldset>
-          <legend>{generalizedCopy.exactChecks}</legend>
-          {gamutIds.map((gamutId) => (
-            <label key={gamutId}>
-              <input
-                type="checkbox"
-                checked={state.checkedGamuts.includes(gamutId)}
-                disabled={readOnly}
-                onChange={(event) =>
-                  request(requestCheckedGamut(state, gamutId, event.currentTarget.checked))
-                }
-              />
-              {exactGamutUi[gamutId].label}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset>
-          <legend>{generalizedCopy.visibleGuides}</legend>
-          {guideIds.map((guideId) => (
-            <label key={guideId} data-gp-part={gpPart.guidePreference}>
-              <input
-                type="checkbox"
-                checked={state.visibleGuides.includes(guideId)}
-                disabled={readOnly}
-                onChange={(event) =>
-                  request(
-                    requestVisibleGuide(
-                      state,
-                      guideId,
-                      event.currentTarget.checked,
-                      currentGuideIds,
-                    ),
-                  )
-                }
-              />
-              {guidePreferenceUi[guideId].label}
-            </label>
-          ))}
-        </fieldset>
+        {admittedReferenceGamuts.map((gamutId) => {
+          const label = exactGamutUi[gamutId].label;
+          const guideId = referenceGuidePolicy[gamutId];
+          const check = accepted.exactChecks.find((row) => row.gamutId === gamutId);
+          const status = check
+            ? check.result.ok
+              ? check.result.value.status
+              : "unavailable"
+            : null;
+          return (
+            <fieldset key={gamutId} className="gp-gamut-row">
+              <legend>{label}</legend>
+              {status !== null && (
+                <span
+                  data-gp-part={gpPart.exactResult}
+                  data-gp-gamut={gamutId}
+                  data-gp-status={status}
+                >
+                  <strong>{exactStatusCopy[status]}</strong>
+                </span>
+              )}
+              <div className="gp-gamut-choices">
+                <label>
+                  <input
+                    type="checkbox"
+                    aria-label={`${label} Status`}
+                    checked={state.checkedGamuts.includes(gamutId)}
+                    disabled={readOnly}
+                    onChange={(event) =>
+                      request(requestCheckedGamut(state, gamutId, event.currentTarget.checked))
+                    }
+                  />
+                  {generalizedCopy.exactChecks}
+                </label>
+                <label data-gp-part={gpPart.guidePreference}>
+                  <input
+                    type="checkbox"
+                    aria-label={`${label} Boundary`}
+                    checked={state.visibleGuides.includes(guideId)}
+                    disabled={readOnly}
+                    onChange={(event) =>
+                      request(
+                        requestVisibleGuide(
+                          state,
+                          guideId,
+                          event.currentTarget.checked,
+                          currentGuideIds,
+                        ),
+                      )
+                    }
+                  />
+                  {generalizedCopy.visibleGuides}
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name={referenceName}
+                    aria-label={`Use ${label} as Reference`}
+                    checked={state.referenceGamutId === gamutId}
+                    disabled={readOnly}
+                    onChange={() => request(requestReferenceGamut(state, gamutId))}
+                  />
+                  {generalizedCopy.reference}
+                </label>
+              </div>
+            </fieldset>
+          );
+        })}
+        <label className="gp-no-reference">
+          <input
+            type="radio"
+            name={referenceName}
+            checked={state.referenceGamutId === null}
+            disabled={readOnly}
+            onChange={() => request(requestReferenceGamut(state, null))}
+          />
+          {generalizedCopy.noReference}
+        </label>
         {unavailableGuides.length > 0 && (
           <p data-gp-part={gpPart.availabilityMessage}>
             {!hasPlane && accepted.selection.editorId === null
@@ -196,22 +233,6 @@ export function GeneralizedComparison({
           </p>
         )}
       </details>
-      {accepted.exactChecks.length > 0 && (
-        <ul>
-          {orderedExactChecks(accepted.exactChecks).map((row) => (
-            <li
-              key={row.gamutId}
-              data-gp-part={gpPart.exactResult}
-              data-gp-status={row.result.ok ? row.result.value.status : "unavailable"}
-            >
-              <span>{exactGamutUi[row.gamutId].label}</span>
-              <strong>
-                {exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]}
-              </strong>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }

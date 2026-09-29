@@ -66,3 +66,7 @@ This decision requires a future explicit migration of the closed view/plane and 
 ## Relationship to earlier decisions
 
 ADR 0001 remains authoritative for current two-plane behavior. ADR 0002's product direction and Phase 1B's completed ownership remain intact. This ADR resolves their open capability identity, layering and state-separation questions; it does not reopen the shared controllers or adopt a visual redesign, public plugin API, new representations, Zag, Open Props, additional adapters or a new persistence API.
+
+## Phase 2L amendment: Reference gamut focus
+
+Phase 2L adds `referenceGamutId: GamutId | null` to the public view state after the original decision. Reference is independent semantic focus on a product-admitted gamut. It implies neither exact checks nor visible guides. UI owns admission; render owns an explicit primary gamut-to-guide mapping. A requested guide may provide a sampled Reference fact without a valid spatial projection; no constrained endpoint is presented as the sample. Spatial feedback is limited to boundary excursions and suppressed by accepted exact Inside/Within tolerance. Only an accepted, explicitly requested exact outside result for Reference warns. Inspection or projection unavailability does not invalidate the preference, and Reference is excluded from edit semantic-context identity. The composed default requests both shipped checks and boundaries with sRGB Reference; controlled requests remain authoritative.

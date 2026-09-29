@@ -101,7 +101,7 @@ describe("ColorValue plane interaction", () => {
     expect(ui.cancels).not.toHaveBeenCalled();
   });
 
-  it("keeps a queued plane gesture through accepted check and guide changes", async () => {
+  it("keeps a queued plane gesture through accepted Status, Boundary and Reference changes", async () => {
     const clock = frames(),
       ui = await host({ defaultState: editingState("oklch") });
     await clock.flush();
@@ -117,12 +117,41 @@ describe("ColorValue plane interaction", () => {
     expect(surface.hasPointerCapture(1)).toBe(true);
     await clock.flush();
     expect(ui.changes).toHaveBeenCalledOnce();
-    const guides = get<HTMLElement>(ui.element, "fieldset:nth-of-type(2)");
-    await act(async () => get<HTMLInputElement>(guides, "input").click());
+    await act(async () =>
+      get<HTMLInputElement>(ui.element, '[aria-label="sRGB Boundary"]').click(),
+    );
+    await act(async () =>
+      get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+    );
     await event(surface, "pointerup", { clientX: 200, clientY: 210 });
     expect(ui.order).toEqual(["change", "change", "commit"]);
     expect(ui.cancels).not.toHaveBeenCalled();
   });
+
+  it.each([false, true])(
+    "Reference alone preserves a plane gesture (published=%s)",
+    async (published) => {
+      const clock = frames();
+      const ui = await host({
+        defaultState: { ...editingState("oklch"), referenceGamutId: "srgb-gamut" },
+      });
+      await clock.flush();
+      const surface = get<HTMLElement>(ui.element, '[role="application"]');
+      await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
+      await event(surface, "pointermove", { clientX: 120, clientY: 140 });
+      if (published) await clock.flush();
+      const before = ui.changes.mock.calls.length;
+      await act(async () =>
+        get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+      );
+      expect(get(ui.element, '[role="application"]')).toBe(surface);
+      expect(surface.hasPointerCapture(1)).toBe(true);
+      expect(ui.changes).toHaveBeenCalledTimes(before);
+      await event(surface, "pointerup", { clientX: 200, clientY: 210 });
+      expect(definitionOf(ui.commits.mock.calls[0]![0]).channels[1]).toBeCloseTo(0.25, 10);
+      expect(ui.cancels).not.toHaveBeenCalled();
+    },
+  );
 
   it("interrupts on a different defining representation", async () => {
     const clock = frames(),

@@ -7,5 +7,5 @@ export type {
 } from "./editorResolution.js";
 export { resolveRequestedGuides } from "./guideResolution.js";
 export type { GuideResolution } from "./guideResolution.js";
-export { guideDefinitions } from "./guideSupport.js";
+export { guideDefinitions, referenceGuidePolicy } from "./guideSupport.js";
 export type { GuideId } from "./guideSupport.js";

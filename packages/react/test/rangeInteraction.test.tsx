@@ -60,6 +60,9 @@ describe("native range lifecycle", () => {
     expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(0);
     expect(range.getAttribute("aria-label")).toBe("Hue");
     expect(range.value).toBe("360");
+    expect(range.parentElement!.style.getPropertyValue("--gp-range-warning-position")).toContain(
+      "100.00000000%",
+    );
 
     await event(range, "change");
     expect(range.value).toBe("360");
@@ -67,30 +70,42 @@ describe("native range lifecycle", () => {
 
     await ui.replace(color(0.62, 0.2, 180, 0.37));
     expect(range.value).toBe("180");
+    expect(range.parentElement!.style.getPropertyValue("--gp-range-warning-position")).toContain(
+      "50.00000000%",
+    );
   });
 
-  it("keeps a pending Hue range edit and its reference through check and guide changes", async () => {
-    const clock = frames(),
-      ui = await host({ defaultState: editingState("oklch") });
-    await clock.flush();
-    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
-    await event(range, "pointerdown");
-    await input(range, "360");
-    const details = get<HTMLDetailsElement>(ui.element, "details");
-    details.open = true;
-    const checks = get<HTMLElement>(ui.element, "fieldset");
-    await act(async () => get<HTMLInputElement>(checks, "input").click());
-    const guides = get<HTMLElement>(ui.element, "fieldset:nth-of-type(2)");
-    await act(async () => get<HTMLInputElement>(guides, "input").click());
-    expect(get(ui.element, '[data-picker-control="h"] [type="range"]')).toBe(range);
-    await clock.flush();
-    expect(ui.changes).toHaveBeenCalledOnce();
-    expect(definitionOf(ui.changes.mock.calls[0]![0]).channels[2]).toBe(0);
-    expect(range.value).toBe("360");
-    await event(range, "change");
-    expect(ui.commits).toHaveBeenCalledOnce();
-    expect(ui.cancels).not.toHaveBeenCalled();
-  });
+  it.each([false, true])(
+    "keeps pending Hue work through Reference changes (also comparison=%s)",
+    async (comparison) => {
+      const clock = frames(),
+        ui = await host({ defaultState: editingState("oklch") });
+      await clock.flush();
+      const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+      await event(range, "pointerdown");
+      await input(range, "360");
+      const details = get<HTMLDetailsElement>(ui.element, "details");
+      details.open = true;
+      if (comparison) {
+        const checks = get<HTMLElement>(ui.element, "fieldset");
+        await act(async () => get<HTMLInputElement>(checks, "input").click());
+        await act(async () =>
+          get<HTMLInputElement>(ui.element, '[aria-label="sRGB Boundary"]').click(),
+        );
+      }
+      await act(async () =>
+        get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+      );
+      expect(get(ui.element, '[data-picker-control="h"] [type="range"]')).toBe(range);
+      await clock.flush();
+      expect(ui.changes).toHaveBeenCalledOnce();
+      expect(definitionOf(ui.changes.mock.calls[0]![0]).channels[2]).toBe(0);
+      expect(range.value).toBe("360");
+      await event(range, "change");
+      expect(ui.commits).toHaveBeenCalledOnce();
+      expect(ui.cancels).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([87.1, 360])("retains Hue preview through normalized feedback for %s", async (hue) => {
     const clock = frames(),

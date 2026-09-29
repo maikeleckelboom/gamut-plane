@@ -24,7 +24,8 @@ if (!fixture.ok) throw new Error("Invalid initial selected color");
 const selectedColor = ref<ColorValue>(fixture.value);
 const instrumentState = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
-  checkedGamuts: [],
+  checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+  referenceGamutId: "srgb-gamut",
   visibleGuides: ["display-p3-boundary", "srgb-boundary"],
 });
 const canvasCapability = ref<CanvasColorSpaceStatus>("pending");

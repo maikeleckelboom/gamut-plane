@@ -52,7 +52,7 @@ describe("standalone application", () => {
         .map((option) => option.attributes("value")),
     ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
     expect(wrapper.get("[data-gp-part='exact-results']").text()).toContain("Gamuts");
-    expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(0);
+    expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(2);
     expect(
       wrapper
         .findAll("[data-css-representation]")
@@ -71,13 +71,10 @@ describe("standalone application", () => {
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
     await wrapper.get("[data-gp-part='gamut-disclosure'] summary").trigger("click");
-    await wrapper
-      .get("[data-gp-part='gamut-disclosure'] fieldset:first-of-type input")
-      .setValue(true);
+    await wrapper.get('[aria-label="Display P3 Status"]').setValue(false);
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
-    await wrapper
-      .get("[data-gp-part='gamut-disclosure'] fieldset:nth-of-type(2) input")
-      .setValue(true);
+    await wrapper.get('[aria-label="sRGB Boundary"]').setValue(false);
+    await wrapper.get('[aria-label="sRGB Boundary"]').setValue(true);
     expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(false);
     await wrapper.get("[data-gp-part='representation-control'] select").setValue("oklab");
     await flushPromises();
@@ -205,13 +202,10 @@ describe("standalone application", () => {
     wrapper.findComponent(GamutPlane).vm.$emit("update:modelValue", fringe.value);
     await flushPromises();
 
-    const checks = wrapper.findAll(
-      "[data-gp-part='gamut-disclosure'] fieldset:first-of-type input",
-    );
-    await checks[0]!.setValue(true);
-    await checks[1]!.setValue(true);
-    const status = wrapper.get("[data-gp-part='exact-result'][data-gp-status='within-tolerance']");
-    expect(status.text()).toBe("sRGBWithin tolerance");
+    const status = wrapper.get('[data-gp-part="exact-result"][data-gp-gamut="srgb-gamut"]');
+    expect(status.attributes("data-gp-status")).toBe("within-tolerance");
+    expect(status.text()).toBe("Within tolerance");
+    expect(wrapper.find('[data-gamut-warning="planar"]').exists()).toBe(false);
     for (const name of ["hex", "srgb"] as const) {
       const row = wrapper.get(`[data-css-representation="${name}"]`);
       expect(row.attributes("data-output-error")).toBe("boundary-tolerance");
@@ -222,9 +216,9 @@ describe("standalone application", () => {
       );
     }
     expect(wrapper.get("#srgb-copy-reason").exists()).toBe(true);
-    expect(wrapper.get("[data-gp-part='exact-result'][data-gp-status='inside']").text()).toBe(
-      "Display P3Inside",
-    );
+    const p3Status = wrapper.get('[data-gp-part="exact-result"][data-gp-gamut="display-p3-gamut"]');
+    expect(p3Status.attributes("data-gp-status")).toBe("inside");
+    expect(p3Status.text()).toBe("Inside");
     wrapper.unmount();
   });
 });

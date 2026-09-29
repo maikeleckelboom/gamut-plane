@@ -46,7 +46,8 @@ if (!initial.ok) throw new Error("Invalid initial color");
 const color = ref<ColorValue>(initial.value);
 const state = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
-  checkedGamuts: [],
+  checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+  referenceGamutId: "srgb-gamut",
   visibleGuides: ["display-p3-boundary", "srgb-boundary"],
 });
 </script>
@@ -58,7 +59,7 @@ const state = ref<GamutPlaneState>({
 
 Vue 3.5+ is required. The component includes its controls, renderer, styles, and gamut tables. It inherits the host font, remains at most 480px wide, and adapts to narrower hosts. Import the stylesheet once; use `--gamut-plane-accent` to customize focus and selection emphasis.
 
-Without an explicit state, the instrument starts in the OKLCH editor with both sampled boundaries visible and no exact checks requested. `v-model:state` gives the parent ownership; `defaultState` initializes local ownership. Either boundary can be hidden independently of exact checks. Edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
+Without an explicit state, the instrument starts in the OKLCH editor with both exact statuses and sampled boundaries requested, with sRGB as Reference. `v-model:state` gives the parent ownership; `defaultState` initializes local ownership. Either boundary can be hidden independently of exact checks. Edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
 
 ## Use the React component
 
@@ -76,7 +77,8 @@ export function ColorEditor() {
   });
   const [state, setState] = useState<GamutPlaneState>({
     selection: { representationId: "oklab", editorId: "oklab-ab" },
-    checkedGamuts: [],
+    checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    referenceGamutId: "srgb-gamut",
     visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   });
   return (
@@ -117,6 +119,8 @@ pnpm add ./artifacts/gamut-plane-core-0.2.0.tgz ./artifacts/gamut-plane-render-0
 ```
 
 The overrides resolve all unpublished transitive dependencies from their local artifacts. UI is an internal dependency; application code imports only its adapter and adapter `style.css`. `pnpm test:package` exercises this installation in an isolated Vue consumer. For React, pack/install `@gamut-plane/react` instead of Vue, keeping the three dependency tarballs and overrides. `pnpm test:react-vite` verifies ordinary React consumption; `pnpm test:next` verifies Next App Router and root Strict Mode. These checks do not verify registry installation. For framework-independent color math, see [the core package](packages/core/README.md).
+
+Reference is independent semantic focus on sRGB, Display P3, or `null`. It enables neither Status nor Boundary. A requested boundary can supply one sampled Reference swatch and connector for a boundary excursion when its endpoint fits the current editor geometry. Accepted exact Inside or Within tolerance suppresses that spatial feedback; with Status disabled, only the sampled excursion controls it. Only an accepted exact `outside` result for the explicitly checked Reference gamut produces a warning. The Gamuts disclosure groups Status, Boundary, Reference and requested exact results by gamut, with a No Reference radio option. The Coordinates selector only changes how the same authored color is observed.
 
 ## Color and editing behavior
 

@@ -7,6 +7,7 @@ describe("unsupported sibling capability entry", () => {
   it("exposes exactly the adapter resolution surface and keeps root exports unchanged", () => {
     expect(Object.keys(internal).sort()).toEqual([
       "guideDefinitions",
+      "referenceGuidePolicy",
       "resolveEditorVisualSupport",
       "resolveField",
       "resolveRequestedGuides",
@@ -23,6 +24,9 @@ describe("current render entry after legacy retirement", () => {
       "currentOklchObservation",
       "generalizedEditableDetail",
       "generalizedGuideDisplay",
+      "planeWarningOffset",
+      "rangeWarningStyle",
+      "referenceDisplay",
     ]);
     for (const key of Object.keys(current)) expect(root).not.toHaveProperty(key);
     for (const key of ["createPickerPresentation", "getBoundaryPresentation", "displayGamutLabel"])

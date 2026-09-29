@@ -9,7 +9,7 @@ async function openInstrument(page: Page): Promise<void> {
   await expect(page.locator("[data-gp-root]")).toBeVisible();
 }
 
-test("starts with both visual boundaries and no exact gamut checks", async ({ page }) => {
+test("starts with both statuses, both boundaries and sRGB Reference", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -21,7 +21,8 @@ test("starts with both visual boundaries and no exact gamut checks", async ({ pa
   await expect(page.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await expect(page.locator("[data-gamut-boundary='display-p3']")).toHaveCount(1);
   await expect(page.locator("[data-gp-channel='c'] [data-gamut-range]")).toHaveCount(2);
-  await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(0);
+  await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(2);
+  await expect(page.locator("[data-gp-marker='reference']")).toHaveCount(1);
   await expect(page.locator("[data-gp-root]")).toContainText("Gamuts");
   expect(errors).toEqual([]);
 });
@@ -30,22 +31,25 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await openInstrument(page);
   const initial = await page.locator('[data-css-representation="oklch"] code').textContent();
   const root = page.locator("[data-gp-root]");
-  await root.getByLabel("Color space", { exact: true }).selectOption("srgb");
+  await root.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
   await expect(root.getByLabel("Edit color")).toHaveCount(0);
   await root.getByText("Gamuts").click();
-  await root.getByRole("group", { name: "Check color in" }).getByLabel("Display P3").check();
-  await root.getByRole("group", { name: "Check color in" }).getByLabel("sRGB").check();
+  await root.getByLabel("Display P3 Status", { exact: true }).check();
+  await root.getByLabel("sRGB Status", { exact: true }).check();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
-  await expect(root.locator("[data-gp-part='exact-result']").first()).toContainText("sRGB");
-  await root.getByRole("group", { name: "Show boundaries" }).getByLabel("sRGB boundary").uncheck();
+  await expect(root.locator("[data-gp-part='exact-result']").first()).toHaveAttribute(
+    "data-gp-gamut",
+    "srgb-gamut",
+  );
+  await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(0);
-  await root.getByRole("group", { name: "Show boundaries" }).getByLabel("sRGB boundary").check();
+  await root.getByLabel("sRGB Boundary", { exact: true }).check();
   await expect(root).toContainText("Requested boundaries appear");
   await root.getByText("Gamuts").click();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
-  await root.getByLabel("Color space", { exact: true }).selectOption("oklch");
+  await root.getByLabel("Coordinates", { exact: true }).selectOption("oklch");
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await root.getByLabel("Edit color").uncheck();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
@@ -81,7 +85,7 @@ test("first pointer press and drag keep the marker under the pointer after switc
       representation !== "oklch" ||
       (await page.locator("[data-gp-root]").getAttribute("data-active-plane")) !== "oklch"
     ) {
-      await page.getByLabel("Color space", { exact: true }).selectOption(representation);
+      await page.getByLabel("Coordinates", { exact: true }).selectOption(representation);
     }
     const surface = page.locator("[data-gp-part='surface']");
     const marker = surface.locator("[data-active-marker]");
@@ -118,7 +122,7 @@ test("first pointer press and drag keep the marker under the pointer after switc
 
 test("the first slider drag after an editor switch keeps its track in place", async ({ page }) => {
   await openInstrument(page);
-  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   await expect(page.locator("[data-gp-part='authorship-context']")).toContainText("OKLCH");
   const track = page.locator("[data-gp-channel='l'] [data-gp-part='channel-track']");
   const range = track.locator("[data-gp-part='native-range']");
@@ -144,7 +148,7 @@ test("alternate editor keeps authored color until an explicit edit", async ({ pa
   await openInstrument(page);
   const css = page.locator('[data-css-representation="oklch"] code');
   const before = await css.textContent();
-  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   await expect(page.locator("[data-active-plane='oklab']")).toBeVisible();
   await expect(css).toHaveText(before!);
   const plane = page.getByRole("application", { name: /OKLab a\/b plane/ });
@@ -170,7 +174,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
     await page.evaluate((fontSize) => {
       document.documentElement.style.fontSize = fontSize;
     }, size);
-    await expect(page.getByLabel("Color space", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Coordinates", { exact: true })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -182,15 +186,12 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
   }
   const root = page.locator("[data-gp-root]");
   await root.getByText("Gamuts", { exact: true }).click();
-  await root.getByRole("group", { name: "Check color in" }).getByLabel("sRGB").check();
-  await root
-    .getByRole("group", { name: "Show boundaries" })
-    .getByLabel("Display P3 boundary")
-    .check();
+  await root.getByLabel("sRGB Status", { exact: true }).check();
+  await root.getByLabel("Display P3 Boundary", { exact: true }).check();
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),
   ).toBeLessThanOrEqual(0);
-  await root.getByLabel("Color space", { exact: true }).selectOption("srgb");
+  await root.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),

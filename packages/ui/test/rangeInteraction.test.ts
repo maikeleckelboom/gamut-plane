@@ -13,6 +13,7 @@ function fixture(normalizeValue?: RangeInput["normalizeValue"]) {
   const live = vi.fn();
   const complete = vi.fn();
   const interaction = vi.fn();
+  const nativeValue = vi.fn();
   const frames = new Map<number, FrameRequestCallback>();
   let nextFrame = 0;
   vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
@@ -30,6 +31,7 @@ function fixture(normalizeValue?: RangeInput["normalizeValue"]) {
     onInput: live,
     onComplete: complete,
     onInteraction: interaction,
+    onNativeValue: nativeValue,
   }));
   function dispatch(type: string, next?: number) {
     if (next !== undefined) element.value = String(next);
@@ -50,6 +52,7 @@ function fixture(normalizeValue?: RangeInput["normalizeValue"]) {
     live,
     complete,
     interaction,
+    nativeValue,
     frames,
     dispatch,
     flush,
@@ -66,6 +69,24 @@ afterEach(() => {
 });
 
 describe("shared native range interaction", () => {
+  it("reports the actual thumb through pending work, normalized feedback, and replacement", () => {
+    const f = fixture((value) => value % 360);
+    f.dispatch("input", 360);
+    expect(f.nativeValue).toHaveBeenLastCalledWith(360);
+    expect(f.live).not.toHaveBeenCalled();
+    f.flush();
+    f.feedback(0);
+    expect(f.nativeValue).toHaveBeenLastCalledWith(360);
+    f.feedback(180);
+    expect(f.nativeValue).toHaveBeenLastCalledWith(180);
+    f.dispatch("input", 90);
+    f.dispatch("blur");
+    expect(f.nativeValue).toHaveBeenLastCalledWith(180);
+    f.binding.dispose();
+    f.nativeValue.mockClear();
+    f.dispatch("input", 30);
+    expect(f.nativeValue).not.toHaveBeenCalled();
+  });
   it("coalesces live input to the latest value in one frame", () => {
     const f = fixture();
     f.dispatch("input", 20);

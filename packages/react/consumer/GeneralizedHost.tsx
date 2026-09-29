@@ -8,6 +8,7 @@ const initialColor = result.value;
 const initialState: GamutPlaneState = {
   selection: { representationId: "oklch", editorId: "oklch-lc" },
   checkedGamuts: [],
+  referenceGamutId: null,
   visibleGuides: [],
 };
 

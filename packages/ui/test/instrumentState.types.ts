@@ -7,6 +7,9 @@ selection.representationId satisfies RepresentationDefinition["id"];
 if (selection.editorId !== null) selection.editorId satisfies EditorId;
 declare const state: InstrumentViewState<"srgb-boundary" | "display-p3-boundary">;
 state.checkedGamuts[0] satisfies GamutId | undefined;
+state.referenceGamutId satisfies GamutId | null;
+// @ts-expect-error Reference is a gamut identity, not a guide identity
+state.referenceGamutId satisfies "srgb-boundary";
 state.visibleGuides[0] satisfies "srgb-boundary" | "display-p3-boundary" | undefined;
 
 const observationOnly: InstrumentSelection = { representationId: "oklch", editorId: null };

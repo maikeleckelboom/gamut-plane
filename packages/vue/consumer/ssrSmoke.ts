@@ -50,6 +50,7 @@ for (const selection of [
             state: {
               selection,
               checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
+              referenceGamutId: null,
               visibleGuides: ["srgb-boundary", "display-p3-boundary"],
             },
             "onUpdate:modelValue": () => events++,

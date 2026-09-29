@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange, referenceWarningGlyphPath } from "@gamut-plane/ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
+import { rangeWarningStyle } from "@gamut-plane/render/internal/current";
 import NumericInput from "./NumericInput.vue";
 import {
   PICKER_SLIDER_FIELD_INSET,
@@ -27,6 +28,7 @@ const props = withDefaults(
     intervals?: readonly LinearControlInterval[];
     overflowMax?: boolean;
     help?: string;
+    warning?: string | null;
   }>(),
   {
     precision: 3,
@@ -44,14 +46,28 @@ const emit = defineEmits<{
 }>();
 
 const helpId = computed(() => (props.help ? `${props.id}-help` : undefined));
+const warningId = computed(() => (props.warning ? `${props.id}-warning` : undefined));
+const describedBy = computed(
+  () => [helpId.value, warningId.value].filter(Boolean).join(" ") || undefined,
+);
+const warningStyle = computed(() => rangeWarningStyle(props.modelValue, props.min, props.max));
 const boundedModelValue = computed(() => clamp(props.modelValue));
 const isOutsideInstrument = computed(
   () => props.modelValue < props.min || props.modelValue > props.max,
 );
 const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
 const rangeElement = ref<HTMLInputElement>();
-const displayedRangeValue = ref(boundedModelValue.value);
 let rangeBinding: ReturnType<typeof mountRange> | undefined;
+// SSR supplies the initial value; mountRange owns the live native value after mount.
+// Presentation-only updates must not overwrite a pending drag or normalized Hue endpoint.
+const vInitialValue = {
+  mounted(element: HTMLInputElement) {
+    element.value = String(boundedModelValue.value);
+  },
+  getSSRProps() {
+    return { value: boundedModelValue.value };
+  },
+};
 const instrumentStyle = {
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
   "--picker-slider-track-height": `${PICKER_SLIDER_TRACK_HEIGHT}px`,
@@ -72,6 +88,14 @@ onMounted(() => {
       emit("commit", value);
     },
     onInteraction: (active) => emit("range-interaction", active),
+    onNativeValue: (nativeValue) => {
+      const position = rangeWarningStyle(nativeValue, props.min, props.max);
+      if (position)
+        rangeElement.value?.parentElement?.style.setProperty(
+          "--gp-range-warning-position",
+          position.left,
+        );
+    },
   }));
 });
 
@@ -98,8 +122,6 @@ watch(
   () => [props.modelValue, props.min, props.max, props.normalizeValue],
   () => {
     rangeBinding?.reconcile();
-    // Vue's value binding must reflect the controller's native value after feedback.
-    displayedRangeValue.value = rangeElement.value?.valueAsNumber ?? boundedModelValue.value;
   },
   { flush: "sync" },
 );
@@ -128,7 +150,7 @@ onBeforeUnmount(() => {
       <NumericInput
         class="channel-control__number"
         :aria-label="`${label} numeric value`"
-        :aria-describedby="helpId"
+        :aria-describedby="describedBy"
         :model-value="modelValue"
         :precision="precision"
         :min="min"
@@ -160,15 +182,28 @@ onBeforeUnmount(() => {
           :data-range-end="section.end"
         />
       </span>
+      <svg
+        v-if="warning && warningStyle"
+        :data-gp-part="gpPart.referenceWarning"
+        data-gamut-warning="linear"
+        :style="{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path :d="referenceWarningGlyphPath" />
+      </svg>
       <input
         ref="rangeElement"
         :id="id"
         class="channel-control__range"
         :data-gp-part="gpPart.nativeRange"
         type="range"
-        :aria-describedby="helpId"
+        :aria-describedby="describedBy"
         :aria-label="label"
-        :value="displayedRangeValue"
+        v-initial-value
         :min="min"
         :max="max"
         :step="step"
@@ -179,5 +214,6 @@ onBeforeUnmount(() => {
     </div>
 
     <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>
+    <span v-if="warning" :id="warningId" data-gp-visually-hidden>{{ warning }}</span>
   </div>
 </template>

@@ -49,6 +49,7 @@ export function editingState(representationId: "oklch" | "oklab"): GamutPlaneSta
         ? { representationId: "oklch", editorId: "oklch-lc" }
         : { representationId: "oklab", editorId: "oklab-ab" },
     checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    referenceGamutId: null,
     visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   };
 }

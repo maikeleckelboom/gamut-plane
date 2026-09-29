@@ -30,11 +30,13 @@ const states = ref<GamutPlaneState[]>([
   {
     selection: { representationId: "oklch", editorId: "oklch-lc" },
     checkedGamuts: [],
+    referenceGamutId: null,
     visibleGuides: [],
   },
   {
     selection: { representationId: "oklab", editorId: "oklab-ab" },
     checkedGamuts: [],
+    referenceGamutId: null,
     visibleGuides: [],
   },
 ]);

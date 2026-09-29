@@ -138,6 +138,7 @@ describe("Vue ColorValue instrument", () => {
         state: {
           selection: { representationId: "oklch", editorId: "oklch-lc" },
           checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+          referenceGamutId: null,
           visibleGuides: ["display-p3-boundary", "srgb-boundary"],
         },
       },
@@ -148,6 +149,7 @@ describe("Vue ColorValue instrument", () => {
       state: {
         selection: { representationId: "oklch", editorId: "oklch-lc" },
         checkedGamuts: [],
+        referenceGamutId: null,
         visibleGuides: [],
       },
     });

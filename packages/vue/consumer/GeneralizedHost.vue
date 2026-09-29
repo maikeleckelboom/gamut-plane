@@ -10,6 +10,7 @@ const value = ref(result.value);
 const state = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
   checkedGamuts: [],
+  referenceGamutId: null,
   visibleGuides: [],
 });
 </script>

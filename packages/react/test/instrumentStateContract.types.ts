@@ -7,6 +7,9 @@ declare const state: InstrumentViewState<GuideId>;
 state.selection.representationId satisfies RepresentationDefinition["id"];
 if (state.selection.editorId !== null) state.selection.editorId satisfies EditorId;
 state.checkedGamuts[0] satisfies GamutId | undefined;
+state.referenceGamutId satisfies GamutId | null;
+// @ts-expect-error Reference is a gamut identity, not a guide identity
+state.referenceGamutId satisfies "srgb-boundary";
 state.visibleGuides[0] satisfies GuideId | undefined;
 
 // @ts-expect-error current technical editor and representation must agree

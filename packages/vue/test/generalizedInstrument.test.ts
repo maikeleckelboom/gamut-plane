@@ -12,17 +12,19 @@ const value = valueResult.value;
 const observed: GamutPlaneState = {
   selection: { representationId: "srgb", editorId: null },
   checkedGamuts: [],
+  referenceGamutId: null,
   visibleGuides: [],
 };
 
 describe("Vue public generalized instrument", () => {
-  it("starts with both sampled boundaries and no exact checks when state is omitted", async () => {
+  it("starts with both statuses, both boundaries and sRGB Reference when state is omitted", async () => {
     const html = await renderToString(
       createSSRApp({ render: () => h(GamutPlane, { modelValue: value }) }),
     );
     expect(html).toContain('data-gamut-boundary="srgb"');
     expect(html).toContain('data-gamut-boundary="display-p3"');
-    expect(html).not.toContain('data-gp-part="exact-result"');
+    expect(html.match(/data-gp-part="exact-result"/g)).toHaveLength(2);
+    expect(html).toContain('data-gp-marker="reference"');
   });
 
   it("renders server observation and rejects a controlled request without reauthoring", async () => {
@@ -60,6 +62,7 @@ describe("Vue public generalized instrument", () => {
     await wrapper.get("[data-gp-part='guide-preference'] input").setValue(true);
     expect(wrapper.emitted("update:state")?.at(-1)?.[0]).toMatchObject({
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: ["srgb-boundary"],
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
@@ -99,6 +102,7 @@ describe("Vue public generalized instrument", () => {
           state: {
             selection: { representationId, editorId: null },
             checkedGamuts: [],
+            referenceGamutId: null,
             visibleGuides: [],
           },
         },
@@ -114,6 +118,7 @@ describe("Vue public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklab", editorId: "oklab-ab" },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const wrapper = mount(GamutPlane, { props: { modelValue: value, defaultState: state } });
@@ -130,6 +135,7 @@ describe("Vue public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: "oklch-lc" },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const wrapper = mount(GamutPlane, {
@@ -149,6 +155,7 @@ describe("Vue public generalized instrument", () => {
     const comparison: GamutPlaneState = {
       ...state,
       checkedGamuts: ["srgb-gamut"],
+      referenceGamutId: "display-p3-gamut",
       visibleGuides: ["srgb-boundary"],
     };
     await wrapper.setProps({ state: comparison });
@@ -173,6 +180,7 @@ describe("Vue public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: null },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const wrapper = mount(GamutPlane, { props: { modelValue: neutral.value, state } });
@@ -211,6 +219,7 @@ describe("Vue public generalized instrument", () => {
         ...state,
         selection: { representationId: "oklab", editorId: "oklab-ab" },
         checkedGamuts: ["srgb-gamut"],
+        referenceGamutId: null,
         visibleGuides: ["srgb-boundary"],
       },
     });

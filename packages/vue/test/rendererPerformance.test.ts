@@ -253,6 +253,7 @@ describe("renderer invalidation contracts", () => {
             defaultState: {
               selection: { representationId: "oklch", editorId: "oklch-lc" },
               checkedGamuts: [],
+              referenceGamutId: null,
               visibleGuides: ["srgb-boundary"],
             },
             "onUpdate:modelValue": (color: ColorValue) => {

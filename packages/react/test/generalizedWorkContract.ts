@@ -17,6 +17,7 @@ export function generalizedWorkContract(
         state: {
           selection: { representationId: "srgb", editorId: null },
           checkedGamuts: [],
+          referenceGamutId: null,
           visibleGuides: [],
         },
         exact: 0,
@@ -29,6 +30,7 @@ export function generalizedWorkContract(
         state: {
           selection: { representationId: "srgb", editorId: null },
           checkedGamuts: ["srgb-gamut"],
+          referenceGamutId: null,
           visibleGuides: [],
         },
         exact: 1,
@@ -41,6 +43,7 @@ export function generalizedWorkContract(
         state: {
           selection: { representationId: "oklch", editorId: "oklch-lc" },
           checkedGamuts: [],
+          referenceGamutId: null,
           visibleGuides: ["srgb-boundary"],
         },
         exact: 0,
@@ -53,6 +56,7 @@ export function generalizedWorkContract(
         state: {
           selection: { representationId: "oklch", editorId: "oklch-lc" },
           checkedGamuts: ["srgb-gamut"],
+          referenceGamutId: null,
           visibleGuides: [],
         },
         exact: 1,
@@ -69,7 +73,14 @@ export function generalizedWorkContract(
       references: number;
     }[];
 
-    it.each(scenarios)("$name", async ({ state, exact, projection, contours, references }) => {
+    it.each(
+      scenarios.flatMap((scenario) =>
+        [null, "srgb-gamut", "display-p3-gamut"].map((referenceGamutId) => ({
+          ...scenario,
+          state: { ...scenario.state, referenceGamutId: referenceGamutId as core.GamutId | null },
+        })),
+      ),
+    )("$name", async ({ state, exact, projection, contours, references }) => {
       const created = core.createColorValue({
         space: "oklch",
         channels: [0.62, 0.2, 45],

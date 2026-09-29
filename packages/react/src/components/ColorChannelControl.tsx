@@ -1,7 +1,8 @@
+import { rangeWarningStyle } from "@gamut-plane/render/internal/current";
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef } from "react";
-import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange, referenceWarningGlyphPath } from "@gamut-plane/ui";
 import {
   channelSections,
   PICKER_SLIDER_FIELD_INSET,
@@ -26,6 +27,7 @@ export interface ColorChannelControlProps {
   intervals: readonly LinearControlInterval[];
   overflowMax?: boolean;
   help?: string | undefined;
+  warning?: string | null;
   normalizeValue?: (value: number) => number;
   onInput: (value: number) => void;
   onComplete: (value: number) => void;
@@ -57,12 +59,26 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     onComplete,
     onCancel,
   } = props;
-  const current = useCommitted({ ...props, onInteraction: props.onInteraction });
   const range = useRef<HTMLInputElement>(null);
+  const current = useCommitted({
+    ...props,
+    onInteraction: props.onInteraction,
+    onNativeValue: (nativeValue: number) => {
+      const position = rangeWarningStyle(nativeValue, min, max);
+      if (position)
+        range.current?.parentElement?.style.setProperty(
+          "--gp-range-warning-position",
+          position.left,
+        );
+    },
+  });
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
   const bounded = Math.min(max, Math.max(min, value));
   const sections = channelSections(intervals);
   const helpId = help ? `${id}-help` : undefined;
+  const warningId = props.warning ? `${id}-warning` : undefined;
+  const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
+  const warningStyle = rangeWarningStyle(value, min, max);
   useLayoutEffect(() => {
     const mounted = mountRange(range.current!, () => current.current!);
     binding.current = mounted;
@@ -92,7 +108,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
         <NumericInput
           className="gpr-channel-control-number"
           aria-label={`${label} numeric value`}
-          aria-describedby={helpId}
+          aria-describedby={describedBy}
           value={value}
           min={min}
           max={overflowMax ? undefined : max}
@@ -125,6 +141,20 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
             />
           ))}
         </span>
+        {props.warning && warningStyle && (
+          <svg
+            data-gp-part={gpPart.referenceWarning}
+            data-gamut-warning="linear"
+            style={{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }}
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={referenceWarningGlyphPath} />
+          </svg>
+        )}
         <input
           ref={range}
           id={id}
@@ -133,7 +163,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           dir="ltr"
           type="range"
           aria-label={label}
-          aria-describedby={helpId}
+          aria-describedby={describedBy}
           defaultValue={bounded}
           min={min}
           max={max}
@@ -158,6 +188,11 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
         <p id={helpId} className="gpr-channel-control-help">
           {help}
         </p>
+      )}
+      {props.warning && (
+        <span id={warningId} data-gp-visually-hidden="">
+          {props.warning}
+        </span>
       )}
     </div>
   );

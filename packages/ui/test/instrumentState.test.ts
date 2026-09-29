@@ -19,6 +19,7 @@ const guides = ["srgb-boundary", "display-p3-boundary"] as const;
 const request = {
   selection: { representationId: "oklch", editorId: "oklch-lc" },
   checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
+  referenceGamutId: null,
   visibleGuides: ["srgb-boundary", "display-p3-boundary"],
 };
 
@@ -182,7 +183,12 @@ describe("complete product state", () => {
     ] as const) {
       expect(
         validateInstrumentViewState(
-          { selection: { representationId: "srgb", editorId: null }, checkedGamuts, visibleGuides },
+          {
+            selection: { representationId: "srgb", editorId: null },
+            checkedGamuts,
+            visibleGuides,
+            referenceGamutId: null,
+          },
           guides,
         ),
       ).toMatchObject({ ok: true, value: { checkedGamuts, visibleGuides } });
@@ -199,7 +205,7 @@ describe("complete product state", () => {
     expect(Object.isFrozen(accepted.value.visibleGuides)).toBe(true);
     const serialized = JSON.stringify(accepted.value);
     expect(serialized).toBe(
-      '{"selection":{"representationId":"oklch","editorId":"oklch-lc"},"checkedGamuts":["display-p3-gamut","srgb-gamut"],"visibleGuides":["display-p3-boundary","srgb-boundary"]}',
+      '{"selection":{"representationId":"oklch","editorId":"oklch-lc"},"checkedGamuts":["display-p3-gamut","srgb-gamut"],"visibleGuides":["display-p3-boundary","srgb-boundary"],"referenceGamutId":null}',
     );
     const restored: unknown = JSON.parse(serialized);
     const roundTrip = validateInstrumentViewState(restored, guides);

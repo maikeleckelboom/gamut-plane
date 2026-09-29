@@ -7,6 +7,7 @@ import { GamutPlane, type GamutPlaneState } from "@gamut-plane/react";
 const initialState: GamutPlaneState = {
   selection: { representationId: "srgb", editorId: null },
   checkedGamuts: ["srgb-gamut"],
+  referenceGamutId: null,
   visibleGuides: ["srgb-boundary"],
 };
 

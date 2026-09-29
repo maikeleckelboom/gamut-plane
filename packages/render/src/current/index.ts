@@ -4,3 +4,5 @@ export type { CurrentField } from "./field.js";
 export { currentOklchObservation, currentEditableDetail } from "./editableDetail.js";
 export { generalizedGuideDisplay, generalizedEditableDetail } from "./generalizedDisplay.js";
 export type { GeneralizedGuideDisplay } from "./generalizedDisplay.js";
+export { referenceDisplay, type ReferenceDisplay } from "./referenceDisplay.js";
+export { planeWarningOffset, rangeWarningStyle } from "./referenceAnnotations.js";

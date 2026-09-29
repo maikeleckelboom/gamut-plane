@@ -22,9 +22,10 @@ import {
   exactStatusCopy,
   generalizedCopy,
   authorshipContextCopy,
-  orderedExactChecks,
+  admittedReferenceGamuts,
+  requestReferenceGamut,
+  referenceWarning,
   formatInspectionNumber,
-  guidePreferenceUi,
   initialInstrumentState,
   inspectionUi,
   instrumentViewStatesEqual,
@@ -43,7 +44,9 @@ import type { CanvasColorSpaceStatus, GuideId } from "@gamut-plane/render";
 import {
   generalizedEditableDetail,
   generalizedGuideDisplay,
+  referenceDisplay,
 } from "@gamut-plane/render/internal/current";
+import { referenceGuidePolicy } from "@gamut-plane/render/internal/capabilities";
 import type { GamutPlaneState } from "../model/publicState.js";
 
 const props = defineProps<{
@@ -77,8 +80,6 @@ const guideIds = Object.freeze([
   "display-p3-boundary",
   "srgb-boundary",
 ] as const satisfies readonly GuideId[]);
-const guideOptions = ["srgb-boundary", "display-p3-boundary"] as const satisfies readonly GuideId[];
-const gamutIds = ["srgb-gamut", "display-p3-gamut"] as const satisfies readonly GamutId[];
 const localState = shallowRef<GamutPlaneState>(
   canonicalInstrumentState(
     props.defaultState ?? initialInstrumentState<GuideId>(guideIds),
@@ -97,6 +98,7 @@ function requestState(nextInput: GamutPlaneState): void {
   emit("update:state", next);
 }
 const instanceId = useId();
+const comparison = ref<HTMLDetailsElement | null>(null);
 const titleId = `${instanceId}-instrument-title`;
 
 const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
@@ -122,6 +124,32 @@ const detail = computed(() =>
 );
 const view = computed(() => field.value?.projection.representationId ?? null);
 const guides = computed(() => generalizedGuideDisplay(accepted.value.guides));
+const reference = computed(() =>
+  referenceDisplay(
+    acceptedState.value.referenceGamutId,
+    accepted.value.guides,
+    field.value,
+    accepted.value.exactChecks,
+  ),
+);
+const warning = computed(() =>
+  referenceWarning(acceptedState.value.referenceGamutId, accepted.value.exactChecks),
+);
+const gamutRows = computed(() =>
+  admittedReferenceGamuts.map((gamutId) => {
+    const check = accepted.value.exactChecks.find((row) => row.gamutId === gamutId);
+    return {
+      gamutId,
+      label: exactGamutUi[gamutId].label,
+      guideId: referenceGuidePolicy[gamutId],
+      status: check
+        ? check.result.ok
+          ? check.result.value.status
+          : ("unavailable" as const)
+        : null,
+    };
+  }),
+);
 const help = computed(() =>
   field.value && oklch.value
     ? currentEditorHelp(
@@ -186,6 +214,16 @@ function toggleGuide(guideId: GuideId, event: Event): void {
   if (!(target instanceof HTMLInputElement)) return;
   requestState(requestVisibleGuide(acceptedState.value, guideId, target.checked, guideIds));
   target.checked = acceptedState.value.visibleGuides.includes(guideId);
+}
+
+function selectReference(gamutId: GamutId | null): void {
+  requestState(requestReferenceGamut(acceptedState.value, gamutId));
+  // A controlled parent may reject the native radio change; restore the entire group.
+  for (const input of comparison.value?.querySelectorAll<HTMLInputElement>(
+    "input[data-reference-choice]",
+  ) ?? []) {
+    input.checked = input.value === (acceptedState.value.referenceGamutId ?? "none");
+  }
 }
 
 function publish(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean): void {
@@ -325,6 +363,8 @@ watch(
           :semantic-context-key="revision.contextKey"
           :field="field"
           :guides="guides"
+          :reference="reference"
+          :warning="warning"
           :marker-css="detail.markerCss"
           :edit-reference="hueReference"
           :plane="field.plane"
@@ -376,6 +416,7 @@ watch(
         <template v-if="field && detail && oklch && help">
           <template v-if="detail.view === 'oklch'">
             <ColorChannelControl
+              :warning="warning"
               :key="`${revision.contextKey}:${hue.channelId}:${hue.operationId}`"
               :id="`${instanceId}-hue`"
               :channel="hue.symbol"
@@ -396,6 +437,7 @@ watch(
             />
 
             <ColorChannelControl
+              :warning="warning"
               :key="`${revision.contextKey}:${lightness.channelId}:${lightness.operationId}`"
               :id="`${instanceId}-lightness`"
               :channel="lightness.symbol"
@@ -413,6 +455,7 @@ watch(
             />
 
             <ColorChannelControl
+              :warning="warning"
               :key="`${revision.contextKey}:${chroma.channelId}:${chroma.operationId}`"
               :id="`${instanceId}-chroma`"
               :channel="chroma.symbol"
@@ -434,6 +477,7 @@ watch(
 
           <template v-else>
             <ColorChannelControl
+              :warning="warning"
               :key="`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`"
               :id="`${instanceId}-oklab-lightness`"
               :channel="fixedLightness.symbol"
@@ -505,41 +549,71 @@ watch(
           :data-gp-part="gpPart.exactResults"
           :aria-label="generalizedCopy.comparison"
         >
-          <details :data-gp-part="gpPart.gamutDisclosure">
+          <details ref="comparison" :data-gp-part="gpPart.gamutDisclosure">
             <summary>
               <span>{{ generalizedCopy.disclosure }}</span>
               <small v-if="unavailableGuides.length > 0">{{
                 generalizedCopy.boundaryPaused
               }}</small>
             </summary>
-            <fieldset>
-              <legend>{{ generalizedCopy.exactChecks }}</legend>
-              <label v-for="gamutId in gamutIds" :key="gamutId">
-                <input
-                  type="checkbox"
-                  :checked="acceptedState.checkedGamuts.includes(gamutId)"
-                  :disabled="readOnlyState()"
-                  @change="toggleCheck(gamutId, $event)"
-                />
-                {{ exactGamutUi[gamutId].label }}
-              </label>
-            </fieldset>
-            <fieldset>
-              <legend>{{ generalizedCopy.visibleGuides }}</legend>
-              <label
-                v-for="guideId in guideOptions"
-                :key="guideId"
-                :data-gp-part="gpPart.guidePreference"
+            <fieldset v-for="row in gamutRows" :key="row.gamutId" class="gp-gamut-row">
+              <legend>{{ row.label }}</legend>
+              <span
+                v-if="row.status !== null"
+                :data-gp-part="gpPart.exactResult"
+                :data-gp-gamut="row.gamutId"
+                :data-gp-status="row.status"
               >
-                <input
-                  type="checkbox"
-                  :checked="acceptedState.visibleGuides.includes(guideId)"
-                  :disabled="readOnlyState()"
-                  @change="toggleGuide(guideId, $event)"
-                />
-                {{ guidePreferenceUi[guideId].label }}
-              </label>
+                <strong>{{ exactStatusCopy[row.status] }}</strong>
+              </span>
+              <div class="gp-gamut-choices">
+                <label>
+                  <input
+                    type="checkbox"
+                    :aria-label="`${row.label} Status`"
+                    :checked="acceptedState.checkedGamuts.includes(row.gamutId)"
+                    :disabled="readOnlyState()"
+                    @change="toggleCheck(row.gamutId, $event)"
+                  />
+                  {{ generalizedCopy.exactChecks }}
+                </label>
+                <label :data-gp-part="gpPart.guidePreference">
+                  <input
+                    type="checkbox"
+                    :aria-label="`${row.label} Boundary`"
+                    :checked="acceptedState.visibleGuides.includes(row.guideId)"
+                    :disabled="readOnlyState()"
+                    @change="toggleGuide(row.guideId, $event)"
+                  />
+                  {{ generalizedCopy.visibleGuides }}
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    :name="`${instanceId}-reference`"
+                    :value="row.gamutId"
+                    data-reference-choice
+                    :aria-label="`Use ${row.label} as Reference`"
+                    :checked="acceptedState.referenceGamutId === row.gamutId"
+                    :disabled="readOnlyState()"
+                    @change="selectReference(row.gamutId)"
+                  />
+                  {{ generalizedCopy.reference }}
+                </label>
+              </div>
             </fieldset>
+            <label class="gp-no-reference">
+              <input
+                type="radio"
+                :name="`${instanceId}-reference`"
+                value="none"
+                data-reference-choice
+                :checked="acceptedState.referenceGamutId === null"
+                :disabled="readOnlyState()"
+                @change="selectReference(null)"
+              />
+              {{ generalizedCopy.noReference }}
+            </label>
             <p v-if="unavailableGuides.length > 0" :data-gp-part="gpPart.availabilityMessage">
               {{
                 !field && accepted.selection.editorId === null
@@ -548,19 +622,6 @@ watch(
               }}
             </p>
           </details>
-          <ul v-if="accepted.exactChecks.length > 0">
-            <li
-              v-for="row in orderedExactChecks(accepted.exactChecks)"
-              :key="row.gamutId"
-              :data-gp-part="gpPart.exactResult"
-              :data-gp-status="row.result.ok ? row.result.value.status : 'unavailable'"
-            >
-              <span>{{ exactGamutUi[row.gamutId].label }}</span>
-              <strong>{{
-                exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]
-              }}</strong>
-            </li>
-          </ul>
         </section>
       </div>
     </div>

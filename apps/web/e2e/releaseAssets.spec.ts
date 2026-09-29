@@ -18,9 +18,9 @@ async function ready(page: Page): Promise<void> {
     "pending",
   );
   await page.getByText("Gamuts", { exact: true }).click();
-  const guides = page.getByRole("group", { name: "Show boundaries" });
-  await guides.getByLabel("sRGB boundary").check();
-  await guides.getByLabel("Display P3 boundary").check();
+  await page.getByLabel("sRGB Boundary", { exact: true }).check();
+  await page.getByLabel("Display P3 Boundary", { exact: true }).check();
+  await page.getByText("Gamuts", { exact: true }).click();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
 }
 

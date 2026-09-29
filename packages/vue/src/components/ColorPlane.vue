@@ -6,6 +6,8 @@ import {
   gpMarker,
   gpPart,
   currentEditorCopy,
+  exactGamutUi,
+  referenceWarningGlyphPath,
   mountPlaneGesture,
   type PlaneGestureBinding,
 } from "@gamut-plane/ui";
@@ -37,7 +39,12 @@ import {
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
 
-import type { CurrentField, GeneralizedGuideDisplay } from "@gamut-plane/render/internal/current";
+import { planeWarningOffset } from "@gamut-plane/render/internal/current";
+import type {
+  CurrentField,
+  GeneralizedGuideDisplay,
+  ReferenceDisplay,
+} from "@gamut-plane/render/internal/current";
 
 const props = withDefaults(
   defineProps<{
@@ -46,6 +53,8 @@ const props = withDefaults(
     field: CurrentField;
     guides: GeneralizedGuideDisplay;
     markerCss: string;
+    reference?: ReferenceDisplay | null;
+    warning?: string | null;
     editReference?: PlaneEditReference | undefined;
     plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
     interactionPreview?: boolean;
@@ -76,16 +85,27 @@ let boundsDirty = false;
 let isUnmounted = false;
 let isMounted = false;
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
+let surfaceLocalSize = { width: 0, height: 0 };
 
 const activeProjection = computed(() => props.field.projection);
 const fixedAxis = computed(() => props.field.samplingFixed);
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.field.geometry.constrain(activePoint.value));
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
+const spatialReference = computed(() =>
+  props.reference?.showSpatial && props.reference.spatial.kind === "available"
+    ? props.reference.spatial
+    : null,
+);
+const referenceLabel = computed(() =>
+  props.reference
+    ? `Sampled ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
+    : "",
+);
 
 const planeLabel = computed(() => {
   const { coordinates } = activeProjection.value;
-  return `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${coordinates.x?.toFixed(3) ?? "missing"}. Vertical ${props.plane.yAxis.label} ${coordinates.y?.toFixed(3) ?? "missing"}. Arrow keys adjust the selected point.${props.field.geometry.fixed === "oklch.h" && coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}`;
+  return `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${coordinates.x?.toFixed(3) ?? "missing"}. Vertical ${props.plane.yAxis.label} ${coordinates.y?.toFixed(3) ?? "missing"}. Arrow keys adjust the selected point.${props.field.geometry.fixed === "oklch.h" && coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${props.warning ? ` ${props.warning}.` : ""}`;
 });
 const instrumentStyle = {
   "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
@@ -130,6 +150,7 @@ function measureSurface(): void {
   boundsDirty = false;
   if (bounds.width <= 0 || bounds.height <= 0) {
     surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
+    surfaceLocalSize = { width: 0, height: 0 };
     return;
   }
 
@@ -138,6 +159,7 @@ function measureSurface(): void {
   const scaleY = hasLayoutMetrics ? bounds.height / element.offsetHeight : 1;
   const localWidth = element.clientWidth || bounds.width;
   const localHeight = element.clientHeight || bounds.height;
+  surfaceLocalSize = { width: localWidth, height: localHeight };
   surfaceBounds = {
     left: bounds.left + element.clientLeft * scaleX,
     top: bounds.top + element.clientTop * scaleY,
@@ -151,6 +173,9 @@ function positionActiveAnnotations(point: PlanePoint): void {
   if (activeMarker) {
     activeMarker.style.left = `${point.x * 100}%`;
     activeMarker.style.top = `${point.y * 100}%`;
+    const offset = planeWarningOffset(point, surfaceLocalSize);
+    activeMarker.style.setProperty("--gp-warning-offset-x", `${offset.x}px`);
+    activeMarker.style.setProperty("--gp-warning-offset-y", `${offset.y}px`);
   }
 }
 
@@ -377,7 +402,29 @@ onBeforeUnmount(() => {
           aria-label="OKLab editable domain, not a gamut boundary"
           role="img"
         />
+        <line
+          v-if="spatialReference"
+          :data-gp-part="gpPart.referenceConnector"
+          :x1="boundedActivePoint.x * VIEWBOX_SIZE"
+          :y1="boundedActivePoint.y * VIEWBOX_SIZE"
+          :x2="spatialReference.point.x * VIEWBOX_SIZE"
+          :y2="spatialReference.point.y * VIEWBOX_SIZE"
+          vector-effect="non-scaling-stroke"
+          aria-hidden="true"
+        />
       </svg>
+      <span
+        v-if="spatialReference"
+        :data-gp-part="gpPart.marker"
+        :data-gp-marker="gpMarker.reference"
+        :style="{
+          ...pointStyle(spatialReference.point),
+          '--marker-color': spatialReference.markerCss,
+        }"
+        :title="referenceLabel"
+        :aria-label="referenceLabel"
+        role="img"
+      />
       <span
         ref="marker"
         class="color-plane__marker color-plane__marker--active"
@@ -389,7 +436,20 @@ onBeforeUnmount(() => {
         title="Selected color"
         aria-label="Selected color"
         role="img"
-      />
+      >
+        <svg
+          v-if="warning"
+          :data-gp-part="gpPart.referenceWarning"
+          data-gamut-warning="planar"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path :d="referenceWarningGlyphPath" />
+        </svg>
+      </span>
     </div>
     <span
       v-if="canvasColorSpace === 'srgb'"

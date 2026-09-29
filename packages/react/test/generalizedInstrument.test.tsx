@@ -8,6 +8,7 @@ import { get, initial, mount } from "./helpers.js";
 const observed: GamutPlaneState = {
   selection: { representationId: "srgb", editorId: null },
   checkedGamuts: [],
+  referenceGamutId: null,
   visibleGuides: [],
 };
 
@@ -20,11 +21,12 @@ async function select(root: ParentNode, representationId: string) {
 }
 
 describe("React public generalized instrument", () => {
-  it("starts with both sampled boundaries and no exact checks when state is omitted", () => {
+  it("starts with both statuses, both boundaries and sRGB Reference when state is omitted", () => {
     const html = renderToString(<GamutPlane value={initial} onValueChange={vi.fn()} />);
     expect(html).toContain('data-gamut-boundary="srgb"');
     expect(html).toContain('data-gamut-boundary="display-p3"');
-    expect(html).not.toContain('data-gp-part="exact-result"');
+    expect(html.match(/data-gp-part="exact-result"/g)).toHaveLength(2);
+    expect(html).toContain('data-gp-marker="reference"');
   });
 
   it("renders observation on the server and requests state without authoring or accepting rejection", async () => {
@@ -118,6 +120,7 @@ describe("React public generalized instrument", () => {
           state={{
             selection: { representationId, editorId: null },
             checkedGamuts: [],
+            referenceGamutId: null,
             visibleGuides: [],
           }}
         />,
@@ -133,6 +136,7 @@ describe("React public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: "oklch-lc" },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const ui = await mount(
@@ -152,6 +156,7 @@ describe("React public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: "oklch-lc" },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const render = (accepted: GamutPlaneState) => (
@@ -182,6 +187,7 @@ describe("React public generalized instrument", () => {
     const comparison = {
       ...state,
       checkedGamuts: ["srgb-gamut"] as const,
+      referenceGamutId: "display-p3-gamut" as const,
       visibleGuides: ["srgb-boundary"] as const,
     };
     await ui.render(render(comparison));
@@ -201,6 +207,7 @@ describe("React public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: "oklch-lc" },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const inspection: GamutPlaneState = {
@@ -271,6 +278,7 @@ describe("React public generalized instrument", () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklch", editorId: null },
       checkedGamuts: [],
+      referenceGamutId: null,
       visibleGuides: [],
     };
     const ui = await mount(
@@ -322,6 +330,7 @@ describe("React public generalized instrument", () => {
           ...state,
           selection: { representationId: "oklab", editorId: "oklab-ab" },
           checkedGamuts: ["srgb-gamut"],
+          referenceGamutId: null,
           visibleGuides: ["srgb-boundary"],
         }}
       />,

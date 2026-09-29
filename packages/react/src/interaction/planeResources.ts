@@ -10,7 +10,7 @@ import {
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
-import type { CurrentField } from "@gamut-plane/render/internal/current";
+import { planeWarningOffset, type CurrentField } from "@gamut-plane/render/internal/current";
 
 export interface PlaneResourceInput {
   value: ColorValue;
@@ -33,6 +33,7 @@ export function mountPlaneResources(
   let fieldFrame: number | null = null;
   let boundsDirty = true;
   let bounds = { left: 0, top: 0, width: 0, height: 0 };
+  let localSize = { width: 0, height: 0 };
   let pixelRatio = Math.max(1, window.devicePixelRatio || 1);
   let resolution: MediaQueryList | null = null;
   let plane = current().plane;
@@ -51,12 +52,16 @@ export function mountPlaneResources(
 
   function position(point: PlanePoint): void {
     Object.assign(marker.style, pointStyle(point));
+    const offset = planeWarningOffset(point, localSize);
+    marker.style.setProperty("--gp-warning-offset-x", `${offset.x}px`);
+    marker.style.setProperty("--gp-warning-offset-y", `${offset.y}px`);
   }
 
   function measure(): void {
     const box = surface.getBoundingClientRect();
     const scaleX = surface.offsetWidth ? box.width / surface.offsetWidth : 1;
     const scaleY = surface.offsetHeight ? box.height / surface.offsetHeight : 1;
+    localSize = { width: surface.clientWidth, height: surface.clientHeight };
     bounds = {
       left: box.left + surface.clientLeft * scaleX,
       top: box.top + surface.clientTop * scaleY,

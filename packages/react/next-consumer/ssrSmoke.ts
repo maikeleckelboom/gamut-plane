@@ -34,6 +34,7 @@ let events = 0;
 const alternateState: GamutPlaneState = {
   selection: { representationId: "oklab", editorId: "oklab-ab" },
   checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
+  referenceGamutId: null,
   visibleGuides: ["srgb-boundary", "display-p3-boundary"],
 };
 function render(value: ColorValue) {

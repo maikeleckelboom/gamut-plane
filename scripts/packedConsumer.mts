@@ -262,8 +262,8 @@ import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "authorEditorPoint", "editOperationDefinitions", "editorDefinitions", "geometryDefinitions", "keyboardGeometryPoint"]);
-assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
-assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentField", "currentOklchObservation", "generalizedEditableDetail", "generalizedGuideDisplay"]);
+assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "referenceGuidePolicy", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
+assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentField", "currentOklchObservation", "generalizedEditableDetail", "generalizedGuideDisplay", "planeWarningOffset", "rangeWarningStyle", "referenceDisplay"]);
 assert.deepEqual(Object.keys(render).sort(), ["PICKER_ACTIVE_MARKER_RADIUS", "PICKER_GAMUT_TABLES", "PICKER_SLIDER_FIELD_INSET", "PICKER_SLIDER_THUMB_TOP", "PICKER_SLIDER_THUMB_WIDTH", "PICKER_SLIDER_TRACK_HEIGHT", "VIEWBOX_SIZE", "channelSections", "colorGradient", "createFieldRenderer", "geometryToSvgPath", "pointStyle"]);
 for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
 for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
@@ -344,7 +344,7 @@ if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw ne
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
 if (currentSelectionFacts.admittedEditors.length !== 2 || currentAdmittedEditorsForRepresentation("srgb").length !== 0) throw new Error("Packed admission policy changed");
 if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== null) throw new Error("Packed preferred editor changed");
-if (generalizedCopy.representation !== "Color space" || generalizedCopy.disclosure !== "Gamuts") throw new Error("Packed shared copy changed");
+if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.disclosure !== "Gamuts") throw new Error("Packed shared copy changed");
 if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");
 `,
   );

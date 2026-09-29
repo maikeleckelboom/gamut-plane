@@ -117,6 +117,7 @@ describe("public instrument contract", () => {
           defaultState={{
             selection: { representationId: "oklab", editorId: "oklab-ab" },
             checkedGamuts: [],
+            referenceGamutId: null,
             visibleGuides: [],
           }}
         />
@@ -147,6 +148,7 @@ describe("public instrument contract", () => {
           defaultState={{
             ...editingState(representationId),
             checkedGamuts: ["srgb-gamut"],
+            referenceGamutId: null,
             visibleGuides: ["srgb-boundary"],
           }}
           legend={<p>Guide legend</p>}

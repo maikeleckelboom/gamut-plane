@@ -16,7 +16,8 @@ if (!initial.ok) throw new Error("Invalid initial color");
 const color = ref<ColorValue>(initial.value);
 const state = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
-  checkedGamuts: [],
+  checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+  referenceGamutId: "srgb-gamut",
   visibleGuides: ["display-p3-boundary", "srgb-boundary"],
 });
 </script>
@@ -38,7 +39,7 @@ const state = ref<GamutPlaneState>({
 
 Import `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId`, and `GamutPlaneGuideId` from the package when needed. Import the stylesheet once. It inherits the host font and adapts to available width; `--gamut-plane-accent` is the supported customization property.
 
-The default local state selects `oklch-lc` with both sampled boundaries visible and no exact checks. State is a complete atomic object. A request emits a frozen canonical state and becomes visible only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Explicit empty arrays remain empty.
+The default local state selects `oklch-lc` with both exact statuses and sampled boundaries requested, with sRGB as Reference. State is a complete atomic object. A request emits a frozen canonical state and becomes visible only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Explicit empty arrays remain empty.
 
 The product admits `oklch-lc` for OKLCH and `oklab-ab` for OKLab. Each allows `editorId: null` for inspection; sRGB and Display P3 are inspection only. Technical capability existence alone does not admit an editor to the public product. The preferred editor is an initialization choice, not a forced replacement for valid explicit selection. The compact UI shows an Edit color checkbox where an editor is admitted and a readout otherwise.
 

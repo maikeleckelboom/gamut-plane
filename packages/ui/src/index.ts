@@ -16,6 +16,9 @@ export {
   requestInspection,
   requestCheckedGamut,
   requestVisibleGuide,
+  requestReferenceGamut,
+  referenceWarning,
+  referenceWarningGlyphPath,
 } from "./generalizedInstrument.js";
 export {
   representationUi,
@@ -26,6 +29,8 @@ export {
 export { currentEditorHelp, currentEditorCopy } from "./currentProductPresentation.js";
 export {
   currentSelectionFacts,
+  admittedReferenceGamuts,
+  validateReferenceGamut,
   admittedEditorsForRepresentation,
   currentAdmittedEditorsForRepresentation,
   requestEditor,
