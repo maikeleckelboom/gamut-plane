@@ -6,6 +6,7 @@ import {
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
+  authorshipContextCopy,
   orderedExactChecks,
   formatInspectionNumber,
   gpPart,
@@ -72,9 +73,7 @@ export function GeneralizedSelection({
       {!canEdit && <small>{generalizedCopy.inspectionOnly}</small>}
       {accepted.authored.representationId !== selected.representationId && (
         <p data-gp-part={gpPart.authorshipContext}>
-          Authored as {representationUi[accepted.authored.representationId].label} ·{" "}
-          {selected.editorId === null ? generalizedCopy.inspecting : generalizedCopy.editing} as{" "}
-          {representationUi[selected.representationId].label}
+          {authorshipContextCopy(accepted.authored.representationId, selected)}
         </p>
       )}
     </div>

@@ -1,11 +1,13 @@
 import type { GamutId } from "@gamut-plane/core";
 import type { ChannelDefinition } from "@gamut-plane/core/internal/capabilities";
+import { representationUi } from "./instrumentMetadata.js";
 import {
   canonicalCheckedGamuts,
   canonicalVisibleGuides,
   defaultSelection,
   validateInstrumentViewState,
   type InstrumentViewState,
+  type InstrumentSelection,
   type RepresentationId,
 } from "./instrumentState.js";
 
@@ -103,6 +105,14 @@ export const generalizedCopy = Object.freeze({
   guidesPending: "Requested guides will appear when an editable plane is selected.",
   guidesUnavailable: "Some requested guides cannot be shown for this color or editor.",
 });
+
+export function authorshipContextCopy(
+  authoredRepresentationId: RepresentationId,
+  selection: InstrumentSelection,
+): string {
+  const mode = selection.editorId === null ? generalizedCopy.inspecting : generalizedCopy.editing;
+  return `Authored as ${representationUi[authoredRepresentationId].label} · ${mode} as ${representationUi[selection.representationId].label}`;
+}
 
 /** Nine significant decimal digits are for inspection, separate from edit and output precision. */
 export function formatInspectionNumber(value: number | null): string {

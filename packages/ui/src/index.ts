@@ -6,6 +6,7 @@ export {
   exactResultOrder,
   orderedExactChecks,
   generalizedCopy,
+  authorshipContextCopy,
   exactStatusCopy,
   guidePreferenceUi,
   formatInspectionNumber,

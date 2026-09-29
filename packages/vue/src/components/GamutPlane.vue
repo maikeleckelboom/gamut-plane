@@ -21,6 +21,7 @@ import {
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
+  authorshipContextCopy,
   orderedExactChecks,
   formatInspectionNumber,
   guidePreferenceUi,
@@ -315,14 +316,7 @@ watch(
         v-if="accepted.authored.representationId !== accepted.selection.representationId"
         :data-gp-part="gpPart.authorshipContext"
       >
-        Authored as {{ representationUi[accepted.authored.representationId].label }} ·
-        {{
-          accepted.selection.editorId === null
-            ? generalizedCopy.inspecting
-            : generalizedCopy.editing
-        }}
-        as
-        {{ representationUi[accepted.selection.representationId].label }}
+        {{ authorshipContextCopy(accepted.authored.representationId, accepted.selection) }}
       </p>
     </div>
 
