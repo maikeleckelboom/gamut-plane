@@ -373,6 +373,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                   gradient={detail.fixedLightnessGradient}
                   intervals={guides.lightnessIntervals}
                   help={help.domainHelp}
+                  helpVisuallyHidden
                   onInput={(next) =>
                     edit(
                       fixedLightnessOperation.author(revision.source, {
@@ -417,6 +418,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                         field.projection.representation,
                       )}
                       help={directCoordinateHelp(control.symbol, coordinate.range)}
+                      helpVisuallyHidden
                       onInput={(next) =>
                         edit(
                           coordinateOperation.authorCoordinate(

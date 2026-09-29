@@ -31,6 +31,7 @@ const props = withDefaults(
     intervals?: readonly LinearControlInterval[];
     overflowMax?: boolean;
     help?: string;
+    helpVisuallyHidden?: boolean;
     warning?: string | null;
   }>(),
   {
@@ -233,7 +234,8 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>
+    <span v-if="help && helpVisuallyHidden" :id="helpId" data-gp-visually-hidden>{{ help }}</span>
+    <p v-else-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>
     <span v-if="warning" :id="warningId" data-gp-visually-hidden>{{ warning }}</span>
   </div>
 </template>

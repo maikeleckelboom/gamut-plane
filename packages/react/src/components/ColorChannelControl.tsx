@@ -30,6 +30,7 @@ export interface ColorChannelControlProps {
   intervals: readonly LinearControlInterval[];
   overflowMax?: boolean;
   help?: string | undefined;
+  helpVisuallyHidden?: boolean;
   warning?: string | null;
   normalizeValue?: (value: number) => number;
   onInput: (value: number) => void;
@@ -200,11 +201,16 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           }}
         />
       </div>
-      {help && (
-        <p id={helpId} className="gpr-channel-control-help">
-          {help}
-        </p>
-      )}
+      {help &&
+        (props.helpVisuallyHidden ? (
+          <span id={helpId} data-gp-visually-hidden="">
+            {help}
+          </span>
+        ) : (
+          <p id={helpId} className="gpr-channel-control-help">
+            {help}
+          </p>
+        ))}
       {props.warning && (
         <span id={warningId} data-gp-visually-hidden="">
           {props.warning}

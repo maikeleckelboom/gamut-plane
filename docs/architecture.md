@@ -79,7 +79,9 @@ The radius comes from core's admitted disc geometry. A counterpart exactly
 at the radius permits only zero; a counterpart beyond it makes that direct slice unavailable.
 Range availability is separate from authored coordinate validity. Overflow retains the real
 numeric value while the native thumb stays clamped at the nearest endpoint; unavailable slices retain a read-only numeric value and
-an accessible recovery explanation. The plane can still author an in-domain point.
+an accessible recovery explanation. OKLab domain and unavailable-slice explanations are
+visually hidden descriptions associated with the controls, never permanent help paragraphs.
+The plane can still author an in-domain point.
 
 Direct scalar authorship bounds only the edited channel and then uses the existing OKLab
 channel edit, preserving the counterpart, Lightness and alpha exactly. This avoids round-trip

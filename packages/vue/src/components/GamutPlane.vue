@@ -441,6 +441,7 @@ watch(
               :gradient="detail.fixedLightnessGradient"
               :intervals="guides.lightnessIntervals"
               :help="help.domainHelp ?? ''"
+              help-visually-hidden
               @update:model-value="editOklab('l', $event, false)"
               @commit="editOklab('l', $event, true)"
               @cancel="emit('cancel')"
@@ -465,6 +466,7 @@ watch(
                 directCoordinateContext(control.symbol, field.projection.representation)
               "
               :help="directCoordinateHelp(control.symbol, detail.coordinates[control.symbol].range)"
+              help-visually-hidden
               :warning="warning"
               @update:model-value="editOklab(control.symbol, $event, false)"
               @commit="editOklab(control.symbol, $event, true)"

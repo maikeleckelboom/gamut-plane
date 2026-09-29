@@ -128,6 +128,16 @@ for (const [name, a, b] of [
   test(`OKLab direct visual ${name}`, async ({ page }) => {
     const root = await ready(page, a, b);
     await expect(page.locator("#events")).toHaveAttribute("data-updates", "0");
+    await expect(root.locator('[data-gp-part="channel"] p')).toHaveCount(0);
+    if (name === "overflow" || name === "unavailable") {
+      await expect(
+        root.getByRole("slider", { name: "Lightness", exact: true }),
+      ).toHaveAccessibleDescription(/outside the OKLab editing disc/);
+      const help = root.getByText(/Selected color is outside the OKLab editing disc/);
+      await expect(help).toHaveAttribute("data-gp-visually-hidden", "");
+      await expect(help).toHaveCSS("position", "absolute");
+      await expect(help).toHaveCSS("width", "1px");
+    }
     if (name === "outside")
       await expect(root.locator('[data-gamut-warning="linear"]')).toHaveCount(3);
     if (name === "overflow") {
@@ -154,7 +164,16 @@ for (const [name, a, b] of [
       await expect(root.getByRole("spinbutton", { name: "OKLab a numeric value" })).toHaveValue(
         "0.1000",
       );
-      await expect(root.getByText(/Direct a editing is unavailable/)).toBeVisible();
+      await expect(root.getByText(/Direct a editing is unavailable/)).toHaveAttribute(
+        "data-gp-visually-hidden",
+        "",
+      );
+      await expect(
+        root.getByRole("slider", { name: "OKLab a", exact: true }),
+      ).toHaveAccessibleDescription(/Direct a editing is unavailable/);
+      await expect(
+        root.getByRole("spinbutton", { name: "OKLab a numeric value" }),
+      ).toHaveAccessibleDescription(/Direct a editing is unavailable/);
     }
     const axe = await new AxeBuilder({ page }).include("#instrument").analyze();
     expect(axe.violations).toEqual([]);

@@ -96,6 +96,14 @@ export function directCoordinateContract(mount: (value: ColorValue) => Promise<H
       expect(input(host.element, "b", "number").readOnly).toBe(true);
       expect(input(host.element, "b", "number").value).toBe("0.1000");
       expect(host.element.textContent).toContain("Direct b editing is unavailable");
+      expect(host.element.querySelectorAll('[data-gp-part="channel"] p')).toHaveLength(0);
+      for (const coordinate of ["l", "b"]) {
+        const row = host.element.querySelector(`[data-gp-channel="${coordinate}"]`)!;
+        const help = row.querySelector('[data-gp-visually-hidden][id$="-help"]')!;
+        expect(help).not.toBeNull();
+        for (const control of row.querySelectorAll("input"))
+          expect(control.getAttribute("aria-describedby")?.split(" ")).toContain(help.id);
+      }
       expect(
         a.closest("[data-gp-channel]")?.querySelector('[data-gamut-warning="linear"]'),
       ).toBeNull();
