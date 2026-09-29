@@ -2,7 +2,7 @@ import { installAnimationFrameController } from "./interactionHelpers";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { OKLCH_LIGHTNESS_CHROMA_PLANE, generateGamutBoundaryTable } from "@gamut-plane/core";
+import { OKLCH_LIGHTNESS_CHROMA_PLANE } from "@gamut-plane/core";
 import ColorPlane from "../src/components/ColorPlane.vue";
 import { color, planeValue } from "./colorValue";
 
@@ -31,15 +31,12 @@ describe("planar canvas backing store", () => {
       height: 120,
       toJSON: () => ({}),
     });
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -97,15 +94,12 @@ describe("planar canvas backing store", () => {
       height: 80,
       toJSON: () => ({}),
     });
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 248)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",

@@ -4,14 +4,17 @@ import { type ColorValue, type PickerPlaneId } from "@gamut-plane/core";
 import { mountPlaneGesture } from "@gamut-plane/ui";
 import { acceptedRevisionContract, type RevisionHost } from "./acceptedRevisionContract.js";
 import { resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
+import { presentAcceptedRevision } from "../src/model/acceptedPresentation.js";
 import { GamutPlane, type GamutPlaneProps } from "../src/index.js";
 import { frames, mount } from "./helpers.js";
 
 vi.mock("../src/model/acceptedResolution.js", { spy: true });
+vi.mock("../src/model/acceptedPresentation.js", { spy: true });
 vi.mock("@gamut-plane/ui", { spy: true });
 
 acceptedRevisionContract(async (value, view) => {
   vi.mocked(resolveAcceptedRevision).mockClear();
+  vi.mocked(presentAcceptedRevision).mockClear();
   vi.mocked(mountPlaneGesture).mockClear();
   const clock = frames();
   let acceptColor = true;
@@ -52,6 +55,11 @@ acceptedRevisionContract(async (value, view) => {
         .mock.results.filter((row) => row.type === "return")
         .map((row) => row.value),
     context: () => vi.mocked(mountPlaneGesture).mock.calls.at(-1)![1]().viewKey,
+    presentations: () =>
+      vi
+        .mocked(presentAcceptedRevision)
+        .mock.results.filter((row) => row.type === "return")
+        .map((row) => row.value),
     run: async (action) => {
       await act(async () => action());
       if (!disposed) await host.render(render());

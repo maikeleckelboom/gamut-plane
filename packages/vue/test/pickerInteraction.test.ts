@@ -11,9 +11,8 @@ import {
   type PickerPlaneGeometry,
 } from "@gamut-plane/core";
 import { OKLAB_AB_PLANE, OKLCH_LIGHTNESS_CHROMA_PLANE } from "@gamut-plane/core";
-import { createPickerPresentation, PICKER_GAMUT_TABLES } from "@gamut-plane/render";
 import ColorPlane from "../src/components/ColorPlane.vue";
-import { color } from "./colorValue";
+import { color, planeValue } from "./colorValue";
 import { dispatchPointer, installAnimationFrameController } from "./interactionHelpers";
 
 afterEach(() => {
@@ -22,11 +21,7 @@ afterEach(() => {
 });
 
 function presentation(value: ColorValue, plane: PickerPlaneGeometry) {
-  const model = createPickerPresentation(value, plane.id, "srgb", {
-    srgb: true,
-    displayP3: true,
-  });
-  return { fieldHue: model.fieldHue, markerCss: model.markerCss };
+  return planeValue(value, plane.id);
 }
 
 function mountPlane(value: ColorValue, plane: PickerPlaneGeometry & PickerPlaneFieldSampler) {
@@ -38,8 +33,6 @@ function mountPlane(value: ColorValue, plane: PickerPlaneGeometry & PickerPlaneF
       ...presentation(value, plane),
       plane,
       semanticContextKey: plane.id === "oklch" ? "oklch:oklch-lc" : "oklab:oklab-ab",
-      srgbTable: PICKER_GAMUT_TABLES.srgb,
-      displayP3Table: PICKER_GAMUT_TABLES.displayP3,
       targetGuidePoint: null,
       targetGuideCss: "",
       targetGuideLabel: "sRGB sampled target guide",

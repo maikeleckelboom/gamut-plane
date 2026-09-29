@@ -6,6 +6,7 @@ declare global {
       nodes: Element[];
       ids: string[];
       values: string[];
+      presentation: string[];
       focus: Element | null;
       boxes: number[][];
     };
@@ -106,7 +107,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
           const nodes = roots.flatMap((root) => [
             root,
             ...root.querySelectorAll(
-              "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [role=application]",
+              "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [data-boundary-target-result], [role=application]",
             ),
           ]);
           window.beforeHydration = {
@@ -115,6 +116,11 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
             values: [
               ...document.querySelectorAll<HTMLInputElement>("[data-plane-instrument] input"),
             ].map((el) => el.value),
+            presentation: [
+              ...document.querySelectorAll(
+                "[data-boundary-target-result], [data-gamut-boundary], [data-gamut-boundary-hit]",
+              ),
+            ].map((el) => el.outerHTML),
             focus: document.activeElement,
             boxes: [...document.querySelectorAll("[role=application]")].map((el) => {
               const box = el.getBoundingClientRect();
@@ -138,7 +144,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       const current = [...document.querySelectorAll("[data-plane-instrument]")].flatMap((root) => [
         root,
         ...root.querySelectorAll(
-          "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [role=application]",
+          "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [data-boundary-target-result], [role=application]",
         ),
       ]);
       return {
@@ -149,6 +155,11 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         values: [
           ...document.querySelectorAll<HTMLInputElement>("[data-plane-instrument] input"),
         ].map((el) => el.value),
+        presentation: [
+          ...document.querySelectorAll(
+            "[data-boundary-target-result], [data-gamut-boundary], [data-gamut-boundary-hit]",
+          ),
+        ].map((el) => el.outerHTML),
         focus: document.activeElement === before.focus,
         boxes: [...document.querySelectorAll("[role=application]")].map((el) => {
           const box = el.getBoundingClientRect();
@@ -166,13 +177,19 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
               .every((id) => document.getElementById(id)),
           ),
         ),
-        before: { ids: before.ids, values: before.values, boxes: before.boxes },
+        before: {
+          ids: before.ids,
+          values: before.values,
+          boxes: before.boxes,
+          presentation: before.presentation,
+        },
       };
     });
     expect(reuse.retained).toBe(true);
     expect(reuse.ids).toEqual(reuse.before.ids);
     expect(new Set(reuse.ids).size).toBe(reuse.ids.length);
     expect(reuse.values).toEqual(reuse.before.values);
+    expect(reuse.presentation).toEqual(reuse.before.presentation);
     expect(reuse.focus).toBe(true);
     expect(reuse.associations).toBe(true);
     await expect(page.locator('[data-active-plane="oklch"]')).toHaveCount(1);

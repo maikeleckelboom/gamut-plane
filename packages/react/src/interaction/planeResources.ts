@@ -19,11 +19,12 @@ import {
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
+import type { CurrentField } from "@gamut-plane/render/internal/current";
 
 export interface PlaneResourceInput {
   value: ColorValue;
   plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
-  fieldHue: number;
+  field: CurrentField;
   targetGuidePoint: PlanePoint | null;
   interactionPreview: boolean;
 }
@@ -57,9 +58,7 @@ export function mountPlaneResources(
     return plane.constrainPoint(projection(value).point);
   }
   function fixed(): number {
-    return plane.id === "oklch"
-      ? current().fieldHue
-      : projection(current().value).representation.channels[0];
+    return current().field.samplingFixed;
   }
   let fieldInput = `${plane.id}:${fixed()}:${current().interactionPreview}`;
 
@@ -128,7 +127,7 @@ export function mountPlaneResources(
   }
   function resize(): void {
     measure();
-    position(activePoint(current().value));
+    position(plane.constrainPoint(current().field.projection.point));
     redraw();
   }
   function scroll(): void {
@@ -158,7 +157,7 @@ export function mountPlaneResources(
       window.addEventListener("scroll", scroll, { capture: true, passive: true });
       window.addEventListener("resize", resize);
       measure();
-      position(activePoint(current().value));
+      position(plane.constrainPoint(current().field.projection.point));
       draw();
       trackResolution();
     },
@@ -168,7 +167,7 @@ export function mountPlaneResources(
       return true;
     },
     reconcile(allowPosition: boolean): void {
-      if (allowPosition) position(activePoint(current().value));
+      if (allowPosition) position(plane.constrainPoint(current().field.projection.point));
       const nextInput = `${plane.id}:${fixed()}:${current().interactionPreview}`;
       if (nextInput !== fieldInput) {
         fieldInput = nextInput;

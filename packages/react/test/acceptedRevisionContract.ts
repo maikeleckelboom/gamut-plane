@@ -11,6 +11,7 @@ import {
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import type { resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
+import type { AcceptedPresentationView } from "../src/model/acceptedPresentation.js";
 
 type Revision = ReturnType<typeof resolveAcceptedRevision>;
 export interface RevisionHost {
@@ -21,6 +22,7 @@ export interface RevisionHost {
   requests: PickerPlaneId[];
   acceptColors(accept: boolean): void;
   revisions(): Revision[];
+  presentations(): AcceptedPresentationView[];
   context(): string;
   run(action: () => void): Promise<void>;
   update(
@@ -49,6 +51,14 @@ function get<T extends Element = HTMLElement>(host: RevisionHost, selector: stri
 function latest(host: RevisionHost): Revision {
   const result = host.revisions().at(-1);
   if (!result) throw new Error("Production did not compose a revision");
+  const accepted = host.presentations().at(-1);
+  if (!accepted) throw new Error("Production did not consume an accepted presentation");
+  expect(accepted.selection).toBe(result.state.selection);
+  expect(accepted.exactChecks).toBe(result.checks);
+  expect(accepted.field).toBe(result.field);
+  expect(accepted.guides).toBe(result.guides);
+  const root = host.element.matches("[data-gp-root]") ? host.element : get(host, "[data-gp-root]");
+  expect(root.getAttribute("data-gp-view")).toBe(accepted.selection.representationId);
   return result;
 }
 function coherent(revision: Revision): void {
@@ -82,6 +92,17 @@ function pointer(element: Element, type: string): void {
   );
 }
 
+function currentNodes(host: RevisionHost): Element[] {
+  return [
+    ...host.element.querySelectorAll('input, [role="application"], [data-boundary-target-result]'),
+  ];
+}
+function sameNodes(host: RevisionHost, previous: Element[]): void {
+  const next = currentNodes(host);
+  expect(next).toHaveLength(previous.length);
+  next.forEach((node, index) => expect(node).toBe(previous[index]));
+}
+
 /** Same scenarios, through the actual public components and native framework acceptance paths. */
 export function acceptedRevisionContract(
   mount: (value: ColorValue, view: PickerPlaneId) => Promise<RevisionHost>,
@@ -98,9 +119,11 @@ export function acceptedRevisionContract(
           expect(latest(host).state.selection).toEqual({ representationId: view, editorId });
           expect(host.context()).toBe(`${view}:${editorId}`);
           expect(get(host, "[data-picker-plane]").getAttribute("data-plane-id")).toBe(view);
+          const nodes = currentNodes(host);
           for (const srgb of [false, true])
             for (const p3 of [false, true]) {
               await host.update({ showSrgbBoundary: srgb, showDisplayP3Boundary: p3 });
+              sameNodes(host, nodes);
               const revision = latest(host);
               expect(revision.state.visibleGuides).toEqual([
                 ...(p3 ? ["display-p3-boundary"] : []),
@@ -111,11 +134,13 @@ export function acceptedRevisionContract(
               );
               const state = JSON.stringify(revision.state);
               await host.update({ boundaryTarget: "display-p3" });
+              sameNodes(host, nodes);
               expect(JSON.stringify(latest(host).state)).toBe(state);
               expect(
                 get(host, "[data-boundary-target-result]").getAttribute("data-target-exact-status"),
               ).toBe("inside");
               await host.update({ boundaryTarget: "srgb" });
+              sameNodes(host, nodes);
               expect(
                 get(host, "[data-boundary-target-result]").getAttribute("data-target-exact-status"),
               ).toBe("outside");
@@ -137,6 +162,7 @@ export function acceptedRevisionContract(
         const host = await mount(color(0.62, 0.3), view);
         try {
           const old = latest(host);
+          const nodes = currentNodes(host);
           expect(old.guides.find((row) => row.guideId === "srgb-boundary")).toMatchObject({
             kind: "resolved",
             forms: { targetMarker: { kind: "available" } },
@@ -144,6 +170,7 @@ export function acceptedRevisionContract(
           expect(host.element.querySelector("[data-table-boundary-guide-marker]")).not.toBeNull();
           const inside = color(0.5, 0.02);
           await host.update({ value: inside });
+          sameNodes(host, nodes);
           const next = latest(host);
           expect(definingEquals(next.source, inside)).toBe(true);
           expect(next.state).toEqual(old.state);

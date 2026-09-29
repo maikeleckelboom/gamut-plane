@@ -1,5 +1,11 @@
-import { createColorValue, type ColorValue } from "@gamut-plane/core";
-import { createPickerPresentation } from "@gamut-plane/render";
+import { createColorValue, type ColorValue, type PickerPlaneId } from "@gamut-plane/core";
+import {
+  currentField,
+  currentOklchObservation,
+  currentEditableDetail,
+  currentGuideDisplay,
+} from "@gamut-plane/render/internal/current";
+import { legacyViewState, resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
 
 export function color(l: number, c: number, h: number | null, alpha = 1): ColorValue {
   const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
@@ -7,10 +13,17 @@ export function color(l: number, c: number, h: number | null, alpha = 1): ColorV
   return result.value;
 }
 
-export function planeValue(modelValue: ColorValue) {
-  const presentation = createPickerPresentation(modelValue, "oklch", "srgb", {
-    srgb: true,
-    displayP3: true,
-  });
-  return { modelValue, fieldHue: presentation.fieldHue, markerCss: presentation.markerCss };
+export function planeValue(modelValue: ColorValue, view: PickerPlaneId = "oklch") {
+  const revision = resolveAcceptedRevision(modelValue, legacyViewState(view, true, true));
+  const field = currentField(view, revision.editor, revision.field);
+  const detail = currentEditableDetail(
+    field,
+    currentOklchObservation(modelValue, revision.observation),
+  );
+  return {
+    modelValue,
+    field,
+    guides: currentGuideDisplay(revision.guides),
+    markerCss: detail.markerCss,
+  };
 }

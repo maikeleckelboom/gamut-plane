@@ -5,7 +5,6 @@ import { defineComponent, h, ref } from "vue";
 
 import {
   OKLCH_LIGHTNESS_CHROMA_PLANE,
-  generateGamutBoundaryTable,
   definitionOf,
   type ColorValue,
   type PickerPlaneFieldSampler,
@@ -32,15 +31,12 @@ describe("renderer invalidation contracts", () => {
       ...OKLCH_LIGHTNESS_CHROMA_PLANE,
       buildGamutContour,
     };
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane,
         semanticContextKey: plane.id === "oklch" ? "oklch:oklch-lc" : "oklab:oklab-ab",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -54,7 +50,7 @@ describe("renderer invalidation contracts", () => {
     const initialContourBuilds = buildGamutContour.mock.calls.length;
     const initialGradientBuilds = createLinearGradient.mock.calls.length;
     const initialPath = wrapper.get('[data-gamut-boundary="srgb"]').attributes("d");
-    expect(initialContourBuilds).toBe(2);
+    expect(initialContourBuilds).toBe(0); // Child consumes accepted paths, never builds contours.
     expect(initialGradientBuilds).toBeGreaterThan(0);
 
     await wrapper.setProps({
@@ -76,7 +72,7 @@ describe("renderer invalidation contracts", () => {
     await flushPromises();
 
     expect(frames.pendingCount).toBe(1);
-    expect(buildGamutContour).toHaveBeenCalledTimes(initialContourBuilds + 4);
+    expect(buildGamutContour).toHaveBeenCalledTimes(0);
     expect(wrapper.get('[data-gamut-boundary="srgb"]').attributes("d")).not.toBe(initialPath);
     frames.flush();
     expect(createLinearGradient.mock.calls.length).toBeGreaterThan(initialGradientBuilds);
@@ -105,15 +101,12 @@ describe("renderer invalidation contracts", () => {
     const context = document.createElement("canvas").getContext("2d")!;
     const createLinearGradient = vi.mocked(context.createLinearGradient);
     const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -178,15 +171,12 @@ describe("renderer invalidation contracts", () => {
     });
     const context = document.createElement("canvas").getContext("2d")!;
     const createLinearGradient = vi.mocked(context.createLinearGradient);
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",
@@ -228,15 +218,12 @@ describe("renderer invalidation contracts", () => {
     });
     const context = document.createElement("canvas").getContext("2d")!;
     const getContext = vi.mocked(HTMLCanvasElement.prototype.getContext);
-    const options = { hueSteps: 6, lightnessSteps: 5, searchIterations: 6 } as const;
     const wrapper = mount(ColorPlane, {
       attachTo: document.body,
       props: {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        srgbTable: generateGamutBoundaryTable("srgb", options),
-        displayP3Table: generateGamutBoundaryTable("display-p3", options),
         targetGuidePoint: null,
         targetGuideCss: "",
         targetGuideLabel: "sRGB sampled target guide",

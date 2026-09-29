@@ -10,7 +10,21 @@ import {
   type ColorValue,
 } from "@gamut-plane/core";
 import { GamutPlane } from "../src/index.js";
+import {
+  presentAcceptedRevision,
+  type AcceptedPresentationView,
+} from "../src/model/acceptedPresentation.js";
+import { mountPlaneResources } from "../src/interaction/planeResources.js";
+import {
+  currentEditableDetail,
+  currentGuideDisplay,
+  legacyTargetCompatibility,
+} from "@gamut-plane/render/internal/current";
 import { color, event, frames, get, host, initial, input, mount } from "./helpers.js";
+
+vi.mock("../src/model/acceptedPresentation.js", { spy: true });
+vi.mock("../src/interaction/planeResources.js", { spy: true });
+vi.mock("@gamut-plane/render/internal/current", { spy: true });
 
 function defined(
   space: "oklab" | "display-p3",
@@ -143,7 +157,7 @@ describe("ColorValue plane interaction", () => {
     expect(ui.changes).toHaveBeenCalledTimes(count);
   });
 
-  it("keeps abandoned concurrent callbacks out of the mounted plane", async () => {
+  it("keeps speculative accepted presentation and callbacks out of committed resources, then installs a complete revision", async () => {
     const clock = frames(),
       first = vi.fn(),
       abandoned = vi.fn();
@@ -156,6 +170,13 @@ describe("ColorValue plane interaction", () => {
     );
     await clock.flush();
     const surface = get(ui.element, '[role="application"]');
+    const committedInput = vi.mocked(mountPlaneResources).mock.calls.at(-1)![4];
+    const committed = committedInput();
+    const beforeHtml = ui.element.innerHTML;
+    const candidate = color(0.62, 0.3, 45, 0.37);
+    const beforeCalls = [currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility].map(
+      (fn) => vi.mocked(fn).mock.calls.length,
+    );
     const never = new Promise<void>(() => {});
     function Suspend(): never {
       throw never;
@@ -166,8 +187,10 @@ describe("ColorValue plane interaction", () => {
           <StrictMode>
             <Suspense fallback={<p>Pending</p>}>
               <GamutPlane
-                value={color(0.62, 0.3, 45, 0.37)}
+                value={candidate}
                 view="oklab"
+                boundaryTarget="display-p3"
+                showSrgbBoundary={false}
                 onValueChange={abandoned}
               />
               <Suspend />
@@ -176,12 +199,56 @@ describe("ColorValue plane interaction", () => {
         ),
       );
     });
+    expect(vi.mocked(presentAcceptedRevision).mock.results.at(-1)!.value.selection.editorId).toBe(
+      "oklab-ab",
+    );
+    [currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility].forEach((fn, index) => {
+      expect(vi.mocked(fn).mock.calls.length).toBeGreaterThan(beforeCalls[index]!);
+    });
+    expect(ui.element.innerHTML).toBe(beforeHtml);
+    expect(committedInput()).toBe(committed);
+    expect(committedInput().field.projection.plane).toBe("oklch");
     await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
     await clock.flush();
     await event(surface, "keydown", { key: "ArrowLeft" });
     expect(abandoned).not.toHaveBeenCalled();
     expect(first).toHaveBeenCalledTimes(2);
     for (const [value] of first.mock.calls) expect(definitionOf(value).space).toBe("oklch");
+    await ui.render(
+      <StrictMode>
+        <Suspense fallback={<p>Pending</p>}>
+          <GamutPlane
+            value={candidate}
+            view="oklab"
+            boundaryTarget="display-p3"
+            showSrgbBoundary={false}
+            onValueChange={abandoned}
+          />
+        </Suspense>
+      </StrictMode>,
+    );
+    await clock.flush();
+    const installed = vi.mocked(mountPlaneResources).mock.calls.at(-1)![4]();
+    // Strict Mode may evaluate additional pure views without committing them. Find the
+    // actual accepted projection installed by the layout-effect boundary, by identity.
+    const accepted = vi
+      .mocked(presentAcceptedRevision)
+      .mock.results.map((result): AcceptedPresentationView => result.value)
+      .find(
+        (view) =>
+          view.field.kind === "available" && view.field.projection === installed.field.projection,
+      );
+    expect(accepted).toBeDefined();
+    expect(installed.value).toBe(candidate);
+    expect(accepted!.selection.editorId).toBe("oklab-ab");
+    expect(accepted!.guides.map((row) => row.guideId)).toEqual(["display-p3-boundary"]);
+    expect(get(ui.element, "[data-gp-root]").getAttribute("data-gp-view")).toBe("oklab");
+    expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(1);
+    expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
+    expect(
+      get(ui.element, '[aria-label="OKLab lightness · fixed axis"]').getAttribute("value"),
+    ).toBe("0.62");
+    expect(abandoned).not.toHaveBeenCalled();
   });
 
   it("keeps one pointer, previews immediately, then publishes the final point before commit", async () => {

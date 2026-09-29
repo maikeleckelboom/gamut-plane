@@ -14,7 +14,6 @@ import {
   keyboardPlanePoint,
   projectColorToPlane,
   type ColorValue,
-  type GamutBoundaryTable,
   type PickerPlaneFieldSampler,
   type PickerPlaneGeometry,
   type PickerPlaneKeyboardAction,
@@ -39,36 +38,32 @@ import {
   guideConnectorStyle,
   createFieldRenderer,
   pointStyle,
-  geometryToSvgPath,
   VIEWBOX_SIZE,
   type FieldRenderer,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
 
+import type { CurrentField, CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
+
 const props = withDefaults(
   defineProps<{
     modelValue: ColorValue;
     semanticContextKey: string;
-    fieldHue: number;
+    field: CurrentField;
+    guides: CurrentGuideDisplay;
     markerCss: string;
     editReference?: PlaneEditReference;
     plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
-    srgbTable: GamutBoundaryTable;
-    displayP3Table: GamutBoundaryTable;
     targetGuidePoint: PlanePoint | null;
     targetGuideCss: string;
     targetGuideLabel: string;
     warningVisible: boolean;
     warningLabel: string;
     interactionPreview?: boolean;
-    showSrgbBoundary?: boolean;
-    showDisplayP3Boundary?: boolean;
   }>(),
   {
     interactionPreview: false,
-    showSrgbBoundary: true,
-    showDisplayP3Boundary: true,
   },
 );
 
@@ -96,14 +91,8 @@ let isMounted = false;
 let surfaceBounds = { left: 0, top: 0, width: 0, height: 0 };
 let surfaceLocalSize = { width: 0, height: 0 };
 
-const activeProjection = computed(() => {
-  const projected = projectColorToPlane(props.modelValue, props.plane.id);
-  if (!projected.ok) throw new RangeError("Selected color cannot be projected into the plane");
-  return projected.value;
-});
-const fixedAxis = computed(() =>
-  props.plane.id === "oklch" ? props.fieldHue : activeProjection.value.representation.channels[0],
-);
+const activeProjection = computed(() => props.field.projection);
+const fixedAxis = computed(() => props.field.samplingFixed);
 const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.plane.constrainPoint(activePoint.value));
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
@@ -118,22 +107,6 @@ const targetGuideConnectorStyle = computed(() => {
   return guideConnectorStyle(active, guide, props.plane.id === "oklab");
 });
 
-const srgbPath = computed(() =>
-  props.showSrgbBoundary
-    ? geometryToSvgPath(
-        props.plane.buildGamutContour(props.srgbTable, fixedAxis.value),
-        props.plane.gamutContourClosed,
-      )
-    : "",
-);
-const displayP3Path = computed(() =>
-  props.showDisplayP3Boundary
-    ? geometryToSvgPath(
-        props.plane.buildGamutContour(props.displayP3Table, fixedAxis.value),
-        props.plane.gamutContourClosed,
-      )
-    : "",
-);
 const planeLabel = computed(() => {
   const channels = activeProjection.value.representation.channels;
   const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${channels[1].toFixed(3)}. Vertical ${props.plane.yAxis.label} ${props.plane.id === "oklch" ? channels[0].toFixed(3) : (channels[2] as number).toFixed(3)}. Arrow keys adjust the selected point.${props.plane.id === "oklch" && channels[2] === null ? " Set Hue before increasing chroma." : ""}`;
@@ -407,9 +380,7 @@ onBeforeUnmount(() => {
       tabindex="0"
       :aria-label="planeLabel"
       :data-render-color-space="canvasColorSpace"
-      :data-outside-instrument="
-        props.plane.isPointInInstrumentDomain(activePoint) ? 'false' : 'true'
-      "
+      :data-outside-instrument="field.markerInDomain ? 'false' : 'true'"
       @keydown="onKeydown"
       @blur="onBlur"
     >
@@ -430,8 +401,8 @@ onBeforeUnmount(() => {
         aria-label="Gamut and instrument boundary guides"
       >
         <path
-          v-if="showDisplayP3Boundary"
-          :d="displayP3Path"
+          v-if="guides.displayP3Path !== null"
+          :d="guides.displayP3Path"
           class="color-plane__boundary color-plane__boundary--p3"
           :data-gp-part="gpPart.gamutBoundary"
           :data-gp-gamut="gpGamut.displayP3"
@@ -440,8 +411,8 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         />
         <path
-          v-if="showDisplayP3Boundary"
-          :d="displayP3Path"
+          v-if="guides.displayP3Path !== null"
+          :d="guides.displayP3Path"
           class="color-plane__boundary-hit"
           :data-gp-part="gpPart.boundaryHit"
           :data-gp-gamut="gpGamut.displayP3"
@@ -451,8 +422,8 @@ onBeforeUnmount(() => {
           role="img"
         />
         <path
-          v-if="showSrgbBoundary"
-          :d="srgbPath"
+          v-if="guides.srgbPath !== null"
+          :d="guides.srgbPath"
           class="color-plane__boundary color-plane__boundary--srgb"
           :data-gp-part="gpPart.gamutBoundary"
           :data-gp-gamut="gpGamut.srgb"
@@ -461,8 +432,8 @@ onBeforeUnmount(() => {
           aria-hidden="true"
         />
         <path
-          v-if="showSrgbBoundary"
-          :d="srgbPath"
+          v-if="guides.srgbPath !== null"
+          :d="guides.srgbPath"
           class="color-plane__boundary-hit"
           :data-gp-part="gpPart.boundaryHit"
           :data-gp-gamut="gpGamut.srgb"

@@ -18,6 +18,7 @@ export default defineConfig({
         "@gamut-plane/core/internal/capabilities",
         "@gamut-plane/render",
         "@gamut-plane/render/internal/capabilities",
+        "@gamut-plane/render/internal/current",
         "@gamut-plane/ui",
       ],
     },

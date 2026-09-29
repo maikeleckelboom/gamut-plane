@@ -13,10 +13,16 @@ import {
   type RevisionHost,
 } from "../../react/test/acceptedRevisionContract.js";
 import { resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
+import {
+  presentAcceptedRevision,
+  type AcceptedPresentationView,
+} from "../src/model/acceptedPresentation.js";
+import ColorPlane from "../src/components/ColorPlane.vue";
 import GamutPlane from "../src/components/GamutPlane.vue";
 import { installAnimationFrameController } from "./interactionHelpers.js";
 
 vi.mock("../src/model/acceptedResolution.js", { spy: true });
+vi.mock("../src/model/acceptedPresentation.js", { spy: true });
 vi.mock("@gamut-plane/ui", { spy: true });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -25,6 +31,7 @@ afterEach(() => {
 
 acceptedRevisionContract(async (value, view) => {
   vi.mocked(resolveAcceptedRevision).mockClear();
+  vi.mocked(presentAcceptedRevision).mockClear();
   vi.mocked(mountPlaneGesture).mockClear();
   const clock = installAnimationFrameController();
   let acceptColor = true;
@@ -78,6 +85,11 @@ acceptedRevisionContract(async (value, view) => {
         .mock.results.filter((row) => row.type === "return")
         .map((row) => row.value),
     context: () => vi.mocked(mountPlaneGesture).mock.calls.at(-1)![1]().viewKey,
+    presentations: () =>
+      vi
+        .mocked(presentAcceptedRevision)
+        .mock.results.filter((row) => row.type === "return")
+        .map((row) => row.value),
     run: async (action) => {
       action();
       await flushPromises();
@@ -102,14 +114,31 @@ it("retains Vue defineModel local acceptance when the parent does not bind its u
   const source = createColorValue({ space: "oklch", channels: [0.5, 0.1, 40], alpha: 1 });
   if (!source.ok) throw new Error("Invalid fixture");
   const host = mount(GamutPlane, { props: { modelValue: source.value, plane: "oklch" } });
+  const acceptedEditor = (id: "oklch-lc" | "oklab-ab") => {
+    const accepted: AcceptedPresentationView = vi
+      .mocked(presentAcceptedRevision)
+      .mock.results.at(-1)!.value;
+    expect(accepted.selection.editorId).toBe(id);
+    if (accepted.field.kind !== "available") throw new Error("Expected accepted field");
+    expect(host.getComponent(ColorPlane).props("field").projection).toBe(accepted.field.projection);
+    expect(host.findAll("[data-gamut-boundary]")).toHaveLength(accepted.guides.length);
+  };
   try {
+    const oldNumber = host.get<HTMLInputElement>('[aria-label="Lightness numeric value"]');
+    oldNumber.element.value = "0.8";
+    await oldNumber.trigger("input");
     await host.get('[data-plane-option="oklab"]').trigger("click");
+    acceptedEditor("oklab-ab");
+    await oldNumber.trigger("change");
+    await oldNumber.trigger("blur");
     expect(host.attributes("data-active-plane")).toBe("oklab");
     expect(
       vi.mocked(resolveAcceptedRevision).mock.results.at(-1)?.value.state.selection.editorId,
     ).toBe("oklab-ab");
     await host.setProps({ plane: "oklab" });
     await host.setProps({ plane: "oklch" });
+    acceptedEditor("oklch-lc");
+    expect(host.get('[aria-label="Lightness numeric value"]').element).not.toBe(oldNumber.element);
     expect(host.attributes("data-active-plane")).toBe("oklch");
     expect(
       vi.mocked(resolveAcceptedRevision).mock.results.at(-1)?.value.state.selection.editorId,

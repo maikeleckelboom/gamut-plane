@@ -1,13 +1,11 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { projectColorToPlane } from "@gamut-plane/core";
+import { useLayoutEffect, useRef, useState } from "react";
+import type { CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
 import { gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
 import {
-  geometryToSvgPath,
   pointStyle,
   guideConnectorStyle,
-  PICKER_GAMUT_TABLES,
   VIEWBOX_SIZE,
   PICKER_WARNING_GLYPH_SIZE,
   PICKER_ACTIVE_MARKER_RADIUS,
@@ -22,23 +20,20 @@ import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 interface ColorPlaneProps extends PlaneInput {
   targetGuideLabel: string;
   warningVisible: boolean;
-  showSrgbBoundary: boolean;
-  showDisplayP3Boundary: boolean;
+  guides: CurrentGuideDisplay;
   onCanvasColorSpaceChange: ((status: CanvasColorSpaceStatus) => void) | undefined;
 }
 
 export function ColorPlane(props: ColorPlaneProps) {
   const {
     plane,
-    value,
-    fieldHue,
+    field,
+    guides,
     markerCss,
     targetGuidePoint,
     targetGuideCss,
     targetGuideLabel,
     warningVisible,
-    showSrgbBoundary,
-    showDisplayP3Boundary,
   } = props;
   const surface = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -49,35 +44,14 @@ export function ColorPlane(props: ColorPlaneProps) {
   const [capability, setCapability] = useState<CanvasColorSpaceStatus>("pending");
   const notified = useRef<CanvasColorSpaceStatus>("pending");
   const [quality, setQuality] = useState<RenderedFieldQuality>("full");
-  const projected = projectColorToPlane(value, plane.id);
-  if (!projected.ok) throw new RangeError("Selected color cannot be projected into the plane");
-  const projection = projected.value;
-  const fixed = projection.plane === "oklch" ? fieldHue : projection.representation.channels[0];
+  const projection = field.projection;
   const x = projection.representation.channels[1];
   const y =
     projection.plane === "oklch"
       ? projection.representation.channels[0]
       : projection.representation.channels[2];
-  const activePoint = plane.constrainPoint(projected.value.point);
+  const activePoint = plane.constrainPoint(projection.point);
   const guide = targetGuidePoint;
-  // Plane markers must occlude guides even when the authored color has transparency.
-  const paths = useMemo(
-    () => ({
-      srgb: showSrgbBoundary
-        ? geometryToSvgPath(
-            plane.buildGamutContour(PICKER_GAMUT_TABLES.srgb, fixed),
-            plane.gamutContourClosed,
-          )
-        : "",
-      p3: showDisplayP3Boundary
-        ? geometryToSvgPath(
-            plane.buildGamutContour(PICKER_GAMUT_TABLES.displayP3, fixed),
-            plane.gamutContourClosed,
-          )
-        : "",
-    }),
-    [plane, fixed, showDisplayP3Boundary, showSrgbBoundary],
-  );
   useLayoutEffect(() => {
     const mounted = mountPlane(
       surface.current!,
@@ -136,7 +110,7 @@ export function ColorPlane(props: ColorPlaneProps) {
         dir="ltr"
         aria-label={label}
         data-render-color-space={capability}
-        data-outside-instrument={String(!plane.isPointInInstrumentDomain(projected.value.point))}
+        data-outside-instrument={String(!field.markerInDomain)}
       >
         <canvas ref={canvas} data-gp-part={gpPart.canvas} aria-hidden="true" />
         {plane.id === "oklab" && (
@@ -155,10 +129,10 @@ export function ColorPlane(props: ColorPlaneProps) {
           role="group"
           aria-label="Gamut and instrument boundary guides"
         >
-          {showDisplayP3Boundary && (
+          {guides.displayP3Path !== null && (
             <>
               <path
-                d={paths.p3}
+                d={guides.displayP3Path}
                 className="gpr-color-plane-boundary gpr-color-plane-boundary--p3"
                 data-gp-part={gpPart.gamutBoundary}
                 data-gp-gamut={gpGamut.displayP3}
@@ -167,7 +141,7 @@ export function ColorPlane(props: ColorPlaneProps) {
                 aria-hidden="true"
               />
               <path
-                d={paths.p3}
+                d={guides.displayP3Path}
                 className="gpr-color-plane-boundary-hit"
                 data-gp-part={gpPart.boundaryHit}
                 data-gp-gamut={gpGamut.displayP3}
@@ -178,10 +152,10 @@ export function ColorPlane(props: ColorPlaneProps) {
               />
             </>
           )}
-          {showSrgbBoundary && (
+          {guides.srgbPath !== null && (
             <>
               <path
-                d={paths.srgb}
+                d={guides.srgbPath}
                 className="gpr-color-plane-boundary gpr-color-plane-boundary--srgb"
                 data-gp-part={gpPart.gamutBoundary}
                 data-gp-gamut={gpGamut.srgb}
@@ -190,7 +164,7 @@ export function ColorPlane(props: ColorPlaneProps) {
                 aria-hidden="true"
               />
               <path
-                d={paths.srgb}
+                d={guides.srgbPath}
                 className="gpr-color-plane-boundary-hit"
                 data-gp-part={gpPart.boundaryHit}
                 data-gp-gamut={gpGamut.srgb}

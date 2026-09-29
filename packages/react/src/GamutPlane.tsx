@@ -22,7 +22,15 @@ import {
   type PlaneEditError,
   type PlaneEditReference,
 } from "@gamut-plane/core";
-import { createPickerPresentation, type CanvasColorSpaceStatus } from "@gamut-plane/render";
+import type { CanvasColorSpaceStatus } from "@gamut-plane/render";
+import {
+  currentField,
+  currentExactChecks,
+  currentOklchObservation,
+  currentEditableDetail,
+  currentGuideDisplay,
+  legacyTargetCompatibility,
+} from "@gamut-plane/render/internal/current";
 import { gpPart, editorUi } from "@gamut-plane/ui";
 import { useControllableView } from "./hooks/useControllableView.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
@@ -31,6 +39,8 @@ import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { NumericInput } from "./components/NumericInput.js";
 import { BoundaryTargetResult } from "./components/BoundaryTargetResult.js";
 import { legacyViewState, resolveAcceptedRevision } from "./model/acceptedResolution.js";
+import { presentAcceptedRevision } from "./model/acceptedPresentation.js";
+import { currentView } from "./model/currentView.js";
 
 const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
 const [fixedLightness, a, b] = editorUi["oklab-ab"].companions;
@@ -101,29 +111,46 @@ export function GamutPlane({
   ref,
   ...rootProps
 }: GamutPlaneProps) {
-  const [view, requestView] = useControllableView(controlledView, defaultView, onViewChange);
+  const [frameworkView, requestView] = useControllableView(
+    controlledView,
+    defaultView,
+    onViewChange,
+  );
   const id = useId();
   const revision = resolveAcceptedRevision(
     value,
-    legacyViewState(view, showSrgbBoundary, showDisplayP3Boundary),
+    legacyViewState(frameworkView, showSrgbBoundary, showDisplayP3Boundary),
   );
-  // The frozen v0.3 visual path recomputes its own facts; none enter generalized resolution.
-  const model = createPickerPresentation(revision.source, view, boundaryTarget, {
-    srgb: showSrgbBoundary,
-    displayP3: showDisplayP3Boundary,
-  });
+  const accepted = presentAcceptedRevision(revision);
+  const view = currentView(accepted.selection);
+  const field = currentField(view, accepted.editor, accepted.field);
+  const oklch = currentOklchObservation(revision.source, accepted.observation);
+  const checks = currentExactChecks(accepted.exactChecks);
+  const target = legacyTargetCompatibility(
+    field.editorId,
+    boundaryTarget,
+    checks,
+    accepted.guides,
+    oklch,
+  );
+  const detail = currentEditableDetail(field, oklch);
+  const guides = currentGuideDisplay(accepted.guides);
+  const warningVisible = checks.displayP3.status === "outside";
+  const y =
+    field.projection.plane === "oklch"
+      ? field.projection.representation.channels[0]
+      : field.projection.representation.channels[2];
   const hueReference = useRef<PlaneEditReference | undefined>(undefined);
+  const acceptedHue = oklch.channels[2];
   const hueReferenceContext = useRef(revision.contextKey);
   const getHueReference = () =>
     hueReferenceContext.current === revision.contextKey ? hueReference.current : undefined;
   useLayoutEffect(() => {
     hueReferenceContext.current = revision.contextKey;
-    const observed = represent(value, "oklch");
-    if (!observed.ok) throw new RangeError("Selected hue cannot be observed");
-    const hue = observed.value.channels[2];
+    const hue = acceptedHue;
     if (hue !== null) hueReference.current = { hue };
     else hueReference.current = undefined;
-  }, [value, revision.contextKey]);
+  }, [value, revision.contextKey, acceptedHue]);
   const [huePreview, setHuePreview] = useState(false);
   // A view transition interrupts temporary preview ownership, never authored state.
   useLayoutEffect(() => {
@@ -138,6 +165,11 @@ export function GamutPlane({
     onValueChange(result.value);
     if (complete) onValueCommit?.(result.value);
   }
+  function requireOklabProjection() {
+    if (field.projection.plane !== "oklab")
+      throw new Error("OKLab coordinate edit requires the accepted OKLab field");
+    return field.projection;
+  }
   const dom = Object.fromEntries(
     Object.entries(rootProps).filter(
       ([key]) =>
@@ -150,13 +182,13 @@ export function GamutPlane({
   const safeStyle = Object.fromEntries(
     Object.entries(style ?? {}).filter(([key]) => !/^--(?:picker-|gp-)/.test(key)),
   );
-  const shared = { warningVisible: model.warningVisible, onCancel };
+  const shared = { warningVisible: warningVisible, onCancel };
   return (
     <section
       {...dom}
       ref={ref}
       className={["gamut-plane-react", className].filter(Boolean).join(" ")}
-      style={presentationStyle({ ...safeStyle, "--picker-active": model.activeCss })}
+      style={presentationStyle({ ...safeStyle, "--picker-active": detail.activeCss })}
       data-plane-instrument=""
       data-gp-root=""
       data-gp-view={view}
@@ -172,17 +204,16 @@ export function GamutPlane({
           <ColorPlane
             value={revision.source}
             semanticContextKey={revision.contextKey}
-            fieldHue={model.fieldHue}
-            markerCss={model.markerCss}
+            field={field}
+            guides={guides}
+            markerCss={detail.markerCss}
             getEditReference={getHueReference}
-            plane={model.plane}
-            targetGuidePoint={model.targetGuidePoint}
-            targetGuideCss={model.targetGuideCss}
-            targetGuideLabel={model.targetGuideLabel}
-            warningVisible={model.warningVisible}
+            plane={field.plane}
+            targetGuidePoint={target.targetGuidePoint}
+            targetGuideCss={target.targetGuideCss}
+            targetGuideLabel={target.targetGuideLabel}
+            warningVisible={warningVisible}
             interactionPreview={view === "oklch" && huePreview}
-            showSrgbBoundary={showSrgbBoundary}
-            showDisplayP3Boundary={showDisplayP3Boundary}
             onValueChange={onValueChange}
             onValueCommit={onValueCommit}
             onCancel={onCancel}
@@ -191,7 +222,7 @@ export function GamutPlane({
           {legend}
         </div>
         <div className="gpr-plane-instrument-controls" data-gp-part={gpPart.controls}>
-          {view === "oklch" ? (
+          {detail.view === "oklch" ? (
             <>
               <ColorChannelControl
                 key={`${revision.contextKey}:${hue.channelId}:${hue.operationId}`}
@@ -199,16 +230,16 @@ export function GamutPlane({
                 id={`${id}-hue`}
                 channel={hue.symbol}
                 label={hue.label}
-                value={model.fieldHue}
+                value={field.samplingFixed}
                 min={hue.sliderRange.min}
                 max={hue.sliderRange.max}
                 step={hue.step}
                 precision={hue.precision}
-                gradient={model.hueGradient}
-                intervals={model.hueIntervals}
-                warningPosition={model.huePosition}
+                gradient={detail.hueGradient}
+                intervals={guides.hueIntervals}
+                warningPosition={detail.huePosition}
                 normalizeValue={normalizeHue}
-                help={model.hueHelp}
+                help={detail.hueHelp}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(revision.source, {
@@ -237,14 +268,14 @@ export function GamutPlane({
                 id={`${id}-lightness`}
                 channel={lightness.symbol}
                 label={lightness.label}
-                value={model.oklch.channels[0]}
+                value={oklch.channels[0]}
                 min={lightness.sliderRange.min}
                 max={lightness.sliderRange.max}
                 step={lightness.step}
                 precision={lightness.precision}
-                gradient={model.lightnessGradient}
-                intervals={model.lightnessIntervals}
-                warningPosition={model.oklch.channels[0]}
+                gradient={detail.lightnessGradient}
+                intervals={guides.lightnessIntervals}
+                warningPosition={oklch.channels[0]}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(revision.source, {
@@ -272,19 +303,19 @@ export function GamutPlane({
                 id={`${id}-chroma`}
                 channel={chroma.symbol}
                 label={chroma.label}
-                value={model.oklch.channels[1]}
+                value={oklch.channels[1]}
                 min={chroma.sliderRange.min}
                 max={chroma.sliderRange.max}
                 step={chroma.step}
                 precision={chroma.precision}
-                gradient={model.chromaGradient}
-                intervals={model.chromaIntervals}
-                markers={model.markers}
-                boundaryPreviewColor={model.targetResult.swatchCss}
+                gradient={detail.chromaGradient}
+                intervals={guides.chromaIntervals}
+                markers={target.markers}
+                boundaryPreviewColor={target.targetResult.swatchCss}
                 boundaryPreviewTone={boundaryTarget}
                 overflowMax={!("max" in chroma.numericBounds)}
-                help={model.chromaHelp}
-                warningPosition={model.chromaPosition}
+                help={detail.chromaHelp}
+                warningPosition={detail.chromaPosition}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(revision.source, {
@@ -317,15 +348,15 @@ export function GamutPlane({
                 id={`${id}-oklab-lightness`}
                 channel={fixedLightness.symbol}
                 label={fixedLightness.label}
-                value={model.projection.fixed}
+                value={field.samplingFixed}
                 min={fixedLightness.sliderRange.min}
                 max={fixedLightness.sliderRange.max}
                 step={fixedLightness.step}
                 precision={fixedLightness.precision}
-                gradient={model.fixedLightnessGradient}
-                intervals={model.lightnessIntervals}
-                help={model.domainHelp}
-                warningPosition={model.projection.fixed}
+                gradient={detail.fixedLightnessGradient}
+                intervals={guides.lightnessIntervals}
+                help={detail.domainHelp}
+                warningPosition={field.samplingFixed}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(revision.source, {
@@ -357,7 +388,9 @@ export function GamutPlane({
                   <label key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}>
                     <span>{control.label}</span>
                     <NumericInput
-                      value={control.symbol === "a" ? model.projection.x : model.projection.y}
+                      value={
+                        control.symbol === "a" ? field.projection.representation.channels[1] : y
+                      }
                       precision={control.precision}
                       min={control.numericBounds.min}
                       max={control.numericBounds.max}
@@ -369,7 +402,11 @@ export function GamutPlane({
                           authorPlaneEdit(revision.source, {
                             plane: "oklab",
                             kind: "point",
-                            point: oklabCoordinatePlanePoint(model.oklab, control.symbol, next),
+                            point: oklabCoordinatePlanePoint(
+                              requireOklabProjection(),
+                              control.symbol,
+                              next,
+                            ),
                           }),
                           true,
                         )
@@ -382,7 +419,7 @@ export function GamutPlane({
               </div>
             </>
           )}
-          <BoundaryTargetResult model={model.targetResult} />
+          <BoundaryTargetResult model={target.targetResult} />
         </div>
       </div>
     </section>
