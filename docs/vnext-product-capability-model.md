@@ -2288,3 +2288,27 @@ compatibility reduction, remaining gradients/current editor detail and help/warn
 obsolete compatibility shapes, and explicit retirement decisions for the two independent oracles.
 Useful oracle evidence need not be deleted. Public generalized APIs, observation-only product UI,
 mapping/output workflows, new science and compact redesign remain separate later work.
+
+### 36.17 Phase 2H.4 compatibility reduction and retirement record
+
+The [Phase 2H.4 ledger](presentation-production-migration.md#phase-2h4-independent-retirement-evidence)
+records reviewed literal goldens, the final owner of each current helper, the complete legacy
+consumer audit and package proof. Its checked-in golden fixture supplements, rather than replaces,
+the frozen v0.3 composition fixture. Current production composition and the frozen fixture both
+pass the same literals, including failure messages and high-risk visual digests.
+
+The six-member render `internal/current` surface now contains only current fail-fast bridges and
+render visual derivations. `currentEditableDetail` has active-editor CSS, positions and gradients
+but no product copy. `currentTargetVisual` borrows visible target facts or samples one hidden
+reference; UI owns target labels, accessible copy, precision and two-label status. UI imports no
+render runtime. The hidden target does no ordinary generalized work; accepted exact checks remain
+the only status authority. One OKLab companion OKLCH observation still serves current CSS, target
+sampling and Hue reconciliation without a cache.
+
+The shipped `pickerPresentation.ts` and `boundaryPresentation.ts` and their root exports are
+retired after proving no production, packed or documented current API consumer. Their old
+implementations remain only as frozen test fixtures. The 208-composition/36-failure comparison,
+432-case target matrix, literal goldens, component contracts, browser screenshots and packed
+Vue/Vite, React/Vite, Nuxt and Next suites protect v0.3 behavior. The accepted seven-field view,
+public adapter APIs, interaction lifecycle, CSS, generated tables and package versions remain
+unchanged. Phase 2I capabilities and product redesign remain deferred.

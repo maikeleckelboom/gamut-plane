@@ -98,11 +98,19 @@ export async function packPrivateArtifact(
       types: "./dist/capabilities/index.d.ts",
       import: "./dist/capabilities/index.js",
     });
-    if (manifest.name === "@gamut-plane/render")
+    if (manifest.name === "@gamut-plane/render") {
       assert.deepEqual(manifest.exports["./internal/current"], {
         types: "./dist/current/index.d.ts",
         import: "./dist/current/index.js",
       });
+      for (const old of ["boundaryPresentation", "pickerPresentation", "current/legacyTarget"])
+        for (const ext of [".js", ".d.ts"])
+          assert.equal(
+            files.includes(`package/dist/${old}${ext}`),
+            false,
+            `Retired ${old}${ext} is packed`,
+          );
+    }
   }
   if (manifest.name === "@gamut-plane/ui") {
     assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ["@gamut-plane/core"]);
@@ -217,7 +225,7 @@ import { createColorValue, represent } from "@gamut-plane/core";
 import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
 import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequestedGuides } from "@gamut-plane/render/internal/capabilities";
 import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
-import { currentField, currentExactChecks, currentOklchObservation, currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility } from "@gamut-plane/render/internal/current";
+import { currentField, currentExactChecks, currentOklchObservation, currentEditableDetail, currentGuideDisplay, currentTargetVisual } from "@gamut-plane/render/internal/current";
 import type { CurrentField, CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
 const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
 if (!source.ok) throw new Error("Invalid packed capability source");
@@ -234,10 +242,10 @@ const exact = currentExactChecks(checks);
 const oklch = currentOklchObservation(source.value, observation);
 const detail = currentEditableDetail(current, oklch);
 const display: CurrentGuideDisplay = currentGuideDisplay(guides);
-const visibleTarget = legacyTargetCompatibility(current.editorId, "srgb", exact, guides, oklch);
-const hiddenTarget = legacyTargetCompatibility(current.editorId, "srgb", exact, [], oklch);
+const visibleTarget = currentTargetVisual(current.editorId, "srgb", guides, oklch);
+const hiddenTarget = currentTargetVisual(current.editorId, "srgb", [], oklch);
 if (current.projection !== field.projection || oklch !== observation.value || detail.view !== "oklch" || !display.srgbPath) throw new Error("Packed current presentation lost accepted facts");
-if (visibleTarget.targetResult.status !== "inside" || hiddenTarget.targetGuidePoint !== null || hiddenTarget.targetResult.swatchCss !== visibleTarget.targetResult.swatchCss) throw new Error("Packed target compatibility failed");
+if (exact.srgb.status !== "inside" || visibleTarget.targetGuidePoint !== null || hiddenTarget.targetGuidePoint !== null || hiddenTarget.swatchCss !== visibleTarget.swatchCss) throw new Error("Packed target compatibility failed");
 // @ts-expect-error render guide identities remain distinct from gamut identities
 const wrongGuide: GuideId = "srgb-gamut";
 // @ts-expect-error core's new runtime contract is not public root API
@@ -256,7 +264,8 @@ import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "editorDefinitions", "geometryDefinitions"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
-assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentExactChecks", "currentField", "currentGuideDisplay", "currentOklchObservation", "legacyTargetCompatibility"]);
+assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentExactChecks", "currentField", "currentGuideDisplay", "currentOklchObservation", "currentTargetVisual"]);
+assert.deepEqual(Object.keys(render).sort(), ["PICKER_ACTIVE_MARKER_RADIUS", "PICKER_GAMUT_TABLES", "PICKER_SLIDER_ANNOTATION_CLEARANCE", "PICKER_SLIDER_DEFAULT_TRACK_WIDTH", "PICKER_SLIDER_EDGE_CLEARANCE", "PICKER_SLIDER_FIELD_INSET", "PICKER_SLIDER_GUIDE_COLLISION_WIDTH", "PICKER_SLIDER_THUMB_TOP", "PICKER_SLIDER_THUMB_WIDTH", "PICKER_SLIDER_TICK_COLLISION_WIDTH", "PICKER_SLIDER_TRACK_HEIGHT", "PICKER_SLIDER_WARNING_SIDE_GAP", "PICKER_SLIDER_WARNING_TOP", "PICKER_TARGET_GUIDE_MARKER_RADIUS", "PICKER_WARNING_GLYPH_SIZE", "PICKER_WARNING_MARKER_CLEARANCE", "PICKER_WARNING_PREFERRED_OFFSET", "PICKER_WARNING_SURFACE_INSET", "VIEWBOX_SIZE", "channelSections", "channelThresholds", "channelWarning", "colorGradient", "createFieldRenderer", "geometryToSvgPath", "getSliderWarningPosition", "guideConnectorStyle", "nearestThreshold", "placePlanarWarning", "pointStyle"]);
 for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
 for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
 for (const key of Object.keys(current)) assert.equal(key in render, false);
@@ -306,12 +315,16 @@ async function verifyInstalledUiMetadata(consumer: string) {
   await writeFile(
     join(consumer, "metadataContract.mts"),
     `
-import { currentPrimaryEditors, currentEditorByView, editorUi, representationUi } from "@gamut-plane/ui";
+import { currentPrimaryEditors, currentEditorByView, editorUi, representationUi, targetGamutUi, currentTargetPresentation } from "@gamut-plane/ui";
 import type { ChannelId, EditOperationId, EditorId, RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
 // The existing render root includes the browser Canvas contract; check type exclusion here,
 // separately from the ES-only internal-entry graph above.
 // @ts-expect-error current sibling presentation is not public root API
 type RootCurrent = typeof import("@gamut-plane/render").currentField;
+// @ts-expect-error retired production legacy factory is absent from render root
+type RetiredPicker = typeof import("@gamut-plane/render").createPickerPresentation;
+// @ts-expect-error retired legacy type is absent from render root
+type RetiredBoundary = import("@gamut-plane/render").BoundaryPresentation;
 for (const representation of Object.values(representationUi)) representation.id satisfies RepresentationDefinition["id"];
 for (const editor of currentPrimaryEditors) {
   editor.id satisfies EditorId;
@@ -325,6 +338,7 @@ currentEditorByView.srgb;
 if (currentPrimaryEditors.map((editor) => editor.id).join() !== "oklch-lc,oklab-ab") throw new Error("Packed primary exposure changed");
 if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw new Error("Packed metadata is mutable");
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
+if (targetGamutUi.srgb.label !== "sRGB" || currentTargetPresentation("srgb", "inside", { maximumChroma: 0.2, deltaC: 0, swatchCss: "oklch(60% 0.2 45)", targetGuideCss: "", marker: null }).targetResult.guideChroma !== "0.2000") throw new Error("Packed product formatting changed");
 `,
   );
   await writeFile(

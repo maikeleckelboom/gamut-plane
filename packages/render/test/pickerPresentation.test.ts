@@ -13,7 +13,8 @@ import {
   type DisplayGamut,
   type GamutStatus,
 } from "@gamut-plane/core";
-import { createPickerPresentation, PICKER_GAMUT_TABLES } from "../src/index.js";
+import { PICKER_GAMUT_TABLES } from "../src/index.js";
+import { createPickerPresentation } from "./fixtures/v03PickerPresentation.js";
 
 const visible = { srgb: true, displayP3: true };
 

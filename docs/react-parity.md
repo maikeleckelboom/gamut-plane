@@ -41,10 +41,12 @@ revision and proves that subsequent native pointer/keyboard work still authors c
 Both adapters consume one accepted presentation view and render's separate `internal/current`
 families. Accepted selection, exact checks, active field and requested guide forms are production
 authorities. Children consume the field projection and serialized accepted contour buffers without
-repeating their construction. Active-editor detail supplies gradients/CSS/help; target compatibility
-reuses visible facts or samples one missing hidden-target reference. The unchanged
-`pickerPresentation.ts`/`boundaryPresentation.ts` implementations remain independent equivalence
-oracles. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry, and
+repeating their construction. Active-editor detail supplies gradients/CSS; UI supplies unchanged
+help, gamut-target labels, warning interpretation and numeric formatting. `currentTargetVisual`
+reuses visible facts or samples one missing hidden-target reference. The former
+`pickerPresentation.ts`/`boundaryPresentation.ts` implementations are retired from runtime and
+retained as frozen test fixtures alongside literal golden vectors. `channelGeometry.ts`
+consolidates concrete interval/threshold/warning geometry, and
 `presentation.ts` constructs CSS gradients and guide connectors. See the
 [production migration ledger](presentation-production-migration.md) for consumers, work counts,
 failure bridges, suspended-render and node-continuity evidence.

@@ -29,9 +29,15 @@ import {
   currentOklchObservation,
   currentEditableDetail,
   currentGuideDisplay,
-  legacyTargetCompatibility,
+  currentTargetVisual,
 } from "@gamut-plane/render/internal/current";
-import { gpPart, editorUi } from "@gamut-plane/ui";
+import {
+  gpPart,
+  editorUi,
+  currentEditorHelp,
+  currentTargetPresentation,
+  currentWarningVisible,
+} from "@gamut-plane/ui";
 import { useControllableView } from "./hooks/useControllableView.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
@@ -126,16 +132,19 @@ export function GamutPlane({
   const field = currentField(view, accepted.editor, accepted.field);
   const oklch = currentOklchObservation(revision.source, accepted.observation);
   const checks = currentExactChecks(accepted.exactChecks);
-  const target = legacyTargetCompatibility(
-    field.editorId,
-    boundaryTarget,
-    checks,
-    accepted.guides,
-    oklch,
-  );
+  const targetVisual = currentTargetVisual(field.editorId, boundaryTarget, accepted.guides, oklch);
+  const target = {
+    ...targetVisual,
+    ...currentTargetPresentation(
+      boundaryTarget,
+      (boundaryTarget === "srgb" ? checks.srgb : checks.displayP3).status,
+      targetVisual,
+    ),
+  };
   const detail = currentEditableDetail(field, oklch);
+  const help = currentEditorHelp(view, oklch.channels[2] === null, field.markerInDomain);
   const guides = currentGuideDisplay(accepted.guides);
-  const warningVisible = checks.displayP3.status === "outside";
+  const warningVisible = currentWarningVisible(checks.displayP3.status);
   const y =
     field.projection.plane === "oklch"
       ? field.projection.representation.channels[0]
@@ -239,7 +248,7 @@ export function GamutPlane({
                 intervals={guides.hueIntervals}
                 warningPosition={detail.huePosition}
                 normalizeValue={normalizeHue}
-                help={detail.hueHelp}
+                help={help.hueHelp}
                 onInput={(next) =>
                   edit(
                     authorPlaneEdit(revision.source, {
@@ -314,7 +323,7 @@ export function GamutPlane({
                 boundaryPreviewColor={target.targetResult.swatchCss}
                 boundaryPreviewTone={boundaryTarget}
                 overflowMax={!("max" in chroma.numericBounds)}
-                help={detail.chromaHelp}
+                help={help.chromaHelp}
                 warningPosition={detail.chromaPosition}
                 onInput={(next) =>
                   edit(
@@ -355,7 +364,7 @@ export function GamutPlane({
                 precision={fixedLightness.precision}
                 gradient={detail.fixedLightnessGradient}
                 intervals={guides.lightnessIntervals}
-                help={detail.domainHelp}
+                help={help.domainHelp}
                 warningPosition={field.samplingFixed}
                 onInput={(next) =>
                   edit(
@@ -419,7 +428,7 @@ export function GamutPlane({
               </div>
             </>
           )}
-          <BoundaryTargetResult model={target.targetResult} />
+          <BoundaryTargetResult presentation={target} />
         </div>
       </div>
     </section>

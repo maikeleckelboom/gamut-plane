@@ -196,6 +196,28 @@ refines the original adoption-then-removal sequence: certified authority transfe
 duplicate removal now land together. Phase 2H.4 concerns compatibility detail reduction and the
 final retirement decision for the independent legacy oracles.
 
+## Current presentation after Phase 2H.4
+
+The accepted seven-field view remains the sole production selection, exact, field and visible-guide
+authority. The unsupported render `internal/current` entry keeps six focused functions: field and
+exact fail-fast assertions, one OKLab companion OKLCH observation, active-only CSS/gradients,
+accepted-guide display geometry, and `currentTargetVisual`. The target helper borrows visible
+reference/marker facts or samples one missing hidden reference. It owns no label, help, decimal
+formatting or product result object.
+
+Private UI owns current editor help, gamut-target metadata, warning interpretation, target copy,
+four-decimal Chroma/delta formatting and visually-inside tolerance wording. It accepts only core
+types and primitive render facts; render never imports UI. Adapters place accessible labels and
+markup, retain their framework lifecycles, and supply exact target status from accepted checks.
+The current target panel remains available when its guide is hidden without adding a hidden
+ordinary guide/check/contour/interval request.
+
+The former `createPickerPresentation` and `getBoundaryPresentation` implementations and their
+root exports are retired. Their frozen v0.3 compositions remain test-only, supplemented by
+literal checked-in golden vectors. The [Phase 2H.4 record](presentation-production-migration.md#phase-2h4-independent-retirement-evidence)
+contains the ownership ledger, consumer audit, work budget and package evidence. Public adapter
+APIs, accepted view, interaction controllers and visual contract remain unchanged.
+
 ## Generated tables
 
 The render package owns checked-in tables at `packages/render/src/generated/gamutTables.ts`. Its native TypeScript generator calls the built public core entry, emits deterministic little-endian Float32 payloads and records the settings and digest. Both adapters consume this single artifact. Import decodes the payloads; it does not search or generate boundaries at startup. The React extraction preserves the payloads, settings and digest.

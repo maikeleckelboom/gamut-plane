@@ -9,7 +9,7 @@ import {
 import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
 import { resolveEditorVisualSupport, resolveField } from "../src/capabilities/editorResolution.js";
 import { resolveRequestedGuides } from "../src/capabilities/guideResolution.js";
-import { createPickerPresentation } from "../src/pickerPresentation.js";
+import { createPickerPresentation } from "./fixtures/v03PickerPresentation.js";
 import { PICKER_GAMUT_TABLES } from "../src/generated/gamutTables.js";
 import { geometryToSvgPath, pointStyle } from "../src/geometry.js";
 import { guideConnectorStyle } from "../src/presentation.js";
@@ -19,7 +19,7 @@ import {
   currentOklchObservation,
   currentEditableDetail,
   currentGuideDisplay,
-  legacyTargetCompatibility,
+  currentTargetVisual,
 } from "../src/current/index.js";
 
 vi.mock("../src/geometry.js", { spy: true });
@@ -119,15 +119,14 @@ describe("current production families against the independent v0.3 oracle", () =
     expect(() => currentGuideDisplay(failed.guides)).toThrow(
       new RangeError("OKLCH lightness must be between 0 and 1"),
     );
-    const exact = currentExactChecks(accepted.checks);
     const oklch = accepted.observation.value;
     const missingCheck = {
       ...row,
       forms: { ...row.forms, targetMarker: { kind: "check-not-requested" as const } },
     };
-    expect(() =>
-      legacyTargetCompatibility("oklch-lc", "srgb", exact, [missingCheck], oklch),
-    ).toThrow("requires its accepted exact check");
+    expect(() => currentTargetVisual("oklch-lc", "srgb", [missingCheck], oklch)).toThrow(
+      "requires its accepted exact check",
+    );
   });
   it.each(definitions)("preserves consumed output for $space $channels", (definition) => {
     const source = color(definition);
@@ -143,10 +142,9 @@ describe("current production families against the independent v0.3 oracle", () =
             const field = currentField(view, accepted.editor, accepted.field);
             const oklch = currentOklchObservation(source, accepted.observation);
             const checks = currentExactChecks(accepted.checks);
-            const legacy = legacyTargetCompatibility(
+            const targetVisual = currentTargetVisual(
               field.editorId,
               target,
-              checks,
               accepted.guides,
               oklch,
             );
@@ -168,12 +166,17 @@ describe("current production families against the independent v0.3 oracle", () =
               if (key === "view") expect(value).toBe(view);
               else expect(value).toStrictEqual(old[key as keyof typeof old]);
             }
-            expect(legacy.targetResult).toStrictEqual(old.targetResult);
-            expect(legacy.targetGuidePoint).toStrictEqual(old.targetGuidePoint);
-            expect(legacy.targetGuideCss).toBe(old.targetGuideCss);
-            expect(legacy.targetGuideLabel).toBe(old.targetGuideLabel);
-            if (view === "oklch") expect(legacy.markers).toStrictEqual(old.markers);
-            else expect(legacy.markers).toEqual([]); // No current OKLab Chroma consumer.
+            expect(targetVisual.targetGuidePoint).toStrictEqual(old.targetGuidePoint);
+            expect(targetVisual.targetGuideCss).toBe(old.targetGuideCss);
+            expect(targetVisual.swatchCss).toBe(old.targetResult.swatchCss);
+            expect(targetVisual.maximumChroma.toFixed(4)).toBe(old.targetResult.guideChroma);
+            expect(targetVisual.deltaC.toFixed(4)).toBe(old.targetResult.guideDelta);
+            if (view === "oklch" && old.markers[0]) {
+              expect(targetVisual.marker?.position).toBe(old.markers[0].position);
+              expect(targetVisual.marker?.chroma.toFixed(4)).toBe(
+                old.markers[0].label.split(" C ")[1],
+              );
+            } else expect(targetVisual.marker).toBeNull();
             expect(guides.hueIntervals).toStrictEqual(old.hueIntervals);
             expect(guides.lightnessIntervals).toStrictEqual(old.lightnessIntervals);
             expect(guides.chromaIntervals).toStrictEqual(
@@ -196,9 +199,9 @@ describe("current production families against the independent v0.3 oracle", () =
             expect(pointStyle(activePoint)).toEqual(
               pointStyle(old.plane.constrainPoint(old.projection.point)),
             );
-            if (legacy.targetGuidePoint && old.targetGuidePoint) {
+            if (targetVisual.targetGuidePoint && old.targetGuidePoint) {
               expect(
-                guideConnectorStyle(activePoint, legacy.targetGuidePoint, view === "oklab"),
+                guideConnectorStyle(activePoint, targetVisual.targetGuidePoint, view === "oklab"),
               ).toEqual(
                 guideConnectorStyle(
                   old.plane.constrainPoint(old.projection.point),
@@ -209,7 +212,7 @@ describe("current production families against the independent v0.3 oracle", () =
               const row = accepted.guides.find((row) => row.guideId === `${target}-boundary`);
               if (row?.kind !== "resolved" || row.forms.targetMarker.kind !== "available")
                 throw new Error("Missing accepted target");
-              expect(legacy.targetGuidePoint).toBe(row.forms.targetMarker.value);
+              expect(targetVisual.targetGuidePoint).toBe(row.forms.targetMarker.value);
             }
             expect(forms()).toStrictEqual(before);
           }
@@ -240,8 +243,8 @@ describe("current production families against the independent v0.3 oracle", () =
           const accepted = resolve(source, view, visible, visible);
           const field = currentField(view, accepted.editor, accepted.field);
           const oklch = currentOklchObservation(source, accepted.observation);
-          const checks = currentExactChecks(accepted.checks);
-          legacyTargetCompatibility(field.editorId, "srgb", checks, accepted.guides, oklch);
+          currentExactChecks(accepted.checks);
+          currentTargetVisual(field.editorId, "srgb", accepted.guides, oklch);
           currentEditableDetail(field, oklch);
           currentGuideDisplay(accepted.guides);
         };

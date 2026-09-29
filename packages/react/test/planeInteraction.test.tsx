@@ -18,7 +18,7 @@ import { mountPlaneResources } from "../src/interaction/planeResources.js";
 import {
   currentEditableDetail,
   currentGuideDisplay,
-  legacyTargetCompatibility,
+  currentTargetVisual,
 } from "@gamut-plane/render/internal/current";
 import { color, event, frames, get, host, initial, input, mount } from "./helpers.js";
 
@@ -174,7 +174,7 @@ describe("ColorValue plane interaction", () => {
     const committed = committedInput();
     const beforeHtml = ui.element.innerHTML;
     const candidate = color(0.62, 0.3, 45, 0.37);
-    const beforeCalls = [currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility].map(
+    const beforeCalls = [currentEditableDetail, currentGuideDisplay, currentTargetVisual].map(
       (fn) => vi.mocked(fn).mock.calls.length,
     );
     const never = new Promise<void>(() => {});
@@ -202,7 +202,7 @@ describe("ColorValue plane interaction", () => {
     expect(vi.mocked(presentAcceptedRevision).mock.results.at(-1)!.value.selection.editorId).toBe(
       "oklab-ab",
     );
-    [currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility].forEach((fn, index) => {
+    [currentEditableDetail, currentGuideDisplay, currentTargetVisual].forEach((fn, index) => {
       expect(vi.mocked(fn).mock.calls.length).toBeGreaterThan(beforeCalls[index]!);
     });
     expect(ui.element.innerHTML).toBe(beforeHtml);

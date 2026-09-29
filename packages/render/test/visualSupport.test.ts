@@ -9,9 +9,9 @@ import {
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
 import { fieldSupport } from "../src/capabilities/fieldSupport.js";
 import { guideDefinitions, guideSupport } from "../src/capabilities/guideSupport.js";
-import { currentEditorByView, currentGuideByGamut } from "../src/capabilities/currentView.js";
+import { currentGuideByGamut } from "../src/capabilities/currentView.js";
 import { PICKER_GAMUT_TABLES } from "../src/generated/gamutTables.js";
-import { getBoundaryPresentation } from "../src/boundaryPresentation.js";
+import { getBoundaryPresentation } from "./fixtures/v03BoundaryPresentation.js";
 
 describe("render-owned current visual support", () => {
   it("binds exactly two core editors to the existing field samplers and core geometry", () => {
@@ -38,12 +38,10 @@ describe("render-owned current visual support", () => {
   });
 
   it("bridges only the current public views and gamut references", () => {
-    expect(currentEditorByView).toEqual({ oklch: "oklch-lc", oklab: "oklab-ab" });
     expect(currentGuideByGamut).toEqual({
       srgb: "srgb-boundary",
       "display-p3": "display-p3-boundary",
     });
-    expect(Object.isFrozen(currentEditorByView)).toBe(true);
     expect(Object.isFrozen(currentGuideByGamut)).toBe(true);
   });
 

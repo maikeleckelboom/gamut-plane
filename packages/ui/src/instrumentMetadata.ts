@@ -1,3 +1,4 @@
+import type { DisplayGamut } from "@gamut-plane/core";
 import type {
   ChannelDefinition,
   ChannelId,
@@ -63,6 +64,12 @@ export const representationUi = Object.freeze({
 } satisfies {
   readonly [R in RepresentationDefinition["id"]]: Readonly<{ id: R; label: string }>;
 });
+
+/** Target identity is a gamut, even when its visible label matches a representation label. */
+export const targetGamutUi = Object.freeze({
+  srgb: Object.freeze({ label: "sRGB" }),
+  "display-p3": Object.freeze({ label: "Display P3" }),
+} satisfies { readonly [G in DisplayGamut]: Readonly<{ label: string }> });
 
 // Ordinary UI policies, deliberately independent of authored validity and geometry math.
 const unitBounds = Object.freeze({ min: 0, max: 1 });

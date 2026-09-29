@@ -4,6 +4,7 @@ import * as capabilities from "@gamut-plane/core/internal/capabilities";
 import * as render from "@gamut-plane/render";
 import * as resolution from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
+import { createPickerPresentation as frozenPicker } from "../../render/test/fixtures/v03PickerPresentation.js";
 
 export interface WorkInput {
   value: core.ColorValue;
@@ -50,8 +51,8 @@ export function productionWorkContract(
                 // spy sees only direct legacy calls, not those owner-local implementation calls.
                 expect(revisions.reduce((count, [, ids]) => count + ids.length, 0)).toBe(2);
                 expect(core.analyzeGamut).not.toHaveBeenCalled();
-                expect(render.createPickerPresentation).not.toHaveBeenCalled();
-                expect(render.getBoundaryPresentation).not.toHaveBeenCalled();
+                expect(render).not.toHaveProperty("createPickerPresentation");
+                expect(render).not.toHaveProperty("getBoundaryPresentation");
                 expect(resolution.resolveField).toHaveBeenCalledTimes(1);
                 const active = view === "oklch" ? "oklch-lc-rectangle" : "oklab-ab-disc";
                 const inactive = view === "oklch" ? "oklab-ab-disc" : "oklch-lc-rectangle";
@@ -78,7 +79,7 @@ export function productionWorkContract(
                   1 + (visible ? (view === "oklch" ? 1 : 2) : 0) + Number(view === "oklab");
                 expect(core.represent).toHaveBeenCalledTimes(observations);
                 expect(current.currentEditableDetail).toHaveBeenCalledTimes(1);
-                expect(current.legacyTargetCompatibility).toHaveBeenCalledTimes(1);
+                expect(current.currentTargetVisual).toHaveBeenCalledTimes(1);
                 const revisionGuides = vi.mocked(resolution.resolveRequestedGuides).mock.results[0]!
                   .value;
                 expect(vi.mocked(current.currentGuideDisplay).mock.calls[0]![0]).toBe(
@@ -94,7 +95,7 @@ export function productionWorkContract(
                   expect(hit?.getAttribute("d")).toBe(path.getAttribute("d"));
                 }
                 // Independent oracle work runs only after the production work budget is checked.
-                const old = render.createPickerPresentation(value.value, view, target, {
+                const old = frozenPicker(value.value, view, target, {
                   srgb,
                   displayP3: p3,
                 });

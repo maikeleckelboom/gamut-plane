@@ -2,7 +2,15 @@ import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
-import { gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
+import {
+  currentEditorCopy,
+  currentTargetCopy,
+  gpAttribute,
+  gpAxis,
+  gpGamut,
+  gpMarker,
+  gpPart,
+} from "@gamut-plane/ui";
 import {
   pointStyle,
   guideConnectorStyle,
@@ -77,7 +85,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   useLayoutEffect(() => {
     binding.current?.reconcile();
   });
-  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x.toFixed(3)}. Vertical ${plane.yAxis.label} ${y.toFixed(3)}. Arrow keys adjust the selected point.${projection.plane === "oklch" && projection.representation.channels[2] === null ? " Set Hue before increasing chroma." : ""}${warningVisible ? " Outside Display P3" : ""}`;
+  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x.toFixed(3)}. Vertical ${plane.yAxis.label} ${y.toFixed(3)}. Arrow keys adjust the selected point.${projection.plane === "oklch" && projection.representation.channels[2] === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${warningVisible ? ` ${currentTargetCopy.warning}` : ""}`;
   const geometryStyle = {
     "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,

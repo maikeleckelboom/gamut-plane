@@ -12,7 +12,16 @@ import {
   type PickerPlaneId,
 } from "@gamut-plane/core";
 import { computed, ref, useId, watch } from "vue";
-import { gpPart, editorUi, currentViewOptions, representationUi } from "@gamut-plane/ui";
+import {
+  gpPart,
+  editorUi,
+  currentViewOptions,
+  representationUi,
+  currentEditorHelp,
+  currentTargetCopy,
+  currentTargetPresentation,
+  currentWarningVisible,
+} from "@gamut-plane/ui";
 import NumericInput from "./NumericInput.vue";
 import { legacyViewState, resolveAcceptedRevision } from "../model/acceptedResolution.js";
 import { presentAcceptedRevision } from "../model/acceptedPresentation.js";
@@ -27,7 +36,7 @@ import {
   currentOklchObservation,
   currentEditableDetail,
   currentGuideDisplay,
-  legacyTargetCompatibility,
+  currentTargetVisual,
 } from "@gamut-plane/render/internal/current";
 
 const props = withDefaults(
@@ -77,15 +86,23 @@ const oklch = computed(() =>
   ),
 );
 const checks = computed(() => currentExactChecks(accepted.value.exactChecks));
-const target = computed(() =>
-  legacyTargetCompatibility(
+const target = computed(() => {
+  const exact = checks.value;
+  const visual = currentTargetVisual(
     field.value.editorId,
     props.boundaryTarget,
-    checks.value,
     accepted.value.guides,
     oklch.value,
-  ),
-);
+  );
+  return {
+    ...visual,
+    ...currentTargetPresentation(
+      props.boundaryTarget,
+      (props.boundaryTarget === "srgb" ? exact.srgb : exact.displayP3).status,
+      visual,
+    ),
+  };
+});
 const detail = computed(() => {
   const active = field.value;
   const observation = oklch.value;
@@ -95,13 +112,16 @@ const detail = computed(() => {
   return currentEditableDetail(active, observation);
 });
 const guides = computed(() => currentGuideDisplay(accepted.value.guides));
-const warningVisible = computed(() => checks.value.displayP3.status === "outside");
+const help = computed(() =>
+  currentEditorHelp(view.value, oklch.value.channels[2] === null, field.value.markerInDomain),
+);
+const warningVisible = computed(() => currentWarningVisible(checks.value.displayP3.status));
 const y = computed(() =>
   field.value.projection.plane === "oklch"
     ? field.value.projection.representation.channels[0]
     : field.value.projection.representation.channels[2],
 );
-const primaryGamutWarning = "Outside Display P3";
+const primaryGamutWarning = currentTargetCopy.warning;
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
 watch(
@@ -262,7 +282,7 @@ watch(
             :warning-visible="warningVisible"
             :warning-label="primaryGamutWarning"
             :warning-position="detail.huePosition"
-            :help="detail.hueHelp ?? ''"
+            :help="help.hueHelp ?? ''"
             @update:model-value="editOklch('h', $event, false)"
             @commit="editOklch('h', $event, true)"
             @cancel="emit('cancel')"
@@ -308,7 +328,7 @@ watch(
             :warning-visible="warningVisible"
             :warning-label="primaryGamutWarning"
             :warning-position="detail.chromaPosition"
-            :help="detail.chromaHelp ?? ''"
+            :help="help.chromaHelp ?? ''"
             @update:model-value="editOklch('c', $event, false)"
             @commit="editOklch('c', $event, true)"
             @cancel="emit('cancel')"
@@ -331,7 +351,7 @@ watch(
             :warning-visible="warningVisible"
             :warning-label="primaryGamutWarning"
             :warning-position="field.samplingFixed"
-            :help="detail.domainHelp ?? ''"
+            :help="help.domainHelp ?? ''"
             @update:model-value="editOklab('l', $event, false)"
             @commit="editOklab('l', $event, true)"
             @cancel="emit('cancel')"
@@ -386,32 +406,30 @@ watch(
           :data-gp-status="target.targetResult.status"
           data-boundary-target-result
           :data-boundary-target="boundaryTarget"
-          :aria-label="`${target.targetResult.targetLabel} target boundary result`"
+          :aria-label="target.accessibleLabel"
           :data-target-exact-status="target.targetResult.status"
         >
           <div class="plane-instrument__target-heading" :data-gp-part="gpPart.targetHeading">
-            <span>Target · {{ target.targetResult.targetLabel }}</span>
+            <span>{{ currentTargetCopy.heading }} · {{ target.targetResult.targetLabel }}</span>
             <span
               class="plane-instrument__target-swatch"
               :data-gp-part="gpPart.targetSwatch"
               data-boundary-guide-swatch
               :style="{ background: target.targetResult.swatchCss }"
-              :aria-label="`${target.targetResult.targetLabel} sampled boundary-guide color ${target.targetResult.swatchCss}`"
+              :aria-label="target.swatchLabel"
               role="img"
             />
-            <strong
-              :data-target-status="target.targetResult.status === 'outside' ? 'outside' : 'inside'"
-            >
-              {{ target.targetResult.status === "outside" ? "Outside" : "Inside" }}
+            <strong :data-target-status="target.displayTone">
+              {{ target.displayStatus }}
             </strong>
           </div>
           <dl>
             <div>
-              <dt>Guide C</dt>
+              <dt>{{ currentTargetCopy.guideChroma }}</dt>
               <dd>{{ target.targetResult.guideChroma }}</dd>
             </div>
             <div v-if="target.targetResult.showGuideDelta">
-              <dt>ΔC</dt>
+              <dt>{{ currentTargetCopy.guideDelta }}</dt>
               <dd>−{{ target.targetResult.guideDelta }}</dd>
             </div>
           </dl>

@@ -55,13 +55,6 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
         c: position * OKLCH_PICKER_MAX_CHROMA,
         alpha: 1,
       })),
-      hueHelp: observedHue === null ? "Hue is unset. Edit Hue to choose a direction." : undefined,
-      chromaHelp:
-        observedHue === null
-          ? "Set Hue before increasing chroma."
-          : !field.markerInDomain
-            ? "Selected chroma is outside the visible editing range. Use the numeric field to edit the full value."
-            : undefined,
     };
   }
   const [, a, b] = field.projection.representation.channels;
@@ -77,8 +70,5 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
         alpha: field.projection.representation.alpha,
       };
     }),
-    domainHelp: !field.markerInDomain
-      ? "Selected color is outside the OKLab editing disc. The marker is shown at the edge; the color is preserved."
-      : undefined,
   };
 }

@@ -5,7 +5,7 @@ import {
   type DisplayGamut,
   type OklchSample,
 } from "@gamut-plane/core";
-import { getBoundaryPresentation } from "../src/index.js";
+import { getBoundaryPresentation } from "./fixtures/v03BoundaryPresentation.js";
 
 const observed: OklchSample = { l: 0.62, c: 0.24, h: 270, alpha: 0.5 };
 const outside = { srgb: "outside", displayP3: "outside" } as const;

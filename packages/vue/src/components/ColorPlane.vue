@@ -5,6 +5,7 @@ import {
   gpGamut,
   gpMarker,
   gpPart,
+  currentEditorCopy,
   mountPlaneGesture,
   type PlaneGestureBinding,
 } from "@gamut-plane/ui";
@@ -109,7 +110,7 @@ const targetGuideConnectorStyle = computed(() => {
 
 const planeLabel = computed(() => {
   const channels = activeProjection.value.representation.channels;
-  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${channels[1].toFixed(3)}. Vertical ${props.plane.yAxis.label} ${props.plane.id === "oklch" ? channels[0].toFixed(3) : (channels[2] as number).toFixed(3)}. Arrow keys adjust the selected point.${props.plane.id === "oklch" && channels[2] === null ? " Set Hue before increasing chroma." : ""}`;
+  const label = `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${channels[1].toFixed(3)}. Vertical ${props.plane.yAxis.label} ${props.plane.id === "oklch" ? channels[0].toFixed(3) : (channels[2] as number).toFixed(3)}. Arrow keys adjust the selected point.${props.plane.id === "oklch" && channels[2] === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}`;
   return props.warningVisible && props.warningLabel ? `${label} ${props.warningLabel}` : label;
 });
 const instrumentStyle = {

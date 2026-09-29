@@ -1,7 +1,7 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
+import { currentTargetCopy, gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import {
   channelSections,
   channelThresholds,
@@ -244,7 +244,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
       )}
       {warningId && (
         <span id={warningId} className="gpr-sr-only" data-gp-visually-hidden="">
-          Outside Display P3
+          {currentTargetCopy.warning}
         </span>
       )}
     </div>

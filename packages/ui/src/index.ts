@@ -16,7 +16,15 @@ export {
   currentPrimaryEditors,
   currentViewOptions,
   currentEditorByView,
+  targetGamutUi,
 } from "./instrumentMetadata.js";
+export {
+  currentEditorHelp,
+  currentEditorCopy,
+  currentWarningVisible,
+  currentTargetCopy,
+  currentTargetPresentation,
+} from "./currentProductPresentation.js";
 export {
   currentSelectionFacts,
   legacyCheckedGamuts,

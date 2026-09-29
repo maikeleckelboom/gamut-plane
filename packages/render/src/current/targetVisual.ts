@@ -9,15 +9,12 @@ import type { EditorId } from "@gamut-plane/core/internal/capabilities";
 import type { GuideResolution } from "../capabilities/guideResolution.js";
 import { guideDefinitions, guideSupport } from "../capabilities/guideSupport.js";
 import { currentGuideByGamut } from "../capabilities/currentView.js";
-import type { LinearControlMarker } from "../channelGeometry.js";
 import { currentGuideValue } from "./guideDisplay.js";
-import type { currentExactChecks } from "./exactChecks.js";
 
-/** The focused v0.3 target is separate from ordinary requested guides and checks. */
-export function legacyTargetCompatibility(
+/** One missing hidden reference or borrowed visible facts; no product copy or exact analysis. */
+export function currentTargetVisual(
   editorId: EditorId,
   target: DisplayGamut,
-  checks: ReturnType<typeof currentExactChecks>,
   guides: readonly GuideResolution[],
   oklch: ColorRepresentation<"oklch">,
 ) {
@@ -52,35 +49,21 @@ export function legacyTargetCompatibility(
         throw new Error("Current target requires its accepted exact check");
     }
   }
-  const targetLabel = target === "srgb" ? "sRGB" : "Display P3";
-  const status = (target === "srgb" ? checks.srgb : checks.displayP3).status;
   const targetGuideCss = targetGuidePoint
     ? serializeOklchSample({ ...reference.color, alpha: 1 })
     : "";
-  const markers: LinearControlMarker[] = [];
-  if (editorId === "oklch-lc" && targetGuidePoint) {
-    markers.push({
-      id: `${target}-target-guide`,
-      label: `${targetLabel} sampled target guide C ${reference.color.c.toFixed(4)}`,
-      position: Math.min(1, Math.max(0, reference.color.c / OKLCH_PICKER_MAX_CHROMA)),
-      tone: "guide",
-      lane: target,
-      cssColor: targetGuideCss,
-    });
-  }
   return {
     targetGuidePoint,
     targetGuideCss,
-    targetGuideLabel: `${targetLabel} sampled target guide`,
-    markers,
-    targetResult: {
-      target,
-      targetLabel,
-      status,
-      guideChroma: reference.maximumChroma.toFixed(4),
-      guideDelta: reference.deltaC.toFixed(4),
-      showGuideDelta: reference.deltaC > 0,
-      swatchCss: serializeOklchSample(reference.color),
-    },
+    maximumChroma: reference.maximumChroma,
+    deltaC: reference.deltaC,
+    swatchCss: serializeOklchSample(reference.color),
+    marker:
+      editorId === "oklch-lc" && targetGuidePoint
+        ? {
+            chroma: reference.color.c,
+            position: Math.min(1, Math.max(0, reference.color.c / OKLCH_PICKER_MAX_CHROMA)),
+          }
+        : null,
   };
 }
