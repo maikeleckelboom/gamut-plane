@@ -85,7 +85,7 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,authorEditorPoint,editOperationDefinitions,editorDefinitions,geometryDefinitions,keyboardGeometryPoint") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,authorEditorPoint,editOperationDefinitions,editorDefinitions,geometryDefinitions,keyboardGeometryPoint,representationDefinitions") throw new Error("Internal capability surface changed");
 if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
 const editorId: EditorId = "oklch-lc";
 const editor: EditorDefinition = editorDefinitions[editorId];
