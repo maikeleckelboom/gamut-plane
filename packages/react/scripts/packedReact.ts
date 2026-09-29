@@ -56,13 +56,11 @@ export async function prepareReactConsumer(kind: "next" | "react-vite", director
       for (const name of [
         "GamutPlane",
         "GamutPlaneProps",
-        "GamutPlaneView",
         "GamutPlaneSelection",
         "GamutPlaneGamutId",
         "GamutPlaneGuideId",
         "GamutPlaneState",
         "ColorValue",
-        "DisplayGamut",
         "CanvasColorSpaceStatus",
       ])
         assert.ok(types.includes(name));

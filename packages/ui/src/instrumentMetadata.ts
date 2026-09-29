@@ -1,4 +1,3 @@
-import type { DisplayGamut } from "@gamut-plane/core";
 import type {
   ChannelDefinition,
   ChannelId,
@@ -49,6 +48,8 @@ export type EditorUi = {
   [E in EditorDefinition as E["id"]]: Readonly<{
     id: E["id"];
     representationId: E["representationId"];
+    label: string;
+    description: string;
     companions: readonly (CompanionControl & {
       readonly channelId: ChannelDefinition<E["representationId"]>["id"];
     })[];
@@ -65,12 +66,6 @@ export const representationUi = Object.freeze({
   readonly [R in RepresentationDefinition["id"]]: Readonly<{ id: R; label: string }>;
 });
 
-/** Target identity is a gamut, even when its visible label matches a representation label. */
-export const targetGamutUi = Object.freeze({
-  srgb: Object.freeze({ label: "sRGB" }),
-  "display-p3": Object.freeze({ label: "Display P3" }),
-} satisfies { readonly [G in DisplayGamut]: Readonly<{ label: string }> });
-
 // Ordinary UI policies, deliberately independent of authored validity and geometry math.
 const unitBounds = Object.freeze({ min: 0, max: 1 });
 const hueBounds = Object.freeze({ min: 0, max: 360 });
@@ -82,6 +77,8 @@ export const editorUi = Object.freeze({
   "oklch-lc": Object.freeze({
     id: "oklch-lc",
     representationId: "oklch",
+    label: "Lightness / Chroma",
+    description: "Lightness and chroma area with fixed Hue",
     companions: Object.freeze([
       Object.freeze({
         channelId: "oklch.h",
@@ -121,6 +118,8 @@ export const editorUi = Object.freeze({
   "oklab-ab": Object.freeze({
     id: "oklab-ab",
     representationId: "oklab",
+    label: "a / b",
+    description: "a and b disc with fixed Lightness",
     companions: Object.freeze([
       Object.freeze({
         channelId: "oklab.l",
@@ -164,15 +163,9 @@ export const currentPrimaryEditors = Object.freeze([
   editorUi["oklch-lc"],
   editorUi["oklab-ab"],
 ] as const);
-export const currentViewOptions = Object.freeze(
-  currentPrimaryEditors.map((editor) => editor.representationId),
-);
-type CurrentView = (typeof currentViewOptions)[number];
 
-/** Bounded bridge for the unchanged public two-view API. Render's bridge is contract-tested. */
-export const currentEditorByView = Object.freeze({
+/** Admission is a product decision; this default says nothing about technical cardinality. */
+export const preferredEditors = Object.freeze({
   oklch: editorUi["oklch-lc"].id,
   oklab: editorUi["oklab-ab"].id,
-} satisfies {
-  readonly [V in CurrentView]: Extract<EditorDefinition, { representationId: V }>["id"];
-});
+} as const);

@@ -3,15 +3,12 @@ import {
   represent,
   type ColorValue,
   type ConversionError,
-  type GamutAnalysisError,
-  type GamutStatus,
   type HueGuideInterval,
   type LightnessGuideInterval,
   type OklchSample,
   type PickerGuide,
-  type PlanePoint,
 } from "@gamut-plane/core";
-import type { EditorId, GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
+import type { EditorId } from "@gamut-plane/core/internal/capabilities";
 import type { EditorVisualSupport } from "./editorResolution.js";
 import { guideDefinitions, guideSupport, type GuideId, type GuideSupport } from "./guideSupport.js";
 
@@ -23,12 +20,6 @@ export type GuideFormResult<T> =
   | Readonly<{ kind: "available"; value: T }>
   | (Readonly<{ kind: "value-unavailable" }> & GuideValueIssue);
 
-export type GuideMarkerResult =
-  | GuideFormResult<PlanePoint>
-  | Readonly<{ kind: "check-not-requested" }>
-  | Readonly<{ kind: "exact-not-outside"; status: Exclude<GamutStatus, "outside"> }>
-  | Readonly<{ kind: "exact-unavailable"; error: GamutAnalysisError }>;
-
 export interface ResolvedGuideForms {
   readonly contour: GuideFormResult<Readonly<{ points: Float32Array; closed: boolean }>>;
   /** Null is structural absence, not a failed observation or an empty successful interval set. */
@@ -36,7 +27,6 @@ export interface ResolvedGuideForms {
   readonly lightnessIntervals: GuideFormResult<readonly LightnessGuideInterval[]>;
   readonly chromaIntervals: GuideFormResult<readonly Readonly<{ start: number; end: number }>[]>;
   readonly reference: GuideFormResult<PickerGuide>;
-  readonly targetMarker: GuideMarkerResult;
 }
 
 export type GuideResolution = Readonly<{ guideId: GuideId }> &
@@ -65,31 +55,14 @@ function guideSample(value: ColorValue): GuideFormResult<OklchSample> {
   return available({ l, c, h: h ?? 0, alpha: observed.value.alpha });
 }
 
-function targetMarker(
-  guideId: GuideId,
-  support: GuideSupport,
-  reference: GuideFormResult<PickerGuide>,
-  checks: readonly GamutCheckResult[],
-): GuideMarkerResult {
-  const check = checks.find((row) => row.gamutId === guideDefinitions[guideId].gamutId);
-  if (!check) return { kind: "check-not-requested" };
-  if (!check.result.ok) return { kind: "exact-unavailable", error: check.result.error };
-  if (check.result.value.status !== "outside") {
-    return { kind: "exact-not-outside", status: check.result.value.status };
-  }
-  if (reference.kind !== "available") return reference;
-  return available(support.forms.targetMarker.position(reference.value.color));
-}
-
 /**
  * Retains every validated request in supplied order. Static support, each form's prerequisites,
- * and supplied exact truth are independent. No analysis, admission, or request canonicalization.
+ * and sampled references are independent. No analysis, admission, or request canonicalization.
  */
 export function resolveRequestedGuides(
   value: ColorValue,
   editor: EditorVisualSupport,
   requested: readonly GuideId[],
-  checks: readonly GamutCheckResult[],
 ): readonly GuideResolution[] {
   if (requested.length === 0) return [];
   if (editor.kind === "no-editor-requested") {
@@ -106,7 +79,7 @@ export function resolveRequestedGuides(
   }
   function getContourFixed(): GuideFormResult<number> {
     if (contourFixed) return contourFixed;
-    if (editor.kind === "editor" && editor.geometry.planeId === "oklab") {
+    if (editor.kind === "editor" && editor.geometry.domain.kind === "disc") {
       const observed = represent(value, "oklab");
       contourFixed = observed.ok
         ? boundedLightness(observed.value.channels[0])
@@ -167,7 +140,6 @@ export function resolveRequestedGuides(
               ])
             : reference,
         reference,
-        targetMarker: targetMarker(guideId, support, reference, checks),
       },
     };
   });

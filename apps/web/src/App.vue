@@ -12,7 +12,7 @@ import {
 import { useSupported, useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 
-import { GamutPlane, type GamutPlaneView, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
+import { GamutPlane, type GamutPlaneState, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 import {
   exactStatusLabel,
@@ -24,12 +24,12 @@ import {
 const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!fixture.ok) throw new Error("Invalid initial selected color");
 const selectedColor = ref<ColorValue>(fixture.value);
-const activePlane = ref<GamutPlaneView>("oklch");
-const boundaryTarget = ref<DisplayGamut>("srgb");
-const boundaries = ref({
-  srgb: true,
-  displayP3: true,
+const instrumentState = ref<GamutPlaneState>({
+  selection: { representationId: "oklch", editorId: "oklch-lc" },
+  checkedGamuts: [],
+  visibleGuides: [],
 });
+const activeRepresentation = computed(() => instrumentState.value.selection.representationId);
 const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
 const copiedRepresentation = ref<CssRepresentation | null>(null);
@@ -55,20 +55,18 @@ const oklchCopyCss = computed(() => {
 });
 const oklchDisplayCss = computed(() => formatOklchForDisplay(oklch.value));
 const selectedCoordinates = computed(() => {
-  if (activePlane.value === "oklch") {
-    const [l, c, h] = oklch.value.channels;
-    return [
-      { label: "L", value: l.toFixed(4) },
-      { label: "C", value: c.toFixed(4) },
-      { label: "H", value: h === null ? "none" : `${h.toFixed(2)}°` },
-    ];
-  }
-  const [l, a, b] = observe("oklab").channels;
-  return [
-    { label: "L", value: l.toFixed(4) },
-    { label: "a", value: a.toFixed(4) },
-    { label: "b", value: b.toFixed(4) },
-  ];
+  const space = activeRepresentation.value;
+  const labels =
+    space === "oklch" ? ["L", "C", "H"] : space === "oklab" ? ["L", "a", "b"] : ["R", "G", "B"];
+  return observe(space).channels.map((value, index) => ({
+    label: labels[index]!,
+    value:
+      value === null
+        ? "none"
+        : space === "oklch" && index === 2
+          ? `${value.toFixed(2)}°`
+          : value.toFixed(4),
+  }));
 });
 const srgbCssOutput = computed(() => strictCss("srgb"));
 const srgbCopyCss = computed(() =>
@@ -208,76 +206,9 @@ async function copyCss(
       <div class="instrument-primary">
         <GamutPlane
           v-model="selectedColor"
-          v-model:plane="activePlane"
-          :boundary-target="boundaryTarget"
-          :show-srgb-boundary="boundaries.srgb"
-          :show-display-p3-boundary="boundaries.displayP3"
+          v-model:state="instrumentState"
           @capability="canvasCapability = $event"
-        >
-          <template #field-legend>
-            <section
-              class="gamut-reference"
-              data-gamut-reference
-              aria-labelledby="gamut-reference-title"
-            >
-              <h3 id="gamut-reference-title">Gamut reference</h3>
-              <fieldset>
-                <legend class="sr-only">Target</legend>
-                <div class="gamut-reference__row">
-                  <span class="gamut-reference__label" aria-hidden="true">Target</span>
-                  <div class="gamut-reference__options">
-                    <label>
-                      <input
-                        v-model="boundaryTarget"
-                        type="radio"
-                        value="srgb"
-                        name="boundary-target"
-                        data-boundary-target-option="srgb"
-                      />
-                      <span>sRGB</span>
-                    </label>
-                    <label>
-                      <input
-                        v-model="boundaryTarget"
-                        type="radio"
-                        value="display-p3"
-                        name="boundary-target"
-                        data-boundary-target-option="display-p3"
-                      />
-                      <span>Display P3</span>
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
-              <fieldset>
-                <legend class="sr-only">Visible guides</legend>
-                <div class="gamut-reference__row">
-                  <span class="gamut-reference__label" aria-hidden="true">Visible guides</span>
-                  <div class="gamut-reference__options">
-                    <label>
-                      <input
-                        v-model="boundaries.srgb"
-                        type="checkbox"
-                        data-boundary-toggle="srgb"
-                      />
-                      <span class="boundary-key boundary-key--srgb" aria-hidden="true" />
-                      <span>sRGB</span>
-                    </label>
-                    <label>
-                      <input
-                        v-model="boundaries.displayP3"
-                        type="checkbox"
-                        data-boundary-toggle="display-p3"
-                      />
-                      <span class="boundary-key boundary-key--p3" aria-hidden="true" />
-                      <span>Display P3</span>
-                    </label>
-                  </div>
-                </div>
-              </fieldset>
-            </section>
-          </template>
-        </GamutPlane>
+        />
       </div>
 
       <aside class="color-inspector" aria-labelledby="selected-color-title">
@@ -285,7 +216,16 @@ async function copyCss(
 
         <section class="coordinate-summary" aria-labelledby="coordinate-summary-title">
           <h3 id="coordinate-summary-title">
-            {{ activePlane === "oklch" ? "OKLCH coordinates" : "OKLab coordinates" }}
+            {{
+              activeRepresentation === "oklch"
+                ? "OKLCH"
+                : activeRepresentation === "oklab"
+                  ? "OKLab"
+                  : activeRepresentation === "srgb"
+                    ? "sRGB"
+                    : "Display P3"
+            }}
+            coordinates
           </h3>
           <dl class="coordinate-summary__values">
             <div v-for="coordinate in selectedCoordinates" :key="coordinate.label">

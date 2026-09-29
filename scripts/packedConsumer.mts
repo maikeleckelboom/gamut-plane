@@ -225,8 +225,8 @@ import { createColorValue, represent } from "@gamut-plane/core";
 import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
 import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequestedGuides } from "@gamut-plane/render/internal/capabilities";
 import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
-import { currentField, currentExactChecks, currentOklchObservation, currentEditableDetail, currentGuideDisplay, currentTargetVisual } from "@gamut-plane/render/internal/current";
-import type { CurrentField, CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
+import { currentField, currentOklchObservation, currentEditableDetail, generalizedGuideDisplay, generalizedEditableDetail } from "@gamut-plane/render/internal/current";
+import type { CurrentField, GeneralizedGuideDisplay } from "@gamut-plane/render/internal/current";
 const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
 if (!source.ok) throw new Error("Invalid packed capability source");
 const ids: readonly GuideId[] = Object.values(guideDefinitions).map((guide) => guide.id);
@@ -234,18 +234,17 @@ const observation = represent(source.value, "oklch");
 const checks = analyzeRequestedGamuts(source.value, ["display-p3-gamut", "srgb-gamut"]);
 const editor: EditorVisualSupport = resolveEditorVisualSupport("oklch-lc");
 const field: FieldResolution = resolveField(source.value, editor);
-const guides: readonly GuideResolution[] = resolveRequestedGuides(source.value, editor, ids, checks);
+const guides: readonly GuideResolution[] = resolveRequestedGuides(source.value, editor, ids);
 if (!observation.ok || field.kind !== "available" || checks.length !== 2) throw new Error("Packed resolution failed");
-if (guides.some((row) => row.kind !== "resolved" || row.forms.targetMarker.kind !== "exact-not-outside")) throw new Error("Packed exact provenance failed");
-const current: CurrentField = currentField("oklch", editor, field);
-const exact = currentExactChecks(checks);
+if (checks.some((row) => !row.result.ok || row.result.value.status !== "inside")) throw new Error("Packed exact analysis changed");
+if (guides.some((row) => row.kind !== "resolved" || row.forms.contour.kind !== "available")) throw new Error("Packed guide resolution failed");
+const current: CurrentField = currentField(editor, field);
 const oklch = currentOklchObservation(source.value, observation);
 const detail = currentEditableDetail(current, oklch);
-const display: CurrentGuideDisplay = currentGuideDisplay(guides);
-const visibleTarget = currentTargetVisual(current.editorId, "srgb", guides, oklch);
-const hiddenTarget = currentTargetVisual(current.editorId, "srgb", [], oklch);
+const display: GeneralizedGuideDisplay = generalizedGuideDisplay(guides);
+const generalized = generalizedEditableDetail(source.value, observation, editor, field);
 if (current.projection !== field.projection || oklch !== observation.value || detail.view !== "oklch" || !display.srgbPath) throw new Error("Packed current presentation lost accepted facts");
-if (exact.srgb.status !== "inside" || visibleTarget.targetGuidePoint !== null || hiddenTarget.targetGuidePoint !== null || hiddenTarget.swatchCss !== visibleTarget.swatchCss) throw new Error("Packed target compatibility failed");
+if (generalized.kind !== "available" || generalized.field.projection !== field.projection) throw new Error("Packed generalized field lost accepted facts");
 // @ts-expect-error render guide identities remain distinct from gamut identities
 const wrongGuide: GuideId = "srgb-gamut";
 // @ts-expect-error core's new runtime contract is not public root API
@@ -262,10 +261,10 @@ import * as coreInternal from "@gamut-plane/core/internal/capabilities";
 import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
-assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "editorDefinitions", "geometryDefinitions"]);
+assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "authorEditorPoint", "editOperationDefinitions", "editorDefinitions", "geometryDefinitions", "keyboardGeometryPoint"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
-assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentExactChecks", "currentField", "currentGuideDisplay", "currentOklchObservation", "currentTargetVisual", "generalizedEditableDetail", "generalizedGuideDisplay"]);
-assert.deepEqual(Object.keys(render).sort(), ["PICKER_ACTIVE_MARKER_RADIUS", "PICKER_GAMUT_TABLES", "PICKER_SLIDER_ANNOTATION_CLEARANCE", "PICKER_SLIDER_DEFAULT_TRACK_WIDTH", "PICKER_SLIDER_EDGE_CLEARANCE", "PICKER_SLIDER_FIELD_INSET", "PICKER_SLIDER_GUIDE_COLLISION_WIDTH", "PICKER_SLIDER_THUMB_TOP", "PICKER_SLIDER_THUMB_WIDTH", "PICKER_SLIDER_TICK_COLLISION_WIDTH", "PICKER_SLIDER_TRACK_HEIGHT", "PICKER_SLIDER_WARNING_SIDE_GAP", "PICKER_SLIDER_WARNING_TOP", "PICKER_TARGET_GUIDE_MARKER_RADIUS", "PICKER_WARNING_GLYPH_SIZE", "PICKER_WARNING_MARKER_CLEARANCE", "PICKER_WARNING_PREFERRED_OFFSET", "PICKER_WARNING_SURFACE_INSET", "VIEWBOX_SIZE", "channelSections", "channelThresholds", "channelWarning", "colorGradient", "createFieldRenderer", "geometryToSvgPath", "getSliderWarningPosition", "guideConnectorStyle", "nearestThreshold", "placePlanarWarning", "pointStyle"]);
+assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentField", "currentOklchObservation", "generalizedEditableDetail", "generalizedGuideDisplay"]);
+assert.deepEqual(Object.keys(render).sort(), ["PICKER_ACTIVE_MARKER_RADIUS", "PICKER_GAMUT_TABLES", "PICKER_SLIDER_FIELD_INSET", "PICKER_SLIDER_THUMB_TOP", "PICKER_SLIDER_THUMB_WIDTH", "PICKER_SLIDER_TRACK_HEIGHT", "VIEWBOX_SIZE", "channelSections", "colorGradient", "createFieldRenderer", "geometryToSvgPath", "pointStyle"]);
 for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
 for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
 for (const key of Object.keys(current)) assert.equal(key in render, false);
@@ -315,7 +314,7 @@ async function verifyInstalledUiMetadata(consumer: string) {
   await writeFile(
     join(consumer, "metadataContract.mts"),
     `
-import { currentPrimaryEditors, currentEditorByView, editorUi, representationUi, targetGamutUi, currentTargetPresentation } from "@gamut-plane/ui";
+import { currentPrimaryEditors, currentSelectionFacts, currentAdmittedEditorsForRepresentation, defaultSelection, editorUi, representationUi, generalizedCopy, orderedExactChecks } from "@gamut-plane/ui";
 import type { ChannelId, EditOperationId, EditorId, RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
 // The existing render root includes the browser Canvas contract; check type exclusion here,
 // separately from the ES-only internal-entry graph above.
@@ -333,12 +332,20 @@ for (const editor of currentPrimaryEditors) {
     control.operationId satisfies EditOperationId;
   }
 }
-// @ts-expect-error metadata does not admit RGB primary selection
-currentEditorByView.srgb;
+const admitted: import("@gamut-plane/ui").InstrumentSelection = { representationId: "oklch", editorId: "oklch-lc" };
+const inspection: import("@gamut-plane/ui").InstrumentSelection = { representationId: "srgb", editorId: null };
+void admitted;
+void inspection;
+// @ts-expect-error public selection rejects an unadmitted technical editor
+const unadmitted: import("@gamut-plane/ui").InstrumentSelection = { representationId: "oklch", editorId: "test-oklch-hc" };
+void unadmitted;
 if (currentPrimaryEditors.map((editor) => editor.id).join() !== "oklch-lc,oklab-ab") throw new Error("Packed primary exposure changed");
 if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw new Error("Packed metadata is mutable");
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
-if (targetGamutUi.srgb.label !== "sRGB" || currentTargetPresentation("srgb", "inside", { maximumChroma: 0.2, deltaC: 0, swatchCss: "oklch(60% 0.2 45)", targetGuideCss: "", marker: null }).targetResult.guideChroma !== "0.2000") throw new Error("Packed product formatting changed");
+if (currentSelectionFacts.admittedEditors.length !== 2 || currentAdmittedEditorsForRepresentation("srgb").length !== 0) throw new Error("Packed admission policy changed");
+if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== null) throw new Error("Packed preferred editor changed");
+if (generalizedCopy.noChecks !== "No gamut checks selected") throw new Error("Packed shared copy changed");
+if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");
 `,
   );
   await writeFile(

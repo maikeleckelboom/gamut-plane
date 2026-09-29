@@ -1,14 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mountPlaneGesture } from "@gamut-plane/ui";
-import { semanticContextKey as reactKey } from "../src/model/acceptedResolution.js";
-import { semanticContextKey as vueKey } from "../../vue/src/model/acceptedResolution.js";
+import { mountPlaneGesture, semanticContextKey } from "@gamut-plane/ui";
 import { frames } from "./helpers.js";
 
 afterEach(() => vi.restoreAllMocks());
-describe.each([
-  ["React", reactKey],
-  ["Vue", vueKey],
-] as const)("%s semantic context", (_name, key) => {
+describe("shared semantic context", () => {
   it("interrupts a queued gesture on a same-representation editor change with equal source", async () => {
     const clock = frames();
     const source = Object.freeze({ l: 0.5 });
@@ -20,7 +15,7 @@ describe.each([
     const surface = document.createElement("div");
     const gesture = mountPlaneGesture(surface, () => ({
       value: source,
-      viewKey: key(selection),
+      viewKey: semanticContextKey(selection),
       pointFromPointer: () => ({ x: 0.5, y: 0.5 }),
       authorPoint: author,
       definingEquals: (a, b) => a.l === b.l,
@@ -34,7 +29,7 @@ describe.each([
     }));
     surface.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 1 }));
     expect(gesture.hasPendingPoint).toBe(true);
-    selection = { representationId: "oklch", editorId: "test-only-alternate-editor" };
+    selection = { representationId: "oklch", editorId: "test-oklch-hc" };
     gesture.reconcile();
     await clock.flush();
     surface.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
@@ -42,7 +37,9 @@ describe.each([
     expect(change).not.toHaveBeenCalled();
     expect(commit).not.toHaveBeenCalled();
     expect(cancel).toHaveBeenCalledOnce();
-    expect(key(selection)).not.toBe(key({ ...selection, representationId: "oklab" }));
+    expect(semanticContextKey(selection)).not.toBe(
+      semanticContextKey({ ...selection, representationId: "oklab" }),
+    );
     gesture.dispose();
   });
 });

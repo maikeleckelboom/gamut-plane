@@ -48,20 +48,20 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Build packages once
+        run: pnpm build:packages
+
       - name: Type-check
-        run: pnpm typecheck
+        run: pnpm typecheck:built
 
       - name: Prove the color domain without DOM types
         run: pnpm --filter @gamut-plane/core typecheck:domain-nodom
 
       - name: Run unit and component tests
-        run: pnpm test
-
-      - name: Verify generated gamut tables
-        run: pnpm check:gamut-tables
+        run: pnpm test:unit:built
 
       - name: Build production application
-        run: pnpm build
+        run: pnpm --filter @gamut-plane/web build
 
       - name: Check packed core declarations and transport without DOM types
         run: pnpm --filter @gamut-plane/core test:packed-domain
@@ -97,9 +97,12 @@ jobs:
       - name: Install Chromium and operating-system dependencies
         run: pnpm --filter @gamut-plane/web exec playwright install --with-deps chromium
 
+      - name: Build packages once
+        run: pnpm build:packages
+
       - name: Build and inspect production application
         run: |
-          pnpm build
+          pnpm --filter @gamut-plane/web build
           pnpm check:build
 
       - name: Run browser, accessibility, and visual tests
@@ -109,10 +112,10 @@ jobs:
         run: pnpm test:production
 
       - name: Validate packed Vue consumption
-        run: pnpm test:package
+        run: pnpm test:package:built
 
       - name: Validate packed React consumption
-        run: pnpm test:react-vite
+        run: pnpm test:react-vite:built
         env:
           GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
 
@@ -150,12 +153,14 @@ jobs:
             packages/react/next-consumer/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @gamut-plane/vue exec playwright install --with-deps chromium
+      - name: Build packages once
+        run: pnpm build:packages
       - name: Verify packed Nuxt development, SSR and generated hydration
-        run: pnpm test:nuxt
+        run: pnpm test:nuxt:built
         env:
           GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
       - name: Verify packed Next SSR, prerendering and root Strict Mode
-        run: pnpm test:next
+        run: pnpm test:next:built
         env:
           GAMUT_PLANE_EVIDENCE: ${{ github.workspace }}/test-results/packed
       - name: Upload SSR and hydration evidence

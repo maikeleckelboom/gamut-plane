@@ -1,13 +1,17 @@
 /** Unsupported internal sibling-package contract. Not a consumer capability API. */
 export { editorDefinitions } from "./editorDefinitions.js";
-export { geometryDefinitions } from "./geometryDefinitions.js";
+export { geometryDefinitions, keyboardGeometryPoint } from "./geometryDefinitions.js";
+export { authorEditorPoint, editOperationDefinitions } from "./editOperationDefinitions.js";
 export { analyzeRequestedGamuts } from "./requestedGamuts.js";
 export type { GamutCheckResult } from "./requestedGamuts.js";
 export type {
   EditorDefinition,
   EditorId,
   GeometryDefinition,
+  GeometryContract,
   GeometryId,
+  GeometryProjection,
+  EditorContract,
   EditOperationDefinition,
   EditOperationId,
 } from "./types/editingDefinitions.js";

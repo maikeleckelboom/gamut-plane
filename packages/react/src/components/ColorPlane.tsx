@@ -1,71 +1,42 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
-import {
-  currentEditorCopy,
-  currentTargetCopy,
-  gpAttribute,
-  gpAxis,
-  gpGamut,
-  gpMarker,
-  gpPart,
-} from "@gamut-plane/ui";
+import type { GeneralizedGuideDisplay } from "@gamut-plane/render/internal/current";
+import { currentEditorCopy, gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
 import {
   pointStyle,
-  guideConnectorStyle,
   VIEWBOX_SIZE,
-  PICKER_WARNING_GLYPH_SIZE,
   PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_TARGET_GUIDE_MARKER_RADIUS,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
 import { mountPlane, type PlaneBinding, type PlaneInput } from "../interaction/planeInteraction.js";
 import { useCommitted } from "../hooks/useCommitted.js";
-import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 
 interface ColorPlaneProps extends PlaneInput {
-  targetGuideLabel: string;
-  warningVisible: boolean;
-  guides: CurrentGuideDisplay;
+  guides: GeneralizedGuideDisplay;
   onCanvasColorSpaceChange: ((status: CanvasColorSpaceStatus) => void) | undefined;
 }
 
 export function ColorPlane(props: ColorPlaneProps) {
-  const {
-    plane,
-    field,
-    guides,
-    markerCss,
-    targetGuidePoint,
-    targetGuideCss,
-    targetGuideLabel,
-    warningVisible,
-  } = props;
+  const { plane, field, guides, markerCss } = props;
   const surface = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
-  const warning = useRef<HTMLSpanElement>(null);
   const binding = useRef<PlaneBinding | null>(null);
   const current = useCommitted(props);
   const [capability, setCapability] = useState<CanvasColorSpaceStatus>("pending");
   const notified = useRef<CanvasColorSpaceStatus>("pending");
   const [quality, setQuality] = useState<RenderedFieldQuality>("full");
   const projection = field.projection;
-  const x = projection.representation.channels[1];
-  const y =
-    projection.plane === "oklch"
-      ? projection.representation.channels[0]
-      : projection.representation.channels[2];
-  const activePoint = plane.constrainPoint(projection.point);
-  const guide = targetGuidePoint;
+  const x = projection.coordinates.x;
+  const y = projection.coordinates.y;
+  const activePoint = field.geometry.constrain(projection.point);
   useLayoutEffect(() => {
     const mounted = mountPlane(
       surface.current!,
       canvas.current!,
       marker.current!,
-      warning.current!,
       () => current.current!,
       (status) => {
         setCapability(status);
@@ -85,11 +56,9 @@ export function ColorPlane(props: ColorPlaneProps) {
   useLayoutEffect(() => {
     binding.current?.reconcile();
   });
-  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x.toFixed(3)}. Vertical ${plane.yAxis.label} ${y.toFixed(3)}. Arrow keys adjust the selected point.${projection.plane === "oklch" && projection.representation.channels[2] === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${warningVisible ? ` ${currentTargetCopy.warning}` : ""}`;
+  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x?.toFixed(3) ?? "missing"}. Vertical ${plane.yAxis.label} ${y?.toFixed(3) ?? "missing"}. Arrow keys adjust the selected point.${field.geometry.fixed === "oklch.h" && projection.coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}`;
   const geometryStyle = {
-    "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
-    "--picker-target-guide-marker-size": `${PICKER_TARGET_GUIDE_MARKER_RADIUS * 2}px`,
   };
   return (
     <div
@@ -97,6 +66,7 @@ export function ColorPlane(props: ColorPlaneProps) {
       data-gp-part={gpPart.plane}
       data-picker-plane=""
       data-plane-id={plane.id}
+      data-geometry-id={field.geometry.id}
       data-field-quality={quality}
       data-field-resolution={
         plane.fieldSampling.kind === "disc-gradient"
@@ -121,7 +91,7 @@ export function ColorPlane(props: ColorPlaneProps) {
         data-outside-instrument={String(!field.markerInDomain)}
       >
         <canvas ref={canvas} data-gp-part={gpPart.canvas} aria-hidden="true" />
-        {plane.id === "oklab" && (
+        {field.geometry.domain.kind === "disc" && (
           <span
             className="gpr-color-plane-domain-boundary"
             data-gp-part={gpPart.domainBoundary}
@@ -183,7 +153,7 @@ export function ColorPlane(props: ColorPlaneProps) {
               />
             </>
           )}
-          {plane.id === "oklab" && (
+          {field.geometry.domain.kind === "disc" && (
             <circle
               className="gpr-color-plane-boundary-hit"
               data-gp-part={gpPart.boundaryHit}
@@ -197,43 +167,6 @@ export function ColorPlane(props: ColorPlaneProps) {
             />
           )}
         </svg>
-        {guide && (
-          <>
-            <span
-              className="gpr-color-plane-target-guide-connector"
-              data-gp-part={gpPart.guideConnector}
-              style={guideConnectorStyle(activePoint, guide, plane.id === "oklab")}
-              data-table-boundary-guide-connector=""
-              aria-hidden="true"
-            />
-            <span
-              className="gpr-color-plane-marker gpr-color-plane-marker--target-guide"
-              data-gp-part={gpPart.marker}
-              data-gp-marker={gpMarker.targetGuide}
-              style={presentationStyle({
-                ...pointStyle(guide),
-                "--target-guide-marker-color": targetGuideCss,
-              })}
-              data-table-boundary-guide-marker=""
-              data-marker-role="target-guide"
-              title={targetGuideLabel}
-              aria-label={targetGuideLabel}
-              role="img"
-            />
-          </>
-        )}
-        <span
-          ref={warning}
-          className="gpr-color-plane-warning"
-          data-gp-part={gpPart.warning}
-          data-gp-warning={String(warningVisible)}
-          data-gamut-warning="planar"
-          data-visible={String(warningVisible)}
-          style={{ display: warningVisible ? undefined : "none", visibility: "hidden" }}
-          aria-hidden="true"
-        >
-          <GamutWarningGlyph />
-        </span>
         <span
           ref={marker}
           className="gpr-color-plane-marker gpr-color-plane-marker--active"
@@ -243,7 +176,6 @@ export function ColorPlane(props: ColorPlaneProps) {
             ...pointStyle(activePoint),
             "--marker-color": markerCss,
           })}
-          data-outside-display-p3={String(warningVisible)}
           data-active-marker=""
           data-marker-role="active-color"
           title="Selected color"

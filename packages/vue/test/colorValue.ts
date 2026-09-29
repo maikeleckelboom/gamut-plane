@@ -1,11 +1,9 @@
 import { createColorValue, type ColorValue, type PickerPlaneId } from "@gamut-plane/core";
 import {
-  currentField,
-  currentOklchObservation,
-  currentEditableDetail,
-  currentGuideDisplay,
+  generalizedEditableDetail,
+  generalizedGuideDisplay,
 } from "@gamut-plane/render/internal/current";
-import { legacyViewState, resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
+import { resolveAcceptedRevision } from "../src/model/acceptedResolution.js";
 
 export function color(l: number, c: number, h: number | null, alpha = 1): ColorValue {
   const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
@@ -14,16 +12,22 @@ export function color(l: number, c: number, h: number | null, alpha = 1): ColorV
 }
 
 export function planeValue(modelValue: ColorValue, view: PickerPlaneId = "oklch") {
-  const revision = resolveAcceptedRevision(modelValue, legacyViewState(view, true, true));
-  const field = currentField(view, revision.editor, revision.field);
-  const detail = currentEditableDetail(
-    field,
-    currentOklchObservation(modelValue, revision.observation),
+  const revision = resolveAcceptedRevision(modelValue, {
+    selection: { representationId: view, editorId: view === "oklch" ? "oklch-lc" : "oklab-ab" },
+    checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    visibleGuides: ["display-p3-boundary", "srgb-boundary"],
+  });
+  const visual = generalizedEditableDetail(
+    modelValue,
+    revision.observation,
+    revision.editor,
+    revision.field,
   );
+  if (visual.kind !== "available") throw new Error("Missing editable test fixture");
   return {
     modelValue,
-    field,
-    guides: currentGuideDisplay(revision.guides),
-    markerCss: detail.markerCss,
+    field: visual.field,
+    guides: generalizedGuideDisplay(revision.guides),
+    markerCss: visual.detail.markerCss,
   };
 }

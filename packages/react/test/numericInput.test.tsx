@@ -2,7 +2,7 @@ import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { definitionOf, projectColorToPlane, OKLAB_AB_PLANE } from "@gamut-plane/core";
 import { NumericInput } from "../src/components/NumericInput.js";
-import { color, event, get, host, input, mount } from "./helpers.js";
+import { color, editingState, event, get, host, input, mount } from "./helpers.js";
 
 async function numeric() {
   const complete = vi.fn(),
@@ -123,7 +123,7 @@ describe("numeric draft lifecycle", () => {
     const nearEdge = color(0.62, 0.4000000000000001, 210, 0.7);
     const outside = color(0.62, 0.52, 210, 0.7);
     const oklch = await host({ value: nearEdge });
-    const oklab = await host({ value: nearEdge, defaultView: "oklab" });
+    const oklab = await host({ value: nearEdge, defaultState: editingState("oklab") });
 
     expect(oklch.element.textContent).not.toContain("outside the visible editing range");
     expect(oklab.element.textContent).not.toContain("outside the OKLab editing disc");
@@ -141,7 +141,7 @@ describe("numeric draft lifecycle", () => {
     expect(oklab.changes).not.toHaveBeenCalled();
   });
   it("keeps direct OKLab coordinate edits on the disc without overflow help", async () => {
-    const ui = await host({ defaultView: "oklab" });
+    const ui = await host({ defaultState: editingState("oklab") });
     const coordinate = get<HTMLInputElement>(ui.element, '[data-oklab-coordinate="a"]');
     await input(coordinate, "0.8");
     await event(coordinate, "change");

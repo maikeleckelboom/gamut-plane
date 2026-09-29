@@ -1,7 +1,18 @@
+import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { definitionOf, normalizeHue } from "@gamut-plane/core";
 import { ColorChannelControl } from "../src/components/ColorChannelControl.js";
-import { color, event, frames, get, host, input, mount } from "./helpers.js";
+import {
+  color,
+  editingState,
+  event,
+  frames,
+  get,
+  host,
+  input,
+  mount,
+  selectRepresentation,
+} from "./helpers.js";
 
 async function range() {
   const clock = frames(),
@@ -21,8 +32,6 @@ async function range() {
       precision={1}
       gradient="linear-gradient(90deg, black, white)"
       intervals={[]}
-      warningVisible={false}
-      warningPosition={0}
       onInput={live}
       onComplete={complete}
       onInteraction={interaction}
@@ -58,6 +67,29 @@ describe("native range lifecycle", () => {
 
     await ui.replace(color(0.62, 0.2, 180, 0.37));
     expect(range.value).toBe("180");
+  });
+
+  it("keeps a pending Hue range edit and its reference through check and guide changes", async () => {
+    const clock = frames(),
+      ui = await host({ defaultState: editingState("oklch") });
+    await clock.flush();
+    const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
+    await event(range, "pointerdown");
+    await input(range, "360");
+    const details = get<HTMLDetailsElement>(ui.element, "details");
+    details.open = true;
+    const checks = get<HTMLElement>(ui.element, "fieldset");
+    await act(async () => get<HTMLInputElement>(checks, "input").click());
+    const guides = get<HTMLElement>(ui.element, "fieldset:nth-of-type(2)");
+    await act(async () => get<HTMLInputElement>(guides, "input").click());
+    expect(get(ui.element, '[data-picker-control="h"] [type="range"]')).toBe(range);
+    await clock.flush();
+    expect(ui.changes).toHaveBeenCalledOnce();
+    expect(definitionOf(ui.changes.mock.calls[0]![0]).channels[2]).toBe(0);
+    expect(range.value).toBe("360");
+    await event(range, "change");
+    expect(ui.commits).toHaveBeenCalledOnce();
+    expect(ui.cancels).not.toHaveBeenCalled();
   });
 
   it.each([87.1, 360])("retains Hue preview through normalized feedback for %s", async (hue) => {
@@ -226,7 +258,7 @@ describe("native range lifecycle", () => {
   });
   it.each(["h", "l", "c", "oklab"])("%s has the correct field preview policy", async (channel) => {
     const clock = frames(),
-      ui = await host({ defaultView: channel === "oklab" ? "oklab" : "oklch" });
+      ui = await host({ defaultState: editingState(channel === "oklab" ? "oklab" : "oklch") });
     await clock.flush();
     const range = get<HTMLInputElement>(
       ui.element,
@@ -244,18 +276,18 @@ describe("native range lifecycle", () => {
     await clock.flush();
     expect(field.dataset.fieldQuality).toBe("full");
   });
-  it("view change ends Hue preview and queued range publications", async () => {
+  it("editor change ends Hue preview and queued range publications", async () => {
     const clock = frames(),
       ui = await host();
     await clock.flush();
     const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
     await event(range, "pointerdown");
     await input(range, "180");
-    await event(get(ui.element, '[data-plane-option="oklab"]'), "click");
+    await selectRepresentation(ui.element, "oklab");
     await clock.flush();
     expect(ui.changes).not.toHaveBeenCalled();
     expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
-    await event(get(ui.element, '[data-plane-option="oklch"]'), "click");
+    await selectRepresentation(ui.element, "oklch");
     await clock.flush();
     expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");
   });

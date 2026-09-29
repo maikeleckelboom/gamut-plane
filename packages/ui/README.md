@@ -1,30 +1,11 @@
 # @gamut-plane/ui
 
-Private shared authority for the current instrument's semantic anatomy and state vocabulary,
-current representation/editor/companion metadata, sole authored stylesheet, warning glyph geometry, and framework-neutral native range,
-numeric draft/composition, and plane pointer gesture policies. The controllers attach native
-DOM listeners only when an adapter mounts them.
+Private shared authority for instrument anatomy, product labels, representation/editor metadata, request-state policy, the sole authored instrument stylesheet, and native range, numeric, and plane gesture controllers. The adapters render native framework markup and mount the controllers. UI does not own `ColorValue` science, Canvas, framework lifecycle, or a public consumer API.
 
-UI does not own `ColorValue` or other domain truth, gamut analysis, Canvas rendering/resources,
-Vue or React components, framework lifecycle, or a public consumer API. Core, render, and the
-adapters retain those responsibilities. Consumers import an adapter and its `./style.css` export;
-each adapter copies the built bytes of UI's `src/style.css` to its own `dist/style.css` during build.
+`instrumentState.ts` validates an atomic selection, checked-gamut set, and visible-guide set. The policy separates technical editor existence, product admission, and preferred initialization. It accepts zero, one, or two admitted editors per representation; `editorId: null` is always deliberate inspection. The current product admits one editor each for OKLCH and OKLab, and none for sRGB or Display P3. An unadmitted technical editor cannot enter public state. Canonical ID arrays are frozen and deterministic. The guide ID family is supplied by render at adapter composition, so UI has no render dependency.
 
-`src/instrumentMetadata.ts` is private implementation authority exported through UI's root for
-sibling adapters. Four representation labels coexist with explicit two-view primary admission:
-OKLCH → `oklch-lc`, then OKLab → `oklab-ab`. Frozen companion tuples describe ordinary labels,
-slider spans, numeric completion bounds, steps, precision and semantic channel/operation bindings.
-They describe structural composition, not whether an operation is usable for a particular color.
-There is no operation executor or new consumer API. `src/instrumentState.ts` adds the internal
-generalized selection/check/guide policy: unknown-input validation with explicit issues,
-initialization defaults, deterministic frozen set arrays and structural equality. An explicit
-observation-only selection remains valid. The guide ID family is supplied by render at the adapter
-composition boundary, keeping UI free of a render dependency. State contains only stable IDs and
-requested preferences; current Vue/React props, rendering and accepted-state ownership do not
-change. Directional `boundaryTarget` remains outside ordinary view state.
+`instrumentMetadata.ts` owns current representation labels and ordered companion controls, including their semantic channel and core authoring operation bindings. `generalizedInstrument.ts` owns shared product copy, inspection number formatting, and explicit sRGB then Display P3 exact-result display order. Transport order can differ from display order. These policies do not execute color operations.
 
-Metadata imports only types from `@gamut-plane/core/internal/capabilities`; emitted JavaScript
-has no core or render import. Core is an ordinary package dependency because emitted declarations
-reference its internal identity/relationship types. Packed checks inspect both surfaces and
-type-check the installed graph with `skipLibCheck: false` in Vue, React, Nuxt and Next consumers.
-The UI runtime still performs no conversion, geometry, gamut analysis or scientific operation.
+`src/style.css` is the only authored instrument stylesheet. Vue and React copy its built bytes into their own `dist/style.css`. Selectors are scoped to `[data-gp-root]`, and `--gamut-plane-accent` is the supported host customization. Consumers import their adapter's stylesheet. Native interaction controllers attach listeners only on mount and dispose queued work without publishing extra callbacks.
+
+Emitted declarations reference core's internal capability types, but UI runtime performs no color conversion, geometry, gamut analysis, or rendering. Packed Vue, React, Nuxt, and Next fixtures type-check the installed package graph.

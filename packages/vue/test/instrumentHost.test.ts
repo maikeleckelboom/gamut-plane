@@ -1,20 +1,19 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h, ref } from "vue";
-import {
-  createColorValue,
-  definitionOf,
-  type ColorValue,
-  type PickerPlaneId,
-} from "@gamut-plane/core";
-import { GamutPlane as PlaneInstrument } from "../src/index";
+import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
+import { GamutPlane as PlaneInstrument, type GamutPlaneState } from "../src/index";
 import { dispatchPointer, installAnimationFrameController } from "./interactionHelpers";
 import { color } from "./colorValue";
 
 const origin = color(0.5, 0.2, 0.5, 0.7);
 function mountHost(controlled = false) {
   const model = ref(origin);
-  const plane = ref<PickerPlaneId>("oklch");
+  const state = ref<GamutPlaneState>({
+    selection: { representationId: "oklch", editorId: "oklch-lc" },
+    checkedGamuts: [],
+    visibleGuides: [],
+  });
   const commits = vi.fn();
   const cancel = vi.fn();
   const updates = vi.fn((value: ColorValue) => {
@@ -30,9 +29,9 @@ function mountHost(controlled = false) {
           "onUpdate:modelValue": updates,
           ...(controlled
             ? {
-                plane: plane.value,
-                "onUpdate:plane": (value: PickerPlaneId) => {
-                  plane.value = value;
+                state: state.value,
+                "onUpdate:state": (value: GamutPlaneState) => {
+                  state.value = value;
                 },
               }
             : {}),
@@ -46,7 +45,7 @@ function mountHost(controlled = false) {
   vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(new DOMRect(10, 20, 200, 200));
   const pointer = (type: string, pointerId = 1, clientX = 150, clientY = 80) =>
     dispatchPointer(surface, type, { pointerId, clientX, clientY });
-  return { wrapper, model, plane, commits, cancel, updates, pointer };
+  return { wrapper, model, state, commits, cancel, updates, pointer };
 }
 afterEach(() => {
   vi.restoreAllMocks();
@@ -119,7 +118,7 @@ describe("reactive instrument host", () => {
   });
 
   it.each([false, true])(
-    "changes view with controlled=%s, invalidates equal fixed axes and discards old points",
+    "changes editor with controlled=%s, invalidates equal fixed axes and discards old points",
     async (controlled) => {
       const frames = installAnimationFrameController();
       const host = mountHost(controlled);
@@ -128,7 +127,7 @@ describe("reactive instrument host", () => {
       const context = document.createElement("canvas").getContext("2d")!;
       vi.mocked(context.drawImage).mockClear();
       host.pointer("pointerdown");
-      await host.wrapper.get('[data-plane-option="oklab"]').trigger("click");
+      await host.wrapper.get("select").setValue("oklab");
       frames.flush();
       await flushPromises();
       expect(host.wrapper.get("[data-picker-plane]").attributes("data-plane-id")).toBe("oklab");
@@ -153,7 +152,7 @@ describe("reactive instrument host", () => {
     expect(frames.pendingCount).toBe(0);
   });
 
-  it("changing view after a live edit keeps the published color and discards the old pending point", async () => {
+  it("changing editor after a live edit keeps the published color and discards the old pending point", async () => {
     const frames = installAnimationFrameController();
     const host = mountHost();
     await flushPromises();
@@ -162,7 +161,7 @@ describe("reactive instrument host", () => {
     await flushPromises();
     const published = host.model.value;
     host.pointer("pointermove", 1, 190, 40);
-    await host.wrapper.get('[data-plane-option="oklab"]').trigger("click");
+    await host.wrapper.get("select").setValue("oklab");
     frames.flush();
     await flushPromises();
     host.pointer("pointerup");

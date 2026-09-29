@@ -2,7 +2,7 @@ import { act, createElement, useLayoutEffect, useState, type ReactNode } from "r
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, vi } from "vitest";
 import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
-import { GamutPlane, type GamutPlaneProps } from "../src/index.js";
+import { GamutPlane, type GamutPlaneProps, type GamutPlaneState } from "../src/index.js";
 
 const roots = new Set<Root>();
 afterEach(async () => {
@@ -42,6 +42,23 @@ export function color(l: number, c: number, h: number | null, alpha: number): Co
   return result.value;
 }
 export const initial = color(0.62, 0.2, 45, 0.37);
+export function editingState(representationId: "oklch" | "oklab"): GamutPlaneState {
+  return {
+    selection:
+      representationId === "oklch"
+        ? { representationId: "oklch", editorId: "oklch-lc" }
+        : { representationId: "oklab", editorId: "oklab-ab" },
+    checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+    visibleGuides: ["display-p3-boundary", "srgb-boundary"],
+  };
+}
+export async function selectRepresentation(root: ParentNode, representationId: string) {
+  const select = get<HTMLSelectElement>(root, "[data-gp-part='representation-control'] select");
+  await act(async () => {
+    select.value = representationId;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
 export async function event(
   element: Element,
   type: string,

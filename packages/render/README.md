@@ -1,27 +1,11 @@
 # @gamut-plane/render
 
-Private internal dependency providing framework-neutral rendering primitives and visual guide data shared by the Vue and React adapters. It owns Canvas field painting, sampled gamut-guide data, generated gamut tables and deterministic SVG/CSS presentation geometry. It does not own color semantics, interaction state, scheduling or framework lifecycle. Applications import an adapter and its stylesheet; no direct import or manual initialization of this package is required.
+Private framework-neutral rendering support for the Vue and React instruments. It owns Canvas field painting, sampled gamut-guide tables, contour and interval geometry, and deterministic CSS/SVG presentation. Core owns color science; UI owns product copy and request policy; adapters own lifecycle, measurement, scheduling, and DOM. Applications import an adapter and its stylesheet rather than this package directly.
 
-The renderer has instance-local resources and synchronous drawing. Adapters allocate it during committed lifecycle setup and own measurements, observers, frame scheduling and disposal. Production adapters consume resolved exact, field and guide facts through the internal current-product helpers below. The former monolithic picker and boundary factories now live only in frozen test fixtures; they are absent from the runtime package. A hue-less observation stays `null` while the numeric field hue falls back to `0` only for visual sampling. Shared helpers place warnings, merge intervals and thresholds, and serialize target-guide connectors. The OKLab fixed-lightness gradient varies observed `[L, a, b]` numerically before CSS serialization, with CSS-only stop precision stabilized for SSR. Field sampling uses one mutable numeric color and reusable scratch, without `ColorValue` allocation. This package imports safely in Node; calling its browser renderer requires a mounted Canvas. Core remains free of DOM and framework dependencies.
+The sampled tables are approximate visual guides. They never determine exact gamut status or reauthor color. `pnpm --filter @gamut-plane/render check:gamut-tables` verifies the checked-in tables and digest. A hue-less observation remains null while visual sampling may use a zero-Hue slice.
 
-The checked-in tables retain their sampling settings and digest. They are approximate visualization guides, not exact gamut tests. Run `pnpm --filter @gamut-plane/render check:gamut-tables` to verify them. This package and its dependencies remain unpublished; consumers of adapter tarballs must install its artifact too.
+The unsupported `@gamut-plane/render/internal/capabilities` entry resolves editor visual support, selected fields, and requested guide forms independently. A missing field relation, failed conversion, out-of-domain marker, and unsupported guide form retain distinct outcomes. Requested guide resolution uses only the fresh exact-check rows supplied by its caller and performs no hidden analysis.
 
-`@gamut-plane/render/internal/capabilities` is an unsupported sibling-adapter contract. It exports
-only `guideDefinitions`, `resolveEditorVisualSupport`, `resolveField`, `resolveRequestedGuides`
-and their directly needed `GuideId`, `EditorVisualSupport`, `FieldResolution`, `GuideResolution`
-types. It is deterministic and DOM-free; field support and guide support remain independent.
-Adapters compose one accepted source/state revision and must supply its freshly derived exact
-rows to guide resolution. Raw check rows carry no independent provenance. This entry adds no
-consumer API, mutable registry or Canvas readiness state; these helpers are absent from root.
+The unsupported `@gamut-plane/render/internal/current` entry contains bounded current-product integration: `currentField`, `currentOklchObservation`, `currentEditableDetail`, `generalizedGuideDisplay`, and `generalizedEditableDetail`. These consume accepted owner-native facts and produce CSS, gradients, marker placement, and displayable guide geometry. They do not own public selection, target state, copy, or a second exact analysis. The `current` name describes the two concrete shipped editors, not a second public instrument route.
 
-`@gamut-plane/render/internal/current` is also unsupported sibling-package integration. Its exact
-runtime inventory is `currentField`, `currentExactChecks`, `currentOklchObservation`,
-`currentEditableDetail`, `currentGuideDisplay`, and `currentTargetVisual`; its two directly
-consumed types are `CurrentField` and `CurrentGuideDisplay`. It accepts owner-native facts, never
-UI state or `AcceptedPresentationView`. These small families preserve current fail-fast errors,
-serialize the accepted contour buffers without copying, and produce only consumed visual detail.
-Product help, labels, status wording and numeric precision belong to the private UI package.
-OKLab needs one supplemental OKLCH observation for CSS/Hue/target detail; a hidden target needs
-one sampled reference but no ordinary guide request, contour, interval or exact check. No helper
-is used in a field-sampling loop. Packed consumer checks certify the export inventory, root
-exclusion, ES-only declarations and Node execution from each installed consumer graph.
+Field and renderer cache keys include geometry identity so a second editor of the same representation cannot reuse the wrong projection or field. The test-only H/C editor verifies this without entering the production catalog. Renderer resources remain instance-local, allocated after mount, and import safely in Node. Packed consumer checks verify the private exports and declarations.

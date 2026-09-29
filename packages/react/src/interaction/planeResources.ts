@@ -1,6 +1,4 @@
 import {
-  projectColorToPlane,
-  type ColorPlaneProjection,
   type ColorValue,
   type PickerPlaneFieldSampler,
   type PickerPlaneGeometry,
@@ -9,13 +7,6 @@ import {
 import {
   createFieldRenderer,
   pointStyle,
-  placePlanarWarning,
-  PICKER_ACTIVE_MARKER_RADIUS,
-  PICKER_TARGET_GUIDE_MARKER_RADIUS,
-  PICKER_WARNING_GLYPH_SIZE,
-  PICKER_WARNING_MARKER_CLEARANCE,
-  PICKER_WARNING_PREFERRED_OFFSET,
-  PICKER_WARNING_SURFACE_INSET,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
@@ -25,7 +16,6 @@ export interface PlaneResourceInput {
   value: ColorValue;
   plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
   field: CurrentField;
-  targetGuidePoint: PlanePoint | null;
   interactionPreview: boolean;
 }
 
@@ -34,7 +24,6 @@ export function mountPlaneResources(
   surface: HTMLDivElement,
   canvas: HTMLCanvasElement,
   marker: HTMLSpanElement,
-  warning: HTMLSpanElement,
   current: () => PlaneResourceInput,
   onCapability: (status: CanvasColorSpaceStatus) => void,
   onQuality: (quality: RenderedFieldQuality) => void,
@@ -47,46 +36,21 @@ export function mountPlaneResources(
   let pixelRatio = Math.max(1, window.devicePixelRatio || 1);
   let resolution: MediaQueryList | null = null;
   let plane = current().plane;
-  let localSize = { width: 0, height: 0 };
-
-  function projection(value: ColorValue): ColorPlaneProjection {
-    const observed = projectColorToPlane(value, plane.id);
+  function projection(value: ColorValue) {
+    const observed = current().field.geometry.project(value);
     if (!observed.ok) throw new RangeError("Selected color cannot be projected into the plane");
     return observed.value;
   }
   function activePoint(value: ColorValue): PlanePoint {
-    return plane.constrainPoint(projection(value).point);
+    return current().field.geometry.constrain(projection(value).point);
   }
   function fixed(): number {
     return current().field.samplingFixed;
   }
-  let fieldInput = `${plane.id}:${fixed()}:${current().interactionPreview}`;
+  let fieldInput = `${current().field.geometry.id}:${fixed()}:${current().interactionPreview}`;
 
   function position(point: PlanePoint): void {
     Object.assign(marker.style, pointStyle(point));
-    if (localSize.width < PICKER_WARNING_GLYPH_SIZE || localSize.height < PICKER_WARNING_GLYPH_SIZE)
-      return;
-    const guide = current().targetGuidePoint;
-    const placement = placePlanarWarning({
-      activeCenter: { x: point.x * localSize.width, y: point.y * localSize.height },
-      surfaceSize: localSize,
-      activeRadius: PICKER_ACTIVE_MARKER_RADIUS,
-      warningSize: { width: PICKER_WARNING_GLYPH_SIZE, height: PICKER_WARNING_GLYPH_SIZE },
-      preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
-      surfaceInset: PICKER_WARNING_SURFACE_INSET,
-      markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
-      targetGuideMarker: guide
-        ? {
-            center: { x: guide.x * localSize.width, y: guide.y * localSize.height },
-            radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
-          }
-        : null,
-    });
-    Object.assign(warning.style, {
-      left: `${placement.left}px`,
-      top: `${placement.top}px`,
-      visibility: "visible",
-    });
   }
 
   function measure(): void {
@@ -100,12 +64,11 @@ export function mountPlaneResources(
       height: surface.clientHeight * scaleY,
     };
     boundsDirty = false;
-    localSize = { width: surface.clientWidth, height: surface.clientHeight };
   }
   function point(event: PointerEvent): PlanePoint | null {
     if (boundsDirty) measure();
     if (bounds.width <= 0 || bounds.height <= 0) return null;
-    return plane.constrainPoint({
+    return current().field.geometry.constrain({
       x: (event.clientX - bounds.left) / bounds.width,
       y: (event.clientY - bounds.top) / bounds.height,
     });
@@ -116,6 +79,7 @@ export function mountPlaneResources(
     onQuality(
       renderer.draw({
         plane,
+        fieldId: current().field.geometry.id,
         fixed: fixed(),
         pixelRatio,
         interactionPreview: current().interactionPreview,
@@ -127,7 +91,7 @@ export function mountPlaneResources(
   }
   function resize(): void {
     measure();
-    position(plane.constrainPoint(current().field.projection.point));
+    position(current().field.geometry.constrain(current().field.projection.point));
     redraw();
   }
   function scroll(): void {
@@ -157,7 +121,7 @@ export function mountPlaneResources(
       window.addEventListener("scroll", scroll, { capture: true, passive: true });
       window.addEventListener("resize", resize);
       measure();
-      position(plane.constrainPoint(current().field.projection.point));
+      position(current().field.geometry.constrain(current().field.projection.point));
       draw();
       trackResolution();
     },
@@ -167,8 +131,9 @@ export function mountPlaneResources(
       return true;
     },
     reconcile(allowPosition: boolean): void {
-      if (allowPosition) position(plane.constrainPoint(current().field.projection.point));
-      const nextInput = `${plane.id}:${fixed()}:${current().interactionPreview}`;
+      if (allowPosition)
+        position(current().field.geometry.constrain(current().field.projection.point));
+      const nextInput = `${current().field.geometry.id}:${fixed()}:${current().interactionPreview}`;
       if (nextInput !== fieldInput) {
         fieldInput = nextInput;
         redraw();

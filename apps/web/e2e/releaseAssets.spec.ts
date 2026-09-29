@@ -17,6 +17,10 @@ async function ready(page: Page): Promise<void> {
     "data-canvas-capability",
     "pending",
   );
+  await page.getByText("Gamut checks and guides").click();
+  const guides = page.getByRole("group", { name: "Visible guides" });
+  await guides.getByLabel("sRGB boundary").check();
+  await guides.getByLabel("Display P3 boundary").check();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
 }
 
@@ -74,6 +78,7 @@ test("generate reviewed repository and social images", async ({ page }) => {
 
     const visual = document.createElement("section");
     visual.className = "social-visual plane-instrument";
+    visual.setAttribute("data-gp-root", "");
     visual.setAttribute("aria-label", "OKLCH plane with Display P3 and sRGB boundaries");
     visual.append(plane);
 

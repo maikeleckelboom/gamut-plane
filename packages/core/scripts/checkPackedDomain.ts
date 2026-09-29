@@ -85,13 +85,14 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,editorDefinitions,geometryDefinitions") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,authorEditorPoint,editOperationDefinitions,editorDefinitions,geometryDefinitions,keyboardGeometryPoint") throw new Error("Internal capability surface changed");
 if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
 const editorId: EditorId = "oklch-lc";
 const editor: EditorDefinition = editorDefinitions[editorId];
 const geometryId: GeometryId = editor.geometryId;
-const geometry: GeometryDefinition<"oklch"> = geometryDefinitions[geometryId];
-if (geometry.planeId !== "oklch" || geometry.toPoint(0.6, 0.2).x !== 0.5) throw new Error("Packed capability geometry failed");
+const geometry = geometryDefinitions[geometryId];
+const typedGeometry: GeometryDefinition = geometry;
+if (typedGeometry.representationId !== "oklch" || geometry.toPoint(0.6, 0.2).x !== 0.5) throw new Error("Packed capability geometry failed");
 if (!Object.isFrozen(editorDefinitions) || !Object.isFrozen(geometry)) throw new Error("Packed capability immutability failed");
 // @ts-expect-error only core-defined primary editor identities cross the internal boundary
 const unsupportedEditor: EditorId = "srgb-channels";

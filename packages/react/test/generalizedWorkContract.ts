@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import * as core from "@gamut-plane/core";
 import * as capabilities from "@gamut-plane/core/internal/capabilities";
 import * as resolution from "@gamut-plane/render/internal/capabilities";
-import * as current from "@gamut-plane/render/internal/current";
 import type { GamutPlaneState } from "../src/index.js";
 
 type Host = { element: Element; dispose(): Promise<void> };
@@ -97,7 +96,6 @@ export function generalizedWorkContract(
         expect(core.getPickerGuide).toHaveBeenCalledTimes(references);
         expect(core.getHueGuideIntervals).toHaveBeenCalledTimes(contours);
         expect(core.getLightnessGuideIntervals).toHaveBeenCalledTimes(contours);
-        expect(current.currentTargetVisual).not.toHaveBeenCalled();
         expect(host.element.querySelectorAll("[data-gp-part='exact-result']")).toHaveLength(exact);
       } finally {
         await host.dispose();

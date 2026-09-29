@@ -14,7 +14,7 @@ import {
 import { colorGradient } from "../presentation.js";
 import type { CurrentField } from "./field.js";
 
-/** Reuse selected OKLCH; OKLab needs one companion observation for current CSS and target detail. */
+/** Reuse selected OKLCH; OKLab needs one companion observation for current CSS detail. */
 export function currentOklchObservation(
   source: ColorValue,
   observation: ColorResult<ColorRepresentation, ConversionError>,
@@ -42,7 +42,7 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
     activeCss: serializeOklchSample(sample),
     markerCss: serializeOklchSample({ ...sample, alpha: 1 }),
   };
-  if (field.projection.plane === "oklch") {
+  if (field.projection.representationId === "oklch") {
     return {
       ...common,
       view: "oklch" as const,

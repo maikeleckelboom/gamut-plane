@@ -74,6 +74,36 @@ export const guidePreferenceUi = Object.freeze({
   "display-p3-boundary": Object.freeze({ label: "Display P3 boundary" }),
 });
 
+/** Display order is product policy, independent of canonical transport order. */
+export const exactResultOrder = Object.freeze([
+  "srgb-gamut",
+  "display-p3-gamut",
+] as const satisfies readonly GamutId[]);
+
+export function orderedExactChecks<T extends Readonly<{ gamutId: GamutId }>>(
+  checks: readonly T[],
+): readonly T[] {
+  return exactResultOrder.flatMap((id) => checks.filter((row) => row.gamutId === id));
+}
+
+export const generalizedCopy = Object.freeze({
+  representation: "Representation",
+  editCoordinates: "Edit coordinates",
+  inspectionOnly: "Inspection only",
+  inspecting: "Inspecting",
+  editing: "Editing",
+  coordinatesUnavailable: "Coordinates unavailable for this color.",
+  planeUnavailable: "Editing plane unavailable for this color.",
+  alpha: "Alpha",
+  noChecks: "No gamut checks selected",
+  comparison: "Gamut comparison",
+  disclosure: "Gamut checks and guides",
+  exactChecks: "Exact checks",
+  visibleGuides: "Visible guides",
+  guidesPending: "Requested guides will appear when an editable plane is selected.",
+  guidesUnavailable: "Some requested guides cannot be shown for this color or editor.",
+});
+
 /** Nine significant decimal digits are for inspection, separate from edit and output precision. */
 export function formatInspectionNumber(value: number | null): string {
   if (value === null) return "missing";

@@ -62,7 +62,7 @@ test("production metadata, assets, and static headers are complete", async ({ pa
   expect((await request.get("/_headers")).status()).toBe(404);
 });
 
-test("the production build preserves both planes, input, and responsive semantics", async ({
+test("the production build preserves generalized editing, inspection, and responsive semantics", async ({
   context,
   page,
 }) => {
@@ -72,7 +72,7 @@ test("the production build preserves both planes, input, and responsive semantic
   const errors = await openProductionInstrument(page);
   const surface = page.getByRole("application", { name: /OKLCH plane/ });
   await expect(surface).toBeVisible();
-  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
 
   const p3Copy = page.locator('[data-copy-representation="display-p3"]');
   await expect(p3Copy).toHaveAccessibleName("Copy Display P3 CSS value");
@@ -93,9 +93,14 @@ test("the production build preserves both planes, input, and responsive semantic
   await page.mouse.click(bounds!.x + bounds!.width * 0.7, bounds!.y + bounds!.height * 0.4);
   await expect(channels).not.toHaveText(beforePointer ?? "");
 
-  await page.getByRole("radio", { name: "OKLab" }).click();
+  await page.getByLabel("Representation", { exact: true }).selectOption("oklab");
   await expect(page.getByRole("application", { name: /OKLab a\/b plane/ })).toBeVisible();
-  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
+  await page.getByLabel("Representation", { exact: true }).selectOption("srgb");
+  await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
+  await expect(
+    page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),
+  ).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {

@@ -1,5 +1,4 @@
-import { serializeOklchSample, type OklchSample, type PlanePoint } from "@gamut-plane/core";
-import { pointStyle } from "./geometry.js";
+import { serializeOklchSample, type OklchSample } from "@gamut-plane/core";
 
 export function colorGradient(
   segments: number,
@@ -11,25 +10,4 @@ export function colorGradient(
     stops.push(`${serializeOklchSample(colorAt(position))} ${(position * 100).toFixed(3)}%`);
   }
   return `linear-gradient(90deg, ${stops.join(", ")})`;
-}
-
-export function guideConnectorStyle(
-  active: PlanePoint,
-  guide: PlanePoint,
-  radial: boolean,
-): Record<string, string> {
-  if (radial) {
-    const dx = guide.x - active.x;
-    const dy = guide.y - active.y;
-    return {
-      ...pointStyle(active),
-      width: `${(Math.hypot(dx, dy) * 100).toFixed(8)}%`,
-      transform: `translateY(-50%) rotate(${Math.atan2(dy, dx).toFixed(10)}rad)`,
-      transformOrigin: "left center",
-    };
-  }
-  return {
-    ...pointStyle({ x: Math.min(active.x, guide.x), y: active.y }),
-    width: `${(Math.abs(active.x - guide.x) * 100).toFixed(8)}%`,
-  };
 }

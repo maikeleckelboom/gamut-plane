@@ -1,12 +1,9 @@
-import { act } from "react";
+import { act, Suspense } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { createColorValue, definitionOf } from "@gamut-plane/core";
-import { currentTargetVisual } from "@gamut-plane/render/internal/current";
 import { GamutPlane, type GamutPlaneProps, type GamutPlaneState } from "../src/index.js";
 import { get, initial, mount } from "./helpers.js";
-
-vi.mock("@gamut-plane/render/internal/current", { spy: true });
 
 const observed: GamutPlaneState = {
   selection: { representationId: "srgb", editorId: null },
@@ -38,7 +35,6 @@ describe("React public generalized instrument", () => {
     expect(html).not.toContain("data-picker-plane");
     const before = definitionOf(initial);
     const ui = await mount(<GamutPlane {...props} />);
-    expect(currentTargetVisual).not.toHaveBeenCalled();
     expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
     await select(ui.element, "oklch");
     expect(requests).toHaveBeenCalledOnce();
@@ -77,7 +73,6 @@ describe("React public generalized instrument", () => {
     expect(ui.element.querySelector("[data-gamut-boundary='srgb']")).not.toBeNull();
     expect(requests.mock.lastCall?.[0].checkedGamuts).toEqual([]);
     expect(ui.element.querySelector("[data-boundary-target-result]")).toBeNull();
-    expect(currentTargetVisual).not.toHaveBeenCalled();
     await ui.render(
       <GamutPlane
         value={initial}
@@ -89,7 +84,7 @@ describe("React public generalized instrument", () => {
     expect(get(ui.element, "[data-picker-plane]")).toBeTruthy();
   });
 
-  it("keeps controlled state read-only and rejects invalid or mixed routes", async () => {
+  it("keeps controlled state read-only and rejects invalid state", async () => {
     const ui = await mount(<GamutPlane value={initial} onValueChange={vi.fn()} state={observed} />);
     expect(get<HTMLSelectElement>(ui.element, "select").disabled).toBe(true);
     expect(
@@ -97,20 +92,12 @@ describe("React public generalized instrument", () => {
         (input) => input.disabled,
       ),
     ).toBe(true);
-    const mixed: GamutPlaneProps = {
-      value: initial,
-      onValueChange: vi.fn(),
-      state: observed,
-      // @ts-expect-error public routes cannot configure the same dimensions together
-      view: "oklch",
-    };
     const invalid: GamutPlaneProps = {
       value: initial,
       onValueChange: vi.fn(),
       // @ts-expect-error the public checked gamut union rejects unknown IDs
       state: { ...observed, checkedGamuts: ["unknown"] },
     };
-    expect(() => renderToString(<GamutPlane {...mixed} />)).toThrow("cannot mix");
     expect(() => renderToString(<GamutPlane {...invalid} />)).toThrow("unknown-gamut");
   });
 
@@ -200,6 +187,72 @@ describe("React public generalized instrument", () => {
     expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
     await ui.render(render(comparison));
     expect(get(ui.element, '[aria-label="Lightness numeric value"]')).not.toBe(number);
+    expect(colors).not.toHaveBeenCalled();
+  });
+
+  it("keeps accepted state authoritative across a suspended inspection request and rejection", async () => {
+    const state: GamutPlaneState = {
+      selection: { representationId: "oklch", editorId: "oklch-lc" },
+      checkedGamuts: [],
+      visibleGuides: [],
+    };
+    const inspection: GamutPlaneState = {
+      ...state,
+      selection: { representationId: "oklch", editorId: null },
+    };
+    const requests = vi.fn<(next: GamutPlaneState) => void>();
+    const colors = vi.fn();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let ready = false;
+    function SuspendedInspection() {
+      if (!ready) throw pending;
+      return (
+        <GamutPlane
+          value={initial}
+          onValueChange={colors}
+          state={inspection}
+          onStateChange={requests}
+        />
+      );
+    }
+    const editable = (
+      <GamutPlane value={initial} onValueChange={colors} state={state} onStateChange={requests} />
+    );
+    const ui = await mount(<Suspense fallback={<p>Preparing inspection</p>}>{editable}</Suspense>);
+    const originalPlane = get(ui.element, "[data-picker-plane]");
+    await act(async () =>
+      get<HTMLInputElement>(ui.element, ".gp-generalized-edit-toggle input").click(),
+    );
+    expect(requests.mock.lastCall?.[0].selection.editorId).toBeNull();
+    expect(get(ui.element, "[data-picker-plane]")).toBe(originalPlane);
+
+    await ui.render(
+      <Suspense fallback={<p>Preparing inspection</p>}>
+        <SuspendedInspection />
+      </Suspense>,
+    );
+    expect(ui.element.textContent).toContain("Preparing inspection");
+    await ui.render(<Suspense fallback={<p>Preparing inspection</p>}>{editable}</Suspense>);
+    expect(get(ui.element, "[data-picker-plane]")).toBeTruthy();
+    await ui.render(
+      <Suspense fallback={<p>Preparing inspection</p>}>
+        <SuspendedInspection />
+      </Suspense>,
+    );
+    await act(async () => {
+      ready = true;
+      release();
+      await pending;
+    });
+    expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
+    expect(get<HTMLInputElement>(ui.element, ".gp-generalized-edit-toggle input").checked).toBe(
+      false,
+    );
+    await ui.render(<Suspense fallback={<p>Preparing inspection</p>}>{editable}</Suspense>);
+    expect(get(ui.element, "[data-picker-plane]")).toBeTruthy();
     expect(colors).not.toHaveBeenCalled();
   });
 

@@ -85,12 +85,11 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         const response = await page.goto(path, { waitUntil: "commit" });
         const html = await response!.text();
         expect(html).toContain("data-active-marker");
-        expect(html).toContain('data-gamut-boundary="srgb"');
-        expect(html).toContain('data-gamut-boundary="display-p3"');
+        expect(html).toContain('data-gp-part="representation-control"');
+        expect(html).toContain("No gamut checks selected");
         expect(html).toContain("612.123456");
         expect(html).toContain("OKLab a numeric value");
         expect(html).toContain("OKLab b numeric value");
-        expect(html).toContain("data-boundary-target-result");
         expect(html).toContain("Host boundary legend");
         await expect(page.locator("[data-plane-instrument]")).toHaveCount(2);
         await expect
@@ -107,7 +106,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
           const nodes = roots.flatMap((root) => [
             root,
             ...root.querySelectorAll(
-              "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [data-boundary-target-result], [role=application]",
+              "canvas, svg, path, input, button, select, label, details, summary, [data-legend], [data-active-marker], [role=application]",
             ),
           ]);
           window.beforeHydration = {
@@ -118,7 +117,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
             ].map((el) => el.value),
             presentation: [
               ...document.querySelectorAll(
-                "[data-boundary-target-result], [data-gamut-boundary], [data-gamut-boundary-hit]",
+                "[data-gp-part='representation-control'], [data-gp-part='exact-results']",
               ),
             ].map((el) => el.outerHTML),
             focus: document.activeElement,
@@ -144,7 +143,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       const current = [...document.querySelectorAll("[data-plane-instrument]")].flatMap((root) => [
         root,
         ...root.querySelectorAll(
-          "canvas, svg, path, input, button, label, details, summary, [data-legend], [data-active-marker], [data-boundary-target-result], [role=application]",
+          "canvas, svg, path, input, button, select, label, details, summary, [data-legend], [data-active-marker], [role=application]",
         ),
       ]);
       return {
@@ -157,7 +156,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         ].map((el) => el.value),
         presentation: [
           ...document.querySelectorAll(
-            "[data-boundary-target-result], [data-gamut-boundary], [data-gamut-boundary-hit]",
+            "[data-gp-part='representation-control'], [data-gp-part='exact-results']",
           ),
         ].map((el) => el.outerHTML),
         focus: document.activeElement === before.focus,

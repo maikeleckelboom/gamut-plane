@@ -10,7 +10,7 @@ import {
   type ColorSnapshotV1,
   type ColorValue,
 } from "@gamut-plane/core";
-import { GamutPlane, type GamutPlaneView } from "@gamut-plane/react";
+import { GamutPlane, type GamutPlaneState } from "@gamut-plane/react";
 import { useEvents } from "./eventsProvider";
 
 function observedReadout(value: ColorValue) {
@@ -48,7 +48,18 @@ export function InstrumentHost({
   const [completion, setCompletion] = useState(true);
   const [renderCount, rerender] = useState(0);
   const record = useEvents();
-  const [view, setView] = useState<GamutPlaneView>("oklch");
+  const [states, setStates] = useState<GamutPlaneState[]>([
+    {
+      selection: { representationId: "oklch", editorId: "oklch-lc" },
+      checkedGamuts: [],
+      visibleGuides: [],
+    },
+    {
+      selection: { representationId: "oklab", editorId: "oklab-ab" },
+      checkedGamuts: [],
+      visibleGuides: [],
+    },
+  ]);
   return (
     <div>
       <button onClick={() => setHidden(!isHidden)}>Toggle visibility</button>
@@ -97,8 +108,12 @@ export function InstrumentHost({
             }}
           >
             <GamutPlane
-              {...(index === 0 ? { view, onViewChange: setView } : { defaultView: "oklab" })}
-              boundaryTarget={index === 0 ? "srgb" : "display-p3"}
+              state={states[index]!}
+              onStateChange={(next) =>
+                setStates((previous) =>
+                  previous.map((state, position) => (position === index ? next : state)),
+                )
+              }
               legend={<p data-legend>Host boundary legend</p>}
               value={color}
               onValueChange={(next) => {

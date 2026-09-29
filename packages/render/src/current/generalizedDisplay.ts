@@ -9,10 +9,31 @@ import type { GuideResolution } from "../capabilities/guideResolution.js";
 import { geometryToSvgPath } from "../geometry.js";
 import { currentField, type CurrentField } from "./field.js";
 import { currentEditableDetail, currentOklchObservation } from "./editableDetail.js";
-import type { CurrentGuideDisplay } from "./guideDisplay.js";
+
+export interface GeneralizedGuideDisplay {
+  readonly srgbPath: string | null;
+  readonly displayP3Path: string | null;
+  readonly hueIntervals: readonly Readonly<{
+    start: number;
+    end: number;
+    tone: "srgb" | "display-p3";
+  }>[];
+  readonly lightnessIntervals: readonly Readonly<{
+    start: number;
+    end: number;
+    tone: "srgb" | "display-p3";
+  }>[];
+  readonly chromaIntervals: readonly Readonly<{
+    start: number;
+    end: number;
+    tone: "srgb" | "display-p3";
+  }>[];
+}
 
 /** Only available guide forms reach visual serialization; requested failures stay in the revision. */
-export function generalizedGuideDisplay(guides: readonly GuideResolution[]): CurrentGuideDisplay {
+export function generalizedGuideDisplay(
+  guides: readonly GuideResolution[],
+): GeneralizedGuideDisplay {
   const display: {
     srgbPath: string | null;
     displayP3Path: string | null;
@@ -46,7 +67,7 @@ export function generalizedGuideDisplay(guides: readonly GuideResolution[]): Cur
       display.lightnessIntervals.push(
         ...forms.lightnessIntervals.value.map((interval) => ({ ...interval, tone })),
       );
-    if (row.support.editorId === "oklch-lc" && forms.chromaIntervals.kind === "available")
+    if (forms.chromaIntervals.kind === "available")
       display.chromaIntervals.push(
         ...forms.chromaIntervals.value.map((interval) => ({ ...interval, tone })),
       );
@@ -71,7 +92,7 @@ export function generalizedEditableDetail(
   field: FieldResolution,
 ): GeneralizedEditableDetail {
   if (field.kind !== "available") return { kind: "unavailable" };
-  const current = currentField(field.projection.plane, editor, field);
+  const current = currentField(editor, field);
   try {
     const oklch = currentOklchObservation(source, observation);
     return {

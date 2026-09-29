@@ -1,7 +1,10 @@
 import { normalizeHue } from "../color/types.js";
 import { authorPlaneEdit } from "../picker/edit.js";
 import { oklabCoordinatePlanePoint } from "../picker/keyboard.js";
-import type { EditOperationDefinitions } from "./types/editingDefinitions.js";
+import type { PlaneEditReference } from "../picker/edit.js";
+import type { PlanePoint } from "../picker/geometry.js";
+import type { ColorValue } from "../color/value.js";
+import type { EditOperationDefinitions, EditorDefinition } from "./types/editingDefinitions.js";
 
 export type { EditOperationDefinition, EditOperationId } from "./types/editingDefinitions.js";
 
@@ -67,3 +70,23 @@ export const editOperationDefinitions: EditOperationDefinitions = Object.freeze(
     author: authorPlaneEdit,
   }),
 });
+
+/** The selected editor binds point authorship; adapters never infer it from a representation. */
+export function authorEditorPoint(
+  value: ColorValue,
+  editor: EditorDefinition,
+  point: PlanePoint,
+  reference?: PlaneEditReference,
+) {
+  const operation = editOperationDefinitions[editor.pointOperationId];
+  switch (operation.id) {
+    case "oklch-lc-point":
+      return operation.author(value, {
+        ...operation.request,
+        point,
+        ...(reference ? { reference } : {}),
+      });
+    case "oklab-ab-point":
+      return operation.author(value, { ...operation.request, point });
+  }
+}

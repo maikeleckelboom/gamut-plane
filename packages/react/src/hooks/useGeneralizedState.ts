@@ -18,29 +18,19 @@ export interface GeneralizedStateProps {
   onStateChange?: ((state: GamutPlaneState) => void) | undefined;
 }
 
-export function useGeneralizedState(
-  props: GeneralizedStateProps,
-  generalized: boolean,
-  controlled: boolean,
-) {
-  const route = useRef(generalized);
+export function useGeneralizedState(props: GeneralizedStateProps, controlled: boolean) {
   const ownership = useRef(controlled);
-  if (route.current !== generalized)
-    throw new Error("GamutPlane state route cannot change during an instance lifetime");
-  if (generalized && ownership.current !== controlled)
+  if (ownership.current !== controlled)
     throw new Error("GamutPlane state ownership cannot change during an instance lifetime");
   const [local, setLocal] = useState<GamutPlaneState>(() =>
-    generalized
-      ? canonicalInstrumentState(
-          props.defaultState ?? initialInstrumentState<GuideId>(),
-          currentGuideIds,
-        )
-      : initialInstrumentState<GuideId>(),
+    canonicalInstrumentState(
+      props.defaultState ?? initialInstrumentState<GuideId>(),
+      currentGuideIds,
+    ),
   );
-  const accepted =
-    generalized && controlled ? canonicalInstrumentState(props.state, currentGuideIds) : local;
+  const accepted = controlled ? canonicalInstrumentState(props.state, currentGuideIds) : local;
   function request(nextInput: GamutPlaneState) {
-    if (!generalized || (controlled && !props.onStateChange)) return;
+    if (controlled && !props.onStateChange) return;
     const next = canonicalInstrumentState(nextInput, currentGuideIds);
     if (instrumentViewStatesEqual(accepted, next)) return;
     if (!controlled) setLocal(next);

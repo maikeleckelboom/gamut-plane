@@ -6,7 +6,6 @@ import type {
   RepresentationDefinition,
 } from "@gamut-plane/core/internal/capabilities";
 import {
-  currentEditorByView,
   currentPrimaryEditors,
   editorUi,
   representationUi,
@@ -49,8 +48,6 @@ const wrongCompanions: EditorUi = {
   ...editorUi["oklab-ab"],
   companions: editorUi["oklch-lc"].companions,
 };
-// @ts-expect-error metadata existence does not grant RGB primary admission
-void currentEditorByView.srgb;
 // @ts-expect-error product metadata is readonly
 editorUi["oklch-lc"].companions[0].step = 1;
 void [

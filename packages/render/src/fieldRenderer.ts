@@ -10,6 +10,8 @@ export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavai
 export type RenderedFieldQuality = "full" | "preview";
 export interface FieldRenderInput {
   plane: PickerPlaneFieldSampler;
+  /** Geometry/sampler identity, independent of representation-named legacy plane IDs. */
+  fieldId: string;
   fixed: number;
   pixelRatio: number;
   interactionPreview: boolean;
@@ -17,6 +19,16 @@ export interface FieldRenderInput {
 export interface FieldRenderer {
   draw(input: FieldRenderInput): RenderedFieldQuality;
   dispose(): void;
+}
+
+/** The sampler/geometry identity is part of the cache even when representation and axis agree. */
+export function fieldCacheKey(
+  input: FieldRenderInput,
+  size: Readonly<{ width: number; height: number; pixelRatio: number }>,
+  colorSpace: CanvasColorSpaceStatus,
+  quality: RenderedFieldQuality,
+): string {
+  return `${input.fieldId}:${size.width}:${size.height}:${size.pixelRatio}:${input.fixed}:${colorSpace}:${quality}`;
 }
 
 /** Create in committed lifecycle setup. Drawing is synchronous; adapters own scheduling. */
@@ -165,7 +177,12 @@ export function createFieldRenderer(
       ? getColumnPreviewContext(INTERACTION_PREVIEW_COLUMN_SAMPLES, backingHeight)
       : null;
     const fieldQuality: RenderedFieldQuality = previewContext ? "preview" : "full";
-    const fieldKey = `${plane.id}:${width}:${height}:${pixelRatio}:${fixed}:${canvasColorSpace}:${fieldQuality}`;
+    const fieldKey = fieldCacheKey(
+      input,
+      { width, height, pixelRatio },
+      canvasColorSpace,
+      fieldQuality,
+    );
     if (fieldKey === lastFieldKey) return quality;
 
     const color: OklchSample = { l: 0, c: 0, h: 0, alpha: 1 };

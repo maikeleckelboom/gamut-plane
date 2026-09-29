@@ -1,24 +1,17 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { currentTargetCopy, gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
+import { useLayoutEffect, useRef } from "react";
+import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import {
   channelSections,
-  channelThresholds,
-  channelWarning,
-  PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
   PICKER_SLIDER_FIELD_INSET,
   PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_THUMB_WIDTH,
-  PICKER_SLIDER_WARNING_TOP,
-  PICKER_WARNING_GLYPH_SIZE,
   type LinearControlInterval,
-  type LinearControlMarker,
 } from "@gamut-plane/render";
 import { useCommitted } from "../hooks/useCommitted.js";
 import { NumericInput } from "./NumericInput.js";
-import { GamutWarningGlyph } from "./GamutWarningGlyph.js";
 
 export interface ColorChannelControlProps {
   id: string;
@@ -31,13 +24,8 @@ export interface ColorChannelControlProps {
   precision: number;
   gradient: string;
   intervals: readonly LinearControlInterval[];
-  markers?: readonly LinearControlMarker[];
-  boundaryPreviewColor?: string;
-  boundaryPreviewTone?: LinearControlInterval["tone"];
   overflowMax?: boolean;
   help?: string | undefined;
-  warningVisible: boolean;
-  warningPosition: number;
   normalizeValue?: (value: number) => number;
   onInput: (value: number) => void;
   onComplete: (value: number) => void;
@@ -46,12 +34,10 @@ export interface ColorChannelControlProps {
 }
 
 const geometryStyle = {
-  "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
   "--picker-slider-track-height": `${PICKER_SLIDER_TRACK_HEIGHT}px`,
   "--picker-slider-thumb-top": `${PICKER_SLIDER_THUMB_TOP}px`,
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
-  "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
 
 export function ColorChannelControl(props: ColorChannelControlProps) {
@@ -66,53 +52,23 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     precision,
     gradient,
     intervals,
-    markers = [],
-    boundaryPreviewColor,
-    boundaryPreviewTone,
     overflowMax,
     help,
-    warningVisible,
-    warningPosition,
     onComplete,
     onCancel,
   } = props;
   const current = useCommitted({ ...props, onInteraction: props.onInteraction });
   const range = useRef<HTMLInputElement>(null);
-  const track = useRef<HTMLDivElement>(null);
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
-  const [width, setWidth] = useState(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
   const bounded = Math.min(max, Math.max(min, value));
   const sections = channelSections(intervals);
-  const boundaryPreviewSection = sections.find(
-    (section) => section.tone === boundaryPreviewTone && section.end < 1,
-  );
-  const thresholds = channelThresholds(sections);
-  const { placement, obstacles } = channelWarning(warningPosition, width, markers, thresholds);
   const helpId = help ? `${id}-help` : undefined;
-  const warningId = warningVisible ? `${id}-gamut-warning` : undefined;
-  const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
-  const warningStyle: CSSProperties & Record<string, string | number | undefined> = {
-    display: warningVisible ? undefined : "none",
-    "--picker-slider-warning-position": `${placement.positionPercent.toFixed(4)}%`,
-    "--picker-slider-warning-thumb-offset": `${placement.thumbOffset.toFixed(4)}px`,
-    "--picker-slider-warning-side-offset": `${placement.sideOffset}px`,
-    "--picker-slider-warning-edge": `${placement.edge}px`,
-  };
   useLayoutEffect(() => {
     const mounted = mountRange(range.current!, () => current.current!);
     binding.current = mounted;
-    const measure = () => {
-      const measured = track.current!.getBoundingClientRect().width;
-      if (measured > 0)
-        setWidth((previous) => (Math.abs(previous - measured) > 0.25 ? measured : previous));
-    };
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(track.current!);
-    measure();
     return () => {
       binding.current = null;
       mounted.dispose();
-      observer?.disconnect();
     };
   }, [current]);
   useLayoutEffect(() => {
@@ -126,7 +82,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
       data-gp-overflow={String(value < min || value > max)}
       data-picker-control={channel.toLowerCase()}
       data-instrument-overflow={String(value < min || value > max)}
-      data-warning-visible={String(warningVisible)}
       style={presentationStyle(geometryStyle)}
     >
       <header className="gpr-channel-control-header" data-gp-part={gpPart.channelHeader}>
@@ -137,7 +92,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
         <NumericInput
           className="gpr-channel-control-number"
           aria-label={`${label} numeric value`}
-          aria-describedby={describedBy}
+          aria-describedby={helpId}
           value={value}
           min={min}
           max={overflowMax ? undefined : max}
@@ -147,12 +102,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           onCancel={onCancel}
         />
       </header>
-      <div
-        ref={track}
-        className="gpr-channel-control-track"
-        data-gp-part={gpPart.channelTrack}
-        dir="ltr"
-      >
+      <div className="gpr-channel-control-track" data-gp-part={gpPart.channelTrack} dir="ltr">
         <span
           className="gpr-channel-control-field"
           data-gp-part={gpPart.channelField}
@@ -175,26 +125,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
             />
           ))}
         </span>
-        {markers.map((marker) => (
-          <span key={marker.id} className="gpr-sr-only" data-gp-visually-hidden="">
-            {marker.label}
-          </span>
-        ))}
-        <span
-          className="gpr-channel-control-warning"
-          data-gp-part={gpPart.warning}
-          data-gp-warning={String(warningVisible)}
-          style={warningStyle}
-          data-gamut-warning="linear"
-          data-warning-channel={channel.toLowerCase()}
-          data-warning-position={Math.min(1, Math.max(0, warningPosition))}
-          data-warning-side={placement.side}
-          data-warning-obstacle-count={obstacles.length}
-          data-visible={String(warningVisible)}
-          aria-hidden="true"
-        >
-          <GamutWarningGlyph />
-        </span>
         <input
           ref={range}
           id={id}
@@ -203,7 +133,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           dir="ltr"
           type="range"
           aria-label={label}
-          aria-describedby={describedBy}
+          aria-describedby={helpId}
           defaultValue={bounded}
           min={min}
           max={max}
@@ -223,29 +153,11 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
             event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
           }}
         />
-        {boundaryPreviewSection && boundaryPreviewColor && (
-          <span className="gpr-channel-control-boundary-preview-position" aria-hidden="true">
-            <span
-              className="gpr-channel-control-boundary-preview"
-              data-gp-part={gpPart.boundaryPreview}
-              style={{
-                left: `${boundaryPreviewSection.end * 100}%`,
-                background: boundaryPreviewColor,
-              }}
-              data-slider-boundary-preview=""
-            />
-          </span>
-        )}
       </div>
       {help && (
         <p id={helpId} className="gpr-channel-control-help">
           {help}
         </p>
-      )}
-      {warningId && (
-        <span id={warningId} className="gpr-sr-only" data-gp-visually-hidden="">
-          {currentTargetCopy.warning}
-        </span>
       )}
     </div>
   );

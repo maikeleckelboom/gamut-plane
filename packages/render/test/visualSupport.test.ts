@@ -9,9 +9,7 @@ import {
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
 import { fieldSupport } from "../src/capabilities/fieldSupport.js";
 import { guideDefinitions, guideSupport } from "../src/capabilities/guideSupport.js";
-import { currentGuideByGamut } from "../src/capabilities/currentView.js";
 import { PICKER_GAMUT_TABLES } from "../src/generated/gamutTables.js";
-import { getBoundaryPresentation } from "./fixtures/v03BoundaryPresentation.js";
 
 describe("render-owned current visual support", () => {
   it("binds exactly two core editors to the existing field samplers and core geometry", () => {
@@ -23,7 +21,6 @@ describe("render-owned current visual support", () => {
       const editor = editorDefinitions[support.editorId];
       expect(support.geometry).toBe(geometryDefinitions[editor.geometryId]);
       expect(support.plane.id).toBe(editor.representationId);
-      expect(support.plane.id).toBe(support.geometry.planeId);
       expect(support.plane.constrainPoint).toBe(support.geometry.constrain);
       expect(support.plane.isPointInInstrumentDomain).toBe(support.geometry.contains);
       expect(Object.isFrozen(support)).toBe(true);
@@ -35,14 +32,6 @@ describe("render-owned current visual support", () => {
       "oklch",
       "oklab",
     ]);
-  });
-
-  it("bridges only the current public views and gamut references", () => {
-    expect(currentGuideByGamut).toEqual({
-      srgb: "srgb-boundary",
-      "display-p3": "display-p3-boundary",
-    });
-    expect(Object.isFrozen(currentGuideByGamut)).toBe(true);
   });
 
   it("defines precisely the two sampled guides and their corresponding gamut/table", () => {
@@ -63,22 +52,12 @@ describe("render-owned current visual support", () => {
     ["oklch-lc", "display-p3-boundary", getHueGuideIntervals],
     ["oklab-ab", "srgb-boundary", null],
     ["oklab-ab", "display-p3-boundary", null],
-  ] as const)("proves %s / %s forms against current output", (editorId, guideId, hue) => {
+  ] as const)("binds %s / %s to the owner sampler", (editorId, guideId, hue) => {
     const row = guideSupport[editorId][guideId];
     const definition = guideDefinitions[guideId];
     const field = fieldSupport[editorId];
     const sample = { l: 0.62, c: 0.24, h: 270, alpha: 0.37 };
     const gamut = definition.table.gamut;
-    const presentation = getBoundaryPresentation(
-      sample,
-      field.plane.id,
-      gamut,
-      {
-        srgb: gamut === "srgb",
-        displayP3: gamut === "display-p3",
-      },
-      { srgb: "outside", displayP3: "outside" },
-    );
     expect(row.editorId).toBe(editorId);
     expect(row.guideId).toBe(guideId);
     expect(row.forms.contour.build).toBe(field.plane.buildGamutContour);
@@ -87,22 +66,11 @@ describe("render-owned current visual support", () => {
     expect(row.forms.lightnessIntervals).toBe(getLightnessGuideIntervals);
     expect(row.forms.chromaIntervals).toBe("oklch-maximum-chroma");
     expect(row.forms.reference).toBe(getPickerGuide);
-    expect(row.forms.targetMarker.requires).toBe("exact-outside");
-    expect(row.forms.targetMarker.position(presentation.targetGuide.color)).toEqual(
-      presentation.targetGuidePoint,
+    expect(row.forms.reference(sample, definition.table).gamut).toBe(gamut);
+    expect(row.forms.lightnessIntervals(definition.table, sample)).toEqual(
+      getLightnessGuideIntervals(definition.table, sample),
     );
-    expect(presentation.targetGuide).toEqual(row.forms.reference(sample, definition.table));
-    expect(presentation.hueIntervals).toEqual(
-      hue ? hue(definition.table, sample).map((interval) => ({ ...interval, tone: gamut })) : [],
-    );
-    expect(presentation.lightnessIntervals).toEqual(
-      row.forms
-        .lightnessIntervals(definition.table, sample)
-        .map((interval) => ({ ...interval, tone: gamut })),
-    );
-    expect(presentation.chromaIntervals).toHaveLength(1);
-    expect(presentation.markers).toHaveLength(1);
-    for (const object of [row, row.forms, row.forms.contour, row.forms.targetMarker])
+    for (const object of [row, row.forms, row.forms.contour])
       expect(Object.isFrozen(object)).toBe(true);
   });
 

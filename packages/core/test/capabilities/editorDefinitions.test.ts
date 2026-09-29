@@ -8,8 +8,6 @@ import { editOperationDefinitions } from "../../src/capabilities/editOperationDe
 import { geometryDefinitions } from "../../src/capabilities/geometryDefinitions.js";
 import { representationDefinitions } from "../../src/capabilities/representationDefinitions.js";
 import { definitionOf } from "../../src/color/value.js";
-import { projectColorToPlane } from "../../src/picker/edit.js";
-import { keyboardPlanePoint } from "../../src/picker/keyboard.js";
 import { OKLAB_AB_PLANE, OKLCH_LIGHTNESS_CHROMA_PLANE } from "../../src/picker/plane.js";
 import type { ColorResult } from "../../src/result.js";
 
@@ -79,11 +77,12 @@ describe("primary editor relations and geometry", () => {
   it("references the existing geometry authorities without bringing in their labels or samplers", () => {
     expect(Object.keys(geometryDefinitions)).toEqual(["oklch-lc-rectangle", "oklab-ab-disc"]);
     for (const geometry of Object.values(geometryDefinitions)) {
-      const plane = geometry.planeId === "oklch" ? OKLCH_LIGHTNESS_CHROMA_PLANE : OKLAB_AB_PLANE;
+      const plane =
+        geometry.representationId === "oklch" ? OKLCH_LIGHTNESS_CHROMA_PLANE : OKLAB_AB_PLANE;
       expect(geometry.constrain).toBe(plane.constrainPoint);
       expect(geometry.contains).toBe(plane.isPointInInstrumentDomain);
-      expect(geometry.project).toBe(projectColorToPlane);
-      expect(geometry.keyboard).toBe(keyboardPlanePoint);
+      expect(geometry.project).toBeTypeOf("function");
+      expect(geometry.keyboard).toBeTypeOf("function");
       expect(geometry.xDirection).toBe("increasing");
       expect(geometry.yDirection).toBe("decreasing");
       expect(geometry).not.toHaveProperty("sampleField");
@@ -104,7 +103,9 @@ describe("primary editor relations and geometry", () => {
         alpha: 0.3,
       }),
     );
-    const projected = value(geometry.project(source, geometry.planeId));
+    const projected = value(geometry.project(source));
+    expect(projected.geometryId).toBe(geometry.id);
+    expect(projected.channels).toEqual({ x: geometry.x, y: geometry.y, fixed: geometry.fixed });
     expect(projected.point).toEqual({ x: 0.5, y: 0.4 });
     expect(geometry.fromPoint(geometry.toPoint(0.75, 0.2))).toEqual({ l: 0.75, c: 0.2 });
     const point = geometry.keyboard(projected, "increase-x", true);
@@ -128,7 +129,9 @@ describe("primary editor relations and geometry", () => {
         alpha: -0,
       }),
     );
-    const projected = value(geometry.project(source, geometry.planeId));
+    const projected = value(geometry.project(source));
+    expect(projected.geometryId).toBe(geometry.id);
+    expect(projected.coordinates).toEqual({ x: 0.8, y: 0.24, fixed: 1.4 });
     expect(projected.point.x).toBeGreaterThan(1);
     expect(geometry.contains(projected.point)).toBe(false);
     expect(geometry.contains({ x: 1, y: 0 })).toBe(false);
@@ -145,9 +148,7 @@ describe("primary editor relations and geometry", () => {
     const constrained = value(
       operation.author(source, { ...operation.request, point: projected.point }),
     );
-    expect(geometry.contains(value(geometry.project(constrained, geometry.planeId)).point)).toBe(
-      true,
-    );
+    expect(geometry.contains(value(geometry.project(constrained)).point)).toBe(true);
     expect(definitionOf(source).channels[1]).toBe(0.8);
   });
 

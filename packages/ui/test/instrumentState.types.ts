@@ -22,6 +22,11 @@ const inventedEditor: InstrumentSelection = {
 };
 // @ts-expect-error an RGB representation has no admitted current editor
 const rgbEditor: InstrumentSelection = { representationId: "srgb", editorId: "oklch-lc" };
+const syntheticEditor: InstrumentSelection = {
+  representationId: "oklch",
+  // @ts-expect-error technical existence does not grant public product admission
+  editorId: "test-oklch-hc",
+};
 // @ts-expect-error arrays in accepted state are readonly
 state.checkedGamuts.push("srgb-gamut");
 // @ts-expect-error authored color is outside view state
@@ -37,4 +42,5 @@ void [
   mismatched,
   inventedEditor,
   rgbEditor,
+  syntheticEditor,
 ];

@@ -1,44 +1,23 @@
 # @gamut-plane/vue
 
-A Vue component for one authored `ColorValue`, with OKLCH and OKLab editors, four representation views, independent exact gamut checks and visual guides. The original two-view API remains available.
+A Vue instrument for one authored `ColorValue`. It selects the OKLCH lightness/chroma editor or the OKLab a/b editor, and can inspect OKLCH, OKLab, sRGB, or Display P3 without editing. Exact gamut checks and sampled guides are independent requests. This package is private and unpublished; Vue 3.5+ is a peer dependency.
 
-This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal `@gamut-plane/render` and `@gamut-plane/ui` packages, and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
-
-## Usage
+## Component API
 
 ```vue
 <script setup lang="ts">
 import { ref } from "vue";
 import { createColorValue } from "@gamut-plane/core";
-import { GamutPlane, type ColorValue, type DisplayGamut } from "@gamut-plane/vue";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
 const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!initial.ok) throw new Error("Invalid initial color");
 const color = ref<ColorValue>(initial.value);
-const boundaryTarget = ref<DisplayGamut>("srgb");
-</script>
-
-<template>
-  <GamutPlane v-model="color" :boundary-target="boundaryTarget" />
-</template>
-```
-
-## Generalized state
-
-Import `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId` and `GamutPlaneGuideId` from this package. State contains only an atomic representation/editor `selection`, `checkedGamuts` and `visibleGuides`. OKLCH and OKLab each permit their current editor or `editorId: null`; sRGB and Display P3 are inspection only.
-
-The following examples use the `color` ref from the usage example above.
-
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-import { GamutPlane, type GamutPlaneState } from "@gamut-plane/vue";
-
 const state = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
-  checkedGamuts: ["srgb-gamut"],
-  visibleGuides: ["srgb-boundary"],
+  checkedGamuts: [],
+  visibleGuides: [],
 });
 </script>
 
@@ -47,101 +26,28 @@ const state = ref<GamutPlaneState>({
 </template>
 ```
 
-The `state` / `update:state` route is parent-controlled: the component emits one complete canonical frozen request and displays it only after the parent supplies it. A `state` prop without an update handler is read-only. Use `defaultState` for local ownership; it initializes once, then the component accepts its own requests. Empty arrays remain empty.
+| API                      | Purpose                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `v-model`                | Required defining color; receives live edits.                                 |
+| `v-model:state`          | Parent-controlled complete selection, checks, and guides.                     |
+| `state`, `@update:state` | Explicit form of controlled state; without an update handler it is read-only. |
+| `defaultState`           | Initializes locally owned instrument state once.                              |
+| `@commit`, `@cancel`     | Edit completion and cancelled gesture/draft notifications.                    |
+| `@capability`            | Granted Canvas context: `pending`, `display-p3`, `srgb`, or `unavailable`.    |
+| `field-legend` slot      | Host content below the field.                                                 |
 
-```vue
-<GamutPlane
-  v-model="color"
-  :default-state="{
-    selection: { representationId: 'srgb', editorId: null },
-    checkedGamuts: [],
-    visibleGuides: ['srgb-boundary'],
-  }"
-/>
-```
+Import `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId`, and `GamutPlaneGuideId` from the package when needed. Import the stylesheet once. It inherits the host font and adapts to available width; `--gamut-plane-accent` is the supported customization property.
 
-The component includes representation, Edit coordinates, exact check and guide controls. Inspection shows three observed coordinates and alpha without a fake plane. A guide preference remains requested while no editor can show it, then becomes visible again on return to an editor. Checks and guides independently support zero, one or both requests. Exact rows distinguish `inside`, `within-tolerance`, `outside` and unavailable analysis. The inspection formatter is locale-independent, uses nine significant digits, preserves signed zero, and shows `missing` for null Hue. State-only changes never reauthor the `ColorValue`.
+The default local state selects `oklch-lc` with empty checks and guides. State is a complete atomic object. A request emits a frozen canonical state and becomes visible only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Empty arrays remain empty.
 
-Do not combine generalized state with `v-model:plane`, `plane`, `boundaryTarget` or legacy boundary-visibility props. Invalid shapes and IDs fail clearly. An instance cannot switch between controlled and local generalized ownership. Mapping, output destination and persistence are separate future or host workflows.
+The product admits `oklch-lc` for OKLCH and `oklab-ab` for OKLab. Each allows `editorId: null` for inspection; sRGB and Display P3 are inspection only. Technical capability existence alone does not admit an editor to the public product. The preferred editor is an initialization choice, not a forced replacement for valid explicit selection. The current UI shows one Edit coordinates toggle where an editor is admitted.
 
-## Component API
+Checks and guides can each request zero, one, or both gamuts. Exact results display sRGB then Display P3; canonical state arrays may use a different order. A guide preference remains selected in inspection and can reappear when an editor is selected. Unavailable observation, editor, and exact facts remain distinct. Inspection retains signed zero and missing Hue, uses locale-independent nine-significant-digit formatting, and never reauthors color.
 
-| API                          | Behavior                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| `v-model`                    | Required `ColorValue`; receives live color edits                                            |
-| `v-model:state`              | Parent-controlled `GamutPlaneState`; receives complete generalized requests                 |
-| `state`                      | Authoritative generalized state; read-only without `@update:state`                          |
-| `defaultState`               | Initialization-only locally owned generalized state                                         |
-| `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
-| `boundaryTarget`             | Controlled `DisplayGamut` sampled-guide target; defaults to `"srgb"`                        |
-| `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
-| `showDisplayP3Boundary`      | Boolean prop; defaults to `true`                                                            |
-| `@commit="onCommit"`         | Receives the color when an edit completes, for example to record undo history               |
-| `@cancel="onCancel"`         | Reports an aborted plane gesture or discarded numeric draft, with no payload                |
-| `@capability="onCapability"` | Reports `CanvasColorSpaceStatus`: `"pending"`, `"display-p3"`, `"srgb"`, or `"unavailable"` |
-| `field-legend` slot          | Places host content, such as boundary visibility controls, below the field                  |
-
-Import `DisplayGamut`, `GamutPlaneView` and `CanvasColorSpaceStatus` from the same package when needed. To control the view, initialize `ref<GamutPlaneView>("oklch")` and bind it with `v-model:plane`. View, target and visibility changes do not emit color updates or commits. Visibility props remove that gamut's field contour, accessible path, channel intervals and target-guide overlays. Exact status and the active target result remain available.
-
-Boundary target selects the sampled-guide reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut. Neither mutates the authored color or changes the other setting. The picker treats `within-tolerance` as visually contained; strict output policy remains separate.
-
-The `ColorValue` definition is authoritative. Changing coordinate view only observes it; real edits produce a new value defined in the edited plane. An absent neutral hue stays absent until a Hue edit establishes a direction. The field uses a presentation-only hue slice while direction is absent; chromatic OKLCH edits wait for a real Hue edit. Edits preserve alpha, and gamut guides do not clamp the authored color to a display gamut. Use `snapshotColor` and `restoreColor` from core at serialization boundaries.
-
-`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. The legacy two-view route requires that selected value to be numerically representable in both views. The generalized route presents unavailable observation, editor and exact facts in their own regions. Neither route silently clamps, maps, normalizes or replaces authored color.
-
-Cancelling a plane drag restores its starting color. A parent replacement or view change ends the gesture without rollback; interrupted native ranges retain published values. Numeric drafts apply on completion and discard on Escape. See the [interaction lifecycle](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md#interaction-lifecycle) for details.
-
-## Styling and embedding
-
-Import `@gamut-plane/vue/style.css` once. It supplies local dark surfaces, inherits the host font, and adapts to the component's available width. The app stylesheet is not required.
-
-Use `--gamut-plane-accent` for focus and selection emphasis:
-
-```vue
-<GamutPlane v-model="color" style="--gamut-plane-accent: oklch(0.8 0.12 180)" />
-```
-
-Internal classes and other custom properties are not a theme API. Instances have independent state and IDs. Separate Vue applications in one document should set distinct `app.config.idPrefix` values.
-
-## Rendering and validation
-
-Canvas may grant Display P3, fall back to sRGB, or be unavailable. The capability event describes the granted context, not the display hardware. Exact gamut status is independent of painted output. Modern CSS color support is required; without container queries, the layout stays in one column.
-
-The normal ESM entry imports in Node without browser globals. Server output includes controls, labels, authored values, markers and SVG gamut guides. The stylesheet reserves the square field before JavaScript. Hydration retains that DOM and the authored color; it does not emit changes, commits or cancellations. Canvas capability stays `pending` until mounted initialization. Canvas painting requires JavaScript; server rasterization and a no-JavaScript interactive picker are not provided.
+The defining `ColorValue` is authoritative. Selection and comparison changes only observe it. A deliberate edit creates a new value in the selected editor and preserves alpha. Display gamut guides do not clamp authored color. Hue-less neutrals need a real Hue edit before chromatic OKLCH editing; the numeric Chroma field can exceed the visible slider range.
 
 ## SSR and Nuxt
 
-Register the stylesheet using Nuxt's normal global CSS configuration:
+Register `@gamut-plane/vue/style.css` in Nuxt's normal `css` configuration. The ESM entry imports in Node without browser globals. Server output includes controls, values, marker, SVG guides when requested, and reserved field geometry. Canvas painting and observers begin after mount; hydration does not publish edits. Separate Vue applications sharing a document should use distinct `app.config.idPrefix` values. Serialize colors across process boundaries with core's `snapshotColor` and `restoreColor`.
 
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  css: ["@gamut-plane/vue/style.css"],
-});
-```
-
-Use the component with ordinary Vue state in a page or component:
-
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-import { createColorValue } from "@gamut-plane/core";
-import { GamutPlane, type ColorValue } from "@gamut-plane/vue";
-
-const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 0.37 });
-if (!initial.ok) throw new Error("Invalid initial color");
-const color = ref<ColorValue>(initial.value);
-</script>
-
-<template>
-  <GamutPlane v-model="color" />
-</template>
-```
-
-The same component supports both views and multiple instances. No client-only wrapper, custom transpilation, alias, hydration suppression or browser polyfill is required. Initialize state identically on server and client, as for any hydratable framework component. Each SSR request owns its state. IDs need to be unique within the document, not across unrelated requests.
-
-Tested environments: Node 24.16.0, pnpm 11.9.0, Vue 3.5.39 in the standalone packed consumer, and Nuxt 4.5.2 with Vue 3.5.42 / Vue Router 5.3.1 in the SSR fixture. The fixture locks its full dependency graph and verifies development diagnostics, production SSR and `nuxt generate`. Browser checks use Playwright 1.61.1 Chromium; other engines and physical devices need separate verification. Nuxt's own runtime minimum is 24.11 within Node 24; the package's Node 24 floor is unchanged.
-
-From the repository, run `pnpm build:packages`, `pnpm test:package` and `pnpm test:nuxt`. Both packed consumers install unpublished core, render and UI from their tarballs; registry installation is not verified. See [Testing](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/testing.md) and [Performance](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/performance.md).
-
-[MIT License](LICENSE).
+Vue uses VueUse for mounted browser resources. The packed Vue/Vite and Nuxt fixtures verify installed private tarballs, SSR, and hydration; they do not prove registry installation. See the [repository installation guide](../../README.md#install-local-packages), [testing guide](../../docs/testing.md), and [architecture](../../docs/architecture.md).

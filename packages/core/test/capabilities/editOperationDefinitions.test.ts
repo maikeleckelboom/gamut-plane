@@ -4,7 +4,7 @@ import { geometryDefinitions as geometries } from "../../src/capabilities/geomet
 import { representationDefinitions as representations } from "../../src/capabilities/representationDefinitions.js";
 import { normalizeHue } from "../../src/color/types.js";
 import { definitionOf, definingEquals } from "../../src/color/value.js";
-import { authorPlaneEdit } from "../../src/picker/edit.js";
+import { authorPlaneEdit, projectColorToPlane } from "../../src/picker/edit.js";
 import { oklabCoordinatePlanePoint } from "../../src/picker/keyboard.js";
 import type { ColorResult } from "../../src/result.js";
 
@@ -70,7 +70,7 @@ describe("existing semantic edit operations", () => {
       });
     }
     const geometry = geometries[point.geometryId];
-    const projection = value(geometry.project(source, geometry.planeId));
+    const projection = value(geometry.project(source));
     expect(projection.point.x).toBeGreaterThan(1);
     expect(geometry.contains(projection.point)).toBe(false);
     const bounded = value(point.author(source, { ...point.request, point: projection.point }));
@@ -165,9 +165,7 @@ describe("existing semantic edit operations", () => {
       alpha: 0.37,
     });
     const geometry = geometries["oklab-ab-disc"];
-    expect(geometry.contains(value(geometry.project(lightness, geometry.planeId)).point)).toBe(
-      false,
-    );
+    expect(geometry.contains(value(geometry.project(lightness)).point)).toBe(false);
   });
 
   it.each(["oklab.a", "oklab.b"] as const)(
@@ -182,7 +180,7 @@ describe("existing semantic edit operations", () => {
           alpha: 0.372913,
         }),
       );
-      const observation = value(geometry.project(source, geometry.planeId));
+      const observation = value(projectColorToPlane(source, "oklab"));
       const coordinate = operation.bindings[channelId];
       const point = operation.toPoint(observation, coordinate, 2);
       // Preclamping 2 to 0.4 before radial constraint gives a 0.32/0.24 vector.
@@ -192,7 +190,7 @@ describe("existing semantic edit operations", () => {
       expect(definition.alpha).toBe(0.372913);
       expect(definition.channels[coordinate === "a" ? 1 : 2]).toBeCloseTo(0.32, 14);
       expect(definition.channels[coordinate === "a" ? 2 : 1]).toBeCloseTo(0.24, 14);
-      expect(geometry.contains(value(geometry.project(next, geometry.planeId)).point)).toBe(true);
+      expect(geometry.contains(value(geometry.project(next)).point)).toBe(true);
       expect(point).toEqual(operation.toPoint(observation, coordinate, geometry.domain.radius));
       expect(() => operation.toPoint(observation, coordinate, Infinity)).toThrow(
         "OKLab coordinate must be finite",

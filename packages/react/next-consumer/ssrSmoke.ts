@@ -3,7 +3,7 @@ import { readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { createElement as h, StrictMode } from "react";
 import { renderToString } from "react-dom/server";
-import { GamutPlane, type ColorValue } from "@gamut-plane/react";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/react";
 import { createColorValue, definingEquals, restoreColor, snapshotColor } from "@gamut-plane/core";
 
 for (const key of [
@@ -31,6 +31,11 @@ const entry = readFileSync(new URL(import.meta.resolve("@gamut-plane/react")), "
 assert.match(entry, /^"use client";/);
 assert.doesNotMatch(entry, /import\s*["'][^"']+\.css["']/);
 let events = 0;
+const alternateState: GamutPlaneState = {
+  selection: { representationId: "oklab", editorId: "oklab-ab" },
+  checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
+  visibleGuides: ["srgb-boundary", "display-p3-boundary"],
+};
 function render(value: ColorValue) {
   return renderToString(
     h(
@@ -42,7 +47,7 @@ function render(value: ColorValue) {
         ...[0, 1].map((key) =>
           h(GamutPlane, {
             key,
-            ...(key === 0 ? { view: "oklch" as const } : { defaultView: "oklab" as const }),
+            ...(key === 1 ? { defaultState: alternateState } : {}),
             legend: h("p", null, "SSR legend"),
             value,
             onValueChange: () => events++,
@@ -72,7 +77,7 @@ const [html, second, repeated] = await Promise.all([
 assert.equal(html, repeated);
 assert.notEqual(html, second);
 assert.equal(events, 0);
-assert.ok(html.includes("data-boundary-target-result"));
+assert.ok(html.includes('data-gp-part="exact-result"'));
 assert.ok(html.includes("OKLab a numeric value"));
 assert.ok(html.includes("SSR legend"));
 assert.equal(snapshotColor(first).channels[1], 0.52345678);
@@ -81,7 +86,7 @@ for (const markup of [html, second]) {
   assert.equal((markup.match(/data-render-color-space="pending"/g) ?? []).length, 2);
   assert.equal((markup.match(/data-active-marker/g) ?? []).length, 2);
   for (const gamut of ["srgb", "display-p3"])
-    assert.equal((markup.match(new RegExp(`data-gamut-boundary="${gamut}"`, "g")) ?? []).length, 2);
+    assert.equal((markup.match(new RegExp(`data-gamut-boundary="${gamut}"`, "g")) ?? []).length, 1);
   const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(new Set(ids).size, ids.length);
 }

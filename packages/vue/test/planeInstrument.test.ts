@@ -19,7 +19,7 @@ function emitted(
 
 describe("Vue ColorValue instrument", () => {
   it.each([false, true])(
-    "view change clears %s Hue preview work without stale range callbacks",
+    "editor change clears %s Hue preview work without stale range callbacks",
     async (published) => {
       const frames = installAnimationFrameController();
       vi.spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect").mockReturnValue({
@@ -51,13 +51,13 @@ describe("Vue ColorValue instrument", () => {
         await flushPromises();
         expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("preview");
       }
-      await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+      await wrapper.get("select").setValue("oklab");
       frames.flush();
       await flushPromises();
       expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
       expect(emitted(wrapper, "update:modelValue")).toHaveLength(published ? 1 : 0);
       expect(emitted(wrapper, "commit")).toHaveLength(0);
-      await wrapper.get('[data-plane-option="oklch"]').trigger("click");
+      await wrapper.get("select").setValue("oklch");
       frames.flush();
       await flushPromises();
       expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
@@ -72,7 +72,7 @@ describe("Vue ColorValue instrument", () => {
       props: { modelValue: value.value },
     });
     await flushPromises();
-    await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+    await wrapper.get("select").setValue("oklab");
     expect(wrapper.get("[data-plane-instrument]").attributes("data-active-plane")).toBe("oklab");
     expect(emitted(wrapper, "update:modelValue")).toHaveLength(0);
     expect(emitted(wrapper, "commit")).toHaveLength(0);
@@ -94,7 +94,7 @@ describe("Vue ColorValue instrument", () => {
     expect(definitionOf(oklch).space).toBe("oklch");
     expect(definitionOf(oklch).channels[1]).toBe(0.25);
     await wrapper.setProps({ modelValue: oklch });
-    await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+    await wrapper.get("select").setValue("oklab");
     const coordinate = wrapper.get('[data-oklab-coordinate="a"]');
     (coordinate.element as HTMLInputElement).value = "-0.13";
     await coordinate.trigger("input");
@@ -130,22 +130,29 @@ describe("Vue ColorValue instrument", () => {
     wrapper.unmount();
   });
 
-  it("keeps target and guide visibility observational", async () => {
+  it("keeps check and guide preferences observational", async () => {
     const wrapper = mount(GamutPlane, {
       attachTo: document.body,
-      props: { modelValue: color(0.62, 0.42, 30) },
+      props: {
+        modelValue: color(0.62, 0.42, 30),
+        state: {
+          selection: { representationId: "oklch", editorId: "oklch-lc" },
+          checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+          visibleGuides: ["display-p3-boundary", "srgb-boundary"],
+        },
+      },
     });
     await flushPromises();
     expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(2);
     await wrapper.setProps({
-      boundaryTarget: "display-p3",
-      showSrgbBoundary: false,
-      showDisplayP3Boundary: false,
+      state: {
+        selection: { representationId: "oklch", editorId: "oklch-lc" },
+        checkedGamuts: [],
+        visibleGuides: [],
+      },
     });
     expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(0);
-    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
-      "display-p3",
-    );
+    expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(0);
     expect(emitted(wrapper, "update:modelValue")).toHaveLength(0);
     wrapper.unmount();
   });

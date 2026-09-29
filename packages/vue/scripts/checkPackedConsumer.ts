@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cp, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -66,8 +66,6 @@ try {
       for (const publicName of [
         "GamutPlane",
         "ColorValue",
-        "DisplayGamut",
-        "GamutPlaneView",
         "GamutPlaneSelection",
         "GamutPlaneGamutId",
         "GamutPlaneGuideId",
@@ -94,7 +92,13 @@ try {
   assert.equal(uiCss, await readFile(resolve(packageRoot, "../ui/src/style.css"), "utf8"));
   assert.match(uiCss, /\[data-gp-root\]/);
 
-  await cp(join(packageRoot, "consumer"), consumer, { recursive: true });
+  await cp(join(packageRoot, "consumer"), consumer, {
+    recursive: true,
+    filter: (source) =>
+      !["node_modules", "dist", "artifacts", "playwright-report", "test-results"].includes(
+        basename(source),
+      ),
+  });
   await cp(join(packageRoot, "e2e"), join(consumer, "e2e"), { recursive: true });
   const manifestPath = join(consumer, "package.json");
   const hostManifest = JSON.parse(await readFile(manifestPath, "utf8"));

@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { createSSRApp, h } from "vue";
 import { renderToString } from "vue/server-renderer";
-import { GamutPlane, type ColorValue, type GamutPlaneView } from "@gamut-plane/vue";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/vue";
 import { createColorValue, definingEquals, restoreColor, snapshotColor } from "@gamut-plane/core";
 
 assert.equal(typeof window, "undefined");
@@ -35,7 +35,10 @@ const fixture = createColorValue({
 if (!fixture.ok) throw new Error("Invalid SSR color");
 const color = fixture.value;
 const original = snapshotColor(color);
-for (const plane of ["oklch", "oklab"] satisfies GamutPlaneView[]) {
+for (const selection of [
+  { representationId: "oklch", editorId: "oklch-lc" },
+  { representationId: "oklab", editorId: "oklab-ab" },
+] as const satisfies readonly GamutPlaneState["selection"][]) {
   let events = 0;
   const app = createSSRApp({
     render: () =>
@@ -44,7 +47,11 @@ for (const plane of ["oklch", "oklab"] satisfies GamutPlaneView[]) {
         [0, 1].map(() =>
           h(GamutPlane, {
             modelValue: color,
-            plane,
+            state: {
+              selection,
+              checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
+              visibleGuides: ["srgb-boundary", "display-p3-boundary"],
+            },
             "onUpdate:modelValue": () => events++,
             onCommit: () => events++,
             onCancel: () => events++,
@@ -59,7 +66,11 @@ for (const plane of ["oklch", "oklab"] satisfies GamutPlaneView[]) {
   assert.equal((html.match(/data-active-marker/g) ?? []).length, 2);
   assert.equal((html.match(/data-gamut-boundary="srgb"/g) ?? []).length, 2);
   assert.equal((html.match(/data-gamut-boundary="display-p3"/g) ?? []).length, 2);
-  assert.ok(html.includes(`aria-label="${plane === "oklab" ? "OKLab a/b" : "OKLCH"} plane.`));
+  assert.ok(
+    html.includes(
+      `aria-label="${selection.editorId === "oklab-ab" ? "OKLab a/b" : "OKLCH"} plane.`,
+    ),
+  );
   assert.ok(html.includes('type="number"'));
   assert.ok(html.includes('value="0.6800"'));
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
@@ -85,4 +96,4 @@ assert.equal(
 );
 assert.notEqual(first, second);
 assert.ok(second.includes('value="0.2100"'));
-console.log("Packed ESM import and two-instance SSR passed in both views without DOM globals.");
+console.log("Packed ESM import and generalized two-instance SSR passed without DOM globals.");

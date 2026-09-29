@@ -1,12 +1,9 @@
-import type { ColorSpaceId } from "../../color/representation.js";
+import type { ColorRepresentation, ColorSpaceId } from "../../color/representation.js";
+import type { ConversionError } from "../../color/represent.js";
 import type { normalizeHue } from "../../color/types.js";
 import type { ColorValue } from "../../color/value.js";
-import type {
-  authorPlaneEdit,
-  ColorPlaneEdit,
-  ColorPlaneProjection,
-  projectColorToPlane,
-} from "../../picker/edit.js";
+import type { ColorResult } from "../../result.js";
+import type { authorPlaneEdit, ColorPlaneEdit } from "../../picker/edit.js";
 import type {
   oklabCoordinatesFromPlanePoint,
   oklabCoordinatesToPlanePoint,
@@ -19,46 +16,79 @@ import type {
   oklabCoordinatePlanePoint,
   PickerPlaneKeyboardAction,
 } from "../../picker/keyboard.js";
+import type { ChannelDefinition } from "./representationDefinitions.js";
 
-interface GeometryContexts {
-  readonly oklch: Readonly<{
-    id: "oklch-lc-rectangle";
-    x: "oklch.c";
-    y: "oklch.l";
-    fixed: "oklch.h";
-    domain: Readonly<{ kind: "rectangle"; lightness: readonly [0, 1]; maximumChroma: number }>;
-    toPoint: typeof oklchCoordinatesToPlanePoint;
-    fromPoint: typeof oklchCoordinatesFromPlanePoint;
-  }>;
-  readonly oklab: Readonly<{
-    id: "oklab-ab-disc";
-    x: "oklab.a";
-    y: "oklab.b";
-    fixed: "oklab.l";
-    domain: Readonly<{ kind: "disc"; radius: number }>;
-    toPoint: typeof oklabCoordinatesToPlanePoint;
-    fromPoint: typeof oklabCoordinatesFromPlanePoint;
-  }>;
-}
+type ChannelOf<R extends ColorSpaceId> = Extract<ChannelDefinition, { representationId: R }>["id"];
 
-export type GeometryDefinition<S extends PickerPlaneId = PickerPlaneId> = {
-  [P in S]: GeometryContexts[P] &
-    Readonly<{
-      representationId: P;
-      planeId: P;
-      xDirection: "increasing";
-      yDirection: "decreasing";
-      /** Projection is raw; only an explicit edit/presentation constraint bounds it. */
-      project: typeof projectColorToPlane<P>;
-      keyboard: (
-        projection: ColorPlaneProjection<P>,
-        action: PickerPlaneKeyboardAction,
-        coarse: boolean,
-      ) => PlanePoint;
-      constrain: (point: PlanePoint) => PlanePoint;
-      contains: (point: PlanePoint) => boolean;
-    }>;
-}[S];
+export type GeometryProjection<
+  R extends ColorSpaceId = ColorSpaceId,
+  G extends string = string,
+  X extends string = string,
+  Y extends string = string,
+  F extends string = string,
+> = Readonly<{
+  representationId: R;
+  geometryId: G;
+  representation: ColorRepresentation<R>;
+  point: PlanePoint;
+  coordinates: Readonly<{ x: number | null; y: number | null; fixed: number | null }>;
+  channels: Readonly<{ x: X; y: Y; fixed: F }>;
+}>;
+
+/** A geometry is a coordinate binding, independent of its representation and renderer. */
+export type GeometryContract<
+  R extends ColorSpaceId,
+  G extends string,
+  X extends ChannelOf<R>,
+  Y extends ChannelOf<R>,
+  F extends ChannelOf<R>,
+  Domain,
+  ToPoint,
+  FromPoint,
+> = Readonly<{
+  id: G;
+  representationId: R;
+  x: X;
+  y: Y;
+  fixed: F;
+  xDirection: "increasing" | "decreasing";
+  yDirection: "increasing" | "decreasing";
+  domain: Domain;
+  toPoint: ToPoint;
+  fromPoint: FromPoint;
+  project: (value: ColorValue) => ColorResult<GeometryProjection<R, G, X, Y, F>, ConversionError>;
+  keyboard: (
+    projection: GeometryProjection<R, G, X, Y, F>,
+    action: PickerPlaneKeyboardAction,
+    coarse: boolean,
+  ) => PlanePoint;
+  constrain: (point: PlanePoint) => PlanePoint;
+  contains: (point: PlanePoint) => boolean;
+  /** null means the raw fixed coordinate cannot sample this editing geometry. */
+  samplingFixed: (fixed: number | null) => number | null;
+}>;
+
+export type GeometryDefinition =
+  | GeometryContract<
+      "oklch",
+      "oklch-lc-rectangle",
+      "oklch.c",
+      "oklch.l",
+      "oklch.h",
+      Readonly<{ kind: "rectangle"; lightness: readonly [0, 1]; maximumChroma: number }>,
+      typeof oklchCoordinatesToPlanePoint,
+      typeof oklchCoordinatesFromPlanePoint
+    >
+  | GeometryContract<
+      "oklab",
+      "oklab-ab-disc",
+      "oklab.a",
+      "oklab.b",
+      "oklab.l",
+      Readonly<{ kind: "disc"; radius: number }>,
+      typeof oklabCoordinatesToPlanePoint,
+      typeof oklabCoordinatesFromPlanePoint
+    >;
 
 export type GeometryId = GeometryDefinition["id"];
 export type GeometryDefinitions = { readonly [G in GeometryDefinition as G["id"]]: G };
@@ -72,7 +102,7 @@ type Author<Request> = (value: ColorValue, request: Request) => ReturnType<typeo
 type DirectEdit<S extends PickerPlaneId, K extends ColorPlaneEdit["kind"]> = Readonly<{
   representationId: S;
   kind: K extends "channels" ? "channel-patch" : "point";
-  geometryId: K extends "point" ? GeometryDefinition<S>["id"] : null;
+  geometryId: K extends "point" ? Extract<GeometryDefinition, { representationId: S }>["id"] : null;
   request: Readonly<{ plane: S; kind: K }>;
   author: Author<EditRequest<S, K>>;
 }>;
@@ -109,22 +139,21 @@ export type EditOperationDefinitions = {
 export type EditOperationId = keyof EditOperationDefinitions;
 export type EditOperationDefinition = EditOperationDefinitions[EditOperationId];
 
-interface PrimaryEditorIds {
-  readonly oklch: "oklch-lc";
-  readonly oklab: "oklab-ab";
-}
+export type EditorContract<
+  R extends ColorSpaceId,
+  E extends string,
+  G extends string,
+  O extends string,
+> = Readonly<{
+  id: E;
+  representationId: R;
+  geometryId: G;
+  pointOperationId: O;
+}>;
 
-export type EditorDefinition = {
-  [S in PickerPlaneId]: Readonly<{
-    id: PrimaryEditorIds[S];
-    representationId: S;
-    geometryId: GeometryDefinition<S>["id"];
-    pointOperationId: Extract<
-      EditOperationDefinition,
-      { kind: "point"; representationId: S }
-    >["id"];
-  }>;
-}[PickerPlaneId];
+export type EditorDefinition =
+  | EditorContract<"oklch", "oklch-lc", "oklch-lc-rectangle", "oklch-lc-point">
+  | EditorContract<"oklab", "oklab-ab", "oklab-ab-disc", "oklab-ab-point">;
 
 export type EditorId = EditorDefinition["id"];
 export type EditorDefinitions = { readonly [E in EditorDefinition as E["id"]]: E };

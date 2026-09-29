@@ -3,11 +3,8 @@ import { createSSRApp, h, nextTick } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { describe, expect, it, vi } from "vitest";
 import { createColorValue, definitionOf } from "@gamut-plane/core";
-import { currentTargetVisual } from "@gamut-plane/render/internal/current";
 import type { GamutPlaneState } from "../src/index.js";
 import GamutPlane from "../src/components/GamutPlane.vue";
-
-vi.mock("@gamut-plane/render/internal/current", { spy: true });
 
 const valueResult = createColorValue({ space: "oklch", channels: [0.62, 0.2, 45], alpha: 0.37 });
 if (!valueResult.ok) throw new Error("Invalid fixture");
@@ -32,7 +29,6 @@ describe("Vue public generalized instrument", () => {
       props: { modelValue: value, state: observed, "onUpdate:state": requests },
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    expect(currentTargetVisual).not.toHaveBeenCalled();
     await wrapper.get("select").setValue("oklch");
     expect(requests).toHaveBeenCalledOnce();
     expect(requests.mock.calls[0]?.[0].selection).toEqual({
@@ -64,13 +60,12 @@ describe("Vue public generalized instrument", () => {
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
     expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(true);
     expect(wrapper.find("[data-boundary-target-result]").exists()).toBe(false);
-    expect(currentTargetVisual).not.toHaveBeenCalled();
     await wrapper.setProps({ defaultState: observed });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
     wrapper.unmount();
   });
 
-  it("keeps controlled state read-only and rejects invalid or mixed routes", () => {
+  it("keeps controlled state read-only and rejects invalid state", () => {
     const wrapper = mount(GamutPlane, { props: { modelValue: value, state: observed } });
     expect((wrapper.get("select").element as HTMLSelectElement).disabled).toBe(true);
     expect(
@@ -79,9 +74,6 @@ describe("Vue public generalized instrument", () => {
         .every((input) => (input.element as HTMLInputElement).disabled),
     ).toBe(true);
     wrapper.unmount();
-    expect(() =>
-      mount(GamutPlane, { props: { modelValue: value, state: observed, plane: "oklch" } }),
-    ).toThrow("cannot mix");
     expect(() =>
       mount(GamutPlane, {
         props: { modelValue: value, state: { ...observed, visibleGuides: ["unknown"] } },

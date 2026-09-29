@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { createColorValue, represent, snapshotColor } from "@gamut-plane/core";
-import { GamutPlane, type ColorValue, type GamutPlaneView } from "@gamut-plane/vue";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/vue";
 
 function color(l: number, c: number, h: number, alpha: number): ColorValue {
   const result = createColorValue({ space: "oklch", channels: [l, c, h], alpha });
@@ -26,7 +26,18 @@ function observedReadout(value: ColorValue) {
   const [l, c, h] = result.value.channels;
   return { l, c, h, alpha: result.value.alpha };
 }
-const views: GamutPlaneView[] = ["oklch", "oklab"];
+const states = ref<GamutPlaneState[]>([
+  {
+    selection: { representationId: "oklch", editorId: "oklch-lc" },
+    checkedGamuts: [],
+    visibleGuides: [],
+  },
+  {
+    selection: { representationId: "oklab", editorId: "oklab-ab" },
+    checkedGamuts: [],
+    visibleGuides: [],
+  },
+]);
 const hidden = ref(Boolean(route.query.hidden));
 const narrow = ref(Boolean(route.query.narrow));
 </script>
@@ -36,9 +47,9 @@ const narrow = ref(Boolean(route.query.narrow));
     <button @click="hidden = !hidden">Toggle visibility</button>
     <button @click="narrow = !narrow">Resize hosts</button>
     <div
-      v-for="(view, index) in views"
-      :key="view"
-      :data-host="view"
+      v-for="(state, index) in states"
+      :key="index"
+      :data-host="state.selection.representationId"
       :style="{
         width: narrow ? '280px' : '760px',
         maxWidth: '100%',
@@ -47,8 +58,8 @@ const narrow = ref(Boolean(route.query.narrow));
     >
       <GamutPlane
         v-model="colors[index]!"
-        :plane="view"
-        :boundary-target="index === 0 ? 'srgb' : 'display-p3'"
+        :state="state"
+        @update:state="states[index] = $event"
         @update:model-value="events.changes++"
         @commit="events.commits++"
         @cancel="events.cancels++"

@@ -28,12 +28,10 @@ it("resolves a real guide relation without Canvas field support, and reports a d
     field: null,
   });
   expect(resolveField(created.value, noField)).toEqual({ kind: "field-unsupported" });
-  const withoutField = resolveRequestedGuides(
-    created.value,
-    noField,
-    ["srgb-boundary", "display-p3-boundary"],
-    [],
-  );
+  const withoutField = resolveRequestedGuides(created.value, noField, [
+    "srgb-boundary",
+    "display-p3-boundary",
+  ]);
   expect(withoutField[0]).toMatchObject({
     guideId: "srgb-boundary",
     kind: "resolved",
@@ -42,19 +40,16 @@ it("resolves a real guide relation without Canvas field support, and reports a d
       reference: { kind: "available" },
       lightnessIntervals: { kind: "available" },
       chromaIntervals: { kind: "available" },
-      targetMarker: { kind: "check-not-requested" },
     },
   });
   expect(withoutField[1]).toMatchObject({
     guideId: "display-p3-boundary",
     kind: "resolved",
   });
-  const rows = resolveRequestedGuides(
-    created.value,
-    resolveEditorVisualSupport("oklch-lc"),
-    ["display-p3-boundary", "srgb-boundary"],
-    [],
-  );
+  const rows = resolveRequestedGuides(created.value, resolveEditorVisualSupport("oklch-lc"), [
+    "display-p3-boundary",
+    "srgb-boundary",
+  ]);
   expect(rows[0]).toEqual({ guideId: "display-p3-boundary", kind: "no-guide-for-editor" });
   expect(rows[1]).toMatchObject({ guideId: "srgb-boundary", kind: "resolved" });
 });

@@ -1,27 +1,16 @@
 <script setup lang="ts">
 import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
-import { useResizeObserver } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import NumericInput from "./NumericInput.vue";
-import GamutWarningGlyph from "./GamutWarningGlyph.vue";
 import {
-  PICKER_SLIDER_DEFAULT_TRACK_WIDTH,
   PICKER_SLIDER_FIELD_INSET,
   PICKER_SLIDER_TRACK_HEIGHT,
   PICKER_SLIDER_THUMB_TOP,
   PICKER_SLIDER_THUMB_WIDTH,
-  PICKER_SLIDER_WARNING_TOP,
-  PICKER_WARNING_GLYPH_SIZE,
 } from "@gamut-plane/render";
-import {
-  channelSections,
-  channelThresholds,
-  channelWarning,
-  type LinearControlInterval,
-  type LinearControlMarker,
-} from "@gamut-plane/render";
-export type { LinearControlInterval, LinearControlMarker } from "@gamut-plane/render";
+import { channelSections, type LinearControlInterval } from "@gamut-plane/render";
+export type { LinearControlInterval } from "@gamut-plane/render";
 
 const props = withDefaults(
   defineProps<{
@@ -35,25 +24,15 @@ const props = withDefaults(
     gradient: string;
     normalizeValue?: (value: number) => number;
     precision?: number;
-    markers?: LinearControlMarker[];
-    intervals?: LinearControlInterval[];
-    boundaryPreviewColor?: string;
-    boundaryPreviewTone?: LinearControlInterval["tone"];
+    intervals?: readonly LinearControlInterval[];
     overflowMax?: boolean;
     help?: string;
-    warningVisible?: boolean;
-    warningLabel?: string;
-    warningPosition?: number;
   }>(),
   {
     precision: 3,
-    markers: () => [],
     intervals: () => [],
     overflowMax: false,
     help: "",
-    warningVisible: false,
-    warningLabel: "",
-    warningPosition: 0,
   },
 );
 
@@ -65,61 +44,21 @@ const emit = defineEmits<{
 }>();
 
 const helpId = computed(() => (props.help ? `${props.id}-help` : undefined));
-const warningDescriptionId = computed(() =>
-  props.warningVisible && props.warningLabel ? `${props.id}-gamut-warning` : undefined,
-);
-const describedBy = computed(
-  () => [helpId.value, warningDescriptionId.value].filter(Boolean).join(" ") || undefined,
-);
 const boundedModelValue = computed(() => clamp(props.modelValue));
 const isOutsideInstrument = computed(
   () => props.modelValue < props.min || props.modelValue > props.max,
 );
 const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
-const trackElement = ref<HTMLElement>();
 const rangeElement = ref<HTMLInputElement>();
-const trackWidth = ref(PICKER_SLIDER_DEFAULT_TRACK_WIDTH);
 const displayedRangeValue = ref(boundedModelValue.value);
 let rangeBinding: ReturnType<typeof mountRange> | undefined;
 const instrumentStyle = {
-  "--picker-warning-size": `${PICKER_WARNING_GLYPH_SIZE}px`,
   "--picker-slider-field-inset": `${PICKER_SLIDER_FIELD_INSET}px`,
   "--picker-slider-track-height": `${PICKER_SLIDER_TRACK_HEIGHT}px`,
   "--picker-slider-thumb-top": `${PICKER_SLIDER_THUMB_TOP}px`,
   "--picker-slider-thumb-width": `${PICKER_SLIDER_THUMB_WIDTH}px`,
-  "--picker-slider-warning-top": `${PICKER_SLIDER_WARNING_TOP}px`,
 };
 const guideSections = computed(() => channelSections(props.intervals));
-const boundaryPreviewSection = computed(() =>
-  guideSections.value.find(
-    (section) => section.tone === props.boundaryPreviewTone && section.end < 1,
-  ),
-);
-const guideThresholds = computed(() => channelThresholds(guideSections.value));
-const warning = computed(() =>
-  channelWarning(props.warningPosition, trackWidth.value, props.markers, guideThresholds.value),
-);
-const warningPlacement = computed(() => warning.value.placement);
-const warningObstacles = computed(() => warning.value.obstacles);
-const warningStyle = computed<Record<string, string>>(() => {
-  const position = warningPlacement.value;
-  return {
-    "--picker-slider-warning-position": `${position.positionPercent.toFixed(4)}%`,
-    "--picker-slider-warning-thumb-offset": `${position.thumbOffset.toFixed(4)}px`,
-    "--picker-slider-warning-side-offset": `${position.sideOffset}px`,
-    "--picker-slider-warning-edge": `${position.edge}px`,
-  };
-});
-
-function updateTrackWidth(width: number): void {
-  if (width > 0 && Math.abs(width - trackWidth.value) > 0.25) trackWidth.value = width;
-}
-
-function updateTrackBounds(): void {
-  const bounds = trackElement.value?.getBoundingClientRect();
-  if (!bounds) return;
-  updateTrackWidth(bounds.width);
-}
 
 onMounted(() => {
   rangeBinding = mountRange(rangeElement.value!, () => ({
@@ -134,10 +73,6 @@ onMounted(() => {
     },
     onInteraction: (active) => emit("range-interaction", active),
   }));
-  updateTrackBounds();
-  useResizeObserver(trackElement, ([entry]) => {
-    if (entry) updateTrackWidth(entry.contentRect.width);
-  });
 });
 
 function clamp(value: number): number {
@@ -183,7 +118,6 @@ onBeforeUnmount(() => {
     :data-gp-overflow="String(isOutsideInstrument)"
     :data-picker-control="channel.toLowerCase()"
     :data-instrument-overflow="isOutsideInstrument ? 'true' : 'false'"
-    :data-warning-visible="warningVisible ? 'true' : 'false'"
     :style="instrumentStyle"
   >
     <header class="channel-control__header" :data-gp-part="gpPart.channelHeader">
@@ -194,7 +128,7 @@ onBeforeUnmount(() => {
       <NumericInput
         class="channel-control__number"
         :aria-label="`${label} numeric value`"
-        :aria-describedby="describedBy"
+        :aria-describedby="helpId"
         :model-value="modelValue"
         :precision="precision"
         :min="min"
@@ -206,12 +140,7 @@ onBeforeUnmount(() => {
       />
     </header>
 
-    <div
-      ref="trackElement"
-      class="channel-control__track"
-      :data-gp-part="gpPart.channelTrack"
-      @pointerenter="updateTrackBounds"
-    >
+    <div class="channel-control__track" :data-gp-part="gpPart.channelTrack">
       <span
         class="channel-control__field"
         :data-gp-part="gpPart.channelField"
@@ -231,32 +160,13 @@ onBeforeUnmount(() => {
           :data-range-end="section.end"
         />
       </span>
-      <span v-for="marker in markers" :key="marker.id" class="sr-only" data-gp-visually-hidden>{{
-        marker.label
-      }}</span>
-      <span
-        v-show="warningVisible"
-        class="channel-control__warning"
-        :data-gp-part="gpPart.warning"
-        :data-gp-warning="String(warningVisible)"
-        :style="warningStyle"
-        data-gamut-warning="linear"
-        :data-warning-channel="channel.toLowerCase()"
-        :data-warning-position="Math.min(1, Math.max(0, warningPosition))"
-        :data-warning-side="warningPlacement.side"
-        :data-warning-obstacle-count="warningObstacles.length"
-        :data-visible="warningVisible ? 'true' : 'false'"
-        aria-hidden="true"
-      >
-        <GamutWarningGlyph />
-      </span>
       <input
         ref="rangeElement"
         :id="id"
         class="channel-control__range"
         :data-gp-part="gpPart.nativeRange"
         type="range"
-        :aria-describedby="describedBy"
+        :aria-describedby="helpId"
         :aria-label="label"
         :value="displayedRangeValue"
         :min="min"
@@ -266,31 +176,8 @@ onBeforeUnmount(() => {
         @blur="clearPointerFocus"
         @keydown="clearPointerFocus"
       />
-      <span
-        v-if="boundaryPreviewSection && boundaryPreviewColor"
-        class="channel-control__boundary-preview-position"
-        aria-hidden="true"
-      >
-        <span
-          class="channel-control__boundary-preview"
-          :data-gp-part="gpPart.boundaryPreview"
-          :style="{
-            left: `${boundaryPreviewSection.end * 100}%`,
-            background: boundaryPreviewColor,
-          }"
-          data-slider-boundary-preview
-        />
-      </span>
     </div>
 
     <p v-if="help" :id="helpId" class="channel-control__help">{{ help }}</p>
-    <span
-      v-if="warningDescriptionId"
-      :id="warningDescriptionId"
-      class="sr-only"
-      data-gp-visually-hidden
-    >
-      {{ warningLabel }}
-    </span>
   </div>
 </template>

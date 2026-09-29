@@ -1,13 +1,12 @@
-import type { PickerPlaneId } from "@gamut-plane/core";
 import type { EditorVisualSupport, FieldResolution } from "../capabilities/editorResolution.js";
 
-/** Current-product admission is adapter-owned; this bridge requires its real field support. */
-export function currentField(
-  view: PickerPlaneId,
-  editor: EditorVisualSupport,
-  field: FieldResolution,
-) {
-  if (editor.kind !== "editor" || editor.field === null || editor.geometry.planeId !== view) {
+/** Available built-in field composition, keyed by selected geometry rather than view. */
+export function currentField(editor: EditorVisualSupport, field: FieldResolution) {
+  if (
+    editor.kind !== "editor" ||
+    editor.field === null ||
+    ("projection" in field && editor.geometry.id !== field.projection.geometryId)
+  ) {
     throw new Error("Current editable context requires matching field support");
   }
   switch (field.kind) {
@@ -19,10 +18,11 @@ export function currentField(
       if (field.reason === "projection-failed") {
         throw new RangeError("Selected color cannot be projected into the instrument");
       }
-      // Keep successful extended-L projection facts. Current target sampling still rejects L
-      // outside 0..1 before mounting; generalized unavailability does not invent partial UI.
+      // Retain successful projection facts for scoped unavailability; the generalized
+      // composition decides whether an editor field can be mounted.
       return {
         editorId: editor.editor.id,
+        geometry: editor.geometry,
         plane: editor.field.plane,
         projection: field.projection,
         samplingFixed: field.fixedCoordinate.value ?? 0,
@@ -31,6 +31,7 @@ export function currentField(
     case "available":
       return {
         editorId: editor.editor.id,
+        geometry: editor.geometry,
         plane: editor.field.plane,
         projection: field.projection,
         samplingFixed: field.samplingFixed,

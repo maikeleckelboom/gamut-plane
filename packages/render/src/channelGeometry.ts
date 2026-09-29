@@ -1,23 +1,7 @@
-import { getSliderWarningPosition } from "./pickerWarningPlacement.js";
-import * as geometry from "./planeInstrumentStyle.js";
-
 export interface LinearControlInterval {
   start: number;
   end: number;
   tone: "srgb" | "display-p3";
-}
-export interface LinearControlMarker {
-  id: string;
-  label: string;
-  position: number;
-  tone: "guide";
-  lane: LinearControlInterval["tone"];
-  cssColor?: string;
-}
-export interface GuideThreshold {
-  position: number;
-  tone: LinearControlInterval["tone"];
-  insideSide: "left" | "right";
 }
 const tones = ["display-p3", "srgb"] as const;
 
@@ -43,71 +27,4 @@ export function channelSections(
     }
     return sections;
   });
-}
-export function channelThresholds(sections: readonly LinearControlInterval[]): GuideThreshold[] {
-  return tones.flatMap((tone) => {
-    const intervals = sections.filter((section) => section.tone === tone);
-    return [...new Set(intervals.flatMap(({ start, end }) => [start, end]))]
-      .filter((position) => position > 0 && position < 1)
-      .map((position) => {
-        const inside = intervals.some(
-          (interval) => Math.abs(interval.start - position) <= Number.EPSILON * 16,
-        );
-        return {
-          position,
-          tone,
-          insideSide: inside ? "right" : "left",
-        };
-      });
-  });
-}
-export function nearestThreshold(
-  thresholds: readonly GuideThreshold[],
-  position: number,
-): GuideThreshold | null {
-  return thresholds.reduce<GuideThreshold | null>(
-    (nearest, threshold) =>
-      !nearest || Math.abs(threshold.position - position) < Math.abs(nearest.position - position)
-        ? threshold
-        : nearest,
-    null,
-  );
-}
-export function channelWarning(
-  position: number,
-  width: number,
-  markers: readonly LinearControlMarker[],
-  thresholds: readonly GuideThreshold[],
-) {
-  const normalized = Number.isFinite(position) ? position : 0;
-  const nearest = nearestThreshold(
-    thresholds.filter((threshold) => threshold.tone === "display-p3"),
-    normalized,
-  );
-  const obstacles = [
-    ...markers.map((marker) => ({
-      center: Math.min(1, Math.max(0, marker.position)) * width,
-      width: geometry.PICKER_SLIDER_GUIDE_COLLISION_WIDTH,
-    })),
-    ...thresholds.map((threshold) => ({
-      center:
-        geometry.PICKER_SLIDER_FIELD_INSET +
-        threshold.position * Math.max(0, width - geometry.PICKER_SLIDER_FIELD_INSET * 2),
-      width: geometry.PICKER_SLIDER_TICK_COLLISION_WIDTH,
-    })),
-  ];
-  return {
-    obstacles,
-    placement: getSliderWarningPosition({
-      position: normalized,
-      trackWidth: width,
-      thumbWidth: geometry.PICKER_SLIDER_THUMB_WIDTH,
-      warningWidth: geometry.PICKER_WARNING_GLYPH_SIZE,
-      edgeClearance: geometry.PICKER_SLIDER_EDGE_CLEARANCE,
-      markerGap: geometry.PICKER_SLIDER_WARNING_SIDE_GAP,
-      obstacleClearance: geometry.PICKER_SLIDER_ANNOTATION_CLEARANCE,
-      obstacles,
-      preferredSide: nearest?.insideSide === "right" ? "left" : "right",
-    }),
-  };
 }

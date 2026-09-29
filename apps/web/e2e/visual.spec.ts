@@ -6,66 +6,46 @@ async function ready(page: Page): Promise<void> {
     "data-canvas-capability",
     "pending",
   );
-  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(page.locator("[data-gp-root]")).toHaveAttribute("data-active-plane", "oklch");
 }
 
-test("OKLCH desktop reference", async ({ page }) => {
+test("generalized editable desktop reference", async ({ page }) => {
   await ready(page);
-  await expect(page).toHaveScreenshot("oklch-desktop.png", { fullPage: true });
+  await expect(page).toHaveScreenshot("generalized-editable-desktop.png", { fullPage: true });
 });
 
-test("OKLab desktop reference", async ({ page }) => {
+test("generalized observation desktop reference", async ({ page }) => {
   await ready(page);
-  await page.getByRole("radio", { name: "OKLab" }).click();
-  await expect(page.getByRole("application", { name: /OKLab a\/b plane/ })).toBeVisible();
-  await expect(page).toHaveScreenshot("oklab-desktop.png", { fullPage: true });
+  await page.getByLabel("Representation", { exact: true }).selectOption("srgb");
+  await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
+  await expect(page).toHaveScreenshot("generalized-observation-desktop.png", { fullPage: true });
 });
 
-test("OKLCH narrow reference", async ({ page }) => {
+test("generalized alternate editor reference", async ({ page }) => {
+  await ready(page);
+  await page.getByLabel("Representation", { exact: true }).selectOption("oklab");
+  await expect(page.locator("[data-gp-root]")).toHaveAttribute("data-active-plane", "oklab");
+  await expect(page).toHaveScreenshot("generalized-oklab-desktop.png", { fullPage: true });
+});
+
+test("generalized narrow and enlarged-text references", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await ready(page);
-  await expect(page).toHaveScreenshot("oklch-narrow.png", { fullPage: true });
-});
-
-test("OKLCH laptop-height reference", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await ready(page);
-  await expect(page).toHaveScreenshot("oklch-laptop.png", { fullPage: true });
-});
-
-test("OKLCH enlarged-text reference", async ({ page }) => {
-  await ready(page);
+  await expect(page).toHaveScreenshot("generalized-editable-narrow.png", { fullPage: true });
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
-  await expect(page).toHaveScreenshot("oklch-enlarged-text.png", { fullPage: true });
+  await expect(page).toHaveScreenshot("generalized-editable-enlarged-text.png", {
+    fullPage: true,
+  });
 });
 
-test("both gamut boundaries reference", async ({ page }) => {
+test("explicit guides and exact checks reference", async ({ page }) => {
   await ready(page);
-  await expect(page.locator(".color-plane__surface")).toHaveScreenshot("boundaries-visible.png");
-});
-
-test("one gamut boundary hidden reference", async ({ page }) => {
-  await ready(page);
-  await page.getByRole("checkbox", { name: "sRGB" }).uncheck();
-  await expect(page.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
-  await expect(page.locator(".plane-instrument__field")).toHaveScreenshot(
-    "srgb-boundary-hidden.png",
-  );
-});
-
-test("outside-sRGB disabled copy reference", async ({ page }) => {
-  await ready(page);
-  const representation = page.locator('[data-css-representation="srgb"]');
-  await expect(representation.getByRole("button")).toBeDisabled();
-  await expect(representation).toHaveScreenshot("outside-srgb-copy-disabled.png");
-});
-
-test("copied confirmation reference", async ({ page }) => {
-  await ready(page);
-  const representation = page.locator('[data-css-representation="display-p3"]');
-  await representation.getByRole("button").click();
-  await expect(representation.getByRole("button")).toHaveText("Copied");
-  await expect(representation).toHaveScreenshot("copied-confirmation.png");
+  await page.getByText("Gamut checks and guides").click();
+  await page.getByRole("group", { name: "Exact checks" }).getByLabel("sRGB").check();
+  await page.getByRole("group", { name: "Visible guides" }).getByLabel("sRGB boundary").check();
+  await expect(page.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
+  await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(1);
+  await expect(page.locator("[data-gp-root]")).toHaveScreenshot("generalized-comparison.png");
 });

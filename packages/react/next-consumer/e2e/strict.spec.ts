@@ -127,9 +127,9 @@ async function open(page: Page) {
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 12,
-      disconnected: 6,
-      active: 6,
+      created: 4,
+      disconnected: 2,
+      active: 2,
       handlers: 12,
       controlHandlers: 64,
       windowHandlers: 4,
@@ -160,8 +160,8 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 12,
-      disconnected: 12,
+      created: 4,
+      disconnected: 4,
       active: 0,
       handlers: 0,
       controlHandlers: 0,
@@ -175,9 +175,9 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
   await expect
     .poll(() => page.evaluate(() => window.planeResources))
     .toEqual({
-      created: 24,
-      disconnected: 18,
-      active: 6,
+      created: 8,
+      disconnected: 6,
+      active: 2,
       handlers: 12,
       controlHandlers: 64,
       windowHandlers: 4,

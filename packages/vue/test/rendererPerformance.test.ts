@@ -37,11 +37,6 @@ describe("renderer invalidation contracts", () => {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane,
         semanticContextKey: plane.id === "oklch" ? "oklch:oklch-lc" : "oklab:oklab-ab",
-        targetGuidePoint: null,
-        targetGuideCss: "",
-        targetGuideLabel: "sRGB sampled target guide",
-        warningVisible: false,
-        warningLabel: "",
       },
     });
     await flushPromises();
@@ -107,11 +102,6 @@ describe("renderer invalidation contracts", () => {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        targetGuidePoint: null,
-        targetGuideCss: "",
-        targetGuideLabel: "sRGB sampled target guide",
-        warningVisible: false,
-        warningLabel: "",
       },
     });
     await flushPromises();
@@ -177,11 +167,6 @@ describe("renderer invalidation contracts", () => {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        targetGuidePoint: null,
-        targetGuideCss: "",
-        targetGuideLabel: "sRGB sampled target guide",
-        warningVisible: false,
-        warningLabel: "",
       },
     });
     await flushPromises();
@@ -224,11 +209,6 @@ describe("renderer invalidation contracts", () => {
         ...planeValue(color(0.62, 0.2, 210, 1)),
         plane: OKLCH_LIGHTNESS_CHROMA_PLANE,
         semanticContextKey: "oklch:oklch-lc",
-        targetGuidePoint: null,
-        targetGuideCss: "",
-        targetGuideLabel: "sRGB sampled target guide",
-        warningVisible: false,
-        warningLabel: "",
       },
     });
     await flushPromises();
@@ -270,6 +250,11 @@ describe("renderer invalidation contracts", () => {
         return () =>
           h(PlaneInstrument, {
             modelValue: model.value,
+            defaultState: {
+              selection: { representationId: "oklch", editorId: "oklch-lc" },
+              checkedGamuts: [],
+              visibleGuides: ["srgb-boundary"],
+            },
             "onUpdate:modelValue": (color: ColorValue) => {
               publications.push(definitionOf(color).channels[2] as number);
               model.value = color;

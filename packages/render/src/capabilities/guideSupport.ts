@@ -1,21 +1,14 @@
 import {
   OKLAB_AB_PLANE,
   OKLCH_LIGHTNESS_CHROMA_PLANE,
-  convertOklchToOklab,
   getHueGuideIntervals,
   getLightnessGuideIntervals,
   getPickerGuide,
   type GamutBoundaryTable,
   type GamutId,
-  type OklchSample,
   type PickerPlaneGeometry,
-  type PlanePoint,
 } from "@gamut-plane/core";
-import {
-  editorDefinitions,
-  geometryDefinitions,
-  type EditorId,
-} from "@gamut-plane/core/internal/capabilities";
+import { editorDefinitions, type EditorId } from "@gamut-plane/core/internal/capabilities";
 import { PICKER_GAMUT_TABLES } from "../generated/gamutTables.js";
 
 export type GuideId = "srgb-boundary" | "display-p3-boundary";
@@ -48,10 +41,6 @@ interface GuideForms {
   readonly lightnessIntervals: typeof getLightnessGuideIntervals;
   /** Produced for both views; currently displayed only by the OKLCH Chroma control. */
   readonly chromaIntervals: "oklch-maximum-chroma";
-  readonly targetMarker: Readonly<{
-    requires: "exact-outside";
-    position: (color: OklchSample) => PlanePoint;
-  }>;
   readonly reference: typeof getPickerGuide;
 }
 
@@ -62,18 +51,6 @@ export interface GuideSupport {
 }
 
 // Guide geometry and contour math predate Canvas field support; the relations are independent.
-const lchGeometry = geometryDefinitions[editorDefinitions["oklch-lc"].geometryId];
-const labGeometry = geometryDefinitions[editorDefinitions["oklab-ab"].geometryId];
-
-function positionLchGuide(color: OklchSample): PlanePoint {
-  return lchGeometry.constrain(lchGeometry.toPoint(color.l, color.c));
-}
-
-function positionLabGuide(color: OklchSample): PlanePoint {
-  const coordinates = convertOklchToOklab(color);
-  return labGeometry.constrain(labGeometry.toPoint(coordinates[1]!, coordinates[2]!));
-}
-
 const lchForms = Object.freeze({
   contour: Object.freeze({
     build: OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour,
@@ -82,7 +59,6 @@ const lchForms = Object.freeze({
   hueIntervals: getHueGuideIntervals,
   lightnessIntervals: getLightnessGuideIntervals,
   chromaIntervals: "oklch-maximum-chroma",
-  targetMarker: Object.freeze({ requires: "exact-outside", position: positionLchGuide }),
   reference: getPickerGuide,
 } satisfies GuideForms);
 
@@ -94,11 +70,10 @@ const labForms = Object.freeze({
   hueIntervals: null,
   lightnessIntervals: getLightnessGuideIntervals,
   chromaIntervals: "oklch-maximum-chroma",
-  targetMarker: Object.freeze({ requires: "exact-outside", position: positionLabGuide }),
   reference: getPickerGuide,
 } satisfies GuideForms);
 
-/** Only the four current editor/guide combinations. Visibility remains separate v0.3 state. */
+/** Only the four currently admitted editor/guide combinations. */
 export const guideSupport = Object.freeze({
   "oklch-lc": Object.freeze({
     "srgb-boundary": Object.freeze({

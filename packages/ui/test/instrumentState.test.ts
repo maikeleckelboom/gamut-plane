@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { orderedExactChecks } from "../src/generalizedInstrument.js";
 import {
+  admittedEditorsForRepresentation,
   canonicalCheckedGamuts,
   canonicalVisibleGuides,
   currentSelectionFacts,
   defaultSelection,
   instrumentViewStatesEqual,
-  legacyCheckedGamuts,
-  selectionFromCurrentView,
+  requestEditor,
+  semanticContextKey,
   selectionsEqual,
   validateInstrumentViewState,
   validateSelection,
@@ -60,13 +62,23 @@ describe("generalized selection policy", () => {
   });
 
   it("separates technical existence, product admission and preferred default", () => {
-    const alternate = { id: "oklch-detail", representationId: "oklch" } as const;
+    const alternate = { id: "test-oklch-hc", representationId: "oklch" } as const;
     type FixtureEditor = (typeof currentSelectionFacts.knownEditors)[number] | typeof alternate;
     const facts = {
       knownEditors: [...currentSelectionFacts.knownEditors, alternate],
       admittedEditors: currentSelectionFacts.admittedEditors,
       preferredEditors: currentSelectionFacts.preferredEditors,
     } satisfies SelectionFacts<FixtureEditor>;
+    const none = { ...facts, admittedEditors: [] };
+    expect(admittedEditorsForRepresentation("oklch", none)).toEqual([]);
+    expect(defaultSelection("oklch", none)).toEqual({ representationId: "oklch", editorId: null });
+    expect(requestEditor("oklch", alternate.id, none)).toEqual({
+      ok: false,
+      issue: { code: "editor-not-admitted" },
+    });
+    expect(admittedEditorsForRepresentation("oklch", facts).map((editor) => editor.id)).toEqual([
+      "oklch-lc",
+    ]);
     expect(validateSelection({ representationId: "oklch", editorId: alternate.id }, facts)).toEqual(
       {
         ok: false,
@@ -74,6 +86,10 @@ describe("generalized selection policy", () => {
       },
     );
     const admitted = { ...facts, admittedEditors: [...facts.admittedEditors, alternate] };
+    expect(admittedEditorsForRepresentation("oklch", admitted).map((editor) => editor.id)).toEqual([
+      "oklch-lc",
+      "test-oklch-hc",
+    ]);
     const original = validateSelection(
       { representationId: "oklch", editorId: "oklch-lc" },
       admitted,
@@ -85,22 +101,26 @@ describe("generalized selection policy", () => {
     expect(original.ok && switched.ok).toBe(true);
     if (!original.ok || !switched.ok) return;
     expect(selectionsEqual(original.value, switched.value)).toBe(false);
+    expect(semanticContextKey(original.value)).not.toBe(semanticContextKey(switched.value));
     expect(defaultSelection("oklch", admitted)).toEqual(original.value);
-  });
-
-  it("converts only current views through the product bridge", () => {
-    expect(selectionFromCurrentView("oklch")).toEqual({
-      representationId: "oklch",
-      editorId: "oklch-lc",
-    });
-    expect(selectionFromCurrentView("oklab")).toEqual({
-      representationId: "oklab",
-      editorId: "oklab-ab",
+    expect(requestEditor("oklch", alternate.id, admitted)).toEqual(switched);
+    expect(validateSelection({ representationId: "oklch", editorId: alternate.id })).toEqual({
+      ok: false,
+      issue: { code: "unknown-editor" },
     });
   });
 });
 
 describe("canonical state collections", () => {
+  it("shows exact results in explicit product order regardless of canonical transport order", () => {
+    const canonical = [
+      { gamutId: "display-p3-gamut" as const, status: "outside" },
+      { gamutId: "srgb-gamut" as const, status: "inside" },
+    ];
+    expect(orderedExactChecks(canonical)).toEqual([canonical[1], canonical[0]]);
+    expect(canonical.map((row) => row.gamutId)).toEqual(["display-p3-gamut", "srgb-gamut"]);
+  });
+
   it("accepts empty, single and duplicated checked gamuts in code-unit order", () => {
     expect(canonicalCheckedGamuts([])).toMatchObject({ ok: true, value: [] });
     expect(canonicalCheckedGamuts(["srgb-gamut"])).toMatchObject({
@@ -115,8 +135,6 @@ describe("canonical state collections", () => {
     if (!result.ok) return;
     expect(Object.isFrozen(result.value)).toBe(true);
     expect(canonicalCheckedGamuts(result.value)).toEqual(result);
-    expect(legacyCheckedGamuts).toEqual(result.value);
-    expect(Object.isFrozen(legacyCheckedGamuts)).toBe(true);
     expect(canonicalCheckedGamuts(["rec2020-gamut"])).toEqual({
       ok: false,
       issue: { code: "unknown-gamut" },

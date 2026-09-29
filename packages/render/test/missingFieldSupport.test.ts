@@ -21,7 +21,7 @@ it("resolves core editor and geometry when the field support row is absent", () 
   const source = createColorValue({ space: "oklab", channels: [0.5, 0.1, 0.1], alpha: 1 });
   if (!source.ok) throw new Error("Invalid fixture");
   expect(resolveField(source.value, support)).toEqual({ kind: "field-unsupported" });
-  const [guide] = resolveRequestedGuides(source.value, support, ["srgb-boundary"], []);
+  const [guide] = resolveRequestedGuides(source.value, support, ["srgb-boundary"]);
   expect(guide).toMatchObject({
     guideId: "srgb-boundary",
     kind: "resolved",
@@ -30,7 +30,6 @@ it("resolves core editor and geometry when the field support row is absent", () 
       reference: { kind: "available" },
       lightnessIntervals: { kind: "available" },
       chromaIntervals: { kind: "available" },
-      targetMarker: { kind: "check-not-requested" },
     },
   });
   if (guide?.kind !== "resolved") throw new Error("Expected a guide without Canvas field support");

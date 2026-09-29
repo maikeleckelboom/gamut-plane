@@ -19,11 +19,8 @@ describe("current render entry after legacy retirement", () => {
   it("exposes only justified current helpers and excludes retired factories from root", () => {
     expect(Object.keys(current).sort()).toEqual([
       "currentEditableDetail",
-      "currentExactChecks",
       "currentField",
-      "currentGuideDisplay",
       "currentOklchObservation",
-      "currentTargetVisual",
       "generalizedEditableDetail",
       "generalizedGuideDisplay",
     ]);

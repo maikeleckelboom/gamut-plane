@@ -39,7 +39,7 @@ describe("standalone application", () => {
 
     expect(wrapper.get("h1").text()).toBe("Gamut Plane");
     expect(wrapper.get('[data-canvas-capability="srgb"]').text()).toBe("sRGB");
-    expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(2);
+    expect(wrapper.findAll("[data-gamut-boundary]")).toHaveLength(0);
     expect(wrapper.get('[data-plane-id="oklch"]').exists()).toBe(true);
     expect(wrapper.get(".project-header").attributes("aria-describedby")).toBe(
       "project-description",
@@ -51,20 +51,17 @@ describe("standalone application", () => {
     );
     expect(
       wrapper
-        .findAll("[data-boundary-target-option]")
-        .map((option) => option.attributes("data-boundary-target-option")),
-    ).toEqual(["srgb", "display-p3"]);
-    expect(
-      wrapper
-        .findAll("[data-boundary-toggle]")
-        .map((option) => option.attributes("data-boundary-toggle")),
-    ).toEqual(["srgb", "display-p3"]);
+        .findAll("[data-gp-part='representation-control'] option")
+        .map((option) => option.attributes("value")),
+    ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
+    expect(wrapper.get("[data-gp-part='exact-results']").text()).toContain(
+      "No gamut checks selected",
+    );
     expect(
       wrapper
         .findAll("[data-exact-gamut-status]")
         .map((status) => status.attributes("data-exact-gamut-status")),
     ).toEqual(["srgb", "display-p3"]);
-    expect(wrapper.find("[data-boundary-guide-swatch]").exists()).toBe(true);
     expect(
       wrapper
         .findAll("[data-css-representation]")
@@ -73,33 +70,25 @@ describe("standalone application", () => {
     wrapper.unmount();
   });
 
-  it("controls plane and boundary view state without changing the selected color", async () => {
+  it("accepts generalized selection, checks and guides without changing the selected color", async () => {
     const wrapper = mount(App, { attachTo: document.body });
     await flushPromises();
     const originalOklch = wrapper.get('[data-css-representation="oklch"] code').text();
 
-    const srgbToggle = wrapper.get('[data-boundary-toggle="srgb"]');
-    const field = wrapper.get(".plane-instrument__field");
-    expect(field.get("[data-gamut-reference]").exists()).toBe(true);
-    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
-      "srgb",
-    );
-    await srgbToggle.setValue(false);
-    expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
-    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
-      "srgb",
-    );
+    await wrapper.get("[data-gp-part='representation-control'] select").setValue("srgb");
+    expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
+    expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
-
-    await wrapper.get('[data-boundary-target-option="display-p3"]').setValue(true);
-    await flushPromises();
-    expect(wrapper.get("[data-boundary-target-result]").attributes("data-boundary-target")).toBe(
-      "display-p3",
-    );
-    expect(wrapper.get("[data-boundary-target-result]").text()).toContain("Target · Display P3");
-    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
-
-    await wrapper.get('[data-plane-option="oklab"]').trigger("click");
+    await wrapper.get("[data-gp-part='gamut-disclosure'] summary").trigger("click");
+    await wrapper
+      .get("[data-gp-part='gamut-disclosure'] fieldset:first-of-type input")
+      .setValue(true);
+    expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
+    await wrapper
+      .get("[data-gp-part='gamut-disclosure'] fieldset:nth-of-type(2) input")
+      .setValue(true);
+    expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(false);
+    await wrapper.get("[data-gp-part='representation-control'] select").setValue("oklab");
     await flushPromises();
     expect(wrapper.get('[data-plane-id="oklab"]').exists()).toBe(true);
     expect(wrapper.get(".color-inspector").attributes("aria-labelledby")).toBe(
@@ -113,7 +102,8 @@ describe("standalone application", () => {
       "b",
     ]);
     expect(wrapper.get(".coordinate-summary__values dd").text()).toBe("0.6800");
-    expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(false);
+    expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(true);
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
 
     wrapper.unmount();
   });

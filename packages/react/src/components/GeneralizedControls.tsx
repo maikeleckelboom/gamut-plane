@@ -2,8 +2,11 @@ import type { GamutId } from "@gamut-plane/core";
 import type { GuideId } from "@gamut-plane/render";
 import {
   currentRepresentationOptions,
+  currentAdmittedEditorsForRepresentation,
   exactGamutUi,
   exactStatusCopy,
+  generalizedCopy,
+  orderedExactChecks,
   formatInspectionNumber,
   gpPart,
   guidePreferenceUi,
@@ -34,10 +37,10 @@ export function GeneralizedSelection({
   id: string;
 }) {
   const selected = state.selection;
-  const canEdit = selected.representationId === "oklch" || selected.representationId === "oklab";
+  const canEdit = currentAdmittedEditorsForRepresentation(selected.representationId).length > 0;
   return (
     <div className="gp-generalized-selection" data-gp-part={gpPart.representationControl}>
-      <label htmlFor={`${id}-representation`}>Representation</label>
+      <label htmlFor={`${id}-representation`}>{generalizedCopy.representation}</label>
       <select
         id={`${id}-representation`}
         value={selected.representationId}
@@ -64,13 +67,13 @@ export function GeneralizedSelection({
           disabled={readOnly || !canEdit}
           onChange={(event) => request(requestInspection(state, !event.currentTarget.checked))}
         />
-        Edit coordinates
+        {generalizedCopy.editCoordinates}
       </label>
-      {!canEdit && <small>Inspection only</small>}
+      {!canEdit && <small>{generalizedCopy.inspectionOnly}</small>}
       {accepted.authored.representationId !== selected.representationId && (
         <p data-gp-part={gpPart.authorshipContext}>
           Authored as {representationUi[accepted.authored.representationId].label} ·{" "}
-          {selected.editorId === null ? "Inspecting" : "Editing"} as{" "}
+          {selected.editorId === null ? generalizedCopy.inspecting : generalizedCopy.editing} as{" "}
           {representationUi[selected.representationId].label}
         </p>
       )}
@@ -98,16 +101,16 @@ export function GeneralizedInspection({ accepted }: { accepted: AcceptedPresenta
             </div>
           ))}
           <div>
-            <dt>Alpha</dt>
+            <dt>{generalizedCopy.alpha}</dt>
             <dd>{formatInspectionNumber(observation.value.alpha)}</dd>
           </div>
         </dl>
       ) : (
         <>
-          <p>Coordinates unavailable for this color.</p>
+          <p>{generalizedCopy.coordinatesUnavailable}</p>
           <dl>
             <div>
-              <dt>Alpha</dt>
+              <dt>{generalizedCopy.alpha}</dt>
               <dd>{formatInspectionNumber(accepted.authored.alpha)}</dd>
             </div>
           </dl>
@@ -140,13 +143,13 @@ export function GeneralizedComparison({
     <section
       className="gp-generalized-comparison"
       data-gp-part={gpPart.exactResults}
-      aria-label="Gamut comparison"
+      aria-label={generalizedCopy.comparison}
     >
       {accepted.exactChecks.length === 0 ? (
-        <p>No gamut checks selected</p>
+        <p>{generalizedCopy.noChecks}</p>
       ) : (
         <ul>
-          {accepted.exactChecks.map((row) => (
+          {orderedExactChecks(accepted.exactChecks).map((row) => (
             <li
               key={row.gamutId}
               data-gp-part={gpPart.exactResult}
@@ -161,9 +164,9 @@ export function GeneralizedComparison({
         </ul>
       )}
       <details data-gp-part={gpPart.gamutDisclosure}>
-        <summary>Gamut checks and guides</summary>
+        <summary>{generalizedCopy.disclosure}</summary>
         <fieldset>
-          <legend>Exact checks</legend>
+          <legend>{generalizedCopy.exactChecks}</legend>
           {gamutIds.map((gamutId) => (
             <label key={gamutId}>
               <input
@@ -179,7 +182,7 @@ export function GeneralizedComparison({
           ))}
         </fieldset>
         <fieldset>
-          <legend>Visible guides</legend>
+          <legend>{generalizedCopy.visibleGuides}</legend>
           {guideIds.map((guideId) => (
             <label key={guideId} data-gp-part={gpPart.guidePreference}>
               <input
@@ -204,8 +207,8 @@ export function GeneralizedComparison({
         {unavailableGuides.length > 0 && (
           <p data-gp-part={gpPart.availabilityMessage}>
             {!hasPlane && accepted.selection.editorId === null
-              ? "Requested guides will appear when an editable plane is selected."
-              : "Some requested guides cannot be shown for this color or editor."}
+              ? generalizedCopy.guidesPending
+              : generalizedCopy.guidesUnavailable}
           </p>
         )}
       </details>

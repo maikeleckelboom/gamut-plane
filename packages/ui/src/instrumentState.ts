@@ -1,24 +1,17 @@
 import type { GamutId } from "@gamut-plane/core";
-import type {
-  EditorDefinition,
-  RepresentationDefinition,
-} from "@gamut-plane/core/internal/capabilities";
-import {
-  currentEditorByView,
-  currentPrimaryEditors,
-  representationUi,
-} from "./instrumentMetadata.js";
+import type { RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
+import { currentPrimaryEditors, preferredEditors, representationUi } from "./instrumentMetadata.js";
 
 export type RepresentationId = RepresentationDefinition["id"];
 type EditorIdentity = Readonly<{ id: string; representationId: RepresentationId }>;
-type TechnicalEditor = EditorDefinition extends infer E
-  ? E extends EditorDefinition
+type ProductEditor = (typeof currentPrimaryEditors)[number] extends infer E
+  ? E extends EditorIdentity
     ? Pick<E, "id" | "representationId">
     : never
   : never;
 
 /** The pair is correlated for known editors; null deliberately permits inspection only. */
-export type InstrumentSelection<E extends EditorIdentity = TechnicalEditor> = {
+export type InstrumentSelection<E extends EditorIdentity = ProductEditor> = {
   [R in RepresentationId]: Readonly<{
     representationId: R;
     editorId: Extract<E, { representationId: R }>["id"] | null;
@@ -49,26 +42,23 @@ export type StateIssue = Readonly<{
     | "unknown-guide";
 }>;
 
-export type SelectionFacts<E extends EditorIdentity = TechnicalEditor> = Readonly<{
+export type SelectionFacts<E extends EditorIdentity = ProductEditor> = Readonly<{
   knownEditors: readonly E[];
   admittedEditors: readonly E[];
   preferredEditors: Readonly<Partial<Record<RepresentationId, E["id"]>>>;
 }>;
 
 /** Current technical inventory happens to match product admission. Future callers supply both separately. */
-export const currentSelectionFacts: SelectionFacts = Object.freeze({
+export const currentSelectionFacts: SelectionFacts<ProductEditor> = Object.freeze({
   knownEditors: currentPrimaryEditors,
   admittedEditors: currentPrimaryEditors,
-  preferredEditors: Object.freeze({ ...currentEditorByView }),
+  preferredEditors,
 });
 
 const currentGamutIds = Object.freeze([
   "display-p3-gamut",
   "srgb-gamut",
 ] as const satisfies readonly GamutId[]);
-
-/** Migration evidence for v0.3's unconditional two exact checks. No analysis is performed. */
-export const legacyCheckedGamuts: readonly GamutId[] = currentGamutIds;
 
 function record(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -133,14 +123,26 @@ export function defaultSelection(
   return Object.freeze({ representationId, editorId });
 }
 
-/** The only current-view conversion; render retains its separate presentation bridge. */
-export function selectionFromCurrentView(
-  view: keyof typeof currentEditorByView,
-): InstrumentSelection {
-  return Object.freeze({
-    representationId: view,
-    editorId: currentEditorByView[view],
-  }) as InstrumentSelection;
+export function admittedEditorsForRepresentation<E extends EditorIdentity>(
+  representationId: RepresentationId,
+  facts: SelectionFacts<E>,
+): readonly E[] {
+  return facts.admittedEditors.filter((editor) => editor.representationId === representationId);
+}
+
+export function currentAdmittedEditorsForRepresentation(
+  representationId: RepresentationId,
+): readonly ProductEditor[] {
+  return admittedEditorsForRepresentation(representationId, currentSelectionFacts);
+}
+
+/** An explicit editor choice is independent of the default/preferred editor. */
+export function requestEditor<E extends EditorIdentity>(
+  representationId: RepresentationId,
+  editorId: E["id"],
+  facts: SelectionFacts<E>,
+): StateResult<InstrumentSelection<E>> {
+  return validateSelection({ representationId, editorId }, facts);
 }
 
 function canonicalIds<Id extends string>(
@@ -201,6 +203,13 @@ export function selectionsEqual(
   b: Readonly<{ representationId: RepresentationId; editorId: string | null }>,
 ): boolean {
   return a.representationId === b.representationId && a.editorId === b.editorId;
+}
+
+/** Interaction ownership changes with an editor even when representation and color do not. */
+export function semanticContextKey(
+  selection: Readonly<{ representationId: string; editorId: string | null }>,
+): string {
+  return `${selection.representationId}:${selection.editorId ?? "none"}`;
 }
 
 export function instrumentViewStatesEqual<G extends string>(

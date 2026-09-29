@@ -1,5 +1,5 @@
-import type { ColorValue, ConversionError, GamutAnalysisError } from "@gamut-plane/core";
-import type { EditorId, GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
+import type { ColorValue, ConversionError } from "@gamut-plane/core";
+import type { EditorId } from "@gamut-plane/core/internal/capabilities";
 import { resolveEditorVisualSupport, resolveField } from "../src/capabilities/editorResolution.js";
 import { resolveRequestedGuides } from "../src/capabilities/guideResolution.js";
 import type { GuideId } from "../src/capabilities/guideSupport.js";
@@ -7,16 +7,13 @@ import type { GuideId } from "../src/capabilities/guideSupport.js";
 declare const value: ColorValue;
 declare const editorId: EditorId | null;
 declare const guides: readonly GuideId[];
-declare const checks: readonly GamutCheckResult[];
 const context = resolveEditorVisualSupport(editorId);
 const field = resolveField(value, context);
 if (field.kind === "value-unavailable" && field.reason === "projection-failed")
   field.error satisfies ConversionError;
-const rows = resolveRequestedGuides(value, context, guides, checks);
+const rows = resolveRequestedGuides(value, context, guides);
 for (const row of rows) {
   row.guideId satisfies GuideId;
-  if (row.kind === "resolved" && row.forms.targetMarker.kind === "exact-unavailable")
-    row.forms.targetMarker.error satisfies GamutAnalysisError;
 }
 // @ts-expect-error field resolution only admits core EditorId, not a representation
 resolveEditorVisualSupport("srgb");
@@ -25,6 +22,6 @@ resolveEditorVisualSupport("oklch-hl");
 // @ts-expect-error product metadata or view state is not the render input boundary
 resolveEditorVisualSupport({ representationId: "oklch", editorId: "oklch-lc" });
 // @ts-expect-error render GuideId is independent of core GamutId
-resolveRequestedGuides(value, context, ["srgb-gamut"], checks);
+resolveRequestedGuides(value, context, ["srgb-gamut"]);
 // @ts-expect-error new resolution does not expand the public render entry
 export type RootResolver = typeof import("../src/index.js").resolveField;

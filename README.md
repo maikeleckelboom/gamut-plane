@@ -1,19 +1,19 @@
 # Gamut Plane
 
-Gamut Plane provides complete native Vue and React instruments for editing one `ColorValue`, with OKLCH and OKLab views, sampled sRGB and Display P3 guides, and exact gamut status. It includes a standalone Vue app for exploring colors and copying CSS values.
+Gamut Plane provides native Vue and React instruments for editing one `ColorValue`. The public instrument selects an OKLCH or OKLab editor, or inspects OKLCH, OKLab, sRGB, or Display P3 coordinates. Exact gamut checks and sampled visual guides are independent, explicit requests. A standalone Vue app supports color exploration and CSS copying.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
-The selected `ColorValue` retains its defining representation. Changing views observes that value; an edit creates a new `ColorValue` authored in the edited plane:
+The selected `ColorValue` retains its defining representation. Changing the selected representation or editor observes that value; an edit creates a new `ColorValue` authored in the selected editor:
 
 - **OKLCH:** lightness and chroma at a fixed hue.
 - **OKLab:** `a` and `b` at a fixed lightness.
 
 Alpha and ordinary out-of-gamut coordinates are preserved. `analyzeGamut` reports exact `inside`, `within-tolerance` or `outside` status independently of the sampled guides. Editing never silently maps into a display gamut; `mapToGamut` is explicit. Strict CSS and Hex output use explicit `serializeCss` and `serializeHex` policies and can reject a value.
 
-![Gamut Plane showing OKLCH with Display P3 and sRGB boundaries](docs/assets/gamut-plane-desktop.png)
+![Gamut Plane generalized OKLCH instrument with requested sRGB and Display P3 guides](docs/assets/gamut-plane-desktop.png)
 
-The source is public under the MIT license. All workspace packages are private and **not published to npm**. Both adapters provide the complete two-view instrument with controlled color, numeric editing, gamut guides and normal SSR/hydration.
+The source is public under the MIT license. All workspace packages are private and **not published to npm**. Both adapters provide controlled color, numeric editing, requested gamut guides, and normal SSR/hydration.
 
 ## Run the app
 
@@ -38,30 +38,34 @@ After [installing the local packages](#install-local-packages), import the compo
 <script setup lang="ts">
 import { ref } from "vue";
 import { createColorValue } from "@gamut-plane/core";
-import { GamutPlane, type ColorValue, type DisplayGamut } from "@gamut-plane/vue";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 
 const initial = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!initial.ok) throw new Error("Invalid initial color");
 const color = ref<ColorValue>(initial.value);
-const boundaryTarget = ref<DisplayGamut>("srgb");
+const state = ref<GamutPlaneState>({
+  selection: { representationId: "oklch", editorId: "oklch-lc" },
+  checkedGamuts: [],
+  visibleGuides: [],
+});
 </script>
 
 <template>
-  <GamutPlane v-model="color" :boundary-target="boundaryTarget" />
+  <GamutPlane v-model="color" v-model:state="state" />
 </template>
 ```
 
 Vue 3.5+ is required. The component includes its controls, renderer, styles, and gamut tables. It inherits the host font and adapts to its available width. Import the stylesheet once; use `--gamut-plane-accent` to customize focus and selection emphasis.
 
-The view defaults to OKLCH. Bind `v-model:plane` to a `ref<GamutPlaneView>("oklch")` to control it from the parent. `boundaryTarget` accepts the exported `DisplayGamut` type and defaults to `"srgb"`. Boundary visibility props, edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
+Without an explicit state, the instrument starts in the OKLCH editor with no checks or guides requested. `v-model:state` gives the parent ownership; `defaultState` initializes local ownership. Edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
 
 ## Use the React component
 
 ```tsx
 import { useState } from "react";
 import { createColorValue } from "@gamut-plane/core";
-import { GamutPlane, type ColorValue } from "@gamut-plane/react";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/react";
 import "@gamut-plane/react/style.css";
 
 export function ColorEditor() {
@@ -70,18 +74,18 @@ export function ColorEditor() {
     if (!initial.ok) throw new Error("Invalid initial color");
     return initial.value;
   });
+  const [state, setState] = useState<GamutPlaneState>({
+    selection: { representationId: "oklab", editorId: "oklab-ab" },
+    checkedGamuts: [],
+    visibleGuides: [],
+  });
   return (
-    <GamutPlane
-      value={color}
-      onValueChange={setColor}
-      defaultView="oklab"
-      boundaryTarget="display-p3"
-    />
+    <GamutPlane value={color} onValueChange={setColor} state={state} onStateChange={setState} />
   );
 }
 ```
 
-React / React DOM 19.3.x are the pinned peer policy. Color is controlled-only; view can be controlled with `view` / `onViewChange` or initialized with `defaultView`. Boundary target is a controlled prop and defaults to sRGB. The [React API](packages/react/README.md) documents native section props/ref, `legend`, target/visibility, callback ordering, CSS and Next usage. The [parity map](docs/react-parity.md) connects product contracts to tests.
+React / React DOM 19.3.x are the pinned peer policy. Color is controlled-only; instrument state can be controlled with `state` / `onStateChange` or initialized with `defaultState`. The [React API](packages/react/README.md) documents native section props/ref, `legend`, callback ordering, CSS and Next usage. The [parity map](docs/react-parity.md) connects product contracts to tests.
 
 ### Install local packages
 
@@ -116,9 +120,7 @@ The overrides resolve all unpublished transitive dependencies from their local a
 
 ## Color and editing behavior
 
-The solid contour shows Display P3; the dashed contour shows sRGB. Contours, channel intervals, boundary-guide colors and the selected target guide interpolate generated tables. `analyzeGamut(ColorValue)` supplies exact `inside`, `within-tolerance` or `outside` status independently of those guides.
-
-Boundary target selects the reference gamut. Target and visibility are independent state, but visibility controls all visual guide overlays for that gamut across the plane and channel controls. Neither changes the target automatically or mutates the authored color. The picker treats `within-tolerance` as visually contained: it shows no outside-only target guide or Display P3 warning. Strict CSS and Hex output may reject that status. Mapping is available only through explicit `mapToGamut`.
+When requested, the solid contour shows Display P3 and the dashed contour shows sRGB. Contours and channel intervals interpolate generated tables. `analyzeGamut(ColorValue)` supplies exact `inside`, `within-tolerance` or `outside` status independently of those guides. Check and guide requests can each be empty, single, or both and never mutate the authored color. Strict CSS and Hex output may reject a value within boundary tolerance. Mapping is available only through explicit `mapToGamut`.
 
 The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values, with the marker projected to the edge.
 

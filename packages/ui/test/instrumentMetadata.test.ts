@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  currentEditorByView,
-  currentPrimaryEditors,
-  currentViewOptions,
-  editorUi,
-  representationUi,
-} from "../src/instrumentMetadata.js";
+import { currentPrimaryEditors, editorUi, representationUi } from "../src/instrumentMetadata.js";
 
 describe("current instrument metadata", () => {
   it("labels all four qualified representations without admitting RGB views", () => {
@@ -15,9 +9,7 @@ describe("current instrument metadata", () => {
       ["srgb", "srgb", "sRGB"],
       ["display-p3", "display-p3", "Display P3"],
     ]);
-    expect(currentViewOptions).toEqual(["oklch", "oklab"]);
     expect(currentPrimaryEditors.map((editor) => editor.id)).toEqual(["oklch-lc", "oklab-ab"]);
-    expect(currentEditorByView).toEqual({ oklch: "oklch-lc", oklab: "oklab-ab" });
   });
 
   it("composes only the six shipped companions in display order with semantic operations", () => {
@@ -79,14 +71,7 @@ describe("current instrument metadata", () => {
       expect(Object.isFrozen(value)).toBe(true);
       for (const child of Object.values(value)) frozen(child);
     }
-    for (const catalog of [
-      representationUi,
-      editorUi,
-      currentPrimaryEditors,
-      currentViewOptions,
-      currentEditorByView,
-    ])
-      frozen(catalog);
+    for (const catalog of [representationUi, editorUi, currentPrimaryEditors]) frozen(catalog);
     expect(Reflect.set(editorUi["oklch-lc"].companions[0].sliderRange, "max", 720)).toBe(false);
     expect(editorUi["oklch-lc"].companions[0].sliderRange.max).toBe(360);
   });

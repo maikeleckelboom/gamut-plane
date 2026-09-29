@@ -1,12 +1,15 @@
 import {
-  authorPlaneEdit,
   definingEquals,
-  keyboardPlanePoint,
   type ColorValue,
   type PlaneEditReference,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
 } from "@gamut-plane/core";
+import {
+  authorEditorPoint,
+  editorDefinitions,
+  keyboardGeometryPoint,
+} from "@gamut-plane/core/internal/capabilities";
 import { gpAttribute, mountPlaneGesture } from "@gamut-plane/ui";
 import type { CanvasColorSpaceStatus, RenderedFieldQuality } from "@gamut-plane/render";
 import { mountPlaneResources, type PlaneResourceInput } from "./planeResources.js";
@@ -15,7 +18,6 @@ export interface PlaneInput extends PlaneResourceInput {
   semanticContextKey: string;
   markerCss: string;
   getEditReference: () => PlaneEditReference | undefined;
-  targetGuideCss: string;
   onValueChange: (value: ColorValue) => void;
   onValueCommit: ((value: ColorValue) => void) | undefined;
   onCancel: (() => void) | undefined;
@@ -32,32 +34,16 @@ export function mountPlane(
   surface: HTMLDivElement,
   canvas: HTMLCanvasElement,
   marker: HTMLSpanElement,
-  warning: HTMLSpanElement,
   current: () => PlaneInput,
   onCapability: (status: CanvasColorSpaceStatus) => void,
   onQuality: (quality: RenderedFieldQuality) => void,
 ): PlaneBinding {
-  const resources = mountPlaneResources(
-    surface,
-    canvas,
-    marker,
-    warning,
-    current,
-    onCapability,
-    onQuality,
-  );
+  const resources = mountPlaneResources(surface, canvas, marker, current, onCapability, onQuality);
 
   function authorPoint(value: ColorValue, point: PlanePoint): ColorValue | null {
     const reference = current().getEditReference();
-    const result =
-      resources.plane.id === "oklch"
-        ? authorPlaneEdit(value, {
-            plane: "oklch",
-            kind: "point",
-            point,
-            ...(reference ? { reference } : {}),
-          })
-        : authorPlaneEdit(value, { plane: "oklab", kind: "point", point });
+    const editor = editorDefinitions[current().field.editorId];
+    const result = authorEditorPoint(value, editor, point, reference);
     return result.ok ? result.value : null;
   }
 
@@ -107,7 +93,11 @@ export function mountPlane(
     if (!action) return;
     event.preventDefault();
     gesture.interrupt();
-    const point = keyboardPlanePoint(resources.projection(current().value), action, event.shiftKey);
+    const point = keyboardGeometryPoint(
+      resources.projection(current().value),
+      action,
+      event.shiftKey,
+    );
     const result = authorPoint(current().value, point);
     if (result === null) return;
     current().onValueChange(result);

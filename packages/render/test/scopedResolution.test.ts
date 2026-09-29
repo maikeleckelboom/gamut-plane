@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as core from "@gamut-plane/core";
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
-import type { GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
 import { resolveEditorVisualSupport, resolveField } from "../src/capabilities/editorResolution.js";
 import { resolveRequestedGuides } from "../src/capabilities/guideResolution.js";
 import { fieldSupport } from "../src/capabilities/fieldSupport.js";
@@ -45,15 +44,9 @@ const guideIds = ["display-p3-boundary", "srgb-boundary"] as const;
 function resolvedGuide(
   value: core.ColorValue,
   editorId: "oklch-lc" | "oklab-ab",
-  checks: readonly GamutCheckResult[] = [],
   guideId: GuideId = "srgb-boundary",
 ) {
-  const [row] = resolveRequestedGuides(
-    value,
-    resolveEditorVisualSupport(editorId),
-    [guideId],
-    checks,
-  );
+  const [row] = resolveRequestedGuides(value, resolveEditorVisualSupport(editorId), [guideId]);
   if (row?.kind !== "resolved") throw new Error("Expected a supported guide");
   return row;
 }
@@ -77,10 +70,7 @@ describe("editor and field resolution", () => {
       expect(context.field).toBe(fieldSupport[id]);
       const field = resolveField(ordinary, context);
       expect(field.kind).toBe("available");
-      expect(context.geometry.project).toHaveBeenCalledExactlyOnceWith(
-        ordinary,
-        context.geometry.planeId,
-      );
+      expect(context.geometry.project).toHaveBeenCalledExactlyOnceWith(ordinary);
       const other = id === "oklch-lc" ? "oklab-ab-disc" : "oklch-lc-rectangle";
       expect(geometryDefinitions[other].project).not.toHaveBeenCalled();
     },
@@ -124,7 +114,7 @@ describe("editor and field resolution", () => {
     });
     expect(resolveField(value, resolveEditorVisualSupport("oklab-ab"))).toMatchObject({
       kind: "value-unavailable",
-      reason: "fixed-lightness-out-of-range",
+      reason: "fixed-coordinate-out-of-domain",
       fixedCoordinate: { channelId: "oklab.l", value: 1.2 },
       projection: { representation: { channels: [1.2, expect.any(Number), expect.any(Number)] } },
     });
@@ -143,14 +133,9 @@ describe("editor and field resolution", () => {
 
 describe("independent requested guide forms", () => {
   it.each(["oklch-lc", "oklab-ab"] as const)(
-    "retains both %s guide rows and exactly the Phase 2C form inventory",
+    "retains both %s guide rows and their sampled forms",
     (editorId) => {
-      const rows = resolveRequestedGuides(
-        ordinary,
-        resolveEditorVisualSupport(editorId),
-        guideIds,
-        [],
-      );
+      const rows = resolveRequestedGuides(ordinary, resolveEditorVisualSupport(editorId), guideIds);
       expect(rows.map((row) => row.guideId)).toEqual(guideIds);
       for (const row of rows) {
         if (row.kind !== "resolved") throw new Error("Expected resolved guide");
@@ -161,7 +146,6 @@ describe("independent requested guide forms", () => {
           "lightnessIntervals",
           "chromaIntervals",
           "reference",
-          "targetMarker",
         ]);
         for (const form of [
           row.forms.contour,
@@ -173,7 +157,6 @@ describe("independent requested guide forms", () => {
         expect(row.forms.hueIntervals?.kind ?? null).toBe(
           editorId === "oklab-ab" ? null : "available",
         );
-        expect(row.forms.targetMarker).toEqual({ kind: "check-not-requested" });
         if (row.forms.contour.kind === "available") {
           expect(row.forms.contour.value.closed).toBe(editorId === "oklab-ab");
           expect(row.forms.contour.value.points.length).toBeGreaterThan(0);
@@ -189,41 +172,10 @@ describe("independent requested guide forms", () => {
     },
   );
 
-  it.each([
-    ["inside", [0.5, 0.5, 0.5]],
-    ["within-tolerance", [-1e-10, 0.5, 0.5]],
-    ["outside", [-0.1, 0.5, 0.5]],
-  ] as const)("gates the sampled marker on a real matching %s result", (status, channels) => {
-    const value = defined({ space: "srgb", channels, alpha: 1 });
-    const result = core.analyzeGamut(value, "srgb-gamut");
-    expect(result).toMatchObject({ ok: true, value: { status } });
-    vi.mocked(core.analyzeGamut).mockClear();
-    const row = resolvedGuide(value, "oklch-lc", [{ gamutId: "srgb-gamut", result }]);
-    expect(row.forms.targetMarker).toMatchObject(
-      status === "outside" ? { kind: "available" } : { kind: "exact-not-outside", status },
-    );
-    expect(core.analyzeGamut).not.toHaveBeenCalled();
-  });
-
-  it("does not borrow another gamut's outside result and preserves a matching exact failure", () => {
-    const failed = { code: "numerical-range", from: "srgb", to: "display-p3" } as const;
-    const other = core.analyzeGamut(ordinary, "srgb-gamut");
-    const checks: GamutCheckResult[] = [{ gamutId: "srgb-gamut", result: other }];
-    expect(
-      resolvedGuide(ordinary, "oklch-lc", checks, "display-p3-boundary").forms.targetMarker,
-    ).toEqual({ kind: "check-not-requested" });
-    checks.push({ gamutId: "display-p3-gamut", result: { ok: false, error: failed } });
-    const row = resolvedGuide(ordinary, "oklch-lc", checks, "display-p3-boundary");
-    expect(row.forms.reference.kind).toBe("available");
-    expect(row.forms.targetMarker).toEqual({ kind: "exact-unavailable", error: failed });
-    if (row.forms.targetMarker.kind === "exact-unavailable")
-      expect(row.forms.targetMarker.error).toBe(failed);
-  });
-
   it("does no sampled or observation work for an empty guide collection", () => {
-    expect(
-      resolveRequestedGuides(ordinary, resolveEditorVisualSupport("oklab-ab"), [], []),
-    ).toEqual([]);
+    expect(resolveRequestedGuides(ordinary, resolveEditorVisualSupport("oklab-ab"), [])).toEqual(
+      [],
+    );
     expect(core.represent).not.toHaveBeenCalled();
     expect(core.getPickerGuide).not.toHaveBeenCalled();
     expect(core.analyzeGamut).not.toHaveBeenCalled();
@@ -231,13 +183,13 @@ describe("independent requested guide forms", () => {
 
   it("retains requests without an editor and resolves the same preferences after switching", () => {
     const requested = Object.freeze([...guideIds]);
-    expect(
-      resolveRequestedGuides(ordinary, resolveEditorVisualSupport(null), requested, []),
-    ).toEqual(requested.map((guideId) => ({ guideId, kind: "no-editor" })));
+    expect(resolveRequestedGuides(ordinary, resolveEditorVisualSupport(null), requested)).toEqual(
+      requested.map((guideId) => ({ guideId, kind: "no-editor" })),
+    );
     expect(core.represent).not.toHaveBeenCalled();
     expect(core.getPickerGuide).not.toHaveBeenCalled();
     expect(
-      resolveRequestedGuides(ordinary, resolveEditorVisualSupport("oklch-lc"), requested, []).every(
+      resolveRequestedGuides(ordinary, resolveEditorVisualSupport("oklch-lc"), requested).every(
         (row) => row.kind === "resolved",
       ),
     ).toBe(true);

@@ -1,19 +1,11 @@
-export {
-  gpPart,
-  gpAttribute,
-  gpMarker,
-  gpAxis,
-  gpChannel,
-  gpGamut,
-  gpView,
-  gpStatus,
-  type GpPart,
-} from "./parts.js";
-export { gamutWarningGlyph } from "./glyphs.js";
+export { gpPart, gpAttribute, gpMarker, gpAxis, gpGamut, type GpPart } from "./parts.js";
 export {
   inspectionUi,
   currentRepresentationOptions,
   exactGamutUi,
+  exactResultOrder,
+  orderedExactChecks,
+  generalizedCopy,
   exactStatusCopy,
   guidePreferenceUi,
   formatInspectionNumber,
@@ -28,27 +20,21 @@ export {
   representationUi,
   editorUi,
   currentPrimaryEditors,
-  currentViewOptions,
-  currentEditorByView,
-  targetGamutUi,
+  preferredEditors,
 } from "./instrumentMetadata.js";
-export {
-  currentEditorHelp,
-  currentEditorCopy,
-  currentWarningVisible,
-  currentTargetCopy,
-  currentTargetPresentation,
-} from "./currentProductPresentation.js";
+export { currentEditorHelp, currentEditorCopy } from "./currentProductPresentation.js";
 export {
   currentSelectionFacts,
-  legacyCheckedGamuts,
+  admittedEditorsForRepresentation,
+  currentAdmittedEditorsForRepresentation,
+  requestEditor,
   validateSelection,
   defaultSelection,
-  selectionFromCurrentView,
   canonicalCheckedGamuts,
   canonicalVisibleGuides,
   validateInstrumentViewState,
   selectionsEqual,
+  semanticContextKey,
   instrumentViewStatesEqual,
   type RepresentationId,
   type InstrumentSelection,

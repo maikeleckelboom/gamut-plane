@@ -1,4 +1,4 @@
-import { act, StrictMode, Suspense, startTransition } from "react";
+import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   createColorValue,
@@ -11,20 +11,17 @@ import {
 } from "@gamut-plane/core";
 import { GamutPlane } from "../src/index.js";
 import {
-  presentAcceptedRevision,
-  type AcceptedPresentationView,
-} from "../src/model/acceptedPresentation.js";
-import { mountPlaneResources } from "../src/interaction/planeResources.js";
-import {
-  currentEditableDetail,
-  currentGuideDisplay,
-  currentTargetVisual,
-} from "@gamut-plane/render/internal/current";
-import { color, event, frames, get, host, initial, input, mount } from "./helpers.js";
-
-vi.mock("../src/model/acceptedPresentation.js", { spy: true });
-vi.mock("../src/interaction/planeResources.js", { spy: true });
-vi.mock("@gamut-plane/render/internal/current", { spy: true });
+  color,
+  editingState,
+  event,
+  frames,
+  get,
+  host,
+  initial,
+  input,
+  mount,
+  selectRepresentation,
+} from "./helpers.js";
 
 function defined(
   space: "oklab" | "display-p3",
@@ -47,7 +44,7 @@ describe("ColorValue plane interaction", () => {
     expect(get(ui.element, '[role="application"]').getAttribute("aria-label")).toContain(
       "OKLCH plane",
     );
-    await event(get(ui.element, '[data-plane-option="oklab"]'), "click");
+    await selectRepresentation(ui.element, "oklab");
     expect(changes).not.toHaveBeenCalled();
     expect(commits).not.toHaveBeenCalled();
     expect(definitionOf(value).space).toBe("display-p3");
@@ -59,7 +56,7 @@ describe("ColorValue plane interaction", () => {
     await input(chroma, "0.23");
     await event(chroma, "keydown", { key: "Enter" });
     expect(definitionOf(ui.commits.mock.calls.at(-1)![0]).space).toBe("oklch");
-    await event(get(ui.element, '[data-plane-option="oklab"]'), "click");
+    await selectRepresentation(ui.element, "oklab");
     const a = get<HTMLInputElement>(ui.element, '[data-oklab-coordinate="a"]');
     await input(a, "-0.13");
     await event(a, "keydown", { key: "Enter" });
@@ -72,7 +69,7 @@ describe("ColorValue plane interaction", () => {
     "coalesces %s pointer edits and commits the final point",
     async (view) => {
       const clock = frames(),
-        ui = await host({ defaultView: view });
+        ui = await host({ defaultState: editingState(view) });
       await clock.flush();
       const surface = get(ui.element, '[role="application"]');
       await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
@@ -104,9 +101,32 @@ describe("ColorValue plane interaction", () => {
     expect(ui.cancels).not.toHaveBeenCalled();
   });
 
+  it("keeps a queued plane gesture through accepted check and guide changes", async () => {
+    const clock = frames(),
+      ui = await host({ defaultState: editingState("oklch") });
+    await clock.flush();
+    const surface = get<HTMLElement>(ui.element, '[role="application"]');
+    await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
+    await event(surface, "pointermove", { clientX: 120, clientY: 140 });
+    const details = get<HTMLDetailsElement>(ui.element, "details");
+    details.open = true;
+    const checks = get<HTMLElement>(ui.element, "fieldset");
+    const check = get<HTMLInputElement>(checks, "input");
+    await act(async () => check.click());
+    expect(get(ui.element, '[role="application"]')).toBe(surface);
+    expect(surface.hasPointerCapture(1)).toBe(true);
+    await clock.flush();
+    expect(ui.changes).toHaveBeenCalledOnce();
+    const guides = get<HTMLElement>(ui.element, "fieldset:nth-of-type(2)");
+    await act(async () => get<HTMLInputElement>(guides, "input").click());
+    await event(surface, "pointerup", { clientX: 200, clientY: 210 });
+    expect(ui.order).toEqual(["change", "change", "commit"]);
+    expect(ui.cancels).not.toHaveBeenCalled();
+  });
+
   it("interrupts on a different defining representation", async () => {
     const clock = frames(),
-      ui = await host({ defaultView: "oklab" });
+      ui = await host({ defaultState: editingState("oklab") });
     await clock.flush();
     const surface = get(ui.element, '[role="application"]');
     await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
@@ -155,100 +175,6 @@ describe("ColorValue plane interaction", () => {
     await ui.replace(color(0.6, 0, null, 1));
     await event(surface, "keydown", { key: "ArrowRight" });
     expect(ui.changes).toHaveBeenCalledTimes(count);
-  });
-
-  it("keeps speculative accepted presentation and callbacks out of committed resources, then installs a complete revision", async () => {
-    const clock = frames(),
-      first = vi.fn(),
-      abandoned = vi.fn();
-    const ui = await mount(
-      <StrictMode>
-        <Suspense fallback={<p>Pending</p>}>
-          <GamutPlane value={initial} onValueChange={first} />
-        </Suspense>
-      </StrictMode>,
-    );
-    await clock.flush();
-    const surface = get(ui.element, '[role="application"]');
-    const committedInput = vi.mocked(mountPlaneResources).mock.calls.at(-1)![4];
-    const committed = committedInput();
-    const beforeHtml = ui.element.innerHTML;
-    const candidate = color(0.62, 0.3, 45, 0.37);
-    const beforeCalls = [currentEditableDetail, currentGuideDisplay, currentTargetVisual].map(
-      (fn) => vi.mocked(fn).mock.calls.length,
-    );
-    const never = new Promise<void>(() => {});
-    function Suspend(): never {
-      throw never;
-    }
-    await act(async () => {
-      startTransition(() =>
-        ui.schedule(
-          <StrictMode>
-            <Suspense fallback={<p>Pending</p>}>
-              <GamutPlane
-                value={candidate}
-                view="oklab"
-                boundaryTarget="display-p3"
-                showSrgbBoundary={false}
-                onValueChange={abandoned}
-              />
-              <Suspend />
-            </Suspense>
-          </StrictMode>,
-        ),
-      );
-    });
-    expect(vi.mocked(presentAcceptedRevision).mock.results.at(-1)!.value.selection.editorId).toBe(
-      "oklab-ab",
-    );
-    [currentEditableDetail, currentGuideDisplay, currentTargetVisual].forEach((fn, index) => {
-      expect(vi.mocked(fn).mock.calls.length).toBeGreaterThan(beforeCalls[index]!);
-    });
-    expect(ui.element.innerHTML).toBe(beforeHtml);
-    expect(committedInput()).toBe(committed);
-    expect(committedInput().field.projection.plane).toBe("oklch");
-    await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
-    await clock.flush();
-    await event(surface, "keydown", { key: "ArrowLeft" });
-    expect(abandoned).not.toHaveBeenCalled();
-    expect(first).toHaveBeenCalledTimes(2);
-    for (const [value] of first.mock.calls) expect(definitionOf(value).space).toBe("oklch");
-    await ui.render(
-      <StrictMode>
-        <Suspense fallback={<p>Pending</p>}>
-          <GamutPlane
-            value={candidate}
-            view="oklab"
-            boundaryTarget="display-p3"
-            showSrgbBoundary={false}
-            onValueChange={abandoned}
-          />
-        </Suspense>
-      </StrictMode>,
-    );
-    await clock.flush();
-    const installed = vi.mocked(mountPlaneResources).mock.calls.at(-1)![4]();
-    // Strict Mode may evaluate additional pure views without committing them. Find the
-    // actual accepted projection installed by the layout-effect boundary, by identity.
-    const accepted = vi
-      .mocked(presentAcceptedRevision)
-      .mock.results.map((result): AcceptedPresentationView => result.value)
-      .find(
-        (view) =>
-          view.field.kind === "available" && view.field.projection === installed.field.projection,
-      );
-    expect(accepted).toBeDefined();
-    expect(installed.value).toBe(candidate);
-    expect(accepted!.selection.editorId).toBe("oklab-ab");
-    expect(accepted!.guides.map((row) => row.guideId)).toEqual(["display-p3-boundary"]);
-    expect(get(ui.element, "[data-gp-root]").getAttribute("data-gp-view")).toBe("oklab");
-    expect(ui.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(1);
-    expect(ui.element.querySelector('[data-gamut-boundary="srgb"]')).toBeNull();
-    expect(
-      get(ui.element, '[aria-label="OKLab lightness · fixed axis"]').getAttribute("value"),
-    ).toBe("0.62");
-    expect(abandoned).not.toHaveBeenCalled();
   });
 
   it("keeps one pointer, previews immediately, then publishes the final point before commit", async () => {
@@ -323,7 +249,7 @@ describe("ColorValue plane interaction", () => {
   );
 
   it.each([false, true])(
-    "view change interrupts without rollback afterPublication=%s",
+    "editor change interrupts without rollback afterPublication=%s",
     async (afterPublication) => {
       const clock = frames(),
         ui = await host();
@@ -335,7 +261,7 @@ describe("ColorValue plane interaction", () => {
         await event(surface, "pointermove", { clientX: 160, clientY: 160 });
       }
       const accepted = afterPublication ? ui.changes.mock.calls[0]![0] : initial;
-      await event(get(ui.element, '[data-plane-option="oklab"]'), "click");
+      await selectRepresentation(ui.element, "oklab");
       await clock.flush();
       await event(surface, "pointerup", { clientX: 300, clientY: 300 });
       await event(surface, "lostpointercapture");
