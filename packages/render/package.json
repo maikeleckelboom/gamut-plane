@@ -20,6 +20,10 @@
     "./internal/capabilities": {
       "types": "./dist/capabilities/index.d.ts",
       "import": "./dist/capabilities/index.js"
+    },
+    "./internal/current": {
+      "types": "./dist/current/index.d.ts",
+      "import": "./dist/current/index.js"
     }
   },
   "scripts": {

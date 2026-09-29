@@ -89,11 +89,20 @@ export async function packPrivateArtifact(
   if (manifest.types) assert.ok(files.includes(`package/${manifest.types.slice(2)}`));
   if (manifest.exports["./style.css"]) assert.ok(files.includes("package/dist/style.css"));
   if (manifest.name === "@gamut-plane/core" || manifest.name === "@gamut-plane/render") {
-    assert.deepEqual(Object.keys(manifest.exports).sort(), [".", "./internal/capabilities"]);
+    assert.deepEqual(Object.keys(manifest.exports).sort(), [
+      ".",
+      "./internal/capabilities",
+      ...(manifest.name === "@gamut-plane/render" ? ["./internal/current"] : []),
+    ]);
     assert.deepEqual(manifest.exports["./internal/capabilities"], {
       types: "./dist/capabilities/index.d.ts",
       import: "./dist/capabilities/index.js",
     });
+    if (manifest.name === "@gamut-plane/render")
+      assert.deepEqual(manifest.exports["./internal/current"], {
+        types: "./dist/current/index.d.ts",
+        import: "./dist/current/index.js",
+      });
   }
   if (manifest.name === "@gamut-plane/ui") {
     assert.deepEqual(Object.keys(manifest.dependencies ?? {}), ["@gamut-plane/core"]);
@@ -208,6 +217,8 @@ import { createColorValue, represent } from "@gamut-plane/core";
 import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
 import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequestedGuides } from "@gamut-plane/render/internal/capabilities";
 import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
+import { currentField, currentExactChecks, currentOklchObservation, currentEditableDetail, currentGuideDisplay, legacyTargetCompatibility } from "@gamut-plane/render/internal/current";
+import type { CurrentField, CurrentGuideDisplay } from "@gamut-plane/render/internal/current";
 const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
 if (!source.ok) throw new Error("Invalid packed capability source");
 const ids: readonly GuideId[] = Object.values(guideDefinitions).map((guide) => guide.id);
@@ -218,6 +229,15 @@ const field: FieldResolution = resolveField(source.value, editor);
 const guides: readonly GuideResolution[] = resolveRequestedGuides(source.value, editor, ids, checks);
 if (!observation.ok || field.kind !== "available" || checks.length !== 2) throw new Error("Packed resolution failed");
 if (guides.some((row) => row.kind !== "resolved" || row.forms.targetMarker.kind !== "exact-not-outside")) throw new Error("Packed exact provenance failed");
+const current: CurrentField = currentField("oklch", editor, field);
+const exact = currentExactChecks(checks);
+const oklch = currentOklchObservation(source.value, observation);
+const detail = currentEditableDetail(current, oklch);
+const display: CurrentGuideDisplay = currentGuideDisplay(guides);
+const visibleTarget = legacyTargetCompatibility(current.editorId, "srgb", exact, guides, oklch);
+const hiddenTarget = legacyTargetCompatibility(current.editorId, "srgb", exact, [], oklch);
+if (current.projection !== field.projection || oklch !== observation.value || detail.view !== "oklch" || !display.srgbPath) throw new Error("Packed current presentation lost accepted facts");
+if (visibleTarget.targetResult.status !== "inside" || hiddenTarget.targetGuidePoint !== null || hiddenTarget.targetResult.swatchCss !== visibleTarget.targetResult.swatchCss) throw new Error("Packed target compatibility failed");
 // @ts-expect-error render guide identities remain distinct from gamut identities
 const wrongGuide: GuideId = "srgb-gamut";
 // @ts-expect-error core's new runtime contract is not public root API
@@ -233,10 +253,13 @@ import * as core from "@gamut-plane/core";
 import * as coreInternal from "@gamut-plane/core/internal/capabilities";
 import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
+import * as current from "@gamut-plane/render/internal/current";
 assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "editorDefinitions", "geometryDefinitions"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
+assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentExactChecks", "currentField", "currentGuideDisplay", "currentOklchObservation", "legacyTargetCompatibility"]);
 for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
 for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
+for (const key of Object.keys(current)) assert.equal(key in render, false);
 assert.equal(typeof globalThis.window, "undefined");
 assert.equal(typeof globalThis.document, "undefined");
 `,
@@ -285,6 +308,10 @@ async function verifyInstalledUiMetadata(consumer: string) {
     `
 import { currentPrimaryEditors, currentEditorByView, editorUi, representationUi } from "@gamut-plane/ui";
 import type { ChannelId, EditOperationId, EditorId, RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
+// The existing render root includes the browser Canvas contract; check type exclusion here,
+// separately from the ES-only internal-entry graph above.
+// @ts-expect-error current sibling presentation is not public root API
+type RootCurrent = typeof import("@gamut-plane/render").currentField;
 for (const representation of Object.values(representationUi)) representation.id satisfies RepresentationDefinition["id"];
 for (const editor of currentPrimaryEditors) {
   editor.id satisfies EditorId;
