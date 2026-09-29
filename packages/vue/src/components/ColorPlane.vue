@@ -53,7 +53,7 @@ const props = withDefaults(
     field: CurrentField;
     guides: CurrentGuideDisplay;
     markerCss: string;
-    editReference?: PlaneEditReference;
+    editReference?: PlaneEditReference | undefined;
     plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
     targetGuidePoint: PlanePoint | null;
     targetGuideCss: string;
@@ -207,15 +207,17 @@ function positionActiveAnnotations(point: PlanePoint): void {
     preferredOffset: PICKER_WARNING_PREFERRED_OFFSET,
     surfaceInset: PICKER_WARNING_SURFACE_INSET,
     markerClearance: PICKER_WARNING_MARKER_CLEARANCE,
-    targetGuideMarker: targetGuide
+    ...(targetGuide
       ? {
-          center: {
-            x: targetGuide.x * surfaceLocalSize.width,
-            y: targetGuide.y * surfaceLocalSize.height,
+          targetGuideMarker: {
+            center: {
+              x: targetGuide.x * surfaceLocalSize.width,
+              y: targetGuide.y * surfaceLocalSize.height,
+            },
+            radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
           },
-          radius: PICKER_TARGET_GUIDE_MARKER_RADIUS,
         }
-      : undefined,
+      : {}),
   });
   warning.style.left = `${placement.left}px`;
   warning.style.top = `${placement.top}px`;

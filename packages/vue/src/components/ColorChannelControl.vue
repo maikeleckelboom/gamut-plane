@@ -126,7 +126,7 @@ onMounted(() => {
     value: boundedModelValue.value,
     min: props.min,
     max: props.max,
-    normalizeValue: props.normalizeValue,
+    ...(props.normalizeValue ? { normalizeValue: props.normalizeValue } : {}),
     onInput: (value) => emit("update:modelValue", value),
     onComplete: (value) => {
       emit("update:modelValue", value);

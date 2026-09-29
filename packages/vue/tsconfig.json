@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vite/client"],
-    "exactOptionalPropertyTypes": false
+    "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }

@@ -5,7 +5,7 @@ import { gpPart, mountNumericInput } from "@gamut-plane/ui";
 const props = defineProps<{
   modelValue: number;
   min: number;
-  max?: number;
+  max?: number | undefined;
   step: number;
   precision: number;
 }>();

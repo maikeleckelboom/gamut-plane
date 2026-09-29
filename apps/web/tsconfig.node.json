@@ -4,6 +4,9 @@
     "target": "es2023",
     "lib": ["ES2023"],
     "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -16,6 +19,10 @@
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
