@@ -9,8 +9,8 @@ The synchronous renderer in `packages/render` owns buffers and draw-cache keys. 
 - Field drawing is scheduled through at most one pending `requestAnimationFrame`.
 - Pointer movement stores only the latest point and applies it through at most one pending animation frame.
 - Native range input stores only its latest clamped value and publishes at most once per animation frame. A native `change` cancels pending work, synchronously publishes the final value, and then commits it.
-- Same-plane edits to the two visible axes move annotations without rebuilding the field or gamut contours.
-- A fixed-axis change invalidates the field once and rebuilds each contour from its deterministic table.
+- Same-plane edits to the two visible axes move annotations without rebuilding the Canvas field. Accepted resolution derives each requested contour once per source/state composition; unchanged fixed coordinates produce unchanged path bytes. Children do not rebuild contours.
+- A fixed-axis change invalidates the field once; the newly accepted contour buffers supply the changed paths. No additional contour cache is introduced by Phase 2H.3.
 - Size, actual device pixel ratio, granted Canvas color space, plane, and fixed axis form the field cache key.
 - Canvas backing dimensions use the uncapped device pixel ratio. CSS dimensions remain the interaction coordinate system.
 - The OKLab field is sampled into one reusable 80 × 80 offscreen buffer with 24 color samples per row, then scaled to the visible backing store.
@@ -20,6 +20,10 @@ The synchronous renderer in `packages/render` owns buffers and draw-cache keys. 
 - Generated boundary tables are loaded as static data. Generation never runs on startup or during interaction.
 
 Unit tests cover invalidation, pointer-frame coalescing, generated-table determinism, and device-pixel-ratio handling. Playwright tests cover resize stability and interaction in a browser.
+
+The [Phase 2H.3 work ledger](presentation-production-migration.md#certified-production-work-budget)
+separates accepted resolution from removed factory/child duplication and retained supplemental
+observations/hidden-target reference sampling. These are call-count contracts, not new timing claims.
 
 ## Early observations
 

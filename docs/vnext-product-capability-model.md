@@ -2242,6 +2242,49 @@ After each of four precomputed success/failure revisions, projection adds no obs
 analysis, field/guide resolution, plane projection, contour building or guide sampling calls.
 The outer view still has exactly seven fields and no target, environment or component state.
 
-This remains certification of the private projection only. React and Vue components continue to
-consume their existing presentation path; component adoption and duplicate-work removal remain
-Phase 2H.3 and 2H.4 respectively.
+At the end of 2H.2 this was certification of the private projection only. React and Vue components
+still consumed their existing presentation path. The originally planned separate 2H.3 adoption
+and 2H.4 duplicate-removal sequence is intentionally refined by the following implementation.
+
+### 36.16 Phase 2H.3 production migration record
+
+Phase 2H.1/2H.2 certified the accepted families, reference and contour-buffer identity, zero-work
+projection, scoped failures and the complete A–R matrix. That evidence now supports combining
+production adoption, authority transfer and corresponding duplicate removal family by family.
+The architecture and public two-editor product remain unchanged.
+
+Both production orchestrators derive the unchanged `AcceptedPresentationView` synchronously.
+Its selection controls current semantic composition through a narrow explicit invariant bridge;
+exact checks supply warning/target truth; active field supplies display projection/domain/sampling
+facts; requested guides supply intervals, visible target references/markers and contours. Both
+`ColorPlane` implementations consume accepted field and serialized guide facts without display
+reprojection or contour rebuilding. Interaction-time geometry and mounted resource policies remain
+intact. React committed-props installation and Vue native model acceptance remain authoritative.
+
+The [Phase 2H.3 migration ledger](presentation-production-migration.md) records checkpoints A–F,
+before/after owners, consumers, independent equivalence, call-count attribution, failure bridges,
+DOM/lifecycle coverage and the package boundary. It supersedes the older sequencing statements in
+this historical design record. The existing 2H.1/2H.2 helpers and frozen Phase 2C oracle are unchanged.
+
+The unsupported render entry `@gamut-plane/render/internal/current` contains only separate
+current-product bridges and deterministic visual transformations over owner-native facts.
+It imports no accepted view or UI state. `CurrentEditableDetail` retains active-editor gradients,
+CSS and existing help/copy, with one supplemental OKLCH observation only for OKLab's current
+visuals. `LegacyTargetCompatibility` borrows visible reference/marker facts and samples exactly one
+missing reference for a hidden target. It introduces no hidden request, check, contour or interval.
+Current eager failure behavior remains deliberately bridged; no generalized partial-state UI is
+introduced. Public roots and adapter APIs, style imports, versions, CSS and baselines are unchanged.
+
+Production adapters no longer call `createPickerPresentation` or `getBoundaryPresentation`.
+Both remain independent legacy/reference implementations and test oracles. Real component work
+tests cover both editors/targets/all visibility combinations; framework-neutral tests compare
+208 successful compositions and 36 failure combinations with the untouched oracle. Lifecycle
+tests capture accepted view/revision coherence, nonsemantic node continuity and suspended React
+presentation work. Packed checks certify the new exact export inventory, root exclusion,
+ES-only declarations and no-DOM installed-graph execution; SSR suites preserve target/guide markup.
+
+Phase 2H.4 is now **Compatibility Detail Reduction / Legacy Retirement**: hidden-target
+compatibility reduction, remaining gradients/current editor detail and help/warning/copy ownership,
+obsolete compatibility shapes, and explicit retirement decisions for the two independent oracles.
+Useful oracle evidence need not be deleted. Public generalized APIs, observation-only product UI,
+mapping/output workflows, new science and compact redesign remain separate later work.

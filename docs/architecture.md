@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Phase 2F adds owner-local scoped core/render resolution alongside the frozen legacy presentation. Public adapter APIs and v0.3 presentation remain unchanged; Phase 2G now integrates generalized resolution internally; public generalized APIs and visual redesign remain future work.
+This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Phase 2F adds owner-local scoped core/render resolution alongside the frozen legacy presentation. Phase 2G integrates generalized resolution internally; Phase 2H.1/2H.2 certify the accepted presentation view and Phase 2H.3 makes it production authority. Public adapter APIs and v0.3 presentation remain unchanged; public generalized APIs and visual redesign remain future work.
 
 ## Layer boundaries
 
@@ -110,7 +110,7 @@ The app checks native `writeText` rejection and the legacy `execCommand` boolean
 
 Exact three-state Display P3 and sRGB gamut status is calculated directly from the selected `ColorValue`. It is not sampled from a contour.
 
-`ColorValue` owns authored identity. `projectColorToPlane` observes it; `authorPlaneEdit` creates a new definition in the selected edit space. Plane geometry owns axes, constraints and contour coordinates. `packages/render/src/pickerPresentation.ts` derives observed OKLCH/OKLab representations, active and guide positions, field hue, gradients, status, intervals, markers, CSS and help text without storing state or authoring a color. A hue-less observation remains `h: null`; the field receives a separate numeric hue of `0`. Vue and React own lifecycle and temporary edit references.
+`ColorValue` owns authored identity. `projectColorToPlane` observes it; `authorPlaneEdit` creates a new definition in the selected edit space. Plane geometry owns axes, constraints and contour coordinates. The accepted revision owns selected observation, exact results, active field and requested guides. `packages/render/src/current/` adapts those owner-native facts and supplies only missing current visual detail. The unchanged `pickerPresentation.ts` independently derives the former complete output as an equivalence oracle. A hue-less observation remains `h: null`; the field receives a separate numeric hue of `0`. Vue and React own lifecycle and temporary edit references.
 
 `analyzeGamut` receives the original selected `ColorValue` for both sRGB and Display P3 and returns the full `inside | within-tolerance | outside` status. `getPickerGuide` interpolates observed numeric OKLCH coordinates against one table for maximum chroma, guide delta and guide color. `packages/render/src/boundaryPresentation.ts` combines those separate inputs only for visual derivation: it filters contour-adjacent channel intervals by visibility and positions the sampled target guide for either plane. No table lookup or reconstructed OKLCH value decides exact status.
 
@@ -118,7 +118,7 @@ Exact three-state Display P3 and sRGB gamut status is calculated directly from t
 
 `guideSupport.ts` owns `srgb-boundary` → `srgb-gamut` and `display-p3-boundary` → `display-p3-gamut`, referencing the unchanged generated tables. Each guide supports both current editors: contour, Lightness intervals, Chroma intervals, sampled target marker and guide reference/swatch; Hue intervals exist only for `oklch-lc`. Forms reference existing operations, with target positioning using core geometry. Support records are frozen; existing shared plane objects and table buffers retain their current identity and contracts. `boundaryPresentation.ts` resolves reference sampling, interval availability and target positioning from these rows, separately from the old visibility booleans and singular target. It still orders visible interval references Display P3 then sRGB and gates the marker on visibility plus independently supplied exact `outside` status.
 
-Both adapters still build contours from `presentation.plane` and the existing table props/imports. In OKLab, Chroma intervals and the Chroma slider marker are still produced but have no visible control consuming them; the plane target marker, Lightness intervals and target reference panel are consumed. Support describes current production, not automatic UI exposure. Neither adapter nor the Canvas sampling loop queries capability catalogs. No generalized selection, checked-gamut array, visible-guide array or graceful unavailable UI is introduced.
+Both adapters consume accepted guide forms. `currentGuideDisplay` serializes each resolved contour buffer by identity, preserving `closed` and Display P3-before-sRGB visual order. `ColorPlane` receives the resulting SVG paths and accepted active field; it performs no presentation projection or contour construction. OKLab retains generalized Chroma form facts but creates no unused Chroma display rows or slider marker. The plane target marker, Lightness intervals and target reference panel remain consumed. Capability composition stays outside Canvas sampling and pointer hot paths. No generalized public selection/check/guide API or graceful unavailable UI is introduced.
 
 Contours, channel intervals, boundary-guide swatches and target guides interpolate precomputed `Float32Array` data. They are approximate reference geometry and never map the selected color. Target selects the reference gamut; visibility controls its visual overlays without erasing exact status. An outside-only target guide appears only for exact `outside` status when that gamut's guides are visible. The picker treats `within-tolerance` as visually contained, so the Display P3 warning appears only for `outside`. `mapToGamut` alone maps a color; strict `serializeCss` and `serializeHex` may reject `within-tolerance` through `boundary-tolerance`.
 
@@ -158,32 +158,43 @@ replaying into a later context; the existing framework-specific Hue editing path
 No controller or Canvas resource policy changes. VueUse continues to own existing resize/DPR/scroll
 mechanics; this migration adds no generic browser primitive.
 
-The legacy `createPickerPresentation`/`getBoundaryPresentation` path still independently derives
-the exact v0.3 visual output from the revision source. None of those separately recomputed rows
-enters generalized resolution. This bounded duplication preserves eager projections, throws,
-unused OKLab Chroma output, plane/sampler identity, generated tables, CSS and visual baselines.
-Scoped failures do not introduce partial UI. See the [Phase 2G record](vnext-product-capability-model.md#35-phase-2g-internal-generalized-adapter-integration).
+## Accepted presentation production authority (Phase 2H.3)
 
-The [Phase 2H presentation design](vnext-product-capability-model.md#36-phase-2h-design-generalized-presentation-contract)
-specifies a future small adapter-local readonly view of that coherent revision: authored
-representation/alpha, accepted selection, and the existing observation, exact-check, editor,
-field and guide results by reference. It introduces no global readiness/error state and no
-additional scientific computation. Observation-only selections and partial failures retain all
-independent facts; a missing field never removes a supported guide. Formatting/help/warning
-interpretation belongs to UI/product policy, while render retains deterministic visual serializers.
-Current editable detail and the focused legacy target remain separate compatibility responsibilities;
-Canvas readiness/resources remain adapter-owned. This is a design contract only, with no resolver,
-adapter or public API change. Its source audit, A–R scenarios and staged retirement criteria follow
-ADR 0003 without adding a package or reverse dependency.
+Each adapter synchronously derives `presentAcceptedRevision(revision)`. Its unchanged seven
+fields are `authored`, `selection`, `observation`, `exactChecks`, `editor`, `field`, and `guides`.
+The selected editor, exact rows, field and guide facts retain revision reference identity.
+There is no presentation store, copied source/context, readiness flag or added science in this view.
+The A–R contract and zero-work evidence from 2H.1/2H.2 remain intact.
 
-Phase 2H Design.1 hardens that contract: the six existing families retain exact revision
-references, including contour buffers; only authored context and an optional shallow view shell
-are allocated. Projection performs no science or capability resolution. The private 2H.1 helper
-does not change component rendering; later duplicate legacy work requires per-family equivalence
-and call-count evidence.
+The explicit adapter-local `currentView` bridge admits only `oklch/oklch-lc` and `oklab/oklab-ab`.
+Accepted selection controls editor composition, selector state, root attributes and previews.
+Unexpected current selections throw an invariant error; observation-only selections remain
+valid internally but are not current public rendering contexts.
 
-Phase 2H.1 implements that private adapter-local view in both React and Vue with shared contract
-tests. Neither component consumes it yet; the legacy presentation still drives rendering.
+The unsupported `@gamut-plane/render/internal/current` entry separates current compatibility
+assertions, guide serialization, editable detail and target detail. It imports no UI state or
+adapter type. Accepted exact rows supply warning/target truth, with no second analysis. Accepted
+field supplies raw projection, representation, sampling fixed coordinate, domain status and the
+existing plane/sampler. Requested guide rows supply intervals, references, target markers and
+contour buffers, with no second ordinary sampling. Components preserve per-form distinctions;
+current public composition still fails where the old eager factory failed.
+
+`CurrentEditableDetail` supplies CSS, active-editor gradients, marker positions and existing help
+copy. It reuses selected OKLCH observation, or observes OKLCH once for OKLab's supplemental visuals
+and Hue reconciliation. `LegacyTargetCompatibility` reuses a visible guide's reference/marker;
+when hidden, it samples only the missing target reference. It does not add requests, checks,
+contours, intervals or a hidden marker. The current target panel and Display P3 outside-only warning
+policy remain unchanged. Canvas readiness, resource ownership and interaction-time geometry stay
+adapter-owned; resource reconciliation now reads committed accepted field facts.
+
+`createPickerPresentation` and `getBoundaryPresentation` remain unchanged independent reference
+implementations. Neither production adapter calls them. The frozen Phase 2C oracle remains intact.
+The [migration ledger](presentation-production-migration.md) records each authority transfer,
+consumer inventory, independent equivalence, measured work budget and retained failure bridges.
+The [Phase 2H record](vnext-product-capability-model.md#3616-phase-2h3-production-migration-record)
+refines the original adoption-then-removal sequence: certified authority transfer and corresponding
+duplicate removal now land together. Phase 2H.4 concerns compatibility detail reduction and the
+final retirement decision for the independent legacy oracles.
 
 ## Generated tables
 
@@ -199,9 +210,9 @@ The render package owns checked-in tables at `packages/render/src/generated/gamu
 
 `GamutPlane` requires `value` and `onValueChange`, with optional `onValueCommit`, `onCancel` and `onCanvasColorSpaceChange`. It exposes both complete coordinate views, all channel controls, numeric drafts, warnings, sampled guides, a controlled `boundaryTarget`, independent boundary visibility/details and a host `legend`. View follows conventional `view` / `defaultView` / `onViewChange` ownership; color remains controlled-only. Native section props/ref are supported with protected internal semantics and merged class/style. See the [public API](../packages/react/README.md).
 
-React renders pure markup, guides and hydration-safe `useId` associations. A layout effect publishes committed props to the interaction binding; abandoned renders cannot replace its callbacks or color. A separate committed effect mounts the adapter resource binding and shared pointer gesture, then reconciles them from committed props. Cleanup cancels pointer/field work, releases capture and disposes resources without emitting edits. Pure contour computation is cached by fixed axis inside the component; consumers do not need memoization.
+React renders pure markup, guides and hydration-safe `useId` associations. A layout effect publishes committed props to the interaction binding; abandoned renders cannot replace its callbacks or color. A separate committed effect mounts the adapter resource binding and shared pointer gesture, then reconciles them from committed props. Cleanup cancels pointer/field work, releases capture and disposes resources without emitting edits. The child consumes the accepted field and serialized accepted contours; committed resource updates reuse that projection. Consumers do not need memoization.
 
-The orchestrator composes private components and render's shared pure presentation function. `ColorPlane` owns DOM/SVG and connects UI's gesture to committed props through `planeInteraction.ts`; `planeResources.ts` owns React's renderer/environment resources and DOM geometry/presentation. UI's controller owns pointer arbitration, expected feedback, coalescing and rollback/interruption, without Canvas/resource ownership. `ColorChannelControl` mounts UI's shared range controller and composes its numeric input. `NumericInput` mounts UI's shared numeric controller while the native element owns temporary text. No context object or hook contains the complete product. The [source/coverage map](react-parity.md) details these boundaries.
+The orchestrator composes private components, one accepted revision/view, and render's separate current visual families. `ColorPlane` owns DOM/SVG and connects UI's gesture to committed props through `planeInteraction.ts`; `planeResources.ts` owns React's renderer/environment resources and DOM geometry/presentation. UI's controller owns pointer arbitration, expected feedback, coalescing and rollback/interruption, without Canvas/resource ownership. `ColorChannelControl` mounts UI's shared range controller and composes its numeric input. `NumericInput` mounts UI's shared numeric controller while the native element owns temporary text. No context object or hook contains the complete product. The [source/coverage map](react-parity.md) details these boundaries.
 
 Pointer-up and native range change discard queued work and synchronously publish the actual final value before `onValueCommit`. Native input remains coalesced live delivery. Numeric Enter/change/blur deduplicate one completed draft. Defining-equal feedback preserves gesture ownership; different definitions and actual view changes cancel without rollback. Escape/capture loss restore the exact `ColorValue` origin. Teardown never calls consumers. Committed Canvas status notifications avoid unchanged Strict Mode replay duplicates.
 

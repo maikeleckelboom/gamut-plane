@@ -19,6 +19,8 @@ The Vue and React adapters implement the same closed instrument over core's exac
 | `hooks/useCommitted.ts`                | Publish props to native listeners only after a React commit                                                                           |
 | `model/presentationStyle.ts`           | Private typed CSS-property construction, without broadening the public theme API                                                      |
 | `model/acceptedResolution.ts`          | Accepted legacy-state bridge and synchronous generalized revision; fresh exact rows belong only to their source/state                 |
+| `model/acceptedPresentation.ts`        | Seven-field readonly projection borrowing the accepted revision facts without new resolution                                          |
+| `model/currentView.ts`                 | Explicit admission of the two current accepted representation/editor pairs                                                            |
 
 The private `@gamut-plane/ui` package supplies the part/state vocabulary, authored v0.3 stylesheet, warning glyph geometry and separate plane/range/numeric DOM controllers to both adapters. `mountPlaneGesture` owns one pointer, origin/expected feedback, pending/latest point, coalesced live publication, synchronous final publication, exact rollback and callback-silent disposal. Its ports leave core authorship/equality, adapter geometry/presentation, capture, focus and keyboard outside UI. `mountRange` owns native range input/change distinction, live RAF, expected feedback, parent interruption, pointer preview and callback-silent disposal. `mountNumericInput` owns only draft metadata, composition/completion policy, value/precision reconciliation and silent disposal; the native number input owns text. React keeps committed-prop/layout-effect integration and pointer-focus hooks.
 
@@ -36,7 +38,16 @@ revision and proves that subsequent native pointer/keyboard work still authors c
 
 ## Shared visual extraction
 
-Both adapters consume render's pure `pickerPresentation.ts`, plus its warning and geometry helpers. The shared presentation derives direct exact statuses from the selected `ColorValue`, observed numeric field hue, target result, sampled target guide, intervals/markers, gradients and help without framework state or authored-color authority. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry. `presentation.ts` constructs CSS gradients and guide connectors.
+Both adapters consume one accepted presentation view and render's separate `internal/current`
+families. Accepted selection, exact checks, active field and requested guide forms are production
+authorities. Children consume the field projection and serialized accepted contour buffers without
+repeating their construction. Active-editor detail supplies gradients/CSS/help; target compatibility
+reuses visible facts or samples one missing hidden-target reference. The unchanged
+`pickerPresentation.ts`/`boundaryPresentation.ts` implementations remain independent equivalence
+oracles. `channelGeometry.ts` consolidates concrete interval/threshold/warning geometry, and
+`presentation.ts` constructs CSS gradients and guide connectors. See the
+[production migration ledger](presentation-production-migration.md) for consumers, work counts,
+failure bridges, suspended-render and node-continuity evidence.
 
 Generated table settings/bytes and Canvas sampling algorithms remain unchanged. The table digest is `sha256:4c73cef992515b5876e309f7bce90cd418217c7a576f54cfcead380eb416ce15`.
 
