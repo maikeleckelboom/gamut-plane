@@ -1,4 +1,5 @@
 /** Unsupported internal sibling-package contract. Not a consumer capability API. */
+export { representationDefinitions } from "./representationDefinitions.js";
 export { editorDefinitions } from "./editorDefinitions.js";
 export { geometryDefinitions, keyboardGeometryPoint } from "./geometryDefinitions.js";
 export { authorEditorPoint, editOperationDefinitions } from "./editOperationDefinitions.js";

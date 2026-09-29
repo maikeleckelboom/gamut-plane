@@ -19,14 +19,16 @@ test("compact editable instrument in a 440 px host", async ({ page }) => {
 
 test("generalized observation desktop reference", async ({ page }) => {
   await ready(page);
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="srgb"]').click();
   await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(page).toHaveScreenshot("generalized-observation-desktop.png", { fullPage: true });
 });
 
 test("generalized alternate editor reference", async ({ page }) => {
   await ready(page);
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(page.locator("[data-gp-root]")).toHaveAttribute("data-active-plane", "oklab");
   await expect(page).toHaveScreenshot("generalized-oklab-desktop.png", { fullPage: true });
 });
@@ -101,7 +103,8 @@ test("interior OKLCH and OKLab keep ordinary boundaries without excursion annota
   await root.locator("summary").click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.locator("summary").click();
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(
     root.locator('[data-gp-marker="reference"], [data-gp-part="reference-connector"]'),
   ).toHaveCount(0);

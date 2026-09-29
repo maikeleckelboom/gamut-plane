@@ -293,12 +293,12 @@ describe("native range lifecycle", () => {
   });
   it("editor change ends Hue preview and queued range publications", async () => {
     const clock = frames(),
-      ui = await host();
+      ui = await host({}, true);
     await clock.flush();
     const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
     await event(range, "pointerdown");
     await input(range, "180");
-    await selectRepresentation(ui.element, "oklab");
+    await ui.acceptState(editingState("oklab"));
     await clock.flush();
     expect(ui.changes).not.toHaveBeenCalled();
     expect(get(ui.element, "[data-picker-plane]").dataset.fieldQuality).toBe("full");

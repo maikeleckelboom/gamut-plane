@@ -8,7 +8,10 @@ import {
   type PlaneEditError,
   type PlaneEditReference,
 } from "@gamut-plane/core";
-import { editOperationDefinitions } from "@gamut-plane/core/internal/capabilities";
+import {
+  editOperationDefinitions,
+  representationDefinitions,
+} from "@gamut-plane/core/internal/capabilities";
 import { computed, getCurrentInstance, onBeforeUpdate, ref, shallowRef, useId, watch } from "vue";
 import {
   gpPart,
@@ -16,8 +19,6 @@ import {
   representationUi,
   currentEditorHelp,
   canonicalInstrumentState,
-  currentRepresentationOptions,
-  currentAdmittedEditorsForRepresentation,
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
@@ -30,10 +31,10 @@ import {
   inspectionUi,
   instrumentViewStatesEqual,
   requestCheckedGamut,
-  requestInspection,
-  requestRepresentation,
   requestVisibleGuide,
 } from "@gamut-plane/ui";
+import { coordinatesOptions, validateSelection, type ShellSelection } from "@gamut-plane/ui";
+import SelectionContext from "./SelectionContext.vue";
 import NumericInput from "./NumericInput.vue";
 import { resolveAcceptedRevision } from "../model/acceptedResolution.js";
 import { presentAcceptedRevision } from "../model/acceptedPresentation.js";
@@ -183,23 +184,9 @@ watch(
 );
 const fixedAxisFieldPreview = computed(() => view.value === "oklch" && hueRangeDragging.value);
 
-function selectRepresentation(event: Event): void {
-  const target = event.target;
-  if (!(target instanceof HTMLSelectElement)) return;
-  requestState(
-    requestRepresentation(
-      acceptedState.value,
-      target.value as GamutPlaneState["selection"]["representationId"],
-    ),
-  );
-  target.value = acceptedState.value.selection.representationId;
-}
-
-function toggleInspection(event: Event): void {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  requestState(requestInspection(acceptedState.value, !target.checked));
-  target.checked = acceptedState.value.selection.editorId !== null;
+function selectContext(selection: ShellSelection): void {
+  const result = validateSelection(selection);
+  if (result.ok) requestState({ ...acceptedState.value, selection: result.value });
 }
 
 function toggleCheck(gamutId: GamutId, event: Event): void {
@@ -322,38 +309,19 @@ watch(
   >
     <h2 :id="titleId" class="sr-only" data-gp-visually-hidden>{{ generalizedCopy.instrument }}</h2>
 
-    <div class="gp-generalized-selection" :data-gp-part="gpPart.representationControl">
-      <div class="gp-context-row">
-        <div class="gp-context-space">
-          <label :for="`${instanceId}-representation`">{{ generalizedCopy.representation }}</label>
-          <select
-            :id="`${instanceId}-representation`"
-            :value="accepted.selection.representationId"
-            :disabled="readOnlyState()"
-            @change="selectRepresentation"
-          >
-            <option v-for="option in currentRepresentationOptions" :key="option" :value="option">
-              {{ representationUi[option].label }}
-            </option>
-          </select>
-        </div>
-        <label
-          v-if="
-            currentAdmittedEditorsForRepresentation(accepted.selection.representationId).length > 0
-          "
-          class="gp-generalized-edit-toggle"
-        >
-          <input
-            type="checkbox"
-            :checked="accepted.selection.editorId !== null"
-            :disabled="readOnlyState()"
-            @change="toggleInspection"
-          />
-          {{ generalizedCopy.editCoordinates }}
-        </label>
-        <span v-else class="gp-context-mode">{{ generalizedCopy.inspectionOnly }}</span>
-      </div>
-    </div>
+    <SelectionContext
+      :id="instanceId"
+      :selection="accepted.selection"
+      :options="
+        coordinatesOptions(
+          acceptedState.checkedGamuts,
+          accepted.exactChecks,
+          representationDefinitions,
+        )
+      "
+      :disabled="readOnlyState()"
+      @request="selectContext"
+    />
 
     <div class="plane-instrument__workspace" :data-gp-part="gpPart.workspace">
       <div class="plane-instrument__field" :data-gp-part="gpPart.field">

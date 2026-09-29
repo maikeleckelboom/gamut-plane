@@ -17,10 +17,12 @@ test("editable, alternate editor, and observation states remain accessible", asy
   await page.goto("/");
   await expect(page.locator("[data-gp-root]")).toBeVisible();
   await expectNoHighImpactViolations(page);
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(page.locator("[data-active-plane='oklab']")).toBeVisible();
   await expectNoHighImpactViolations(page);
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="srgb"]').click();
   await expect(
     page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),
   ).toBeVisible();

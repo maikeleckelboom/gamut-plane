@@ -40,7 +40,8 @@ describe("Vue public generalized instrument", () => {
       props: { modelValue: value, state: observed, "onUpdate:state": requests },
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    await wrapper.get("select").setValue("oklch");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="oklch"]').trigger("click");
     expect(requests).toHaveBeenCalledOnce();
     expect(requests.mock.calls[0]?.[0].selection).toEqual({
       representationId: "oklch",
@@ -49,7 +50,7 @@ describe("Vue public generalized instrument", () => {
     expect(Object.isFrozen(requests.mock.calls[0]?.[0])).toBe(true);
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     await wrapper.setProps({ state: observed });
-    expect((wrapper.get("select").element as HTMLSelectElement).value).toBe("srgb");
+    expect(wrapper.get('[role="combobox"]').text()).toBe("sRGB▾");
     expect(definitionOf(value)).toEqual(before);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     wrapper.unmount();
@@ -67,7 +68,8 @@ describe("Vue public generalized instrument", () => {
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.text()).toContain("Requested boundaries appear");
-    await wrapper.get("select").setValue("oklch");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="oklch"]').trigger("click");
     await nextTick();
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
     expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(true);
@@ -79,7 +81,7 @@ describe("Vue public generalized instrument", () => {
 
   it("keeps controlled state read-only and rejects invalid state", () => {
     const wrapper = mount(GamutPlane, { props: { modelValue: value, state: observed } });
-    expect((wrapper.get("select").element as HTMLSelectElement).disabled).toBe(true);
+    expect((wrapper.get('[role="combobox"]').element as HTMLButtonElement).disabled).toBe(true);
     expect(
       wrapper
         .findAll("details input")
@@ -122,9 +124,9 @@ describe("Vue public generalized instrument", () => {
       visibleGuides: [],
     };
     const wrapper = mount(GamutPlane, { props: { modelValue: value, defaultState: state } });
-    await wrapper.get(".gp-generalized-edit-toggle input").setValue(false);
+    await wrapper.get('.gp-mode input[value="inspect"]').setValue(true);
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    await wrapper.get(".gp-generalized-edit-toggle input").setValue(true);
+    await wrapper.get('.gp-mode input[value="edit"]').setValue(true);
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     wrapper.unmount();
@@ -144,7 +146,8 @@ describe("Vue public generalized instrument", () => {
     const number = wrapper.get<HTMLInputElement>('[aria-label="Lightness numeric value"]');
     number.element.value = "0.8";
     await number.trigger("input");
-    await wrapper.get("select").setValue("srgb");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="srgb"]').trigger("click");
     expect(requests.mock.lastCall?.[0].selection).toEqual({
       representationId: "srgb",
       editorId: null,
@@ -203,7 +206,9 @@ describe("Vue public generalized instrument", () => {
         checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
       },
     });
-    expect(wrapper.findAll("[data-gp-status='unavailable']")).toHaveLength(2);
+    expect(
+      wrapper.findAll("[data-gp-part='exact-result'][data-gp-status='unavailable']"),
+    ).toHaveLength(2);
     expect(wrapper.text()).toContain("Alpha");
     await wrapper.setProps({
       modelValue: huge.value,
@@ -225,6 +230,7 @@ describe("Vue public generalized instrument", () => {
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.text()).toContain("Editing plane unavailable");
+    expect((wrapper.get('input[value="edit"]').element as HTMLInputElement).checked).toBe(true);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Alpha");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
     expect(wrapper.text()).toContain("Some requested boundaries cannot be drawn here");

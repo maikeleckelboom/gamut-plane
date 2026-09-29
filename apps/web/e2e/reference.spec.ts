@@ -118,7 +118,8 @@ test("Reference radios support keyboard navigation, inspection and returning to 
   await page.keyboard.press("ArrowDown");
   await expect(srgb).toBeChecked();
   for (const coordinates of ["srgb", "display-p3", "oklab", "oklch"]) {
-    await root.getByLabel("Coordinates", { exact: true }).selectOption(coordinates);
+    await root.getByRole("combobox", { name: "Coordinates" }).click();
+    await root.locator(`[role="option"][data-value="${coordinates}"]`).click();
     await expect(srgb).toBeChecked();
     await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(
       coordinates === "oklch" || coordinates === "oklab" ? 1 : 0,

@@ -48,8 +48,8 @@ describe("standalone application", () => {
     expect(wrapper.get(".output-demo h2").text()).toBe("Output examples");
     expect(
       wrapper
-        .findAll("[data-gp-part='representation-control'] option")
-        .map((option) => option.attributes("value")),
+        .findAll("[data-gp-part='representation-control'] [role='option']")
+        .map((option) => option.attributes("data-value")),
     ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
     expect(wrapper.get("[data-gp-part='exact-results']").text()).toContain("Gamuts");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(2);
@@ -66,7 +66,8 @@ describe("standalone application", () => {
     await flushPromises();
     const originalOklch = wrapper.get('[data-css-representation="oklch"] code').text();
 
-    await wrapper.get("[data-gp-part='representation-control'] select").setValue("srgb");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="srgb"]').trigger("click");
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
@@ -76,7 +77,8 @@ describe("standalone application", () => {
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(false);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(true);
     expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(false);
-    await wrapper.get("[data-gp-part='representation-control'] select").setValue("oklab");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
     await flushPromises();
     expect(wrapper.get('[data-plane-id="oklab"]').exists()).toBe(true);
     expect(wrapper.get(".output-demo").attributes("aria-labelledby")).toBe("output-demo-title");

@@ -31,10 +31,11 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await openInstrument(page);
   const initial = await page.locator('[data-css-representation="oklch"] code').textContent();
   const root = page.locator("[data-gp-root]");
-  await root.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="srgb"]').click();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
-  await expect(root.getByLabel("Edit color")).toHaveCount(0);
+  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
   await root.getByText("Gamuts").click();
   await root.getByLabel("Display P3 Status", { exact: true }).check();
   await root.getByLabel("sRGB Status", { exact: true }).check();
@@ -49,11 +50,12 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await expect(root).toContainText("Requested boundaries appear");
   await root.getByText("Gamuts").click();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
-  await root.getByLabel("Coordinates", { exact: true }).selectOption("oklch");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="oklch"]').click();
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
-  await root.getByLabel("Edit color").uncheck();
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
-  await root.getByLabel("Edit color").check();
+  await root.getByRole("radio", { name: "Edit", exact: true }).check();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(initial!);
 });
@@ -85,7 +87,8 @@ test("first pointer press and drag keep the marker under the pointer after switc
       representation !== "oklch" ||
       (await page.locator("[data-gp-root]").getAttribute("data-active-plane")) !== "oklch"
     ) {
-      await page.getByLabel("Coordinates", { exact: true }).selectOption(representation);
+      await page.getByRole("combobox", { name: "Coordinates" }).click();
+      await page.locator(`[role="option"][data-value="${representation}"]`).click();
     }
     const surface = page.locator("[data-gp-part='surface']");
     const marker = surface.locator("[data-active-marker]");
@@ -122,7 +125,8 @@ test("first pointer press and drag keep the marker under the pointer after switc
 
 test("the first slider drag after an editor switch keeps its track in place", async ({ page }) => {
   await openInstrument(page);
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(page.locator("[data-gp-part='authorship-context']")).toContainText("OKLCH");
   const track = page.locator("[data-gp-channel='l'] [data-gp-part='channel-track']");
   const range = track.locator("[data-gp-part='native-range']");
@@ -148,7 +152,8 @@ test("alternate editor keeps authored color until an explicit edit", async ({ pa
   await openInstrument(page);
   const css = page.locator('[data-css-representation="oklch"] code');
   const before = await css.textContent();
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
+  await page.getByRole("combobox", { name: "Coordinates" }).click();
+  await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(page.locator("[data-active-plane='oklab']")).toBeVisible();
   await expect(css).toHaveText(before!);
   const plane = page.getByRole("application", { name: /OKLab a\/b plane/ });
@@ -174,7 +179,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
     await page.evaluate((fontSize) => {
       document.documentElement.style.fontSize = fontSize;
     }, size);
-    await expect(page.getByLabel("Coordinates", { exact: true })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Coordinates" })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -191,7 +196,8 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),
   ).toBeLessThanOrEqual(0);
-  await root.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="srgb"]').click();
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),

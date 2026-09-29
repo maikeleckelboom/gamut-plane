@@ -27,6 +27,7 @@ const rgbFacts = Object.freeze({ ...lightnessFacts, unit: "encoded-rgb" } as con
 export const representationDefinitions: RepresentationDefinitions = Object.freeze({
   oklch: Object.freeze({
     id: "oklch",
+    associatedGamutId: null,
     model: "oklab",
     coordinateKind: "cylindrical",
     referenceContext: "d65",
@@ -64,6 +65,7 @@ export const representationDefinitions: RepresentationDefinitions = Object.freez
   }),
   oklab: Object.freeze({
     id: "oklab",
+    associatedGamutId: null,
     model: "oklab",
     coordinateKind: "cartesian",
     referenceContext: "d65",
@@ -96,6 +98,7 @@ export const representationDefinitions: RepresentationDefinitions = Object.freez
   }),
   srgb: Object.freeze({
     id: "srgb",
+    associatedGamutId: "srgb-gamut",
     model: "rgb",
     coordinateKind: "cartesian",
     referenceContext: "d65",
@@ -110,6 +113,7 @@ export const representationDefinitions: RepresentationDefinitions = Object.freez
   }),
   "display-p3": Object.freeze({
     id: "display-p3",
+    associatedGamutId: "display-p3-gamut",
     model: "rgb",
     coordinateKind: "cartesian",
     referenceContext: "d65",

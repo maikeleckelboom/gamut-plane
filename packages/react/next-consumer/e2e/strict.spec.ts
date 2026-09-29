@@ -10,6 +10,9 @@ declare global {
       windowHandlers: number;
       resolutionHandlers: number;
       controlHandlers: number;
+      selectorCreated: number;
+      selectorDisconnected: number;
+      selectorActive: number;
     };
   }
 }
@@ -49,11 +52,20 @@ test.beforeEach(async ({ page }) => {
       windowHandlers: 0,
       resolutionHandlers: 0,
       controlHandlers: 0,
+      selectorCreated: 0,
+      selectorDisconnected: 0,
+      selectorActive: 0,
     };
     const active = new Set<ResizeObserver>();
+    const selectors = new Set<ResizeObserver>();
     const NativeObserver = ResizeObserver;
     window.ResizeObserver = class extends NativeObserver {
       override observe(target: Element, options?: ResizeObserverOptions) {
+        if (target.matches('.gp-selector [role="combobox"]') && !selectors.has(this)) {
+          selectors.add(this);
+          window.planeResources.selectorCreated++;
+          window.planeResources.selectorActive++;
+        }
         if (
           target.matches(".gpr-color-plane-surface, .gpr-channel-control-track") &&
           !active.has(this)
@@ -65,6 +77,10 @@ test.beforeEach(async ({ page }) => {
         super.observe(target, options);
       }
       override disconnect() {
+        if (selectors.delete(this)) {
+          window.planeResources.selectorDisconnected++;
+          window.planeResources.selectorActive--;
+        }
         if (active.delete(this)) {
           window.planeResources.disconnected++;
           window.planeResources.active--;
@@ -132,8 +148,11 @@ async function open(page: Page) {
       active: 2,
       handlers: 12,
       controlHandlers: 64,
-      windowHandlers: 4,
+      windowHandlers: 8,
       resolutionHandlers: 2,
+      selectorCreated: 4,
+      selectorDisconnected: 2,
+      selectorActive: 2,
     });
   expect(await events(page)).toEqual({ changes: 0, commits: 0, cancels: 0, final: null });
   return errors;
@@ -167,6 +186,9 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       controlHandlers: 0,
       windowHandlers: 0,
       resolutionHandlers: 0,
+      selectorCreated: 4,
+      selectorDisconnected: 4,
+      selectorActive: 0,
     });
   await frames(page);
   expect(await events(page)).toEqual(before);
@@ -180,8 +202,11 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       active: 2,
       handlers: 12,
       controlHandlers: 64,
-      windowHandlers: 4,
+      windowHandlers: 8,
       resolutionHandlers: 2,
+      selectorCreated: 8,
+      selectorDisconnected: 6,
+      selectorActive: 2,
     });
   await expect
     .poll(() =>

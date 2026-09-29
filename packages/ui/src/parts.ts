@@ -16,6 +16,7 @@ export const gpPart = {
   axis: "axis",
   renderStatus: "render-status",
   channel: "channel",
+  channelSymbol: "channel-symbol",
   channelHeader: "channel-header",
   numericInput: "numeric-input",
   channelTrack: "channel-track",

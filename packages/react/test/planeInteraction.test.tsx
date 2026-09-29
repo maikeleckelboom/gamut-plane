@@ -281,7 +281,7 @@ describe("ColorValue plane interaction", () => {
     "editor change interrupts without rollback afterPublication=%s",
     async (afterPublication) => {
       const clock = frames(),
-        ui = await host();
+        ui = await host({}, true);
       await clock.flush();
       const surface = get<HTMLElement>(ui.element, '[role="application"]');
       await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
@@ -290,7 +290,7 @@ describe("ColorValue plane interaction", () => {
         await event(surface, "pointermove", { clientX: 160, clientY: 160 });
       }
       const accepted = afterPublication ? ui.changes.mock.calls[0]![0] : initial;
-      await selectRepresentation(ui.element, "oklab");
+      await ui.acceptState(editingState("oklab"));
       await clock.flush();
       await event(surface, "pointerup", { clientX: 300, clientY: 300 });
       await event(surface, "lostpointercapture");

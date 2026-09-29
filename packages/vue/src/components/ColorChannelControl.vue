@@ -144,7 +144,6 @@ onBeforeUnmount(() => {
   >
     <header class="channel-control__header" :data-gp-part="gpPart.channelHeader">
       <label :for="id">
-        <span>{{ channel }}</span>
         {{ label }}
       </label>
       <NumericInput
@@ -162,6 +161,7 @@ onBeforeUnmount(() => {
       />
     </header>
 
+    <span :data-gp-part="gpPart.channelSymbol" aria-hidden="true">{{ channel }}</span>
     <div class="channel-control__track" :data-gp-part="gpPart.channelTrack">
       <span
         class="channel-control__field"

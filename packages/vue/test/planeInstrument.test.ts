@@ -1,3 +1,4 @@
+import { initialInstrumentState, requestRepresentation } from "@gamut-plane/ui";
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
@@ -33,9 +34,10 @@ describe("Vue ColorValue instrument", () => {
         height: 320,
         toJSON: () => ({}),
       });
+      const initialState = initialInstrumentState();
       const wrapper = mount(GamutPlane, {
         attachTo: document.body,
-        props: { modelValue: color(0.62, 0.2, 180) },
+        props: { modelValue: color(0.62, 0.2, 180), state: initialState },
       });
       await flushPromises();
       frames.flush();
@@ -51,13 +53,13 @@ describe("Vue ColorValue instrument", () => {
         await flushPromises();
         expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("preview");
       }
-      await wrapper.get("select").setValue("oklab");
+      await wrapper.setProps({ state: requestRepresentation(initialState, "oklab") });
       frames.flush();
       await flushPromises();
       expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
       expect(emitted(wrapper, "update:modelValue")).toHaveLength(published ? 1 : 0);
       expect(emitted(wrapper, "commit")).toHaveLength(0);
-      await wrapper.get("select").setValue("oklch");
+      await wrapper.setProps({ state: requestRepresentation(initialState, "oklch") });
       frames.flush();
       await flushPromises();
       expect(wrapper.get("[data-picker-plane]").attributes("data-field-quality")).toBe("full");
@@ -72,7 +74,8 @@ describe("Vue ColorValue instrument", () => {
       props: { modelValue: value.value },
     });
     await flushPromises();
-    await wrapper.get("select").setValue("oklab");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
     expect(wrapper.get("[data-plane-instrument]").attributes("data-active-plane")).toBe("oklab");
     expect(emitted(wrapper, "update:modelValue")).toHaveLength(0);
     expect(emitted(wrapper, "commit")).toHaveLength(0);
@@ -94,7 +97,8 @@ describe("Vue ColorValue instrument", () => {
     expect(definitionOf(oklch).space).toBe("oklch");
     expect(definitionOf(oklch).channels[1]).toBe(0.25);
     await wrapper.setProps({ modelValue: oklch });
-    await wrapper.get("select").setValue("oklab");
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
     const coordinate = wrapper.get('[data-oklab-coordinate="a"]');
     (coordinate.element as HTMLInputElement).value = "-0.13";
     await coordinate.trigger("input");

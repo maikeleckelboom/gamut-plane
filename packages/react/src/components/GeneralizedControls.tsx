@@ -1,8 +1,7 @@
+import { representationDefinitions } from "@gamut-plane/core/internal/capabilities";
 import { useId } from "react";
 import { referenceGuidePolicy } from "@gamut-plane/render/internal/capabilities";
 import {
-  currentRepresentationOptions,
-  currentAdmittedEditorsForRepresentation,
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
@@ -13,10 +12,10 @@ import {
   inspectionUi,
   representationUi,
   requestCheckedGamut,
-  requestInspection,
-  requestRepresentation,
   requestVisibleGuide,
 } from "@gamut-plane/ui";
+import { coordinatesOptions, validateSelection } from "@gamut-plane/ui";
+import { SelectionContext } from "./SelectionContext.js";
 import type { AcceptedPresentationView } from "../model/acceptedPresentation.js";
 import type { GamutPlaneState } from "../model/publicState.js";
 import { currentGuideIds } from "../hooks/useGeneralizedState.js";
@@ -25,57 +24,32 @@ type Request = (state: GamutPlaneState) => void;
 
 export function GeneralizedSelection({
   state,
+  accepted,
   request,
   readOnly,
   id,
 }: {
   state: GamutPlaneState;
+  accepted: AcceptedPresentationView;
   request: Request;
   readOnly: boolean;
   id: string;
 }) {
-  const selected = state.selection;
-  const canEdit = currentAdmittedEditorsForRepresentation(selected.representationId).length > 0;
   return (
-    <div className="gp-generalized-selection" data-gp-part={gpPart.representationControl}>
-      <div className="gp-context-row">
-        <div className="gp-context-space">
-          <label htmlFor={`${id}-representation`}>{generalizedCopy.representation}</label>
-          <select
-            id={`${id}-representation`}
-            value={selected.representationId}
-            disabled={readOnly}
-            onChange={(event) =>
-              request(
-                requestRepresentation(
-                  state,
-                  event.currentTarget.value as typeof selected.representationId,
-                ),
-              )
-            }
-          >
-            {currentRepresentationOptions.map((representationId) => (
-              <option key={representationId} value={representationId}>
-                {representationUi[representationId].label}
-              </option>
-            ))}
-          </select>
-        </div>
-        {canEdit ? (
-          <label className="gp-generalized-edit-toggle">
-            <input
-              type="checkbox"
-              checked={selected.editorId !== null}
-              disabled={readOnly}
-              onChange={(event) => request(requestInspection(state, !event.currentTarget.checked))}
-            />
-            {generalizedCopy.editCoordinates}
-          </label>
-        ) : (
-          <span className="gp-context-mode">{generalizedCopy.inspectionOnly}</span>
-        )}
-      </div>
-    </div>
+    <SelectionContext
+      id={id}
+      selection={accepted.selection}
+      options={coordinatesOptions(
+        state.checkedGamuts,
+        accepted.exactChecks,
+        representationDefinitions,
+      )}
+      disabled={readOnly}
+      request={(selection) => {
+        const result = validateSelection(selection);
+        if (result.ok) request({ ...state, selection: result.value });
+      }}
+    />
   );
 }
 

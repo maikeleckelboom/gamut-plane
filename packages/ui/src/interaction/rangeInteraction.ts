@@ -1,3 +1,5 @@
+import { setPointerOwnership } from "./pointerOwnership.js";
+
 export interface RangeInput {
   value: number;
   min: number;
@@ -32,6 +34,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
   }
   function finish() {
     pointer = null;
+    setPointerOwnership(element, false);
     if (!preview) return;
     preview = false;
     current().onInteraction?.(false);
@@ -72,6 +75,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
   function down(event: PointerEvent) {
     if (pointer !== null || (event.pointerType === "mouse" && event.button !== 0)) return;
     pointer = event.pointerId;
+    setPointerOwnership(element, true);
   }
   function up(event: PointerEvent) {
     if (pointer === event.pointerId) finish();
@@ -108,6 +112,7 @@ export function mountRange(element: HTMLInputElement, current: () => RangeInput)
       disposed = true;
       clear();
       pointer = null;
+      setPointerOwnership(element, false);
       preview = false;
       element.removeEventListener("input", input);
       element.removeEventListener("change", complete);

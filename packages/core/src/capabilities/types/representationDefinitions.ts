@@ -1,5 +1,5 @@
 import type { represent } from "../../color/represent.js";
-import type { ColorRepresentation, ColorSpaceId } from "../../color/representation.js";
+import type { ColorRepresentation, ColorSpaceId, GamutId } from "../../color/representation.js";
 import type { createColorValue } from "../../color/value.js";
 
 /** Names follow the existing ChannelsBySpace tuples; they do not replace those value types. */
@@ -47,6 +47,8 @@ export type RepresentationDefinition<S extends ColorSpaceId = ColorSpaceId> = {
     model: R extends "oklch" | "oklab" ? "oklab" : "rgb";
     coordinateKind: R extends "oklch" ? "cylindrical" : "cartesian";
     referenceContext: "d65";
+    /** Natural gamut reference only; neither validity, admission nor an analysis request. */
+    associatedGamutId: GamutId | null;
     encoding: R extends "oklch" | "oklab"
       ? Readonly<{ kind: "model-coordinates" }>
       : Readonly<{ kind: "rgb"; primaries: R; transfer: "srgb" }>;

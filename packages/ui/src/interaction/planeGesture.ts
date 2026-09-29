@@ -1,3 +1,5 @@
+import { setPointerOwnership } from "./pointerOwnership.js";
+
 /** The temporary pointer gesture. Authorship, geometry, and presentation stay with the caller. */
 export interface PlaneGestureInput<Value, Point> {
   value: Value;
@@ -43,6 +45,7 @@ export function mountPlaneGesture<Value, Point>(
     pending = latest = null;
     const owned = pointerId;
     pointerId = null;
+    setPointerOwnership(surface, false);
     origin = expected = null;
     if (owned !== null) current().onPointerEnd(owned);
   }
@@ -83,6 +86,7 @@ export function mountPlaneGesture<Value, Point>(
     if (point === null) return;
     event.preventDefault();
     pointerId = event.pointerId;
+    setPointerOwnership(surface, true);
     origin = current().value;
     expected = null;
     current().onPointerStart(event);

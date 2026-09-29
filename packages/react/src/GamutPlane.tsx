@@ -220,6 +220,7 @@ export function GamutPlane(props: GamutPlaneProps) {
         {generalizedCopy.instrument}
       </h2>
       <GeneralizedSelection
+        accepted={accepted}
         state={acceptedState}
         request={requestState}
         readOnly={readOnly}

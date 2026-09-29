@@ -119,7 +119,7 @@ describe("reactive instrument host", () => {
   });
 
   it.each([false, true])(
-    "changes editor with controlled=%s, invalidates equal fixed axes and discards old points",
+    "changes editor after local cancellation or host acceptance controlled=%s, discarding old points",
     async (controlled) => {
       const frames = installAnimationFrameController();
       const host = mountHost(controlled);
@@ -128,7 +128,17 @@ describe("reactive instrument host", () => {
       const context = document.createElement("canvas").getContext("2d")!;
       vi.mocked(context.drawImage).mockClear();
       host.pointer("pointerdown");
-      await host.wrapper.get("select").setValue("oklab");
+      if (controlled) {
+        host.state.value = {
+          ...host.state.value,
+          selection: { representationId: "oklab", editorId: "oklab-ab" },
+        };
+        await flushPromises();
+      } else {
+        await host.wrapper.get('[role="application"]').trigger("keydown", { key: "Escape" });
+        await host.wrapper.get('[role="combobox"]').trigger("click");
+        await host.wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
+      }
       frames.flush();
       await flushPromises();
       expect(host.wrapper.get("[data-picker-plane]").attributes("data-plane-id")).toBe("oklab");
@@ -155,14 +165,18 @@ describe("reactive instrument host", () => {
 
   it("changing editor after a live edit keeps the published color and discards the old pending point", async () => {
     const frames = installAnimationFrameController();
-    const host = mountHost();
+    const host = mountHost(true);
     await flushPromises();
     host.pointer("pointerdown");
     frames.flush();
     await flushPromises();
     const published = host.model.value;
     host.pointer("pointermove", 1, 190, 40);
-    await host.wrapper.get("select").setValue("oklab");
+    host.state.value = {
+      ...host.state.value,
+      selection: { representationId: "oklab", editorId: "oklab-ab" },
+    };
+    await flushPromises();
     frames.flush();
     await flushPromises();
     host.pointer("pointerup");

@@ -54,11 +54,10 @@ export function editingState(representationId: "oklch" | "oklab"): GamutPlaneSta
   };
 }
 export async function selectRepresentation(root: ParentNode, representationId: string) {
-  const select = get<HTMLSelectElement>(root, "[data-gp-part='representation-control'] select");
-  await act(async () => {
-    select.value = representationId;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  await act(async () => get<HTMLButtonElement>(root, '[role="combobox"]').click());
+  await act(async () =>
+    get<HTMLElement>(root, `[role="option"][data-value="${representationId}"]`).click(),
+  );
 }
 export async function event(
   element: Element,
@@ -109,21 +108,27 @@ export function frames() {
     },
   };
 }
-export async function host(options: Partial<GamutPlaneProps> = {}) {
+export async function host(options: Partial<GamutPlaneProps> = {}, controlledSelection = false) {
   const changes = vi.fn<(color: ColorValue) => void>();
   const commits = vi.fn<(color: ColorValue) => void>();
   const cancels = vi.fn<() => void>();
   const order: string[] = [];
   let replace: (color: ColorValue) => void = () => {};
   let selected = options.value ?? initial;
+  let acceptState: (state: GamutPlaneState) => void = () => {};
   function Host() {
     const [value, setValue] = useState(options.value ?? initial);
+    const [state, setState] = useState(
+      options.state ?? options.defaultState ?? editingState("oklch"),
+    );
+    acceptState = setState;
     useLayoutEffect(() => {
       selected = value;
     });
     replace = setValue;
     return createElement(GamutPlane, {
       ...options,
+      ...(controlledSelection ? { state, onStateChange: setState } : {}),
       value,
       onValueChange: (next) => {
         changes(next);
@@ -150,6 +155,10 @@ export async function host(options: Partial<GamutPlaneProps> = {}) {
     cancels,
     order,
     current: () => selected,
+    acceptState: async (state: GamutPlaneState) => {
+      if (!controlledSelection) throw Error("Host must own accepted state");
+      await act(async () => acceptState(state));
+    },
     replace: async (value: ColorValue) => {
       await act(async () => replace(value));
     },

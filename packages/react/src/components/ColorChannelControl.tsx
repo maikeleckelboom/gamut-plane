@@ -101,10 +101,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
       style={presentationStyle(geometryStyle)}
     >
       <header className="gpr-channel-control-header" data-gp-part={gpPart.channelHeader}>
-        <label htmlFor={id}>
-          <span>{channel}</span>
-          {label}
-        </label>
+        <label htmlFor={id}>{label}</label>
         <NumericInput
           className="gpr-channel-control-number"
           aria-label={`${label} numeric value`}
@@ -118,6 +115,9 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           onCancel={onCancel}
         />
       </header>
+      <span data-gp-part={gpPart.channelSymbol} aria-hidden="true">
+        {channel}
+      </span>
       <div className="gpr-channel-control-track" data-gp-part={gpPart.channelTrack} dir="ltr">
         <span
           className="gpr-channel-control-field"

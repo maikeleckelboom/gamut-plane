@@ -1,5 +1,16 @@
 export { gpPart, gpAttribute, gpMarker, gpAxis, gpGamut, type GpPart } from "./parts.js";
 export {
+  coordinatesOptions,
+  selectionContext,
+  requestShellSelection,
+  shellSelectionFacts,
+  type SelectorOption,
+  type SelectionAction,
+  type ShellSelection,
+  type ShellEditor,
+} from "./selectionShell.js";
+export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";
+export {
   inspectionUi,
   currentRepresentationOptions,
   exactGamutUi,

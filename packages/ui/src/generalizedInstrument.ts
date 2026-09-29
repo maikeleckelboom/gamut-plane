@@ -91,7 +91,10 @@ export function orderedExactChecks<T extends Readonly<{ gamutId: GamutId }>>(
 export const generalizedCopy = Object.freeze({
   instrument: "Color instrument",
   representation: "Coordinates",
-  editCoordinates: "Edit color",
+  interactionMode: "Interaction mode",
+  edit: "Edit",
+  inspect: "Inspect",
+  area: "Area",
   inspectionOnly: "Inspecting",
   coordinates: "Coordinates",
   oklabCoordinates: "Editable OKLab coordinates",
@@ -145,6 +148,7 @@ export function requestRepresentation<G extends string>(
   state: InstrumentViewState<G>,
   representationId: RepresentationId,
 ): InstrumentViewState<G> {
+  if (state.selection.representationId === representationId) return state;
   return Object.freeze({ ...state, selection: defaultSelection(representationId) });
 }
 
@@ -152,6 +156,7 @@ export function requestInspection<G extends string>(
   state: InstrumentViewState<G>,
   inspect: boolean,
 ): InstrumentViewState<G> {
+  if ((state.selection.editorId === null) === inspect) return state;
   return Object.freeze({
     ...state,
     selection: inspect

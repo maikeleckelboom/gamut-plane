@@ -6,10 +6,12 @@ test("packed Vue host imports, observes, and authors a generalized edit", async 
   const definition = page.locator("[data-definition]");
   const initial = await definition.getAttribute("data-definition");
   await expect(root).toHaveAttribute("data-active-plane", "oklch");
-  await root.getByLabel("Coordinates", { exact: true }).selectOption("srgb");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="srgb"]').click();
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
   await expect(definition).toHaveAttribute("data-definition", initial!);
-  await root.getByLabel("Coordinates", { exact: true }).selectOption("oklch");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="oklch"]').click();
   await root.getByLabel("Chroma numeric value").fill("0.25");
   await root.getByLabel("Chroma numeric value").press("Enter");
   await expect(definition).not.toHaveAttribute("data-definition", initial!);
