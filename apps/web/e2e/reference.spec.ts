@@ -10,6 +10,9 @@ test("Status, Boundary and Reference have independent observable effects", async
   const warning = root.locator('[data-gamut-warning="planar"]');
   await expect(connector).toHaveCount(1);
   await expect(marker).toHaveCount(1);
+  const endpoint = [await connector.getAttribute("x2"), await connector.getAttribute("y2")];
+  const swatch = await marker.getAttribute("style");
+  const stroke = await connector.evaluate((element) => getComputedStyle(element).stroke);
   await expect(warning).toHaveCount(1);
   await expect(warning).toHaveCSS("width", "12px");
   await expect(warning).toHaveCSS("height", "12px");
@@ -23,8 +26,21 @@ test("Status, Boundary and Reference have independent observable effects", async
   expect(triangle!.y + triangle!.height).toBeLessThan(selected!.y - 2);
   await root.locator("summary").click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
-  await expect(connector).toHaveCount(1);
+  await expect(connector).toHaveCount(0);
+  await expect(marker).toHaveCount(0);
   await expect(warning).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(root.getByLabel("Use sRGB as Reference")).toBeChecked();
+  await expect(source).toHaveText(original!);
+  await root.getByLabel("sRGB Status", { exact: true }).check();
+  await expect(connector).toHaveCount(1);
+  expect([await connector.getAttribute("x2"), await connector.getAttribute("y2")]).toEqual(
+    endpoint,
+  );
+  await expect(marker).toHaveAttribute("style", swatch!);
+  await expect(connector).toHaveCSS("stroke", stroke);
+  await expect(warning).toHaveCount(1);
+  await root.getByLabel("sRGB Status", { exact: true }).uncheck();
   await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);

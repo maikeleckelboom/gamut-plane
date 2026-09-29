@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createColorValue, definitionOf, type ColorValue } from "@gamut-plane/core";
+import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
 import type { GamutPlaneState } from "../src/index.js";
 
 type Host = {
@@ -52,7 +53,7 @@ export function referenceContract(
     });
 
     it.each([true, false])(
-      "hides the sampled swatch and connector for interior color, Status=%s",
+      "keeps ordinary boundaries without excursion annotations for interior color, Status=%s",
       async (status) => {
         const inside = createColorValue({
           space: "oklch",
@@ -67,11 +68,73 @@ export function referenceContract(
         try {
           expect(
             host.element.querySelectorAll(
-              '[data-gp-part="reference-connector"], [data-gp-marker="reference"], [data-gamut-warning]',
+              '[data-gp-part="reference-connector"], [data-gp-marker="reference"]',
             ),
           ).toHaveLength(0);
+          expect(host.element.querySelectorAll("[data-gamut-warning]")).toHaveLength(0);
           expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(2);
           expect(host.element.querySelector("[data-active-marker]")).not.toBeNull();
+        } finally {
+          await host.dispose();
+        }
+      },
+    );
+    it.each([
+      ["inside", [0.3, 0.5, 0.5]],
+      ["within-tolerance", [-1e-10, 0.5, 0.5]],
+      ["outside", [-0.1, 0.5, 0.5]],
+    ] as const)(
+      "Status gates only exact outside annotations while preserving boundaries, Reference and authored %s color",
+      async (status, channels) => {
+        const created = createColorValue({ space: "srgb", channels, alpha: 0.37 });
+        if (!created.ok) throw new Error("Invalid fixture");
+        const source = created.value;
+        const before = definitionOf(source);
+        expect(analyzeRequestedGamuts(source, ["srgb-gamut"])[0]?.result).toMatchObject({
+          ok: true,
+          value: { status },
+        });
+        const host = await mount(source, initial);
+        try {
+          const connector = host.element.querySelector('[data-gp-part="reference-connector"]');
+          const marker = host.element.querySelector('[data-gp-marker="reference"]');
+          expect(Boolean(connector)).toBe(status === "outside");
+          expect(Boolean(marker)).toBe(status === "outside");
+          const endpoint = [connector?.getAttribute("x2"), connector?.getAttribute("y2")];
+          const swatch = marker?.outerHTML;
+          const boundaries = () =>
+            Array.from(
+              host.element.querySelectorAll(
+                '[data-gamut-boundary], [data-gp-part="gamut-interval"]',
+              ),
+              (element) => element.outerHTML,
+            );
+          const ordinary = boundaries();
+          for (const checkedGamuts of [[], initial.checkedGamuts]) {
+            await host.update({ ...initial, checkedGamuts });
+            const show = status === "outside" && checkedGamuts.length > 0;
+            const current = host.element.querySelector('[data-gp-part="reference-connector"]');
+            const currentMarker = host.element.querySelector('[data-gp-marker="reference"]');
+            expect(Boolean(current)).toBe(show);
+            expect(Boolean(currentMarker)).toBe(show);
+            if (show) {
+              expect([current?.getAttribute("x2"), current?.getAttribute("y2")]).toEqual(endpoint);
+              expect(currentMarker?.outerHTML).toBe(swatch);
+            }
+            expect(boundaries()).toEqual(ordinary);
+            expect(
+              host.element.querySelector<HTMLInputElement>('[aria-label="Use sRGB as Reference"]')
+                ?.checked,
+            ).toBe(true);
+            expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(
+              show ? 1 : 0,
+            );
+            expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(
+              show ? 3 : 0,
+            );
+            expect(host.changes()).toBe(0);
+            expect(definitionOf(source)).toEqual(before);
+          }
         } finally {
           await host.dispose();
         }
@@ -117,8 +180,11 @@ export function referenceContract(
         try {
           expect(
             host.element.querySelectorAll('[data-gp-part="reference-connector"]'),
-          ).toHaveLength(boundary ? 1 : 0);
+          ).toHaveLength(status && boundary ? 1 : 0);
           expect(host.element.querySelectorAll('[data-gp-marker="reference"]')).toHaveLength(
+            status && boundary ? 1 : 0,
+          );
+          expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(
             boundary ? 1 : 0,
           );
           expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(
@@ -158,9 +224,10 @@ export function referenceContract(
         expect(srgb).toBeTruthy();
         expect(
           host.element.querySelectorAll(
-            '[data-gp-part="reference-connector"], [data-gp-marker="reference"], [data-gamut-warning]',
+            '[data-gp-part="reference-connector"], [data-gp-marker="reference"]',
           ),
         ).toHaveLength(0);
+        expect(host.element.querySelectorAll("[data-gamut-warning]")).toHaveLength(0);
         await host.update({ ...initial, referenceGamutId: null });
         expect(
           host.element.querySelectorAll(

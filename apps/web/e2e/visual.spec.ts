@@ -54,6 +54,15 @@ test("Reference warning, Display P3 and no Reference at 440 px", async ({ page }
   await root.getByLabel("Chroma numeric value").press("Enter");
   await expect(root).toHaveScreenshot("reference-srgb-outside-440.png");
   await root.locator("summary").click();
+  await root.getByLabel("sRGB Status", { exact: true }).uncheck();
+  await root.locator("summary").click();
+  await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
+  await expect(root.locator('[data-gp-part="reference-connector"]')).toHaveCount(0);
+  await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(root).toHaveScreenshot("reference-srgb-unchecked-440.png");
+  await root.locator("summary").click();
+  await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.getByLabel("Use Display P3 as Reference").check();
   await root.locator("summary").click();
   await expect(root).toHaveScreenshot("reference-display-p3-440.png");
@@ -63,16 +72,68 @@ test("Reference warning, Display P3 and no Reference at 440 px", async ({ page }
   await expect(root).toHaveScreenshot("reference-none-440.png");
 });
 
-test("interior OKLab keeps only the active swatch and ordinary boundaries", async ({ page }) => {
+test("interior OKLCH and OKLab keep ordinary boundaries without excursion annotations", async ({
+  page,
+}) => {
   await ready(page);
   await page.getByLabel("Chroma numeric value").fill("0.03");
   await page.getByLabel("Chroma numeric value").press("Enter");
-  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   const root = page.locator("[data-gp-root]");
+  const connector = root.locator('[data-gp-part="reference-connector"]');
+  const marker = root.locator('[data-gp-marker="reference"]');
+  await expect(connector).toHaveCount(0);
+  await expect(marker).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
+  await expect(root).toHaveScreenshot("reference-inside-oklch.png");
+  const source = await page.locator('[data-css-representation="oklch"] code').textContent();
+  await root.locator("summary").click();
+  await root.getByLabel("sRGB Status", { exact: true }).uncheck();
+  await root.locator("summary").click();
+  await expect(connector).toHaveCount(0);
+  await expect(marker).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(root.getByLabel("Use sRGB as Reference")).toBeChecked();
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(source!);
+  // The complete instrument must remain visually identical when only an interior Status is disabled.
+  await root.getByLabel("Chroma numeric value").focus();
+  await expect(root).toHaveScreenshot("reference-inside-oklch.png");
+  await root.locator("summary").click();
+  await root.getByLabel("sRGB Status", { exact: true }).check();
+  await root.locator("summary").click();
+  await page.getByLabel("Coordinates", { exact: true }).selectOption("oklab");
   await expect(
     root.locator('[data-gp-marker="reference"], [data-gp-part="reference-connector"]'),
   ).toHaveCount(0);
+  await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
   await expect(root).toHaveScreenshot("reference-inside-oklab.png");
+});
+
+test("within-tolerance exact status keeps ordinary boundaries without excursion annotations", async ({
+  page,
+}) => {
+  await ready(page);
+  const root = page.locator("[data-gp-root]");
+  // OKLCH observation of authored sRGB [-1e-10, 0.5, 0.5], preserving numeric precision.
+  for (const [label, value] of [
+    ["Hue", "194.76895989787468"],
+    ["Lightness", "0.5415923764146119"],
+    ["Chroma", "0.09244884602706227"],
+  ]) {
+    await root.getByLabel(`${label} numeric value`).fill(value!);
+    await root.getByLabel(`${label} numeric value`).press("Enter");
+  }
+  await root.locator("summary").click();
+  await expect(
+    root.locator('[data-gp-part="exact-result"]').filter({ hasText: "Within tolerance" }),
+  ).toHaveCount(1);
+  await root.locator("summary").click();
+  await expect(root.locator('[data-gp-part="reference-connector"]')).toHaveCount(0);
+  await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(0);
+  await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
+  await expect(root).toHaveScreenshot("reference-within-tolerance.png");
 });
 
 test("explicit guides and exact checks reference", async ({ page }) => {

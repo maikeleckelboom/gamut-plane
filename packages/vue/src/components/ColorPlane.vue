@@ -93,7 +93,7 @@ const activePoint = computed(() => activeProjection.value.point);
 const boundedActivePoint = computed(() => props.field.geometry.constrain(activePoint.value));
 const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
 const spatialReference = computed(() =>
-  props.reference?.showSpatial && props.reference.spatial.kind === "available"
+  props.reference?.showExcursion && props.reference.spatial.kind === "available"
     ? props.reference.spatial
     : null,
 );

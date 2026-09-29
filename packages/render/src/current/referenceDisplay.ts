@@ -15,8 +15,8 @@ export type ReferenceDisplay = Readonly<{
   guideId: GuideId;
   /** Borrowed sampled fact, retained even when it cannot be drawn. Never exact status. */
   sampled: PickerGuide;
-  /** Spatial feedback is useful only for an excursion; never itself an exact membership claim. */
-  showSpatial: boolean;
+  /** Only an explicitly requested, accepted exact Outside result warrants an excursion annotation. */
+  showExcursion: boolean;
   spatial:
     | Readonly<{ kind: "unavailable" }>
     | Readonly<{ kind: "available"; point: PlanePoint; markerCss: string }>;
@@ -27,7 +27,7 @@ export function referenceDisplay(
   referenceGamutId: GamutId | null,
   guides: readonly GuideResolution[],
   field: CurrentField | null,
-  exactChecks: readonly GamutCheckResult[] = [],
+  exactChecks: readonly GamutCheckResult[],
 ): ReferenceDisplay | null {
   if (referenceGamutId === null) return null;
   const policy: Readonly<Partial<Record<GamutId, GuideId>>> = referenceGuidePolicy;
@@ -37,8 +37,8 @@ export function referenceDisplay(
   if (guide?.kind !== "resolved" || guide.forms.reference.kind !== "available") return null;
   const sampled = guide.forms.reference.value;
   const exact = exactChecks.find((row) => row.gamutId === referenceGamutId)?.result;
-  const showSpatial = sampled.deltaC > 0 && !(exact?.ok && exact.value.status !== "outside");
-  const fact = { gamutId: referenceGamutId, guideId, sampled, showSpatial };
+  const showExcursion = exact?.ok === true && exact.value.status === "outside";
+  const fact = { gamutId: referenceGamutId, guideId, sampled, showExcursion };
   if (field === null) return { ...fact, spatial: { kind: "unavailable" } };
   let point: PlanePoint;
   switch (field.geometry.id) {

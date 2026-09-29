@@ -39,7 +39,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const y = projection.coordinates.y;
   const activePoint = field.geometry.constrain(projection.point);
   const spatialReference =
-    props.reference?.showSpatial && props.reference.spatial.kind === "available"
+    props.reference?.showExcursion && props.reference.spatial.kind === "available"
       ? props.reference.spatial
       : null;
   const referenceLabel = props.reference
