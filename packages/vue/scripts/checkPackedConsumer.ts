@@ -68,6 +68,10 @@ try {
         "ColorValue",
         "DisplayGamut",
         "GamutPlaneView",
+        "GamutPlaneSelection",
+        "GamutPlaneGamutId",
+        "GamutPlaneGuideId",
+        "GamutPlaneState",
         "CanvasColorSpaceStatus",
       ])
         assert.ok(types.includes(publicName), `Missing public declaration ${publicName}`);

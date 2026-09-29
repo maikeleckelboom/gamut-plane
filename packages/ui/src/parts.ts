@@ -30,6 +30,14 @@ export const gpPart = {
   targetResult: "target-result",
   targetHeading: "target-heading",
   targetSwatch: "target-swatch",
+  representationControl: "representation-control",
+  authorshipContext: "authorship-context",
+  inspectionReadout: "inspection-readout",
+  exactResults: "exact-results",
+  exactResult: "exact-result",
+  gamutDisclosure: "gamut-disclosure",
+  guidePreference: "guide-preference",
+  availabilityMessage: "availability-message",
 } as const;
 
 export type GpPart = (typeof gpPart)[keyof typeof gpPart];

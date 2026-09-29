@@ -1,4 +1,5 @@
 export { createFieldRenderer } from "./fieldRenderer.js";
+export type { GuideId } from "./capabilities/guideSupport.js";
 export type {
   CanvasColorSpaceStatus,
   FieldRenderer,

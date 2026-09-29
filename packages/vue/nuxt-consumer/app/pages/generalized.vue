@@ -1,0 +1,31 @@
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { createColorValue, snapshotColor } from "@gamut-plane/core";
+import { GamutPlane, type GamutPlaneState } from "@gamut-plane/vue";
+
+const initial = createColorValue({ space: "oklch", channels: [0.62, 0.2, 45], alpha: 0.37 });
+if (!initial.ok) throw new Error("Invalid generalized Nuxt color");
+const value = ref(initial.value);
+const hydrated = ref(false);
+onMounted(() => {
+  hydrated.value = true;
+});
+const state = ref<GamutPlaneState>({
+  selection: { representationId: "srgb", editorId: null },
+  checkedGamuts: ["srgb-gamut"],
+  visibleGuides: ["srgb-boundary"],
+});
+</script>
+
+<template>
+  <div
+    data-generalized-host
+    :data-generalized-hydrated="hydrated ? 'true' : undefined"
+    style="width: min(440px, 100%)"
+  >
+    <GamutPlane v-model="value" v-model:state="state" />
+    <output :data-definition="JSON.stringify(snapshotColor(value))">{{
+      JSON.stringify(snapshotColor(value))
+    }}</output>
+  </div>
+</template>

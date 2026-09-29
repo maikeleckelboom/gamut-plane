@@ -6,3 +6,4 @@ export { currentOklchObservation, currentEditableDetail } from "./editableDetail
 export { currentGuideDisplay } from "./guideDisplay.js";
 export type { CurrentGuideDisplay } from "./guideDisplay.js";
 export { currentTargetVisual } from "./targetVisual.js";
+export { generalizedGuideDisplay, generalizedEditableDetail } from "./generalizedDisplay.js";

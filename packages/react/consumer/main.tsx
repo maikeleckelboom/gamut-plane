@@ -1,9 +1,17 @@
 import { createRoot } from "react-dom/client";
 import { InstrumentHost } from "./InstrumentHost";
 import { ParityHost } from "./ParityHost";
+import { GeneralizedHost } from "./GeneralizedHost";
 import "@gamut-plane/react/style.css";
 import "./host.css";
 
+const query = new URLSearchParams(location.search);
 createRoot(document.getElementById("app")!).render(
-  new URLSearchParams(location.search).has("parity") ? <ParityHost /> : <InstrumentHost />,
+  query.has("generalized") ? (
+    <GeneralizedHost />
+  ) : query.has("parity") ? (
+    <ParityHost />
+  ) : (
+    <InstrumentHost />
+  ),
 );

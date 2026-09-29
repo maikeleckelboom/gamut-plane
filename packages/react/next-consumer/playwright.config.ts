@@ -3,7 +3,8 @@ import { defineConfig } from "@playwright/test";
 const mode = process.env.FIXTURE_MODE ?? "development";
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: mode === "strict" ? "strict.spec.ts" : "hydration.spec.ts",
+  testMatch:
+    mode === "strict" ? "strict.spec.ts" : ["hydration.spec.ts", "generalizedHydration.spec.ts"],
   outputDir: `test-results/${mode}`,
   workers: 1,
   retries: 0,

@@ -1,6 +1,6 @@
 # @gamut-plane/vue
 
-A Vue component for editing one `ColorValue` in OKLCH or OKLab coordinates, with sRGB and Display P3 gamut guides. It includes the controls, Canvas renderer, styles, and generated boundary tables.
+A Vue component for one authored `ColorValue`, with OKLCH and OKLab editors, four representation views, independent exact gamut checks and visual guides. The original two-view API remains available.
 
 This package is private and **not published to npm**. Use the [local tarball installation instructions](https://github.com/maikeleckelboom/gamut-plane/blob/dev/README.md#install-local-packages). Vue 3.5+ is a peer dependency; core, the internal `@gamut-plane/render` and `@gamut-plane/ui` packages, and VueUse are runtime dependencies. Node.js 24+ is the supported build and server runtime.
 
@@ -24,11 +24,54 @@ const boundaryTarget = ref<DisplayGamut>("srgb");
 </template>
 ```
 
+## Generalized state
+
+Import `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId` and `GamutPlaneGuideId` from this package. State contains only an atomic representation/editor `selection`, `checkedGamuts` and `visibleGuides`. OKLCH and OKLab each permit their current editor or `editorId: null`; sRGB and Display P3 are inspection only.
+
+The following examples use the `color` ref from the usage example above.
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { GamutPlane, type GamutPlaneState } from "@gamut-plane/vue";
+
+const state = ref<GamutPlaneState>({
+  selection: { representationId: "oklch", editorId: "oklch-lc" },
+  checkedGamuts: ["srgb-gamut"],
+  visibleGuides: ["srgb-boundary"],
+});
+</script>
+
+<template>
+  <GamutPlane v-model="color" v-model:state="state" />
+</template>
+```
+
+The `state` / `update:state` route is parent-controlled: the component emits one complete canonical frozen request and displays it only after the parent supplies it. A `state` prop without an update handler is read-only. Use `defaultState` for local ownership; it initializes once, then the component accepts its own requests. Empty arrays remain empty.
+
+```vue
+<GamutPlane
+  v-model="color"
+  :default-state="{
+    selection: { representationId: 'srgb', editorId: null },
+    checkedGamuts: [],
+    visibleGuides: ['srgb-boundary'],
+  }"
+/>
+```
+
+The component includes representation, Edit coordinates, exact check and guide controls. Inspection shows three observed coordinates and alpha without a fake plane. A guide preference remains requested while no editor can show it, then becomes visible again on return to an editor. Checks and guides independently support zero, one or both requests. Exact rows distinguish `inside`, `within-tolerance`, `outside` and unavailable analysis. The inspection formatter is locale-independent, uses nine significant digits, preserves signed zero, and shows `missing` for null Hue. State-only changes never reauthor the `ColorValue`.
+
+Do not combine generalized state with `v-model:plane`, `plane`, `boundaryTarget` or legacy boundary-visibility props. Invalid shapes and IDs fail clearly. An instance cannot switch between controlled and local generalized ownership. Mapping, output destination and persistence are separate future or host workflows.
+
 ## Component API
 
 | API                          | Behavior                                                                                    |
 | ---------------------------- | ------------------------------------------------------------------------------------------- |
 | `v-model`                    | Required `ColorValue`; receives live color edits                                            |
+| `v-model:state`              | Parent-controlled `GamutPlaneState`; receives complete generalized requests                 |
+| `state`                      | Authoritative generalized state; read-only without `@update:state`                          |
+| `defaultState`               | Initialization-only locally owned generalized state                                         |
 | `v-model:plane`              | Optional `GamutPlaneView` (`"oklch"` or `"oklab"`); defaults locally to `"oklch"`           |
 | `boundaryTarget`             | Controlled `DisplayGamut` sampled-guide target; defaults to `"srgb"`                        |
 | `showSrgbBoundary`           | Boolean prop; defaults to `true`                                                            |
@@ -44,7 +87,7 @@ Boundary target selects the sampled-guide reference gamut. Target and visibility
 
 The `ColorValue` definition is authoritative. Changing coordinate view only observes it; real edits produce a new value defined in the edited plane. An absent neutral hue stays absent until a Hue edit establishes a direction. The field uses a presentation-only hue slice while direction is absent; chromatic OKLCH edits wait for a real Hue edit. Edits preserve alpha, and gamut guides do not clamp the authored color to a display gamut. Use `snapshotColor` and `restoreColor` from core at serialization boundaries.
 
-`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. Its OKLCH and OKLab views require that selected value to be numerically representable in both views. Core `ColorValue` intentionally permits a wider finite coordinate domain: for pathological finite coordinates, `represent` or `projectColorToPlane` can return `numerical-range`. The instrument never silently clamps, maps, normalizes or replaces such a value; choose a representable authored value before mounting it.
+`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. The legacy two-view route requires that selected value to be numerically representable in both views. The generalized route presents unavailable observation, editor and exact facts in their own regions. Neither route silently clamps, maps, normalizes or replaces authored color.
 
 Cancelling a plane drag restores its starting color. A parent replacement or view change ends the gesture without rollback; interrupted native ranges retain published values. Numeric drafts apply on completion and discard on Escape. See the [interaction lifecycle](https://github.com/maikeleckelboom/gamut-plane/blob/dev/docs/architecture.md#interaction-lifecycle) for details.
 

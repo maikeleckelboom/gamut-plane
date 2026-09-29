@@ -65,7 +65,7 @@ acceptedRevisionContract(async (value, view) => {
       if (!disposed) await host.render(render());
     },
     update: async (next) => {
-      props = { ...props, ...next };
+      props = { ...props, ...next } as GamutPlaneProps;
       await host.render(render());
     },
     flush: async () => {

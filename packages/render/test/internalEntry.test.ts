@@ -24,6 +24,8 @@ describe("current render entry after legacy retirement", () => {
       "currentGuideDisplay",
       "currentOklchObservation",
       "currentTargetVisual",
+      "generalizedEditableDetail",
+      "generalizedGuideDisplay",
     ]);
     for (const key of Object.keys(current)) expect(root).not.toHaveProperty(key);
     for (const key of ["createPickerPresentation", "getBoundaryPresentation", "displayGamutLabel"])

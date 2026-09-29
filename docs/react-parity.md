@@ -1,6 +1,8 @@
 # React instrument parity
 
-The Vue and React adapters implement the same closed instrument over core's exact color/plane contracts, render's shared visual contracts and UI's semantic anatomy/presentation authority. React keeps idiomatic controlled color, controlled/uncontrolled view, native section props/ref and a normal legend node. No public composable primitives are introduced.
+The Vue and React adapters implement the same instrument over core's exact color/plane contracts, render's shared visual contracts and UI's semantic anatomy/presentation authority. Phase 2I adds a public generalized state route beside the preserved legacy two-view contract. React keeps idiomatic controlled color, controlled/local generalized state, native section props/ref and a normal legend node. No public composable primitives are introduced.
+
+The generalized route shares accepted resolution and editor interactions with legacy. Both adapters expose the four current representations, two admitted editors, null-editor inspection, independent exact checks and guide preferences. The reusable component owns the new controls. Packed Vite and server-rendered Next/Nuxt fixtures exercise the same state and observation surface; a rejected controlled request does not replace the accepted editor context. The legacy target and visual references remain unchanged.
 
 ## Private source responsibilities
 

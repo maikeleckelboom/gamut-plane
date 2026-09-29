@@ -4,7 +4,7 @@
 
 Status: completed product/domain design, 2026-09-27. The durable decisions are recorded in [ADR 0003](decisions/0003-vnext-product-capability-model.md). This document contains the source audit, alternatives, illustrative contracts, stress tests and implementation sequence. Proposed names are design vocabulary, not new package exports or component signatures.
 
-Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C now consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Phase 2H designs generalized presentation in section 36; Phase 2H.1 now implements its private accepted view without component adoption. Public selection/check/guide APIs remain later work.
+Phase 2B implements the internal core inventory in section 30; see the source record in section 27. Phase 2C consumes editor/geometry definitions through render-owned field and guide support, as recorded in section 31. The Phase 2A/2A.1 audit and broader illustrative contracts below retain their design context. Phase 2D implements shared UI metadata and current product admission as recorded in section 32. Phase 2E adds the internal generalized state policy in section 33. Phase 2F implements scoped core/render resolution in section 34. Phase 2G integrates both production adapters internally, as recorded in section 35. Phase 2H completes accepted presentation authority in section 36. Phase 2I exposes the generalized state and usable inspection in both public adapters, as recorded in section 37.
 
 Phase 2A.1 hardens editor, operation, exposure and interaction identity without replacing the accepted capability-family architecture. Before this documentation-only pass, local `dev`, `origin/dev` and remote `dev` were verified at `5e2af6be7e7b5841c472d57a55bcf42f23b1a1a7` (`docs(architecture): define vnext capability model`), with a clean worktree and successful exact-SHA [Phase 2A CI 36337076108](https://github.com/maikeleckelboom/gamut-plane/actions/runs/36337076108). Local/tracking/remote `main` remained `bfdd4aa5b42b4b434fcc59e549062d149aca4fbe`. Node 24.16.0 and pinned pnpm 11.9.0 were reconfirmed. The table below preserves the earlier Phase 2A starting evidence.
 
@@ -2311,4 +2311,32 @@ implementations remain only as frozen test fixtures. The 208-composition/36-fail
 432-case target matrix, literal goldens, component contracts, browser screenshots and packed
 Vue/Vite, React/Vite, Nuxt and Next suites protect v0.3 behavior. The accepted seven-field view,
 public adapter APIs, interaction lifecycle, CSS, generated tables and package versions remain
-unchanged. Phase 2I capabilities and product redesign remain deferred.
+unchanged. Phase 2I capabilities and product redesign remain deferred at this historical checkpoint.
+
+## 37. Phase 2I: public generalized state and usable inspection
+
+Phase 2I makes the existing generalized accepted revision available through one public state
+contract in both adapters. The state is a validated, immutable triple: atomic selection,
+checked-gamut IDs and requested-guide IDs. It carries no ColorValue, derived facts, target,
+mapping destination, output preference or interaction draft. React exposes controlled `state` /
+`onStateChange` and local `defaultState`; Vue exposes `state` / `update:state` and `defaultState`.
+The old React view/boundary props and Vue plane/boundary props continue as a mutually exclusive
+legacy route. Parent rejection leaves the accepted semantic interaction context unchanged.
+
+Users can select OKLCH, OKLab, sRGB and Display P3 in the actual reusable component. The first
+two enter their current editors by default and can switch explicitly to null-editor inspection;
+the RGB representations are inspection only. A readout labels the three representation-qualified
+coordinates and alpha. Nine significant decimal digits form the deterministic inspection policy,
+separate from edit and output precision. Null Hue reads `missing`, numeric zero reads `0`, and
+signed zero retains its sign. A scoped unavailable state replaces neither authored color nor an
+independent exact result.
+
+Exact checks and visible guides are independently selected through a compact native disclosure.
+Exact rows preserve all three domain statuses and per-row failures. Guide preferences stay
+requested when no plane can show them and become effective again when an editor is selected.
+Generalized comparison has no singular boundary target and does no focused target work. The
+existing plane/channel authoring path remains the only way a state selection leads to a new
+definition. Public packed Vite, Next and Nuxt fixtures exercise the same component at popover
+width, on mobile, and through server-rendered observation-only hydration. Mapping, output
+destination, persistence, more representations, other framework adapters and a final selector
+redesign remain deferred.

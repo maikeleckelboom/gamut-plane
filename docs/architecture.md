@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the v0.3 product-semantic baseline and the completed Phase 1B shared UI foundation. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents that work. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phase 2B adds immutable internal core definitions in `packages/core/src/capabilities/` for existing representations, channels, primary editors, semantic edit operations and geometries. Phase 2C consumes editor/geometry definitions through render-owned field and guide support. Phase 2D adds shared UI metadata and current product admission consumed by both adapters. Phase 2E adds the internal generalized product-state policy. Phase 2F adds owner-local scoped core/render resolution alongside the frozen legacy presentation. Phase 2G integrates generalized resolution internally; Phase 2H.1/2H.2 certify the accepted presentation view and Phase 2H.3 makes it production authority. Public adapter APIs and v0.3 presentation remain unchanged; public generalized APIs and visual redesign remain future work.
+This document describes the v0.3 product-semantic baseline and the completed vNext integration through Phase 2I. [ADR 0002](decisions/0002-vnext-instrument-architecture.md) records the accepted direction. The [Phase 1B foundation record](ui-foundation-phase-1b.md) documents the shared UI foundation. Phase 2A's [product capability model](vnext-product-capability-model.md) and [ADR 0003](decisions/0003-vnext-product-capability-model.md) define the capability and state boundaries. Phases 2B–2H establish the internal definitions, resolution and accepted presentation authority. Phase 2I exposes validated generalized state and usable inspection in the public React and Vue components while preserving the v0.3 entry contract and visual baselines. Mapping, output workflows and the larger visual redesign remain deferred.
 
 ## Layer boundaries
 
@@ -8,7 +8,7 @@ The standalone app imports Vue and core. Vue and React import core, the internal
 
 - `packages/core` (`@gamut-plane/core`) owns ColorValue authorship and observation, exact gamut analysis, CSS input/output policy, plane geometry, keyboard math, boundary search and sampled-guide interpolation. It has no Vue, DOM or Canvas dependency.
 - `packages/render` (`@gamut-plane/render`) owns the shared Canvas renderer, its local sampling/buffer resources, generated visualization data, SVG/CSS geometry serializers and shared pure warning/channel placement. It imports core, with no Vue or React dependency.
-- `packages/ui` (`@gamut-plane/ui`) owns current representation labels, primary admission/order, editor companion composition, ordinary control labels/bounds/steps/precision, canonical semantic instrument parts/states, authored v0.3 stylesheet, shared warning glyph geometry, native range/numeric policies and one plane pointer gesture controller. Its controllers are DOM-specific but have no module-evaluation DOM access. UI has a declared core dependency for type-only capability relationships; emitted runtime JavaScript has no core, render or framework import. It is not a supported consumer API.
+- `packages/ui` (`@gamut-plane/ui`) owns representation and inspection labels, formatting, primary admission/order, editor companion composition, ordinary control labels/bounds/steps/precision, canonical semantic instrument parts/states, the shared stylesheet, warning glyph geometry, native range/numeric policies and one plane pointer gesture controller. Its controllers are DOM-specific but have no module-evaluation DOM access. UI has a declared core dependency for type-only capability relationships; emitted runtime JavaScript has no core, render or framework import. It is not a supported consumer API.
 - UI also owns pure generalized selection, checked-gamut and requested-guide state validation. Guide IDs stay render-owned and enter the generic UI policy as a supplied ID family at adapter composition; UI has no render dependency. Accepted state is frozen, serializable IDs and arrays, with no authored color or directional destination.
 - `packages/vue` (`@gamut-plane/vue`) owns the complete `GamutPlane` instrument, controls, component lifecycle, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas resources, numeric markup and product events.
 - `packages/react` (`@gamut-plane/react`) owns the complete native React instrument: composition, controlled color integration, view ownership, pointer capture, geometry measurement, presentation, keyboard/focus integration, Canvas/environment resources and committed-prop integration. It has no Vue dependency. The standalone app remains Vue.
@@ -217,6 +217,35 @@ root exports are retired. Their frozen v0.3 compositions remain test-only, suppl
 literal checked-in golden vectors. The [Phase 2H.4 record](presentation-production-migration.md#phase-2h4-independent-retirement-evidence)
 contains the ownership ledger, consumer audit, work budget and package evidence. Public adapter
 APIs, accepted view, interaction controllers and visual contract remain unchanged.
+
+## Public generalized instrument after Phase 2I
+
+React and Vue now export `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId` and
+`GamutPlaneGuideId` from their package roots. State contains one atomic representation/editor
+selection and independent checked-gamut and requested-guide arrays. Both adapters validate and
+freeze complete requests with UI's existing policy. React uses `state` / `onStateChange` or
+initialization-only `defaultState`; Vue uses `state` / `update:state` or `defaultState`. A supplied
+state without a handler is read-only. Controlled requests wait for parent acceptance. Each
+instance retains its initial ownership route, and mixing the generalized route with legacy
+view/target/visibility configuration fails clearly.
+
+The same accepted revision supplies OKLCH and OKLab editors, their null-editor inspection states,
+and observation-only sRGB and Display P3. UI metadata labels the three representation-qualified
+coordinates and alpha. The deterministic inspection formatter uses nine significant digits,
+keeps signed zero and renders null Hue as `missing`; edit precision and output serialization remain
+separate. Observation, exact and field failures appear in their own regions while independent
+facts remain visible. A field is mounted only when available. State-only changes never author
+color; the existing plane and channel authoring path handles deliberate edits.
+
+The generalized exact list presents each requested `inside`, `within-tolerance`, `outside` or
+unavailable row without a mandatory target. Guide preferences remain selected even where no
+editor can display them. Available contours and intervals render independently from exact checks;
+no requested check means no ordinary analysis. Generalized display never invokes the legacy
+focused target helper. The native representation select, Edit coordinates checkbox and disclosed
+check/guide controls are part of the reusable component at popover width. The legacy selector,
+target panel, warning policy, two checks, visibility flags and fail-fast behavior retain their
+existing route and approved visuals. Packed Vite, Nuxt and Next fixtures exercise the public
+component, including server-rendered observation-only markup and hydration.
 
 ## Generated tables
 

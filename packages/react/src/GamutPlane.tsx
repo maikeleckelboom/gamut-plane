@@ -30,6 +30,8 @@ import {
   currentEditableDetail,
   currentGuideDisplay,
   currentTargetVisual,
+  generalizedEditableDetail,
+  generalizedGuideDisplay,
 } from "@gamut-plane/render/internal/current";
 import {
   gpPart,
@@ -39,14 +41,21 @@ import {
   currentWarningVisible,
 } from "@gamut-plane/ui";
 import { useControllableView } from "./hooks/useControllableView.js";
+import { useGeneralizedState } from "./hooks/useGeneralizedState.js";
 import { CoordinateViewControl } from "./components/CoordinateViewControl.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { NumericInput } from "./components/NumericInput.js";
 import { BoundaryTargetResult } from "./components/BoundaryTargetResult.js";
+import {
+  GeneralizedComparison,
+  GeneralizedInspection,
+  GeneralizedSelection,
+} from "./components/GeneralizedControls.js";
 import { legacyViewState, resolveAcceptedRevision } from "./model/acceptedResolution.js";
 import { presentAcceptedRevision } from "./model/acceptedPresentation.js";
 import { currentView } from "./model/currentView.js";
+import type { GamutPlaneState } from "./model/publicState.js";
 
 const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
 const [fixedLightness, a, b] = editorUi["oklab-ab"].companions;
@@ -66,21 +75,38 @@ type ProtectedRootProp =
   | "suppressContentEditableWarning"
   | "suppressHydrationWarning"
   | "style";
-export interface GamutPlaneProps extends Omit<ComponentPropsWithRef<"section">, ProtectedRootProp> {
+type GamutPlaneCommonProps = Omit<ComponentPropsWithRef<"section">, ProtectedRootProp> & {
   value: ColorValue;
   onValueChange: (value: ColorValue) => void;
+  onValueCommit?: ((value: ColorValue) => void) | undefined;
+  onCancel?: (() => void) | undefined;
+  onCanvasColorSpaceChange?: ((status: CanvasColorSpaceStatus) => void) | undefined;
+  legend?: ReactNode;
+  style?: (CSSProperties & { "--gamut-plane-accent"?: string }) | undefined;
+};
+type LegacyStateProps = {
   view?: GamutPlaneView | undefined;
   defaultView?: GamutPlaneView | undefined;
   onViewChange?: ((view: GamutPlaneView) => void) | undefined;
   boundaryTarget?: DisplayGamut | undefined;
   showSrgbBoundary?: boolean | undefined;
   showDisplayP3Boundary?: boolean | undefined;
-  onValueCommit?: ((value: ColorValue) => void) | undefined;
-  onCancel?: (() => void) | undefined;
-  onCanvasColorSpaceChange?: ((status: CanvasColorSpaceStatus) => void) | undefined;
-  legend?: ReactNode;
-  style?: (CSSProperties & { "--gamut-plane-accent"?: string }) | undefined;
-}
+  state?: never;
+  defaultState?: never;
+  onStateChange?: never;
+};
+type GeneralizedStateProps = {
+  state?: GamutPlaneState;
+  defaultState?: GamutPlaneState;
+  onStateChange?: ((state: GamutPlaneState) => void) | undefined;
+  view?: never;
+  defaultView?: never;
+  onViewChange?: never;
+  boundaryTarget?: never;
+  showSrgbBoundary?: never;
+  showDisplayP3Boundary?: never;
+};
+export type GamutPlaneProps = GamutPlaneCommonProps & (LegacyStateProps | GeneralizedStateProps);
 
 const protectedRootProps = new Set<string>([
   "children",
@@ -89,6 +115,9 @@ const protectedRootProps = new Set<string>([
   "onChange",
   "onCommit",
   "onCapability",
+  "state",
+  "defaultState",
+  "onStateChange",
   "role",
   "aria-label",
   "aria-labelledby",
@@ -99,24 +128,52 @@ const protectedRootProps = new Set<string>([
   "suppressHydrationWarning",
 ]);
 
-export function GamutPlane({
-  value,
-  onValueChange,
-  view: controlledView,
-  defaultView = "oklch",
-  onViewChange,
-  boundaryTarget = "srgb",
-  showSrgbBoundary = true,
-  showDisplayP3Boundary = true,
-  onValueCommit,
-  onCancel,
-  onCanvasColorSpaceChange,
-  legend,
-  className,
-  style,
-  ref,
-  ...rootProps
-}: GamutPlaneProps) {
+export function GamutPlane(props: GamutPlaneProps) {
+  const requestedGeneralized = ["state", "defaultState", "onStateChange"].some((key) =>
+    Object.hasOwn(props, key),
+  );
+  const initialRoute = useRef(requestedGeneralized);
+  const generalized = initialRoute.current;
+  if (!generalized && requestedGeneralized)
+    throw new Error("GamutPlane state route cannot change during an instance lifetime");
+  if (
+    generalized &&
+    [
+      "view",
+      "defaultView",
+      "onViewChange",
+      "boundaryTarget",
+      "showSrgbBoundary",
+      "showDisplayP3Boundary",
+    ].some((key) => Object.hasOwn(props, key))
+  ) {
+    throw new TypeError(
+      "GamutPlane cannot mix generalized state with legacy view or boundary props",
+    );
+  }
+  const {
+    value,
+    onValueChange,
+    view: controlledView,
+    defaultView = "oklch",
+    onViewChange,
+    boundaryTarget = "srgb",
+    showSrgbBoundary = true,
+    showDisplayP3Boundary = true,
+    onValueCommit,
+    onCancel,
+    onCanvasColorSpaceChange,
+    legend,
+    className,
+    style,
+    ref,
+    ...rootProps
+  } = props;
+  const {
+    accepted: acceptedState,
+    request: requestState,
+    readOnly,
+  } = useGeneralizedState(props, generalized, Object.hasOwn(props, "state"));
   const [frameworkView, requestView] = useControllableView(
     controlledView,
     defaultView,
@@ -125,32 +182,67 @@ export function GamutPlane({
   const id = useId();
   const revision = resolveAcceptedRevision(
     value,
-    legacyViewState(frameworkView, showSrgbBoundary, showDisplayP3Boundary),
+    generalized
+      ? acceptedState
+      : legacyViewState(frameworkView, showSrgbBoundary, showDisplayP3Boundary),
   );
   const accepted = presentAcceptedRevision(revision);
-  const view = currentView(accepted.selection);
-  const field = currentField(view, accepted.editor, accepted.field);
-  const oklch = currentOklchObservation(revision.source, accepted.observation);
-  const checks = currentExactChecks(accepted.exactChecks);
-  const targetVisual = currentTargetVisual(field.editorId, boundaryTarget, accepted.guides, oklch);
-  const target = {
-    ...targetVisual,
-    ...currentTargetPresentation(
-      boundaryTarget,
-      (boundaryTarget === "srgb" ? checks.srgb : checks.displayP3).status,
-      targetVisual,
-    ),
-  };
-  const detail = currentEditableDetail(field, oklch);
-  const help = currentEditorHelp(view, oklch.channels[2] === null, field.markerInDomain);
-  const guides = currentGuideDisplay(accepted.guides);
-  const warningVisible = currentWarningVisible(checks.displayP3.status);
+  const legacy = generalized
+    ? null
+    : (() => {
+        const view = currentView(accepted.selection);
+        const field = currentField(view, accepted.editor, accepted.field);
+        const oklch = currentOklchObservation(revision.source, accepted.observation);
+        const checks = currentExactChecks(accepted.exactChecks);
+        const targetVisual = currentTargetVisual(
+          field.editorId,
+          boundaryTarget,
+          accepted.guides,
+          oklch,
+        );
+        const target = {
+          ...targetVisual,
+          ...currentTargetPresentation(
+            boundaryTarget,
+            (boundaryTarget === "srgb" ? checks.srgb : checks.displayP3).status,
+            targetVisual,
+          ),
+        };
+        const detail = currentEditableDetail(field, oklch);
+        const help = currentEditorHelp(view, oklch.channels[2] === null, field.markerInDomain);
+        const guides = currentGuideDisplay(accepted.guides);
+        const warningVisible = currentWarningVisible(checks.displayP3.status);
+        return { view, field, oklch, target, detail, help, guides, warningVisible };
+      })();
+  const generalizedVisual = generalized
+    ? generalizedEditableDetail(
+        revision.source,
+        accepted.observation,
+        accepted.editor,
+        accepted.field,
+      )
+    : null;
+  const field =
+    legacy?.field ?? (generalizedVisual?.kind === "available" ? generalizedVisual.field : null);
+  const oklch =
+    legacy?.oklch ?? (generalizedVisual?.kind === "available" ? generalizedVisual.oklch : null);
+  const detail =
+    legacy?.detail ?? (generalizedVisual?.kind === "available" ? generalizedVisual.detail : null);
+  const view = legacy?.view ?? field?.projection.plane ?? null;
+  const target = legacy?.target ?? null;
+  const help =
+    legacy?.help ??
+    (field && oklch && view
+      ? currentEditorHelp(view, oklch.channels[2] === null, field.markerInDomain)
+      : null);
+  const guides = legacy?.guides ?? generalizedGuideDisplay(accepted.guides);
+  const warningVisible = legacy?.warningVisible ?? false;
   const y =
-    field.projection.plane === "oklch"
+    field?.projection.plane === "oklch"
       ? field.projection.representation.channels[0]
-      : field.projection.representation.channels[2];
+      : (field?.projection.representation.channels[2] ?? 0);
   const hueReference = useRef<PlaneEditReference | undefined>(undefined);
-  const acceptedHue = oklch.channels[2];
+  const acceptedHue = oklch?.channels[2] ?? null;
   const hueReferenceContext = useRef(revision.contextKey);
   const getHueReference = () =>
     hueReferenceContext.current === revision.contextKey ? hueReference.current : undefined;
@@ -175,7 +267,7 @@ export function GamutPlane({
     if (complete) onValueCommit?.(result.value);
   }
   function requireOklabProjection() {
-    if (field.projection.plane !== "oklab")
+    if (field?.projection.plane !== "oklab")
       throw new Error("OKLab coordinate edit requires the accepted OKLab field");
     return field.projection;
   }
@@ -197,238 +289,279 @@ export function GamutPlane({
       {...dom}
       ref={ref}
       className={["gamut-plane-react", className].filter(Boolean).join(" ")}
-      style={presentationStyle({ ...safeStyle, "--picker-active": detail.activeCss })}
+      style={presentationStyle({
+        ...safeStyle,
+        ...(detail && { "--picker-active": detail.activeCss }),
+      })}
       data-plane-instrument=""
       data-gp-root=""
-      data-gp-view={view}
-      data-active-plane={view}
+      data-gp-view={generalized ? accepted.selection.representationId : view}
+      data-active-plane={view ?? undefined}
       aria-labelledby={`${id}-instrument-title`}
     >
       <h2 id={`${id}-instrument-title`} className="gpr-sr-only" data-gp-visually-hidden="">
         Color plane instrument
       </h2>
-      <CoordinateViewControl view={view} onViewChange={requestView} />
+      {generalized ? (
+        <GeneralizedSelection
+          accepted={accepted}
+          state={acceptedState}
+          request={requestState}
+          readOnly={readOnly}
+          id={id}
+        />
+      ) : (
+        <CoordinateViewControl view={legacy!.view} onViewChange={requestView} />
+      )}
       <div className="gpr-plane-instrument-workspace" data-gp-part={gpPart.workspace}>
         <div className="gpr-plane-instrument-field" data-gp-part={gpPart.field}>
-          <ColorPlane
-            value={revision.source}
-            semanticContextKey={revision.contextKey}
-            field={field}
-            guides={guides}
-            markerCss={detail.markerCss}
-            getEditReference={getHueReference}
-            plane={field.plane}
-            targetGuidePoint={target.targetGuidePoint}
-            targetGuideCss={target.targetGuideCss}
-            targetGuideLabel={target.targetGuideLabel}
-            warningVisible={warningVisible}
-            interactionPreview={view === "oklch" && huePreview}
-            onValueChange={onValueChange}
-            onValueCommit={onValueCommit}
-            onCancel={onCancel}
-            onCanvasColorSpaceChange={onCanvasColorSpaceChange}
-          />
+          {field && detail ? (
+            <ColorPlane
+              value={revision.source}
+              semanticContextKey={revision.contextKey}
+              field={field}
+              guides={guides}
+              markerCss={detail.markerCss}
+              getEditReference={getHueReference}
+              plane={field.plane}
+              targetGuidePoint={target?.targetGuidePoint ?? null}
+              targetGuideCss={target?.targetGuideCss ?? ""}
+              targetGuideLabel={target?.targetGuideLabel ?? ""}
+              warningVisible={warningVisible}
+              interactionPreview={view === "oklch" && huePreview}
+              onValueChange={onValueChange}
+              onValueCommit={onValueCommit}
+              onCancel={onCancel}
+              onCanvasColorSpaceChange={onCanvasColorSpaceChange}
+            />
+          ) : generalized ? (
+            <>
+              {accepted.selection.editorId !== null && (
+                <p data-gp-part={gpPart.availabilityMessage}>
+                  Editing plane unavailable for this color.
+                </p>
+              )}
+              <GeneralizedInspection accepted={accepted} />
+            </>
+          ) : null}
           {legend}
         </div>
         <div className="gpr-plane-instrument-controls" data-gp-part={gpPart.controls}>
-          {detail.view === "oklch" ? (
-            <>
-              <ColorChannelControl
-                key={`${revision.contextKey}:${hue.channelId}:${hue.operationId}`}
-                {...shared}
-                id={`${id}-hue`}
-                channel={hue.symbol}
-                label={hue.label}
-                value={field.samplingFixed}
-                min={hue.sliderRange.min}
-                max={hue.sliderRange.max}
-                step={hue.step}
-                precision={hue.precision}
-                gradient={detail.hueGradient}
-                intervals={guides.hueIntervals}
-                warningPosition={detail.huePosition}
-                normalizeValue={normalizeHue}
-                help={help.hueHelp}
-                onInput={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { h: normalizeHue(next) },
-                    }),
-                    false,
-                  )
-                }
-                onComplete={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { h: normalizeHue(next) },
-                    }),
-                    true,
-                  )
-                }
-                onInteraction={setHuePreview}
-              />
-              <ColorChannelControl
-                key={`${revision.contextKey}:${lightness.channelId}:${lightness.operationId}`}
-                {...shared}
-                id={`${id}-lightness`}
-                channel={lightness.symbol}
-                label={lightness.label}
-                value={oklch.channels[0]}
-                min={lightness.sliderRange.min}
-                max={lightness.sliderRange.max}
-                step={lightness.step}
-                precision={lightness.precision}
-                gradient={detail.lightnessGradient}
-                intervals={guides.lightnessIntervals}
-                warningPosition={oklch.channels[0]}
-                onInput={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { l: next },
-                    }),
-                    false,
-                  )
-                }
-                onComplete={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { l: next },
-                    }),
-                    true,
-                  )
-                }
-              />
-              <ColorChannelControl
-                key={`${revision.contextKey}:${chroma.channelId}:${chroma.operationId}`}
-                {...shared}
-                id={`${id}-chroma`}
-                channel={chroma.symbol}
-                label={chroma.label}
-                value={oklch.channels[1]}
-                min={chroma.sliderRange.min}
-                max={chroma.sliderRange.max}
-                step={chroma.step}
-                precision={chroma.precision}
-                gradient={detail.chromaGradient}
-                intervals={guides.chromaIntervals}
-                markers={target.markers}
-                boundaryPreviewColor={target.targetResult.swatchCss}
-                boundaryPreviewTone={boundaryTarget}
-                overflowMax={!("max" in chroma.numericBounds)}
-                help={help.chromaHelp}
-                warningPosition={detail.chromaPosition}
-                onInput={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { c: next },
-                      ...(getHueReference() && { reference: getHueReference()! }),
-                    }),
-                    false,
-                  )
-                }
-                onComplete={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklch",
-                      kind: "channels",
-                      channels: { c: next },
-                      ...(getHueReference() && { reference: getHueReference()! }),
-                    }),
-                    true,
-                  )
-                }
-              />
-            </>
-          ) : (
-            <>
-              <ColorChannelControl
-                key={`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`}
-                {...shared}
-                id={`${id}-oklab-lightness`}
-                channel={fixedLightness.symbol}
-                label={fixedLightness.label}
-                value={field.samplingFixed}
-                min={fixedLightness.sliderRange.min}
-                max={fixedLightness.sliderRange.max}
-                step={fixedLightness.step}
-                precision={fixedLightness.precision}
-                gradient={detail.fixedLightnessGradient}
-                intervals={guides.lightnessIntervals}
-                help={help.domainHelp}
-                warningPosition={field.samplingFixed}
-                onInput={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklab",
-                      kind: "channels",
-                      channels: { l: next },
-                    }),
-                    false,
-                  )
-                }
-                onComplete={(next) =>
-                  edit(
-                    authorPlaneEdit(revision.source, {
-                      plane: "oklab",
-                      kind: "channels",
-                      channels: { l: next },
-                    }),
-                    true,
-                  )
-                }
-              />
-              <div
-                className="gpr-plane-instrument-coordinate-readout"
-                data-gp-part={gpPart.coordinateReadout}
-                aria-label="Editable OKLab coordinates"
-              >
-                <span>Editable coordinate</span>
-                {[a, b].map((control) => (
-                  <label key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}>
-                    <span>{control.label}</span>
-                    <NumericInput
-                      value={
-                        control.symbol === "a" ? field.projection.representation.channels[1] : y
-                      }
-                      precision={control.precision}
-                      min={control.numericBounds.min}
-                      max={control.numericBounds.max}
-                      step={control.step}
-                      data-oklab-coordinate={control.symbol}
-                      aria-label={control.numericLabel}
-                      onComplete={(next) =>
-                        edit(
-                          authorPlaneEdit(revision.source, {
-                            plane: "oklab",
-                            kind: "point",
-                            point: oklabCoordinatePlanePoint(
-                              requireOklabProjection(),
-                              control.symbol,
-                              next,
-                            ),
-                          }),
-                          true,
-                        )
-                      }
-                      onCancel={onCancel}
-                    />
-                  </label>
-                ))}
-                <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
-              </div>
-            </>
+          {field &&
+            detail &&
+            oklch &&
+            help &&
+            (detail.view === "oklch" ? (
+              <>
+                <ColorChannelControl
+                  key={`${revision.contextKey}:${hue.channelId}:${hue.operationId}`}
+                  {...shared}
+                  id={`${id}-hue`}
+                  channel={hue.symbol}
+                  label={hue.label}
+                  value={field.samplingFixed}
+                  min={hue.sliderRange.min}
+                  max={hue.sliderRange.max}
+                  step={hue.step}
+                  precision={hue.precision}
+                  gradient={detail.hueGradient}
+                  intervals={guides.hueIntervals}
+                  warningPosition={detail.huePosition}
+                  normalizeValue={normalizeHue}
+                  help={help.hueHelp}
+                  onInput={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { h: normalizeHue(next) },
+                      }),
+                      false,
+                    )
+                  }
+                  onComplete={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { h: normalizeHue(next) },
+                      }),
+                      true,
+                    )
+                  }
+                  onInteraction={setHuePreview}
+                />
+                <ColorChannelControl
+                  key={`${revision.contextKey}:${lightness.channelId}:${lightness.operationId}`}
+                  {...shared}
+                  id={`${id}-lightness`}
+                  channel={lightness.symbol}
+                  label={lightness.label}
+                  value={oklch.channels[0]}
+                  min={lightness.sliderRange.min}
+                  max={lightness.sliderRange.max}
+                  step={lightness.step}
+                  precision={lightness.precision}
+                  gradient={detail.lightnessGradient}
+                  intervals={guides.lightnessIntervals}
+                  warningPosition={oklch.channels[0]}
+                  onInput={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { l: next },
+                      }),
+                      false,
+                    )
+                  }
+                  onComplete={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { l: next },
+                      }),
+                      true,
+                    )
+                  }
+                />
+                <ColorChannelControl
+                  key={`${revision.contextKey}:${chroma.channelId}:${chroma.operationId}`}
+                  {...shared}
+                  id={`${id}-chroma`}
+                  channel={chroma.symbol}
+                  label={chroma.label}
+                  value={oklch.channels[1]}
+                  min={chroma.sliderRange.min}
+                  max={chroma.sliderRange.max}
+                  step={chroma.step}
+                  precision={chroma.precision}
+                  gradient={detail.chromaGradient}
+                  intervals={guides.chromaIntervals}
+                  markers={target?.markers ?? []}
+                  {...(target && {
+                    boundaryPreviewColor: target.targetResult.swatchCss,
+                    boundaryPreviewTone: boundaryTarget,
+                  })}
+                  overflowMax={!("max" in chroma.numericBounds)}
+                  help={help.chromaHelp}
+                  warningPosition={detail.chromaPosition}
+                  onInput={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { c: next },
+                        ...(getHueReference() && { reference: getHueReference()! }),
+                      }),
+                      false,
+                    )
+                  }
+                  onComplete={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklch",
+                        kind: "channels",
+                        channels: { c: next },
+                        ...(getHueReference() && { reference: getHueReference()! }),
+                      }),
+                      true,
+                    )
+                  }
+                />
+              </>
+            ) : (
+              <>
+                <ColorChannelControl
+                  key={`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`}
+                  {...shared}
+                  id={`${id}-oklab-lightness`}
+                  channel={fixedLightness.symbol}
+                  label={fixedLightness.label}
+                  value={field.samplingFixed}
+                  min={fixedLightness.sliderRange.min}
+                  max={fixedLightness.sliderRange.max}
+                  step={fixedLightness.step}
+                  precision={fixedLightness.precision}
+                  gradient={detail.fixedLightnessGradient}
+                  intervals={guides.lightnessIntervals}
+                  help={help.domainHelp}
+                  warningPosition={field.samplingFixed}
+                  onInput={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklab",
+                        kind: "channels",
+                        channels: { l: next },
+                      }),
+                      false,
+                    )
+                  }
+                  onComplete={(next) =>
+                    edit(
+                      authorPlaneEdit(revision.source, {
+                        plane: "oklab",
+                        kind: "channels",
+                        channels: { l: next },
+                      }),
+                      true,
+                    )
+                  }
+                />
+                <div
+                  className="gpr-plane-instrument-coordinate-readout"
+                  data-gp-part={gpPart.coordinateReadout}
+                  aria-label="Editable OKLab coordinates"
+                >
+                  <span>Editable coordinate</span>
+                  {[a, b].map((control) => (
+                    <label
+                      key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
+                    >
+                      <span>{control.label}</span>
+                      <NumericInput
+                        value={
+                          control.symbol === "a" ? field.projection.representation.channels[1] : y
+                        }
+                        precision={control.precision}
+                        min={control.numericBounds.min}
+                        max={control.numericBounds.max}
+                        step={control.step}
+                        data-oklab-coordinate={control.symbol}
+                        aria-label={control.numericLabel}
+                        onComplete={(next) =>
+                          edit(
+                            authorPlaneEdit(revision.source, {
+                              plane: "oklab",
+                              kind: "point",
+                              point: oklabCoordinatePlanePoint(
+                                requireOklabProjection(),
+                                control.symbol,
+                                next,
+                              ),
+                            }),
+                            true,
+                          )
+                        }
+                        onCancel={onCancel}
+                      />
+                    </label>
+                  ))}
+                  <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
+                </div>
+              </>
+            ))}
+          {target && <BoundaryTargetResult presentation={target} />}
+          {generalized && (
+            <GeneralizedComparison
+              accepted={accepted}
+              state={acceptedState}
+              request={requestState}
+              readOnly={readOnly}
+              hasPlane={field !== null && detail !== null}
+            />
           )}
-          <BoundaryTargetResult presentation={target} />
         </div>
       </div>
     </section>

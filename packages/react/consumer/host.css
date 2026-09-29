@@ -39,3 +39,14 @@ main > label input {
 .parity-instance {
   max-width: 100%;
 }
+
+.generalized-host {
+  width: min(440px, 100%);
+  margin-inline: auto;
+}
+
+.generalized-host > output {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+}

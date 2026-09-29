@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     prerender: {
       routes:
         process.env.npm_lifecycle_event === "generate"
-          ? ["/", "/away", "/prerendered"]
+          ? ["/", "/away", "/prerendered", "/generalized"]
           : ["/prerendered"],
     },
   },

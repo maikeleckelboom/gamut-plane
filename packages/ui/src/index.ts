@@ -11,6 +11,20 @@ export {
 } from "./parts.js";
 export { gamutWarningGlyph } from "./glyphs.js";
 export {
+  inspectionUi,
+  currentRepresentationOptions,
+  exactGamutUi,
+  exactStatusCopy,
+  guidePreferenceUi,
+  formatInspectionNumber,
+  canonicalInstrumentState,
+  initialInstrumentState,
+  requestRepresentation,
+  requestInspection,
+  requestCheckedGamut,
+  requestVisibleGuide,
+} from "./generalizedInstrument.js";
+export {
   representationUi,
   editorUi,
   currentPrimaryEditors,

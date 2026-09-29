@@ -1,6 +1,6 @@
 # @gamut-plane/react
 
-A complete native React OKLCH and OKLab instrument with channel controls, numeric drafts, sampled gamut guides, a target guide and exact Display P3 status. Private, version `0.2.0`, and unpublished.
+A native React color instrument with OKLCH and OKLab editors, four representation views, independent exact gamut checks and visual guides. The original two-view API remains available. Private, version `0.2.0`, and unpublished.
 
 ## Controlled color
 
@@ -21,7 +21,7 @@ The parent owns the immutable `ColorValue`; there is no `defaultValue` or uncont
 
 Hue-less OKLCH neutrals stay hue-less until a real Hue edit establishes direction. The field's fallback hue slice is presentation only; chromatic OKLCH edits wait for that direction. Neither display-gamut membership nor the visible 0.4 chroma/disc limit clamps authored color. The Chroma numeric field supports values beyond its slider. Plane edits use core `authorPlaneEdit` and never round-trip through RGB or CSS.
 
-`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. Its OKLCH and OKLab views require that selected value to be numerically representable in both views. Core `ColorValue` intentionally permits a wider finite coordinate domain: for pathological finite coordinates, `represent` or `projectColorToPlane` can return `numerical-range`. The instrument never silently clamps, maps, normalizes or replaces such a value; choose a representable authored value before mounting it.
+`GamutPlane` accepts an authored `ColorValue`, including ordinary extended and out-of-display-gamut coordinates, and preserves them. The legacy two-view route requires that selected value to be numerically representable in both views. The generalized route presents unavailable observation, editor and exact facts in their own regions. Neither route silently clamps, maps, normalizes or replaces authored color.
 
 ## Coordinate view
 
@@ -37,12 +37,54 @@ const [view, setView] = useState<GamutPlaneView>("oklch");
 
 A supplied `view` wins over `defaultView`, even without `onViewChange`: that is read-only view state. External view changes do not call `onViewChange`. Switching view never changes, republishes or commits color. An actual view change during a plane drag cancels it once, retaining the last published color.
 
+## Generalized state
+
+Import `GamutPlaneState`, `GamutPlaneSelection`, `GamutPlaneGamutId` and `GamutPlaneGuideId` from this package. Generalized state contains only the atomic `selection`, `checkedGamuts` and `visibleGuides` requests. The four representations are OKLCH, OKLab, sRGB and Display P3. OKLCH and OKLab may use their current editor or `editorId: null`; sRGB and Display P3 are inspection only.
+
+```tsx
+import { useState } from "react";
+import { GamutPlane, type ColorValue, type GamutPlaneState } from "@gamut-plane/react";
+
+function GeneralizedEditor({ initial }: { initial: ColorValue }) {
+  const [color, setColor] = useState(initial);
+  const [state, setState] = useState<GamutPlaneState>({
+    selection: { representationId: "oklch", editorId: "oklch-lc" },
+    checkedGamuts: ["srgb-gamut"],
+    visibleGuides: ["srgb-boundary"],
+  });
+  return (
+    <GamutPlane value={color} onValueChange={setColor} state={state} onStateChange={setState} />
+  );
+}
+```
+
+`state` is authoritative. A request calls `onStateChange` with one complete canonical frozen state; the UI changes only after the parent supplies it. Supplying `state` without a handler makes the state controls read-only. Use `defaultState` instead for local ownership; it initializes once and later changes to the prop do not reset the selection. Empty check and guide arrays stay empty.
+
+```tsx
+<GamutPlane
+  value={color}
+  onValueChange={setColor}
+  defaultState={{
+    selection: { representationId: "srgb", editorId: null },
+    checkedGamuts: [],
+    visibleGuides: ["srgb-boundary"],
+  }}
+/>
+```
+
+The component provides its own representation, Edit coordinates, check and guide controls. sRGB and Display P3 show observed coordinates and alpha without a plane. Requested guides remain selected while inspection has no plane and appear again on return to an editor. Exact checks and guides can each be zero, one or both; neither set implies the other. Exact rows distinguish `inside`, `within-tolerance`, `outside` and unavailable analysis. Inspection uses a locale-independent nine-significant-digit display policy, retains signed zero and shows `missing` for null Hue. It does not quantize or reauthor the `ColorValue`; only a deliberate editor action does that.
+
+Generalized state cannot be combined with `view`, `defaultView`, `onViewChange`, `boundaryTarget` or the legacy boundary-visibility props. Invalid state IDs and shapes fail clearly. An instance cannot switch between controlled and local state ownership. Mapping, output destination and persistence remain host or future workflows.
+
 ## Component API
 
 | Prop                       | Type                                                        | Default / purpose                                   |
 | -------------------------- | ----------------------------------------------------------- | --------------------------------------------------- |
 | `value`                    | `ColorValue`                                                | Required defining color                             |
 | `onValueChange`            | `(value: ColorValue) => void`                               | Required edit delivery                              |
+| `state`                    | `GamutPlaneState`                                           | Authoritative generalized selection/checks/guides   |
+| `defaultState`             | `GamutPlaneState`                                           | Initial local generalized state                     |
+| `onStateChange`            | `(state: GamutPlaneState) => void`                          | Complete generalized state request                  |
 | `view`                     | `GamutPlaneView`                                            | Optional authoritative view                         |
 | `defaultView`              | `GamutPlaneView`                                            | `"oklch"`; initialization only                      |
 | `onViewChange`             | `(view: GamutPlaneView) => void`                            | User requests for a different view                  |
@@ -57,7 +99,7 @@ A supplied `view` wins over `defaultView`, even without `onViewChange`: that is 
 | `style`                    | `React.CSSProperties & { "--gamut-plane-accent"?: string }` | Merged root styles                                  |
 | `ref`                      | Native section ref                                          | Root `<section>`                                    |
 
-`GamutPlaneView` is `"oklch" | "oklab"`; `DisplayGamut` is `"srgb" | "display-p3"`. Both types are exported with `GamutPlane`, `GamutPlaneProps`, `ColorValue` and `CanvasColorSpaceStatus`. Internal components/controllers are private.
+`GamutPlaneView` is `"oklch" | "oklab"`; `DisplayGamut` is `"srgb" | "display-p3"`. Both belong to the legacy route. The generalized state types, `GamutPlane`, `GamutPlaneProps`, `ColorValue` and `CanvasColorSpaceStatus` are root exports. Internal components/controllers are private.
 
 Root props are based on native section props, including `id`, ordinary `data-*`, appropriate ARIA descriptions and ordinary DOM event handlers. React 19's normal ref prop accepts an object or callback ref; there is no imperative handle. Internal labels, roles, reserved state attributes and geometry variables remain component-owned. Children, injected HTML, editable content and hydration suppression are not supported. Use `legend` for composition.
 
