@@ -20,6 +20,13 @@ async function select(root: ParentNode, representationId: string) {
 }
 
 describe("React public generalized instrument", () => {
+  it("starts with both sampled boundaries and no exact checks when state is omitted", () => {
+    const html = renderToString(<GamutPlane value={initial} onValueChange={vi.fn()} />);
+    expect(html).toContain('data-gamut-boundary="srgb"');
+    expect(html).toContain('data-gamut-boundary="display-p3"');
+    expect(html).not.toContain('data-gp-part="exact-result"');
+  });
+
   it("renders observation on the server and requests state without authoring or accepting rejection", async () => {
     const requests = vi.fn<(state: GamutPlaneState) => void>();
     const colors = vi.fn();
@@ -67,7 +74,7 @@ describe("React public generalized instrument", () => {
     await act(async () => guide.click());
     expect(requests.mock.lastCall?.[0].visibleGuides).toEqual(["srgb-boundary"]);
     expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
-    expect(ui.element.textContent).toContain("Requested guides will appear");
+    expect(ui.element.textContent).toContain("Requested boundaries appear");
     await select(ui.element, "oklch");
     expect(get(ui.element, "[data-picker-plane]")).toBeTruthy();
     expect(ui.element.querySelector("[data-gamut-boundary='srgb']")).not.toBeNull();
@@ -323,6 +330,6 @@ describe("React public generalized instrument", () => {
     expect(ui.element.textContent).toContain("Editing plane unavailable");
     expect(get(ui.element, "[data-gp-part='inspection-readout']").textContent).toContain("Alpha");
     expect(ui.element.querySelectorAll("[data-gp-part='exact-result']")).toHaveLength(1);
-    expect(ui.element.textContent).toContain("Some requested guides cannot be shown");
+    expect(ui.element.textContent).toContain("Some requested boundaries cannot be drawn here");
   });
 });

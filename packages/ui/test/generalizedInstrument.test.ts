@@ -12,6 +12,13 @@ import {
 const guides = ["display-p3-boundary", "srgb-boundary"] as const;
 
 describe("public instrument state requests", () => {
+  it("can initialize requested guides without requesting exact checks", () => {
+    const initial = initialInstrumentState(guides);
+    expect(initial.visibleGuides).toEqual(guides);
+    expect(initial.checkedGamuts).toEqual([]);
+    expect(Object.isFrozen(initial.visibleGuides)).toBe(true);
+  });
+
   it("keeps all dimensions independent, canonical and immutable", () => {
     const original = initialInstrumentState<(typeof guides)[number]>();
     const rgb = requestRepresentation(original, "srgb");

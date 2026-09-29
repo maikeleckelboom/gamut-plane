@@ -6,7 +6,6 @@ import {
   exactGamutUi,
   exactStatusCopy,
   generalizedCopy,
-  authorshipContextCopy,
   orderedExactChecks,
   formatInspectionNumber,
   gpPart,
@@ -25,13 +24,11 @@ import { currentGuideIds } from "../hooks/useGeneralizedState.js";
 type Request = (state: GamutPlaneState) => void;
 
 export function GeneralizedSelection({
-  accepted,
   state,
   request,
   readOnly,
   id,
 }: {
-  accepted: AcceptedPresentationView;
   state: GamutPlaneState;
   request: Request;
   readOnly: boolean;
@@ -41,41 +38,43 @@ export function GeneralizedSelection({
   const canEdit = currentAdmittedEditorsForRepresentation(selected.representationId).length > 0;
   return (
     <div className="gp-generalized-selection" data-gp-part={gpPart.representationControl}>
-      <label htmlFor={`${id}-representation`}>{generalizedCopy.representation}</label>
-      <select
-        id={`${id}-representation`}
-        value={selected.representationId}
-        disabled={readOnly}
-        onChange={(event) =>
-          request(
-            requestRepresentation(
-              state,
-              event.currentTarget.value as typeof selected.representationId,
-            ),
-          )
-        }
-      >
-        {currentRepresentationOptions.map((representationId) => (
-          <option key={representationId} value={representationId}>
-            {representationUi[representationId].label}
-          </option>
-        ))}
-      </select>
-      <label className="gp-generalized-edit-toggle">
-        <input
-          type="checkbox"
-          checked={selected.editorId !== null}
-          disabled={readOnly || !canEdit}
-          onChange={(event) => request(requestInspection(state, !event.currentTarget.checked))}
-        />
-        {generalizedCopy.editCoordinates}
-      </label>
-      {!canEdit && <small>{generalizedCopy.inspectionOnly}</small>}
-      {accepted.authored.representationId !== selected.representationId && (
-        <p data-gp-part={gpPart.authorshipContext}>
-          {authorshipContextCopy(accepted.authored.representationId, selected)}
-        </p>
-      )}
+      <div className="gp-context-row">
+        <div className="gp-context-space">
+          <label htmlFor={`${id}-representation`}>{generalizedCopy.representation}</label>
+          <select
+            id={`${id}-representation`}
+            value={selected.representationId}
+            disabled={readOnly}
+            onChange={(event) =>
+              request(
+                requestRepresentation(
+                  state,
+                  event.currentTarget.value as typeof selected.representationId,
+                ),
+              )
+            }
+          >
+            {currentRepresentationOptions.map((representationId) => (
+              <option key={representationId} value={representationId}>
+                {representationUi[representationId].label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {canEdit ? (
+          <label className="gp-generalized-edit-toggle">
+            <input
+              type="checkbox"
+              checked={selected.editorId !== null}
+              disabled={readOnly}
+              onChange={(event) => request(requestInspection(state, !event.currentTarget.checked))}
+            />
+            {generalizedCopy.editCoordinates}
+          </label>
+        ) : (
+          <span className="gp-context-mode">{generalizedCopy.inspectionOnly}</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -89,6 +88,7 @@ export function GeneralizedInspection({ accepted }: { accepted: AcceptedPresenta
       data-gp-part={gpPart.inspectionReadout}
       aria-label={`${representationUi[selected].label} coordinates`}
     >
+      <h3>{generalizedCopy.coordinates}</h3>
       {observation.ok ? (
         <dl>
           {inspectionUi[selected].channels.map((channel, index) => (
@@ -144,26 +144,11 @@ export function GeneralizedComparison({
       data-gp-part={gpPart.exactResults}
       aria-label={generalizedCopy.comparison}
     >
-      {accepted.exactChecks.length === 0 ? (
-        <p>{generalizedCopy.noChecks}</p>
-      ) : (
-        <ul>
-          {orderedExactChecks(accepted.exactChecks).map((row) => (
-            <li
-              key={row.gamutId}
-              data-gp-part={gpPart.exactResult}
-              data-gp-status={row.result.ok ? row.result.value.status : "unavailable"}
-            >
-              <span>{exactGamutUi[row.gamutId].label}</span>
-              <strong>
-                {exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]}
-              </strong>
-            </li>
-          ))}
-        </ul>
-      )}
       <details data-gp-part={gpPart.gamutDisclosure}>
-        <summary>{generalizedCopy.disclosure}</summary>
+        <summary>
+          <span>{generalizedCopy.disclosure}</span>
+          {unavailableGuides.length > 0 && <small>{generalizedCopy.boundaryPaused}</small>}
+        </summary>
         <fieldset>
           <legend>{generalizedCopy.exactChecks}</legend>
           {gamutIds.map((gamutId) => (
@@ -211,6 +196,22 @@ export function GeneralizedComparison({
           </p>
         )}
       </details>
+      {accepted.exactChecks.length > 0 && (
+        <ul>
+          {orderedExactChecks(accepted.exactChecks).map((row) => (
+            <li
+              key={row.gamutId}
+              data-gp-part={gpPart.exactResult}
+              data-gp-status={row.result.ok ? row.result.value.status : "unavailable"}
+            >
+              <span>{exactGamutUi[row.gamutId].label}</span>
+              <strong>
+                {exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]}
+              </strong>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

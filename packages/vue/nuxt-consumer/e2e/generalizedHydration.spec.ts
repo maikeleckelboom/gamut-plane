@@ -68,7 +68,7 @@ test("generalized observation-only server HTML hydrates in place and restores re
   ).toBe(true);
   const root = page.locator("[data-gp-root]");
   const definition = await page.locator("[data-definition]").getAttribute("data-definition");
-  await root.getByLabel("Representation").selectOption("oklch");
+  await root.getByLabel("Color space").selectOption("oklch");
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);

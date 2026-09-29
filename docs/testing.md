@@ -32,14 +32,14 @@ pnpm test:next:built
 - Render tests own scoped field/guide resolution, sampled forms, projection/cache identity, and failure distinctions. A test-only alternate OKLCH H/C editor proves a second geometry without adding a product editor.
 - UI tests own state validation, technical versus admitted editor policy, preferred selection, 0/1/2 cardinality, exact-result display order, copy, anatomy, and native range/numeric/plane controllers.
 - Vue and React component tests own native markup, ColorValue delivery, accepted/rejected state, interaction lifecycle, and framework-specific resources. React has focused Suspense and committed-render tests; Vue has reactive-parent and SSR markup tests.
-- The standalone web suite owns browser pointer/keyboard, focus, layout/overflow, accessibility, Canvas/environment, copy output, and the canonical generalized visual references.
-- Packed Vite consumers prove tarball imports, declarations, stylesheet bytes, isolated builds, and a representative generalized interaction. React retains two parity images; Vue does not duplicate the visual matrix. Nuxt and Next prove SSR/hydration, with Next root Strict Mode.
+- The standalone web suite owns browser pointer/keyboard, focus, layout/overflow, accessibility, Canvas/environment, copy output, and the canonical compact-product visual references.
+- Packed Vite consumers prove tarball imports, declarations, stylesheet bytes, isolated builds, and a representative instrument interaction. React retains two parity images; Vue does not duplicate the visual matrix. Nuxt and Next prove SSR/hydration, with Next root Strict Mode.
 
 A failing aggregate command is investigated at its failing selection. Use Playwright `--last-failed` for an immediately preceding browser run and `--repeat-each` when a suspected transient needs repeat evidence. Do not update screenshot references to conceal a behavioral or readiness failure. Focused passes after an aggregate failure are reported as such, not as an aggregate pass.
 
 ## Visual references
 
-Canonical app screenshots are stored at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png` for the local Windows workflow and Ubuntu CI. React packed parity images are in `packages/react/e2e/screenshots`; the Vue packed host has no screenshot baseline. The removed two-view/target screenshots are historical Git artifacts, not active references. CI never updates screenshots automatically.
+Canonical app screenshots are stored at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png` for the local Windows workflow and Ubuntu CI. They cover the 440px editable instrument, OKLab, sRGB inspection, requested comparison, narrow editable layout, and enlarged text. React packed parity images cover only editable and inspection states; the Vue packed host has no screenshot baseline. CI never updates screenshots automatically.
 
 Playwright uses pinned Chromium, DPR 1, dark color scheme, `en-US`, reduced motion, disabled screenshot animations, and a 0.003 maximum differing-pixel ratio. A changed reference requires a reviewed product change and inspection of layout, field, contours, controls, and typography on the affected platform. Do not relax the threshold to hide a failure.
 

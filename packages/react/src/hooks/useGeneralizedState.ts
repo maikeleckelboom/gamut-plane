@@ -24,7 +24,7 @@ export function useGeneralizedState(props: GeneralizedStateProps, controlled: bo
     throw new Error("GamutPlane state ownership cannot change during an instance lifetime");
   const [local, setLocal] = useState<GamutPlaneState>(() =>
     canonicalInstrumentState(
-      props.defaultState ?? initialInstrumentState<GuideId>(),
+      props.defaultState ?? initialInstrumentState<GuideId>(currentGuideIds),
       currentGuideIds,
     ),
   );

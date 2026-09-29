@@ -86,7 +86,7 @@ for (const markup of [html, second]) {
   assert.equal((markup.match(/data-render-color-space="pending"/g) ?? []).length, 2);
   assert.equal((markup.match(/data-active-marker/g) ?? []).length, 2);
   for (const gamut of ["srgb", "display-p3"])
-    assert.equal((markup.match(new RegExp(`data-gamut-boundary="${gamut}"`, "g")) ?? []).length, 1);
+    assert.equal((markup.match(new RegExp(`data-gamut-boundary="${gamut}"`, "g")) ?? []).length, 2);
   const ids = [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
   assert.equal(new Set(ids).size, ids.length);
 }

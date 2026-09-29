@@ -16,6 +16,15 @@ const observed: GamutPlaneState = {
 };
 
 describe("Vue public generalized instrument", () => {
+  it("starts with both sampled boundaries and no exact checks when state is omitted", async () => {
+    const html = await renderToString(
+      createSSRApp({ render: () => h(GamutPlane, { modelValue: value }) }),
+    );
+    expect(html).toContain('data-gamut-boundary="srgb"');
+    expect(html).toContain('data-gamut-boundary="display-p3"');
+    expect(html).not.toContain('data-gp-part="exact-result"');
+  });
+
   it("renders server observation and rejects a controlled request without reauthoring", async () => {
     const requests = vi.fn();
     const html = await renderToString(
@@ -54,7 +63,7 @@ describe("Vue public generalized instrument", () => {
       visibleGuides: ["srgb-boundary"],
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Requested guides will appear");
+    expect(wrapper.text()).toContain("Requested boundaries appear");
     await wrapper.get("select").setValue("oklch");
     await nextTick();
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
@@ -209,7 +218,7 @@ describe("Vue public generalized instrument", () => {
     expect(wrapper.text()).toContain("Editing plane unavailable");
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Alpha");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
-    expect(wrapper.text()).toContain("Some requested guides cannot be shown");
+    expect(wrapper.text()).toContain("Some requested boundaries cannot be drawn here");
     wrapper.unmount();
   });
 });

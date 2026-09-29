@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  analyzeGamut,
   createColorValue,
   findMaximumChroma,
   represent,
@@ -15,7 +14,6 @@ import { computed, ref } from "vue";
 import { GamutPlane, type GamutPlaneState, type CanvasColorSpaceStatus } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
 import {
-  exactStatusLabel,
   formatOklchForDisplay,
   formatRgbCssForDisplay,
   unavailableOutput,
@@ -27,9 +25,8 @@ const selectedColor = ref<ColorValue>(fixture.value);
 const instrumentState = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
   checkedGamuts: [],
-  visibleGuides: [],
+  visibleGuides: ["display-p3-boundary", "srgb-boundary"],
 });
-const activeRepresentation = computed(() => instrumentState.value.selection.representationId);
 const canvasCapability = ref<CanvasColorSpaceStatus>("pending");
 const copyAnnouncement = ref("");
 const copiedRepresentation = ref<CssRepresentation | null>(null);
@@ -40,34 +37,11 @@ function observe<S extends "oklch" | "oklab" | "srgb" | "display-p3">(space: S) 
   return result.value;
 }
 const oklch = computed(() => observe("oklch"));
-const gamutStatus = computed(() => {
-  const srgb = analyzeGamut(selectedColor.value, "srgb-gamut");
-  const displayP3 = analyzeGamut(selectedColor.value, "display-p3-gamut");
-  if (!srgb.ok || !displayP3.ok) throw new RangeError("Selected color cannot be analyzed");
-  return {
-    srgb: srgb.value.status,
-    displayP3: displayP3.value.status,
-  };
-});
 const oklchCopyCss = computed(() => {
   const output = serializeCss(oklch.value, { policy: "preserve-coordinates" });
   return output.ok ? output.value.text : null;
 });
 const oklchDisplayCss = computed(() => formatOklchForDisplay(oklch.value));
-const selectedCoordinates = computed(() => {
-  const space = activeRepresentation.value;
-  const labels =
-    space === "oklch" ? ["L", "C", "H"] : space === "oklab" ? ["L", "a", "b"] : ["R", "G", "B"];
-  return observe(space).channels.map((value, index) => ({
-    label: labels[index]!,
-    value:
-      value === null
-        ? "none"
-        : space === "oklch" && index === 2
-          ? `${value.toFixed(2)}°`
-          : value.toFixed(4),
-  }));
-});
 const srgbCssOutput = computed(() => strictCss("srgb"));
 const srgbCopyCss = computed(() =>
   srgbCssOutput.value.ok ? srgbCssOutput.value.value.text : null,
@@ -196,8 +170,7 @@ async function copyCss(
       <div class="project-identity">
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Interactive OKLab and OKLCH planes with sampled sRGB and Display P3 guides and exact gamut
-          status checks.
+          Pick a color in OKLCH or OKLab. Inspect its coordinates and compare gamuts when needed.
         </p>
       </div>
     </header>
@@ -211,48 +184,11 @@ async function copyCss(
         />
       </div>
 
-      <aside class="color-inspector" aria-labelledby="selected-color-title">
-        <h2 id="selected-color-title" class="sr-only">Selected color</h2>
-
-        <section class="coordinate-summary" aria-labelledby="coordinate-summary-title">
-          <h3 id="coordinate-summary-title">
-            {{
-              activeRepresentation === "oklch"
-                ? "OKLCH"
-                : activeRepresentation === "oklab"
-                  ? "OKLab"
-                  : activeRepresentation === "srgb"
-                    ? "sRGB"
-                    : "Display P3"
-            }}
-            coordinates
-          </h3>
-          <dl class="coordinate-summary__values">
-            <div v-for="coordinate in selectedCoordinates" :key="coordinate.label">
-              <dt>{{ coordinate.label }}</dt>
-              <dd>{{ coordinate.value }}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="gamut-facts" aria-labelledby="gamut-status-title">
-          <h3 id="gamut-status-title">Exact gamut status</h3>
-          <dl>
-            <div data-exact-gamut-status="srgb" :data-exact-status="gamutStatus.srgb">
-              <dt>sRGB</dt>
-              <dd :data-status="gamutStatus.srgb">{{ exactStatusLabel[gamutStatus.srgb] }}</dd>
-            </div>
-            <div data-exact-gamut-status="display-p3" :data-exact-status="gamutStatus.displayP3">
-              <dt>Display P3</dt>
-              <dd :data-status="gamutStatus.displayP3">
-                {{ exactStatusLabel[gamutStatus.displayP3] }}
-              </dd>
-            </div>
-          </dl>
-        </section>
+      <aside class="output-demo" aria-labelledby="output-demo-title">
+        <h2 id="output-demo-title">Output examples</h2>
 
         <section class="css-output" aria-labelledby="css-output-title">
-          <h3 id="css-output-title">CSS representations</h3>
+          <h3 id="css-output-title">CSS values</h3>
           <div class="css-representation" data-css-representation="oklch">
             <span>OKLCH</span>
             <span

@@ -20,7 +20,7 @@ The public state is `{ selection: { representationId, editorId }, checkedGamuts,
 
 Technical editor existence, product admission, and preferred initialization are separate facts. `knownEditors` establishes technical identity. `admittedEditors` controls what the public product may select. `preferredEditors` supplies a default only if that editor is admitted. `requestEditor` validates an explicit choice without replacing it with the preferred one. `editorId: null` remains valid inspection even when editors exist.
 
-The policy handles zero, one, and multiple admitted editors for a representation. The shipped product currently admits exactly one OKLCH editor (`oklch-lc`) and one OKLab editor (`oklab-ab`); sRGB and Display P3 admit none. The Edit coordinates toggle reflects that current one-editor product. A test-only alternate OKLCH H/C editor with fixed Lightness exercises the multiple-editor architecture without changing the public catalog or interface.
+The policy handles zero, one, and multiple admitted editors for a representation. The shipped product currently admits exactly one OKLCH editor (`oklch-lc`) and one OKLab editor (`oklab-ab`); sRGB and Display P3 admit none. The compact UI offers Edit color only where an editor is admitted, shows inspection directly otherwise, and has room for an Area choice if a real second editor ships. A test-only alternate OKLCH H/C editor with fixed Lightness exercises the multiple-editor architecture without changing the public catalog or interface.
 
 ## Geometry and authorship
 
@@ -30,10 +30,10 @@ This separation permits another editor for a known representation without preten
 
 ## Independent checks and guides
 
-Any of zero, one, or both exact checks may be requested. The accepted revision analyzes the original `ColorValue` only for those IDs. A failed result is unavailable, not outside. The state transport order is canonical ID order; the UI intentionally displays sRGB then Display P3. Guides use sampled data and may have independent contour, interval, and reference availability. An unavailable guide remains requested; inspection can show that the guide will appear with an editor. No guide requests a hidden exact analysis, and no check implies a guide.
+Any of zero, one, or both exact checks may be requested. The local product default requests both visual boundaries and no exact checks. The accepted revision analyzes the original `ColorValue` only for requested check IDs. A failed result is unavailable, not outside. The state transport order is canonical ID order; the UI intentionally displays sRGB then Display P3. Guides use sampled data and may have independent contour, interval, and reference availability. An unavailable guide remains requested; inspection can show that the guide will appear with an editor. No guide requests a hidden exact analysis, and no check implies a guide.
 
 The standalone app's CSS/Hex output uses explicit serialization policies and reports unavailable values separately. Mapping is explicit in core. Neither output destination nor mapping belongs to the instrument state.
 
 ## Current boundary
 
-The migration retires the public two-view props and boundary-target product state. The existing two editors retain their authored behavior and geometry. No new representation, product editor, registry, framework, mapping workflow, or visual redesign is shipped here. The shared stylesheet and existing interface composition remain the current product surface.
+The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a color-space context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a gamut disclosure. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.

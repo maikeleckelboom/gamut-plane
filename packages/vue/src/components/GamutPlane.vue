@@ -80,7 +80,10 @@ const guideIds = Object.freeze([
 const guideOptions = ["srgb-boundary", "display-p3-boundary"] as const satisfies readonly GuideId[];
 const gamutIds = ["srgb-gamut", "display-p3-gamut"] as const satisfies readonly GamutId[];
 const localState = shallowRef<GamutPlaneState>(
-  canonicalInstrumentState(props.defaultState ?? initialInstrumentState<GuideId>(), guideIds),
+  canonicalInstrumentState(
+    props.defaultState ?? initialInstrumentState<GuideId>(guideIds),
+    guideIds,
+  ),
 );
 const readOnlyState = () => controlledState && !hasRawProp("onUpdate:state");
 const acceptedState = computed(() =>
@@ -279,45 +282,39 @@ watch(
     :style="detail ? { '--picker-active': detail.activeCss } : undefined"
     :aria-labelledby="titleId"
   >
-    <h2 :id="titleId" class="sr-only" data-gp-visually-hidden>Color plane instrument</h2>
+    <h2 :id="titleId" class="sr-only" data-gp-visually-hidden>{{ generalizedCopy.instrument }}</h2>
 
     <div class="gp-generalized-selection" :data-gp-part="gpPart.representationControl">
-      <label :for="`${instanceId}-representation`">{{ generalizedCopy.representation }}</label>
-      <select
-        :id="`${instanceId}-representation`"
-        :value="accepted.selection.representationId"
-        :disabled="readOnlyState()"
-        @change="selectRepresentation"
-      >
-        <option v-for="option in currentRepresentationOptions" :key="option" :value="option">
-          {{ representationUi[option].label }}
-        </option>
-      </select>
-      <label class="gp-generalized-edit-toggle">
-        <input
-          type="checkbox"
-          :checked="accepted.selection.editorId !== null"
-          :disabled="
-            readOnlyState() ||
-            currentAdmittedEditorsForRepresentation(accepted.selection.representationId).length ===
-              0
+      <div class="gp-context-row">
+        <div class="gp-context-space">
+          <label :for="`${instanceId}-representation`">{{ generalizedCopy.representation }}</label>
+          <select
+            :id="`${instanceId}-representation`"
+            :value="accepted.selection.representationId"
+            :disabled="readOnlyState()"
+            @change="selectRepresentation"
+          >
+            <option v-for="option in currentRepresentationOptions" :key="option" :value="option">
+              {{ representationUi[option].label }}
+            </option>
+          </select>
+        </div>
+        <label
+          v-if="
+            currentAdmittedEditorsForRepresentation(accepted.selection.representationId).length > 0
           "
-          @change="toggleInspection"
-        />
-        {{ generalizedCopy.editCoordinates }}
-      </label>
-      <small
-        v-if="
-          currentAdmittedEditorsForRepresentation(accepted.selection.representationId).length === 0
-        "
-        >{{ generalizedCopy.inspectionOnly }}</small
-      >
-      <p
-        v-if="accepted.authored.representationId !== accepted.selection.representationId"
-        :data-gp-part="gpPart.authorshipContext"
-      >
-        {{ authorshipContextCopy(accepted.authored.representationId, accepted.selection) }}
-      </p>
+          class="gp-generalized-edit-toggle"
+        >
+          <input
+            type="checkbox"
+            :checked="accepted.selection.editorId !== null"
+            :disabled="readOnlyState()"
+            @change="toggleInspection"
+          />
+          {{ generalizedCopy.editCoordinates }}
+        </label>
+        <span v-else class="gp-context-mode">{{ generalizedCopy.inspectionOnly }}</span>
+      </div>
     </div>
 
     <div class="plane-instrument__workspace" :data-gp-part="gpPart.workspace">
@@ -343,6 +340,7 @@ watch(
           :data-gp-part="gpPart.inspectionReadout"
           :aria-label="`${representationUi[accepted.selection.representationId].label} coordinates`"
         >
+          <h3>{{ generalizedCopy.coordinates }}</h3>
           <p v-if="accepted.selection.editorId !== null" :data-gp-part="gpPart.availabilityMessage">
             {{ generalizedCopy.planeUnavailable }}
           </p>
@@ -455,9 +453,9 @@ watch(
             <div
               class="plane-instrument__coordinate-readout"
               :data-gp-part="gpPart.coordinateReadout"
-              aria-label="Editable OKLab coordinates"
+              :aria-label="generalizedCopy.oklabCoordinates"
             >
-              <span>Editable coordinate</span>
+              <span>{{ generalizedCopy.coordinates }}</span>
               <label>
                 <span>{{ a.label }}</span>
                 <NumericInput
@@ -492,32 +490,28 @@ watch(
                   @cancel="emit('cancel')"
                 />
               </label>
-              <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
             </div>
           </template>
         </template>
 
+        <p
+          v-if="accepted.authored.representationId !== accepted.selection.representationId"
+          :data-gp-part="gpPart.authorshipContext"
+        >
+          {{ authorshipContextCopy(accepted.authored.representationId) }}
+        </p>
         <section
           class="gp-generalized-comparison"
           :data-gp-part="gpPart.exactResults"
           :aria-label="generalizedCopy.comparison"
         >
-          <p v-if="accepted.exactChecks.length === 0">{{ generalizedCopy.noChecks }}</p>
-          <ul v-else>
-            <li
-              v-for="row in orderedExactChecks(accepted.exactChecks)"
-              :key="row.gamutId"
-              :data-gp-part="gpPart.exactResult"
-              :data-gp-status="row.result.ok ? row.result.value.status : 'unavailable'"
-            >
-              <span>{{ exactGamutUi[row.gamutId].label }}</span>
-              <strong>{{
-                exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]
-              }}</strong>
-            </li>
-          </ul>
           <details :data-gp-part="gpPart.gamutDisclosure">
-            <summary>{{ generalizedCopy.disclosure }}</summary>
+            <summary>
+              <span>{{ generalizedCopy.disclosure }}</span>
+              <small v-if="unavailableGuides.length > 0">{{
+                generalizedCopy.boundaryPaused
+              }}</small>
+            </summary>
             <fieldset>
               <legend>{{ generalizedCopy.exactChecks }}</legend>
               <label v-for="gamutId in gamutIds" :key="gamutId">
@@ -554,6 +548,19 @@ watch(
               }}
             </p>
           </details>
+          <ul v-if="accepted.exactChecks.length > 0">
+            <li
+              v-for="row in orderedExactChecks(accepted.exactChecks)"
+              :key="row.gamutId"
+              :data-gp-part="gpPart.exactResult"
+              :data-gp-status="row.result.ok ? row.result.value.status : 'unavailable'"
+            >
+              <span>{{ exactGamutUi[row.gamutId].label }}</span>
+              <strong>{{
+                exactStatusCopy[row.result.ok ? row.result.value.status : "unavailable"]
+              }}</strong>
+            </li>
+          </ul>
         </section>
       </div>
     </div>

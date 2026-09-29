@@ -2,17 +2,17 @@
 
 Vue and React expose the same generalized instrument state: one authored `ColorValue`, a representation/editor selection, independent exact checks, and independent visible-guide requests. They use core's color and geometry facts, render's resolved field/guide visuals, and UI's product policy, copy, stylesheet, and native interaction controllers. Their public syntax and lifecycle remain framework-native.
 
-| Concern          | Vue                                                 | React                                        | Owner of shared invariant           |
-| ---------------- | --------------------------------------------------- | -------------------------------------------- | ----------------------------------- |
-| Color            | `v-model`                                           | `value` / `onValueChange`                    | Core definition and edit operations |
-| Instrument state | `v-model:state` or `defaultState`                   | `state` / `onStateChange` or `defaultState`  | UI validation and policy            |
-| Selection        | Representation select and Edit coordinates toggle   | Same native controls                         | UI admission/preference and copy    |
-| Inspection       | Observed coordinates and alpha                      | Same semantics                               | Core observation; UI formatting     |
-| Exact checks     | Zero, one, or both                                  | Same                                         | Core analysis; UI display order     |
-| Guides           | Requested independently; unavailable forms retained | Same                                         | Render resolution                   |
-| Field            | Vue mounted resources                               | React committed resources                    | Core geometry; render painting      |
-| Input            | Vue native controls and reactive feedback           | React native controls and committed feedback | UI controllers; core authorship     |
-| SSR/hydration    | Packed Nuxt fixture                                 | Packed Next fixture                          | Framework adapter                   |
+| Concern          | Vue                                                      | React                                        | Owner of shared invariant           |
+| ---------------- | -------------------------------------------------------- | -------------------------------------------- | ----------------------------------- |
+| Color            | `v-model`                                                | `value` / `onValueChange`                    | Core definition and edit operations |
+| Instrument state | `v-model:state` or `defaultState`                        | `state` / `onStateChange` or `defaultState`  | UI validation and policy            |
+| Selection        | Color space select and Edit color checkbox when admitted | Same native controls                         | UI admission/preference and copy    |
+| Inspection       | Observed coordinates and alpha                           | Same semantics                               | Core observation; UI formatting     |
+| Exact checks     | Zero, one, or both                                       | Same                                         | Core analysis; UI display order     |
+| Guides           | Requested independently; unavailable forms retained      | Same                                         | Render resolution                   |
+| Field            | Vue mounted resources                                    | React committed resources                    | Core geometry; render painting      |
+| Input            | Vue native controls and reactive feedback                | React native controls and committed feedback | UI controllers; core authorship     |
+| SSR/hydration    | Packed Nuxt fixture                                      | Packed Next fixture                          | Framework adapter                   |
 
 Both adapters keep a rejected controlled state request out of accepted presentation. A check/guide-only accepted change preserves the selected editor's semantic key, active drafts, range/gesture work, and Hue reference. An accepted editor or inspection change invalidates old interaction context. Exact results display sRGB before Display P3 independently of canonical wire order. Current copy comes from UI. Neither adapter supports the removed view/target/visibility API.
 

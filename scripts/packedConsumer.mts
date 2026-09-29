@@ -344,7 +344,7 @@ if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw ne
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
 if (currentSelectionFacts.admittedEditors.length !== 2 || currentAdmittedEditorsForRepresentation("srgb").length !== 0) throw new Error("Packed admission policy changed");
 if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== null) throw new Error("Packed preferred editor changed");
-if (generalizedCopy.noChecks !== "No gamut checks selected") throw new Error("Packed shared copy changed");
+if (generalizedCopy.representation !== "Color space" || generalizedCopy.disclosure !== "Gamuts") throw new Error("Packed shared copy changed");
 if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");
 `,
   );

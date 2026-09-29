@@ -90,7 +90,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         const html = await response!.text();
         expect(html).toContain("data-active-marker");
         expect(html).toContain('data-gp-part="representation-control"');
-        expect(html).toContain("No gamut checks selected");
+        expect(html).toContain('data-gp-part="gamut-disclosure"');
         expect(html).toContain("612.123456");
         await expect(page.locator("[data-plane-instrument]")).toHaveCount(2);
         await expect

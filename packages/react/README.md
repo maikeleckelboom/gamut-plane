@@ -16,7 +16,7 @@ export function ColorEditor({ initial }: { initial: ColorValue }) {
   const [state, setState] = useState<GamutPlaneState>({
     selection: { representationId: "oklch", editorId: "oklch-lc" },
     checkedGamuts: [],
-    visibleGuides: [],
+    visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   });
   return (
     <GamutPlane value={color} onValueChange={setColor} state={state} onStateChange={setState} />
@@ -35,9 +35,9 @@ export function ColorEditor({ initial }: { initial: ColorValue }) {
 
 Native `section` props, `className`, `style`, and `ref` are supported without overriding owned semantics. Import `GamutPlaneProps`, `GamutPlaneSelection`, `GamutPlaneGamutId`, and `GamutPlaneGuideId` when needed. The supported CSS customization is `--gamut-plane-accent`; import the stylesheet once.
 
-The default local state selects `oklch-lc` with empty checks and guides. State is a complete atomic object. A request to `onStateChange` is frozen and canonical; the component displays it only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Empty arrays remain empty.
+The default local state selects `oklch-lc` with both sampled boundaries visible and no exact checks. State is a complete atomic object. A request to `onStateChange` is frozen and canonical; the component displays it only when the parent accepts it. An instance keeps its initial controlled or local ownership mode. Invalid IDs or shapes fail clearly. Explicit empty arrays remain empty.
 
-The public product admits `oklch-lc` for OKLCH and `oklab-ab` for OKLab. Each also allows `editorId: null` for inspection. sRGB and Display P3 are inspection only. An admitted editor is distinct from technical capability existence; the component never exposes an unadmitted editor merely because its geometry exists. The preferred editor is used only when choosing a default, never to replace a valid explicit choice. The current interface shows one Edit coordinates toggle when a representation has an admitted editor; it has no multi-editor chooser yet.
+The public product admits `oklch-lc` for OKLCH and `oklab-ab` for OKLab. Each also allows `editorId: null` for inspection. sRGB and Display P3 are inspection only. An admitted editor is distinct from technical capability existence; the component never exposes an unadmitted editor merely because its geometry exists. The preferred editor is used only when choosing a default, never to replace a valid explicit choice. The compact UI shows an Edit color checkbox when a representation has an admitted editor; a multi-editor choice can join the context row when one is shipped.
 
 Checks and guides can each request zero, one, or both gamuts. Exact results display sRGB then Display P3; the canonical state arrays may use a different order. A guide preference remains selected in inspection and can reappear when an editor is selected. Unavailable observation, editor, and exact facts are shown in their own regions. Inspection retains signed zero and missing Hue, uses locale-independent nine-significant-digit formatting, and never reauthors color.
 

@@ -9,7 +9,7 @@ async function openInstrument(page: Page): Promise<void> {
   await expect(page.locator("[data-gp-root]")).toBeVisible();
 }
 
-test("starts with an editable OKLCH plane and no requested comparisons", async ({ page }) => {
+test("starts with both visual boundaries and no exact gamut checks", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
@@ -17,9 +17,12 @@ test("starts with an editable OKLCH plane and no requested comparisons", async (
   });
   await openInstrument(page);
   await expect(page.locator("[data-active-plane='oklch']")).toBeVisible();
-  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(0);
+  await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
+  await expect(page.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
+  await expect(page.locator("[data-gamut-boundary='display-p3']")).toHaveCount(1);
+  await expect(page.locator("[data-gp-channel='c'] [data-gamut-range]")).toHaveCount(2);
   await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(0);
-  await expect(page.locator("[data-gp-root]")).toContainText("No gamut checks selected");
+  await expect(page.locator("[data-gp-root]")).toContainText("Gamuts");
   expect(errors).toEqual([]);
 });
 
@@ -27,21 +30,26 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await openInstrument(page);
   const initial = await page.locator('[data-css-representation="oklch"] code').textContent();
   const root = page.locator("[data-gp-root]");
-  await root.getByLabel("Representation", { exact: true }).selectOption("srgb");
+  await root.getByLabel("Color space", { exact: true }).selectOption("srgb");
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
-  await root.getByText("Gamut checks and guides").click();
-  await root.getByRole("group", { name: "Exact checks" }).getByLabel("Display P3").check();
-  await root.getByRole("group", { name: "Exact checks" }).getByLabel("sRGB").check();
+  await expect(root.getByLabel("Edit color")).toHaveCount(0);
+  await root.getByText("Gamuts").click();
+  await root.getByRole("group", { name: "Check color in" }).getByLabel("Display P3").check();
+  await root.getByRole("group", { name: "Check color in" }).getByLabel("sRGB").check();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
   await expect(root.locator("[data-gp-part='exact-result']").first()).toContainText("sRGB");
-  await root.getByRole("group", { name: "Visible guides" }).getByLabel("sRGB boundary").check();
-  await expect(root).toContainText("Requested guides will appear");
-  await root.getByLabel("Representation", { exact: true }).selectOption("oklch");
+  await root.getByRole("group", { name: "Show boundaries" }).getByLabel("sRGB boundary").uncheck();
+  await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(0);
+  await root.getByRole("group", { name: "Show boundaries" }).getByLabel("sRGB boundary").check();
+  await expect(root).toContainText("Requested boundaries appear");
+  await root.getByText("Gamuts").click();
+  await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
+  await root.getByLabel("Color space", { exact: true }).selectOption("oklch");
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
-  await root.getByLabel("Edit coordinates").uncheck();
+  await root.getByLabel("Edit color").uncheck();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
-  await root.getByLabel("Edit coordinates").check();
+  await root.getByLabel("Edit color").check();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(initial!);
 });
@@ -64,11 +72,79 @@ test("pointer, keyboard, and numeric edits update the selected color", async ({ 
   await expect(page.getByLabel("Chroma numeric value")).toHaveValue("0.2500");
 });
 
+test("first pointer press and drag keep the marker under the pointer after switching editors", async ({
+  page,
+}) => {
+  await openInstrument(page);
+  for (const representation of ["oklch", "oklab", "oklch"] as const) {
+    if (
+      representation !== "oklch" ||
+      (await page.locator("[data-gp-root]").getAttribute("data-active-plane")) !== "oklch"
+    ) {
+      await page.getByLabel("Color space", { exact: true }).selectOption(representation);
+    }
+    const surface = page.locator("[data-gp-part='surface']");
+    const marker = surface.locator("[data-active-marker]");
+    const box = await surface.boundingBox();
+    expect(box).not.toBeNull();
+    for (const [x, y, action] of [
+      [0.64, 0.42, "press"],
+      [0.25, 0.68, "drag"],
+    ] as const) {
+      const pointerX = box!.x + box!.width * x;
+      const pointerY = box!.y + box!.height * y;
+      await page.mouse.move(pointerX, pointerY);
+      if (action === "press") await page.mouse.down();
+      const markerBox = await marker.boundingBox();
+      expect(markerBox).not.toBeNull();
+      expect(Math.abs(markerBox!.x + markerBox!.width / 2 - pointerX)).toBeLessThan(1);
+      expect(Math.abs(markerBox!.y + markerBox!.height / 2 - pointerY)).toBeLessThan(1);
+      const currentSurface = await surface.boundingBox();
+      expect(currentSurface).not.toBeNull();
+      expect(Math.abs(currentSurface!.x - box!.x)).toBeLessThan(0.5);
+      expect(Math.abs(currentSurface!.y - box!.y)).toBeLessThan(0.5);
+    }
+    await page.mouse.up();
+    const markerBox = await marker.boundingBox();
+    expect(markerBox).not.toBeNull();
+    expect(
+      Math.abs(markerBox!.x + markerBox!.width / 2 - (box!.x + box!.width * 0.25)),
+    ).toBeLessThan(1);
+    expect(
+      Math.abs(markerBox!.y + markerBox!.height / 2 - (box!.y + box!.height * 0.68)),
+    ).toBeLessThan(1);
+  }
+});
+
+test("the first slider drag after an editor switch keeps its track in place", async ({ page }) => {
+  await openInstrument(page);
+  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
+  await expect(page.locator("[data-gp-part='authorship-context']")).toContainText("OKLCH");
+  const track = page.locator("[data-gp-channel='l'] [data-gp-part='channel-track']");
+  const range = track.locator("[data-gp-part='native-range']");
+  const before = await track.boundingBox();
+  expect(before).not.toBeNull();
+  await page.mouse.move(before!.x + before!.width * 0.55, before!.y + before!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before!.x + before!.width * 0.8, before!.y + before!.height / 2, {
+    steps: 8,
+  });
+  await expect(page.locator("[data-gp-part='authorship-context']")).toHaveCount(0);
+  const during = await track.boundingBox();
+  expect(during).not.toBeNull();
+  expect(Math.abs(during!.x - before!.x)).toBeLessThan(0.5);
+  expect(Math.abs(during!.y - before!.y)).toBeLessThan(0.5);
+  expect(
+    await range.evaluate((element: HTMLInputElement) => element.valueAsNumber),
+  ).toBeGreaterThan(0.7);
+  await page.mouse.up();
+});
+
 test("alternate editor keeps authored color until an explicit edit", async ({ page }) => {
   await openInstrument(page);
   const css = page.locator('[data-css-representation="oklch"] code');
   const before = await css.textContent();
-  await page.getByLabel("Representation", { exact: true }).selectOption("oklab");
+  await page.getByLabel("Color space", { exact: true }).selectOption("oklab");
   await expect(page.locator("[data-active-plane='oklab']")).toBeVisible();
   await expect(css).toHaveText(before!);
   const plane = page.getByRole("application", { name: /OKLab a\/b plane/ });
@@ -94,7 +170,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
     await page.evaluate((fontSize) => {
       document.documentElement.style.fontSize = fontSize;
     }, size);
-    await expect(page.getByLabel("Representation", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Color space", { exact: true })).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
@@ -103,5 +179,44 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
       .locator("[data-gp-root]")
       .evaluate((element) => element.scrollWidth - element.clientWidth);
     expect(rootOverflow).toBeLessThanOrEqual(0);
+  }
+  const root = page.locator("[data-gp-root]");
+  await root.getByText("Gamuts", { exact: true }).click();
+  await root.getByRole("group", { name: "Check color in" }).getByLabel("sRGB").check();
+  await root
+    .getByRole("group", { name: "Show boundaries" })
+    .getByLabel("Display P3 boundary")
+    .check();
+  expect(
+    await root.evaluate((element) => element.scrollWidth - element.clientWidth),
+  ).toBeLessThanOrEqual(0);
+  await root.getByLabel("Color space", { exact: true }).selectOption("srgb");
+  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
+  expect(
+    await root.evaluate((element) => element.scrollWidth - element.clientWidth),
+  ).toBeLessThanOrEqual(0);
+});
+
+test("the reusable instrument keeps its square field and compact width in varied hosts", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openInstrument(page);
+  for (const hostWidth of [320, 390, 440, 480, 800]) {
+    const dimensions = await page.evaluate((width) => {
+      const host = document.querySelector<HTMLElement>(".instrument-primary")!;
+      host.style.width = `${width}px`;
+      const root = host.querySelector<HTMLElement>("[data-gp-root]")!;
+      const surface = root.querySelector<HTMLElement>("[data-gp-part='surface']")!;
+      return {
+        width: root.getBoundingClientRect().width,
+        fieldWidth: surface.getBoundingClientRect().width,
+        fieldHeight: surface.getBoundingClientRect().height,
+        overflow: root.scrollWidth - root.clientWidth,
+      };
+    }, hostWidth);
+    expect(dimensions.width).toBe(Math.min(hostWidth, 480));
+    expect(dimensions.fieldWidth).toBe(dimensions.fieldHeight);
+    expect(dimensions.overflow).toBeLessThanOrEqual(0);
   }
 });

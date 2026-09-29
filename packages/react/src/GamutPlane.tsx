@@ -25,7 +25,13 @@ import {
   generalizedEditableDetail,
   generalizedGuideDisplay,
 } from "@gamut-plane/render/internal/current";
-import { gpPart, editorUi, currentEditorHelp, generalizedCopy } from "@gamut-plane/ui";
+import {
+  gpPart,
+  editorUi,
+  currentEditorHelp,
+  generalizedCopy,
+  authorshipContextCopy,
+} from "@gamut-plane/ui";
 import { useGeneralizedState } from "./hooks/useGeneralizedState.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
@@ -202,10 +208,9 @@ export function GamutPlane(props: GamutPlaneProps) {
       aria-labelledby={`${id}-instrument-title`}
     >
       <h2 id={`${id}-instrument-title`} className="gpr-sr-only" data-gp-visually-hidden="">
-        Color plane instrument
+        {generalizedCopy.instrument}
       </h2>
       <GeneralizedSelection
-        accepted={accepted}
         state={acceptedState}
         request={requestState}
         readOnly={readOnly}
@@ -387,9 +392,9 @@ export function GamutPlane(props: GamutPlaneProps) {
                 <div
                   className="gpr-plane-instrument-coordinate-readout"
                   data-gp-part={gpPart.coordinateReadout}
-                  aria-label="Editable OKLab coordinates"
+                  aria-label={generalizedCopy.oklabCoordinates}
                 >
-                  <span>Editable coordinate</span>
+                  <span>{generalizedCopy.coordinates}</span>
                   {[a, b].map((control) => (
                     <label
                       key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
@@ -422,10 +427,14 @@ export function GamutPlane(props: GamutPlaneProps) {
                       />
                     </label>
                   ))}
-                  <small>Disc-bounded radius ≤ 0.4000 · no RGB gamut clamp</small>
                 </div>
               </>
             ))}
+          {accepted.authored.representationId !== accepted.selection.representationId && (
+            <p data-gp-part={gpPart.authorshipContext}>
+              {authorshipContextCopy(accepted.authored.representationId)}
+            </p>
+          )}
           <GeneralizedComparison
             accepted={accepted}
             state={acceptedState}

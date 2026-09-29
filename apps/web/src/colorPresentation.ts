@@ -2,17 +2,10 @@ import type {
   ColorRepresentation,
   CssOutputError,
   DisplayGamut,
-  GamutStatus,
   HexOutputError,
 } from "@gamut-plane/core";
 
 export const CSS_DISPLAY_DECIMALS = 6;
-export const exactStatusLabel: Record<GamutStatus, string> = {
-  inside: "Inside",
-  "within-tolerance": "Within tolerance",
-  outside: "Outside",
-};
-
 export function unavailableOutput(
   code: CssOutputError["code"] | HexOutputError["code"],
   gamut: DisplayGamut,

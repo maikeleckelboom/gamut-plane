@@ -1,6 +1,6 @@
 # Gamut Plane
 
-Gamut Plane provides native Vue and React instruments for editing one `ColorValue`. The public instrument selects an OKLCH or OKLab editor, or inspects OKLCH, OKLab, sRGB, or Display P3 coordinates. Exact gamut checks and sampled visual guides are independent, explicit requests. A standalone Vue app supports color exploration and CSS copying.
+Gamut Plane provides one compact color instrument in native Vue and React. Pick in OKLCH or OKLab, or inspect OKLCH, OKLab, sRGB, and Display P3 coordinates without changing the authored `ColorValue`. Exact gamut checks and sampled boundaries are independent requests behind a small disclosure. The standalone Vue app hosts the same instrument beside CSS output examples.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
@@ -11,7 +11,7 @@ The selected `ColorValue` retains its defining representation. Changing the sele
 
 Alpha and ordinary out-of-gamut coordinates are preserved. `analyzeGamut` reports exact `inside`, `within-tolerance` or `outside` status independently of the sampled guides. Editing never silently maps into a display gamut; `mapToGamut` is explicit. Strict CSS and Hex output use explicit `serializeCss` and `serializeHex` policies and can reject a value.
 
-![Gamut Plane generalized OKLCH instrument with requested sRGB and Display P3 guides](docs/assets/gamut-plane-desktop.png)
+![Compact Gamut Plane instrument with an OKLCH color field, direct controls, and requested sRGB and Display P3 boundaries](docs/assets/gamut-plane-desktop.png)
 
 The source is public under the MIT license. All workspace packages are private and **not published to npm**. Both adapters provide controlled color, numeric editing, requested gamut guides, and normal SSR/hydration.
 
@@ -47,7 +47,7 @@ const color = ref<ColorValue>(initial.value);
 const state = ref<GamutPlaneState>({
   selection: { representationId: "oklch", editorId: "oklch-lc" },
   checkedGamuts: [],
-  visibleGuides: [],
+  visibleGuides: ["display-p3-boundary", "srgb-boundary"],
 });
 </script>
 
@@ -56,9 +56,9 @@ const state = ref<GamutPlaneState>({
 </template>
 ```
 
-Vue 3.5+ is required. The component includes its controls, renderer, styles, and gamut tables. It inherits the host font and adapts to its available width. Import the stylesheet once; use `--gamut-plane-accent` to customize focus and selection emphasis.
+Vue 3.5+ is required. The component includes its controls, renderer, styles, and gamut tables. It inherits the host font, remains at most 480px wide, and adapts to narrower hosts. Import the stylesheet once; use `--gamut-plane-accent` to customize focus and selection emphasis.
 
-Without an explicit state, the instrument starts in the OKLCH editor with no checks or guides requested. `v-model:state` gives the parent ownership; `defaultState` initializes local ownership. Edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
+Without an explicit state, the instrument starts in the OKLCH editor with both sampled boundaries visible and no exact checks requested. `v-model:state` gives the parent ownership; `defaultState` initializes local ownership. Either boundary can be hidden independently of exact checks. Edit events, Canvas capability reporting, and the `field-legend` slot are documented in the [Vue package README](packages/vue/README.md).
 
 ## Use the React component
 
@@ -77,7 +77,7 @@ export function ColorEditor() {
   const [state, setState] = useState<GamutPlaneState>({
     selection: { representationId: "oklab", editorId: "oklab-ab" },
     checkedGamuts: [],
-    visibleGuides: [],
+    visibleGuides: ["display-p3-boundary", "srgb-boundary"],
   });
   return (
     <GamutPlane value={color} onValueChange={setColor} state={state} onStateChange={setState} />
@@ -126,7 +126,7 @@ The field's chroma limit and OKLab disc radius are both 0.4. These define the ed
 
 Drag the plane or use arrow keys. Shift increases the step; Home and End move to horizontal limits. Numeric fields apply a draft on Enter or blur and discard it on Escape. Escape during a plane drag restores its starting color. Edits preserve alpha and unedited channels. See [the interaction contract](docs/architecture.md#interaction-lifecycle) for cancellation and parent-update behavior.
 
-The app's inspector copies full-precision OKLCH and `color()` values, plus quantized 8-bit sRGB Hex. Hex and sRGB CSS copy are available only inside sRGB; clipboard failures do not show success.
+The standalone app's output examples copy full-precision OKLCH and `color()` values, plus quantized 8-bit sRGB Hex. Hex and sRGB CSS copy are available only inside sRGB; clipboard failures do not show success.
 
 ## Browser and rendering limits
 
@@ -145,7 +145,7 @@ The app's inspector copies full-precision OKLCH and `color()` values, plus quant
 | `packages/ui`     | Private shared instrument anatomy, canonical stylesheet, glyph geometry, and framework-neutral interaction policies                                                |
 | `packages/vue`    | Vue native markup/component API, reactivity/lifecycle, adapter geometry/presentation, VueUse environment integration, and Canvas resource hookup                   |
 | `packages/react`  | React native markup/component API, committed lifecycle, adapter geometry/presentation, Canvas/environment resource integration, and packed React/Next verification |
-| `apps/web`        | Standalone app, inspector, clipboard UI, and deployment assets                                                                                                     |
+| `apps/web`        | Standalone host, CSS output examples, clipboard UI, and deployment assets                                                                                          |
 
 [Architecture](docs/architecture.md) explains package boundaries and interaction contracts. [Testing](docs/testing.md) covers local checks, browser setup, snapshots, and packed consumption. The [release runbook](docs/release.md) contains the full clean-checkout gate and promotion sequence; [deployment](docs/deployment.md) covers Cloudflare Workers Static Assets and Workers Builds.
 

@@ -17,8 +17,8 @@ async function ready(page: Page): Promise<void> {
     "data-canvas-capability",
     "pending",
   );
-  await page.getByText("Gamut checks and guides").click();
-  const guides = page.getByRole("group", { name: "Visible guides" });
+  await page.getByText("Gamuts", { exact: true }).click();
+  const guides = page.getByRole("group", { name: "Show boundaries" });
   await guides.getByLabel("sRGB boundary").check();
   await guides.getByLabel("Display P3 boundary").check();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
@@ -56,8 +56,7 @@ test("generate reviewed repository and social images", async ({ page }) => {
 
     const method = document.createElement("p");
     method.className = "social-method";
-    method.textContent =
-      "Exact gamut membership stays independent from the sampled boundary guides.";
+    method.textContent = "Precise editing, with gamut details on demand.";
     copy.append(method);
 
     const legend = document.createElement("div");

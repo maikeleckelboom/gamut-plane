@@ -2,15 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   CSS_DISPLAY_DECIMALS,
-  exactStatusLabel,
   formatOklchForDisplay,
   formatRgbCssForDisplay,
   unavailableOutput,
 } from "@/colorPresentation";
 
 describe("CSS presentation formatting", () => {
-  it("labels exact status and unavailable outputs without implying clipping", () => {
-    expect(exactStatusLabel["within-tolerance"]).toBe("Within tolerance");
+  it("labels unavailable outputs without implying clipping", () => {
     for (const [code, gamut, compact, explanation] of [
       [
         "out-of-gamut",

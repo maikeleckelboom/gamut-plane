@@ -72,9 +72,9 @@ button:disabled {
 }
 
 .app-shell {
-  width: min(100%, 1560px);
+  width: min(100%, 1060px);
   margin: 0 auto;
-  padding: 0 clamp(18px, 3.5vw, 56px) clamp(40px, 6vw, 88px);
+  padding: 0 clamp(12px, 3vw, 32px) 64px;
 }
 
 .project-header {
@@ -86,7 +86,7 @@ button:disabled {
 
 .project-identity {
   display: grid;
-  max-width: 850px;
+  max-width: 700px;
   gap: 4px;
 }
 
@@ -106,101 +106,41 @@ button:disabled {
 
 .instrument-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 430px);
-  gap: clamp(26px, 2.5vw, 40px);
+  grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 52px);
   align-items: start;
-  padding-top: clamp(22px, 2.8vw, 36px);
+  padding-top: clamp(18px, 2.8vw, 32px);
 }
 
 .instrument-primary {
   min-width: 0;
 }
 
-.color-inspector {
+.output-demo {
   min-width: 0;
+  padding-top: 4px;
 }
 
-.color-inspector section {
-  margin-bottom: 28px;
+.output-demo h2 {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
-.color-inspector section:last-child {
+.output-demo section {
+  margin-bottom: 24px;
+}
+
+.output-demo section:last-child {
   margin-bottom: 0;
 }
 
-.color-inspector h3 {
+.output-demo h3 {
   margin: 0 0 14px;
   color: var(--quiet);
   font-size: 0.8125rem;
   font-weight: 550;
   line-height: 1.4;
-}
-
-.coordinate-summary h3 {
-  color: var(--foreground);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.coordinate-summary__values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin: 0;
-}
-
-.coordinate-summary__values > div {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.coordinate-summary__values dt,
-.coordinate-summary__values dd {
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.coordinate-summary__values dt {
-  color: var(--quiet);
-}
-
-.coordinate-summary__values dd {
-  font-family: var(--cv-font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.gamut-facts dl {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.gamut-facts dl > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.gamut-facts dt,
-.gamut-facts dd {
-  margin: 0;
-  font-size: 0.8125rem;
-}
-
-.gamut-facts dd {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-[data-status="inside"] {
-  color: var(--status-inside);
-}
-
-[data-status="outside"] {
-  color: var(--status-outside);
 }
 
 .css-output p {
@@ -217,7 +157,7 @@ button:disabled {
   gap: 16px;
 }
 
-.color-inspector .canvas-fact h3 {
+.output-demo .canvas-fact h3 {
   margin-bottom: 0;
 }
 
@@ -311,48 +251,17 @@ button:disabled {
   border-style: dashed;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 850px) {
   .instrument-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .color-inspector {
-    padding-top: 30px;
+  .output-demo {
+    padding-top: 14px;
   }
 
-  .color-inspector section {
-    max-width: 720px;
-  }
-}
-
-@media (min-width: 1101px) {
-  .app-shell {
-    display: grid;
-    block-size: 100svh;
-    grid-template-rows: auto minmax(0, 1fr);
-    padding-bottom: 0;
-  }
-
-  .instrument-layout {
-    container: standalone-workspace / size;
-    contain: layout paint;
-    min-block-size: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-block: clamp(14px, 2vh, 22px);
-    scrollbar-gutter: stable;
-  }
-
-  /* The workspace has already accounted for the header and its own padding. */
-  .instrument-primary .plane-instrument {
-    --picker-plane-max-size: clamp(460px, calc(100cqh - 223px), 520px);
-  }
-
-  /* Keep the inspector's spacing proportional in short viewports. */
-  @container standalone-workspace (max-height: 730px) {
-    .color-inspector section {
-      margin-bottom: 20px;
-    }
+  .output-demo section {
+    max-width: 480px;
   }
 }
 

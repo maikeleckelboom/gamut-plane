@@ -7,7 +7,6 @@ import {
   defaultSelection,
   validateInstrumentViewState,
   type InstrumentViewState,
-  type InstrumentSelection,
   type RepresentationId,
 } from "./instrumentState.js";
 
@@ -89,29 +88,26 @@ export function orderedExactChecks<T extends Readonly<{ gamutId: GamutId }>>(
 }
 
 export const generalizedCopy = Object.freeze({
-  representation: "Representation",
-  editCoordinates: "Edit coordinates",
-  inspectionOnly: "Inspection only",
-  inspecting: "Inspecting",
-  editing: "Editing",
+  instrument: "Color instrument",
+  representation: "Color space",
+  editCoordinates: "Edit color",
+  inspectionOnly: "Inspecting",
+  coordinates: "Coordinates",
+  oklabCoordinates: "Editable OKLab coordinates",
   coordinatesUnavailable: "Coordinates unavailable for this color.",
   planeUnavailable: "Editing plane unavailable for this color.",
   alpha: "Alpha",
-  noChecks: "No gamut checks selected",
-  comparison: "Gamut comparison",
-  disclosure: "Gamut checks and guides",
-  exactChecks: "Exact checks",
-  visibleGuides: "Visible guides",
-  guidesPending: "Requested guides will appear when an editable plane is selected.",
-  guidesUnavailable: "Some requested guides cannot be shown for this color or editor.",
+  comparison: "Gamuts",
+  disclosure: "Gamuts",
+  exactChecks: "Check color in",
+  visibleGuides: "Show boundaries",
+  boundaryPaused: "Boundaries paused",
+  guidesPending: "Requested boundaries appear when editing a color space.",
+  guidesUnavailable: "Some requested boundaries cannot be drawn here.",
 });
 
-export function authorshipContextCopy(
-  authoredRepresentationId: RepresentationId,
-  selection: InstrumentSelection,
-): string {
-  const mode = selection.editorId === null ? generalizedCopy.inspecting : generalizedCopy.editing;
-  return `Authored as ${representationUi[authoredRepresentationId].label} · ${mode} as ${representationUi[selection.representationId].label}`;
+export function authorshipContextCopy(authoredRepresentationId: RepresentationId): string {
+  return `Authored in ${representationUi[authoredRepresentationId].label}`;
 }
 
 /** Nine significant decimal digits are for inspection, separate from edit and output precision. */
@@ -131,11 +127,13 @@ export function canonicalInstrumentState<G extends string>(
   return result.value;
 }
 
-export function initialInstrumentState<G extends string>(): InstrumentViewState<G> {
+export function initialInstrumentState<G extends string>(
+  visibleGuides: readonly G[] = [],
+): InstrumentViewState<G> {
   return Object.freeze({
     selection: defaultSelection("oklch"),
     checkedGamuts: Object.freeze([]),
-    visibleGuides: Object.freeze([]),
+    visibleGuides: Object.freeze([...visibleGuides]),
   });
 }
 
