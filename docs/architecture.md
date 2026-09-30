@@ -86,7 +86,7 @@ Vue and React use the same UI controllers but own their framework-specific commi
 
 Core tests own science and typed geometry/operation contracts. Render tests own field/guide forms and geometry-keyed caches. UI tests own admission, state, order, copy, and controller policies. Adapter tests own native composition and framework lifecycle; shared semantics use a common contract where useful. The standalone web suite owns full product browser, accessibility, responsive, and visual references. Packed Vue/Vite and React/Vite prove installed artifacts and a representative interaction; packed Nuxt and Next prove SSR/hydration, with Next root Strict Mode. See [Testing](testing.md) and the [React parity map](react-parity.md).
 
-Mapping, output workflows, new representations, plugin registration, and a compact vNext redesign are outside the current instrument API. RGB gamut slices and Reference conversion remain in 2N.2; integrated closeout and test-debt review remain in 2N.3.
+Mapping, output workflows, new representations, plugin registration, and a compact vNext redesign are outside the current instrument API. Phase 2N.2 supplies native RGB gamut slices, channel intervals and conditionally compatible Reference conversion. Integrated closeout and test-debt review remain deferred to 2N.3.
 
 ## Direct editor coordinates
 

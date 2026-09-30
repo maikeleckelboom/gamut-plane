@@ -10,6 +10,7 @@ import {
   rgbChannelInterval,
   RGB_CURVE_ERROR,
   RGB_CURVE_MAX_POINTS,
+  RGB_GEOMETRY_EPSILON,
   type RgbGeometry,
 } from "../src/rgbGuides.js";
 import { resolveRequestedGuides } from "../src/capabilities/guideResolution.js";
@@ -56,8 +57,91 @@ function observed(
   return result.value.channels;
 }
 const inside = (v: readonly number[]) => v.every((c) => c >= -1e-9 && c <= 1 + 1e-9);
+// Independent extended transfer equations for perturbations measured in linear units.
+const decode = (v: number) =>
+  Math.abs(v) <= 0.04045 ? v / 12.92 : Math.sign(v) * ((Math.abs(v) + 0.055) / 1.055) ** 2.4;
+const encode = (v: number) =>
+  Math.abs(v) <= 0.0031308 ? v * 12.92 : Math.sign(v) * (1.055 * Math.abs(v) ** (1 / 2.4) - 0.055);
 
 describe("analytic native RGB slices", () => {
+  it.each(bindings)(
+    "%s respects closed endpoints and linear coincidence at both extrema",
+    (id, space, x, y, f) => {
+      const geometry = geometryDefinitions[`${id}-rectangle`];
+      const target = space === "srgb" ? "display-p3" : "srgb";
+      const tangent = f === 2 ? "point" : "line";
+      for (const fixed of [0, 1]) {
+        expect(slice(geometry, target, fixed)).toMatchObject({
+          coverage: space === "srgb" ? "full" : "partial",
+          dimension: space === "srgb" ? "area" : tangent,
+          nominalDimension: space === "srgb" ? "area" : tangent,
+        });
+      }
+      // Full encoded conversion is independent of the production linear-cube helper.
+      const vertices = Array.from({ length: 8 }, (_, i) =>
+        observed(target, space, [i & 1, (i >> 1) & 1, (i >> 2) & 1]).map(decode),
+      );
+      for (const sign of [-1, 1]) {
+        const bound =
+          sign === -1
+            ? Math.min(...vertices.map((v) => v[f]!))
+            : Math.max(...vertices.map((v) => v[f]!));
+        for (const offset of [0, -0.25, 0.25]) {
+          const result = slice(
+            geometry,
+            target,
+            encode(bound + sign * offset * RGB_GEOMETRY_EPSILON),
+          );
+          expect(result.dimension).toBe(tangent);
+          expect(result.closed).toBe(false);
+          expect(result.points.length).toBeGreaterThan(0);
+          expect(result.points.length / 2).toBeLessThanOrEqual(RGB_CURVE_MAX_POINTS);
+          for (let i = 0; i < result.points.length; i += 2) {
+            const native: [number, number, number] = [0, 0, 0];
+            native[x] = result.points[i]!;
+            native[y] = 1 - result.points[i + 1]!;
+            native[f] = encode(bound);
+            expect(inside(observed(space, target, native))).toBe(true);
+          }
+        }
+        // A narrow but nondegenerate section must not collapse under an area epsilon.
+        const narrow = slice(geometry, target, encode(bound - sign * 1e-9));
+        expect(narrow.dimension).toBe("area");
+        if (space === "display-p3") expect(narrow.nominalDimension).toBe("area");
+        for (const beyond of [2, 1000]) {
+          expect(
+            slice(geometry, target, encode(bound + sign * beyond * RGB_GEOMETRY_EPSILON)),
+          ).toMatchObject({
+            coverage: "empty",
+            dimension: "empty",
+            nominalDimension: "empty",
+          });
+        }
+        expect(slice(geometry, target, sign * Number.MAX_VALUE)).toMatchObject({
+          coverage: "empty",
+          dimension: "empty",
+          nominalDimension: "empty",
+        });
+      }
+    },
+  );
+  it.each([
+    ["display-p3-rb-rectangle", 1],
+    ["display-p3-gb-rectangle", 0],
+  ] as const)("%s retains the nominal boundary line at %s", (id, fixed) => {
+    const result = slice(geometryDefinitions[id], "srgb", fixed);
+    expect(result).toMatchObject({
+      coverage: "partial",
+      dimension: "line",
+      nominalDimension: "line",
+      closed: false,
+    });
+    expect(result.points.length).toBeGreaterThan(2);
+    if (fixed === 0) {
+      // Coverage canonicalization must not replace the genuine converted contour.
+      expect([...result.points].some((v, i) => i % 2 === 0 && v < 0)).toBe(true);
+    }
+  });
   it.each(bindings)(
     "%s preserves full, empty, deterministic and true cross-gamut boundaries",
     (editor, space, x, y, f) => {
@@ -156,12 +240,6 @@ describe("analytic native RGB slices", () => {
     const result = slice(geometryDefinitions["srgb-rg-rectangle"], "display-p3", 0.2);
     expect(result.points.length).toBeGreaterThan(20);
     // Reconstruct each emitted segment in native linear space through independent transfer equations.
-    const decode = (v: number) =>
-      Math.abs(v) <= 0.04045 ? v / 12.92 : Math.sign(v) * ((Math.abs(v) + 0.055) / 1.055) ** 2.4;
-    const encode = (v: number) =>
-      Math.abs(v) <= 0.0031308
-        ? v * 12.92
-        : Math.sign(v) * (1.055 * Math.abs(v) ** (1 / 2.4) - 0.055);
     for (let i = 2; i < result.points.length; i += 2) {
       for (const t of [0.1, 0.25, 0.5, 0.75, 0.9])
         for (const axis of [0, 1]) {
@@ -190,6 +268,92 @@ describe("analytic native RGB slices", () => {
 });
 
 describe("native channel intersections and independent forms", () => {
+  it("keeps coincident sibling endpoints without accepting meaningfully outside values", () => {
+    for (const bound of [0, 1]) {
+      const sign = bound === 0 ? -1 : 1;
+      for (const offset of [-0.25, 0, 0.25, 2]) {
+        const result = rgbChannelInterval(
+          "display-p3",
+          "srgb",
+          [bound, encode(bound + sign * offset * RGB_GEOMETRY_EPSILON), 0.5],
+          2,
+        );
+        if (result.kind !== "available") throw Error("interval");
+        if (offset === 2) expect(result.value.interval).toBeNull();
+        else {
+          expect(result.value.interval).not.toBeNull();
+          expect(result.value.interval!.start).toBeLessThan(0.5);
+          expect(result.value.interval!.end).toBeGreaterThan(0.5);
+        }
+      }
+    }
+  });
+  it.each(["srgb", "display-p3"] as const)(
+    "%s retains shared white and blue boundaries without accepting outside siblings",
+    (space) => {
+      const target = space === "srgb" ? "display-p3" : "srgb";
+      // The blue primary ray is shared, but its unit endpoint has different luminance.
+      for (const channels of [
+        [0, 0, 0.5],
+        [1, 1, 1],
+      ] as const) {
+        expect(inside(observed(space, target, channels))).toBe(true);
+        for (const axis of [0, 1, 2] as const) {
+          const result = rgbChannelInterval(space, target, channels, axis);
+          if (result.kind !== "available") throw Error("interval");
+          expect(result.value.interval).not.toBeNull();
+          const interval = result.value.interval!;
+          expect(interval.start).toBeLessThanOrEqual(channels[axis] + RGB_GEOMETRY_EPSILON);
+          expect(interval.end).toBeGreaterThanOrEqual(channels[axis] - RGB_GEOMETRY_EPSILON);
+          for (const endpoint of [interval.start, interval.end]) {
+            const native: [number, number, number] = [...channels];
+            native[axis] = endpoint;
+            expect(inside(observed(space, target, native))).toBe(true);
+          }
+        }
+      }
+      const vertices = Array.from({ length: 8 }, (_, i) =>
+        observed(target, space, [i & 1, (i >> 1) & 1, (i >> 2) & 1]).map(decode),
+      );
+      for (const axis of [0, 1, 2] as const) {
+        const sibling = (axis + 1) % 3;
+        for (const sign of [-1, 1]) {
+          const bound =
+            sign < 0
+              ? Math.min(...vertices.map((v) => v[sibling]!))
+              : Math.max(...vertices.map((v) => v[sibling]!));
+          for (const value of [
+            encode(bound + sign * 2 * RGB_GEOMETRY_EPSILON),
+            sign * Number.MAX_VALUE,
+          ]) {
+            const channels: [number, number, number] = [0.5, 0.5, 0.5];
+            channels[sibling] = value;
+            expect(rgbChannelInterval(space, target, channels, axis)).toMatchObject({
+              kind: "available",
+              value: { coverage: "empty", interval: null },
+            });
+          }
+        }
+      }
+    },
+  );
+  it.each([
+    [[1, 1, 0.5], 2],
+    [[1, 1, 1], 0],
+    [[1, 1, 1], 1],
+    [[1, 1, 1], 2],
+  ] as const)("retains the white endpoint for %s on axis %s", (channels, axis) => {
+    expect(core.analyzeGamut(color("display-p3", [1, 1, 1]), "srgb-gamut")).toMatchObject({
+      ok: true,
+      value: { status: "inside" },
+    });
+    const result = rgbChannelInterval("display-p3", "srgb", channels, axis);
+    expect(result.kind).toBe("available");
+    if (result.kind !== "available") throw Error("interval");
+    expect(result.value.interval).not.toBeNull();
+    expect(result.value.interval!.start).toBeLessThanOrEqual(channels[axis] + 1e-12);
+    expect(result.value.interval!.end).toBeCloseTo(1, 12);
+  });
   it("retains a tangent black-only interval along the P3 red primary in sRGB", () => {
     expect(rgbChannelInterval("display-p3", "srgb", [0.8, 0, 0], 0)).toMatchObject({
       kind: "available",

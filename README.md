@@ -1,6 +1,6 @@
 # Gamut Plane
 
-Gamut Plane provides one compact color instrument in native Vue and React. Edit or inspect OKLCH, OKLab, sRGB and Display P3 coordinates. RGB editing offers R/G, R/B and G/B Areas with native Red, Green and Blue controls. Selection preserves the authored `ColorValue`; explicit edits preserve alpha and untouched observed channels. Exact gamut checks, sampled boundaries and a Reference focus are independent choices in a compact Gamuts popup. RGB boundaries and spatial Reference are temporarily unavailable pending Phase 2N.2. The standalone Vue app hosts the same instrument beside CSS output examples.
+Gamut Plane provides one compact color instrument in native Vue and React. Edit or inspect OKLCH, OKLab, sRGB and Display P3 coordinates. RGB editing offers R/G, R/B and G/B Areas with native Red, Green and Blue controls. Selection preserves the authored `ColorValue`; explicit edits preserve alpha and untouched observed channels. Exact gamut checks, sampled boundaries and a Reference focus are independent choices in a compact Gamuts popup. All RGB Areas support native gamut boundaries and channel intervals. RGB spatial Reference is available when the unchanged sampled endpoint is compatible with the fixed channel and projects inside the editor. The standalone Vue app hosts the same instrument beside CSS output examples.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 
@@ -124,9 +124,9 @@ Reference is independent semantic focus on sRGB, Display P3, or `null`. It enabl
 
 ## Color and editing behavior
 
-When requested, the solid contour shows Display P3 and the dashed contour shows sRGB. Contours and channel intervals interpolate generated tables. `analyzeGamut(ColorValue)` supplies exact `inside`, `within-tolerance` or `outside` status independently of those guides. Check and guide requests can each be empty, single, or both and never mutate the authored color. Strict CSS and Hex output may reject a value within boundary tolerance. Mapping is available only through explicit `mapToGamut`.
+When requested, the solid contour shows Display P3 and the dashed contour shows sRGB. Perceptual contours and channel intervals interpolate generated tables. Native RGB contours and intervals come from linear target-cube intersections, with bounded approximation of encoded curves. `analyzeGamut(ColorValue)` supplies exact `inside`, `within-tolerance` or `outside` status independently of those guides. Check and guide requests can each be empty, single, or both and never mutate the authored color. Strict CSS and Hex output may reject a value within boundary tolerance. Mapping is available only through explicit `mapToGamut`.
 
-The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values, with the marker projected to the edge.
+The field's chroma limit and OKLab disc radius are both 0.4. These define the editing geometry, not either display gamut. The OKLCH chroma number field can exceed the slider range. Colors outside the visible geometry keep their values. Perceptual editors place overflow markers at the edge; RGB markers retain their raw authored projection and can be hidden by surface clipping, with accessible numeric recovery guidance.
 
 Drag the plane or use arrow keys. Shift increases the step; Home and End move to horizontal limits. Numeric fields apply a draft on Enter or blur and discard it on Escape. Escape during a plane drag restores its starting color. Edits preserve alpha and unedited channels. See [the interaction contract](docs/architecture.md#interaction-lifecycle) for cancellation and parent-update behavior.
 

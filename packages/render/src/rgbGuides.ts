@@ -68,7 +68,9 @@ function extrema(vertices: readonly Vector[], axis: Index): readonly [number, nu
 }
 function outsideBounds(encoded: number, vertices: readonly Vector[], axis: Index): boolean {
   const [lo, hi] = extrema(vertices, axis);
-  return encoded < encodeRgbCoordinate(lo) || encoded > encodeRgbCoordinate(hi);
+  // Apply the solver's linear coincidence distance before the nonlinear transfer.
+  // This is only a conservative early rejection; the actual coordinate is still solved below.
+  return encoded < encodeRgbCoordinate(lo - epsilon) || encoded > encodeRgbCoordinate(hi + epsilon);
 }
 function cross(a: Point, b: Point, c: Point): number {
   return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
@@ -112,7 +114,13 @@ function nominalIntersection(points: readonly Point[]): Point[] {
     [1, 0, 1],
     [1, 1, -1],
   ] as const) {
-    const input = output;
+    // Canonicalize only the coverage witness at this half-plane. A coincident
+    // endpoint must neither disappear nor make a genuine line into a thin area.
+    // Keep the published contour and authored coordinates untouched.
+    const input = output.map((p): Point => {
+      if (Math.abs(p[axis] - bound) > epsilon) return p;
+      return axis === 0 ? [bound, p[1]] : [p[0], bound];
+    });
     output = [];
     for (let i = 0; i < input.length; i++) {
       const a = input[i]!;
