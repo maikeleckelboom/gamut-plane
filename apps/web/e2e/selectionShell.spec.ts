@@ -53,6 +53,14 @@ test("candidate keyboard, typeahead, accepted checks, Tab and outside dismissal"
   await page.getByRole("button", { name: "Reject requests" }).click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  // Pressing the open trigger closes it; native light dismiss must not reopen it on click.
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    root.getByRole("listbox", { name: "Coordinates", includeHidden: true }),
+  ).toBeHidden();
+  await trigger.click();
   await root.getByRole("option", { name: /^sRGB/ }).click();
   await expect(events).toHaveAttribute("data-requests", "1");
   await expect(trigger).toContainText("OKLCH");

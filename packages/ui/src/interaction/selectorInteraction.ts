@@ -20,6 +20,7 @@ export function mountSelector(
   const window = document.defaultView!;
   const root = trigger.closest("[data-gp-root]") ?? trigger.parentElement!;
   let open = false;
+  let pressedOpen = false;
   let candidate = current().value;
   let accepted = current().value;
   let buffer = "";
@@ -136,15 +137,20 @@ export function mountSelector(
       highlight(next.value);
     }
   }
-  function click() {
+  function click(event: MouseEvent) {
+    // Native light dismiss can close the surface during this very press; its click must not reopen.
+    const dismissed = event.detail > 0 && pressedOpen && !open;
+    pressedOpen = false;
     if (open) close();
-    else show();
+    else if (!dismissed) show();
   }
   function guard(event: PointerEvent) {
     if (hasInstrumentPointer(trigger)) {
       event.preventDefault();
       event.stopPropagation();
+      return;
     }
+    pressedOpen = open;
   }
   function optionClick(event: MouseEvent) {
     const option = (event.target as Element).closest<HTMLElement>("[role=option]");

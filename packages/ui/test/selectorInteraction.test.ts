@@ -94,6 +94,20 @@ describe("single-select mounted interaction", () => {
     expect(f.popup.hidden).toBe(true);
     expect(f.request).not.toHaveBeenCalled();
   });
+  it("a trigger press that light-dismissed the popup does not reopen it on click", () => {
+    const f = fixture();
+    f.trigger.click();
+    f.trigger.dispatchEvent(new Event("pointerdown", { bubbles: true, cancelable: true }));
+    // Native light dismiss treats the source invoker as outside and closes during the press.
+    f.popup.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "closed" }));
+    expect(f.trigger.getAttribute("aria-expanded")).toBe("false");
+    f.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+    expect(f.popup.hidden).toBe(true);
+    // Keyboard activation (detail 0) is never suppressed by an earlier press.
+    f.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
+    expect(f.popup.hidden).toBe(false);
+    expect(f.request).not.toHaveBeenCalled();
+  });
   it("does not steal focus or queue opening while a controller owns a pointer", () => {
     const f = fixture();
     const range = f.root.querySelector("input")!;
