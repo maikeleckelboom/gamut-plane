@@ -34,6 +34,7 @@ import {
 import { coordinatesOptions, validateSelection, type ShellSelection } from "@gamut-plane/ui";
 import SelectionContext from "./SelectionContext.vue";
 import GamutComparison from "./GamutComparison.vue";
+import GamutContextMenu from "./GamutContextMenu.vue";
 import { resolveAcceptedRevision } from "../model/acceptedResolution.js";
 import { presentAcceptedRevision } from "../model/acceptedPresentation.js";
 
@@ -279,8 +280,17 @@ watch(
           @cancel="emit('cancel')"
           @capability="emit('capability', $event)"
         />
+        <GamutContextMenu
+          v-if="field && detail"
+          :id="instanceId"
+          :state="acceptedState"
+          :checks="accepted.exactChecks"
+          :paused="pausedGuides"
+          :read-only="readOnlyState()"
+          @request="requestGamut"
+        />
         <section
-          v-else
+          v-if="!field || !detail"
           class="gp-inspection"
           :data-gp-part="gpPart.inspectionReadout"
           :aria-label="`${representationUi[accepted.selection.representationId].label} coordinates`"

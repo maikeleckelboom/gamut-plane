@@ -11,6 +11,13 @@ export {
 } from "./selectionShell.js";
 export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";
 export { mountGamutPopup } from "./interaction/gamutInteraction.js";
+export { mountGamutContextMenu } from "./interaction/gamutContextMenuInteraction.js";
+export {
+  gamutContextMenuName,
+  gamutContextMenuGroups,
+  type GamutMenuItem,
+  type GamutMenuGroup,
+} from "./gamutContextMenu.js";
 export {
   requestedGamutStatus,
   gamutStatusCopy,

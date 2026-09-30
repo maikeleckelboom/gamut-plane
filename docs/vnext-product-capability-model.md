@@ -20,7 +20,7 @@ The public state is `{ selection: { representationId, editorId }, checkedGamuts,
 
 Technical editor existence, product admission, and preferred initialization are separate facts. `knownEditors` establishes technical identity. `admittedEditors` controls what the public product may select. `preferredEditors` supplies a default only if that editor is admitted. `requestEditor` validates an explicit choice without replacing it with the preferred one. `editorId: null` remains valid inspection even when editors exist.
 
-The policy handles zero, one, and multiple admitted editors for a representation. The shipped product currently admits exactly one OKLCH editor (`oklch-lc`) and one OKLab editor (`oklab-ab`); sRGB and Display P3 admit none. The compact UI offers Edit color only where an editor is admitted, shows inspection directly otherwise, and has room for an Area choice if a real second editor ships. A test-only alternate OKLCH H/C editor with fixed Lightness exercises the multiple-editor architecture without changing the public catalog or interface.
+The policy handles zero, one, and multiple admitted editors for a representation. The shipped product currently admits exactly one OKLCH editor (`oklch-lc`) and one OKLab editor (`oklab-ab`); sRGB and Display P3 admit none. The compact UI offers Edit / Inspect where editing is admitted; inspection-only representations show Inspecting. Area appears only when multiple admitted editors exist. Returning to Edit selects the admitted preferred editor, with no remembered Area/editor behavior. A test-only alternate OKLCH H/C editor with fixed Lightness exercises the multiple-editor architecture without changing the public catalog or interface.
 
 ## Geometry and authorship
 

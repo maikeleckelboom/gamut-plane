@@ -30,6 +30,7 @@ export const gpPart = {
   gamutTrigger: "gamut-trigger",
   gamutSummary: "gamut-summary",
   gamutPopup: "gamut-popup",
+  gamutContextMenu: "gamut-context-menu",
   gamutRow: "gamut-row",
   exactResult: "exact-result",
   guidePreference: "guide-preference",

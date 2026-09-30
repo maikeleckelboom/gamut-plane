@@ -95,6 +95,9 @@ export function mountPlaneGesture<Value, Point>(
 
   function move(event: PointerEvent): void {
     if (disposed || pointerId !== event.pointerId) return;
+    // Chromium represents a secondary mouse-button transition during a primary drag as a
+    // pointermove. It is context-menu intent, not a new authored plane point.
+    if (event.pointerType === "mouse" && event.button === 2) return;
     const point = current().pointFromPointer(event);
     if (point === null) return;
     event.preventDefault();

@@ -42,6 +42,7 @@ import { currentGuideIds, useGeneralizedState } from "./hooks/useGeneralizedStat
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
 import { GamutComparison } from "./components/GamutComparison.js";
+import { GamutContextMenu } from "./components/GamutContextMenu.js";
 import { GeneralizedInspection, GeneralizedSelection } from "./components/GeneralizedControls.js";
 import { resolveAcceptedRevision } from "./model/acceptedResolution.js";
 import { presentAcceptedRevision } from "./model/acceptedPresentation.js";
@@ -219,22 +220,34 @@ export function GamutPlane(props: GamutPlaneProps) {
       <div className="gpr-plane-instrument-workspace" data-gp-part={gpPart.workspace}>
         <div className="gpr-plane-instrument-field" data-gp-part={gpPart.field}>
           {field && detail ? (
-            <ColorPlane
-              value={revision.source}
-              semanticContextKey={revision.contextKey}
-              field={field}
-              guides={guides}
-              reference={reference}
-              warning={warning}
-              markerCss={detail.markerCss}
-              getEditReference={getHueReference}
-              plane={field.plane}
-              interactionPreview={view === "oklch" && huePreview}
-              onValueChange={onValueChange}
-              onValueCommit={onValueCommit}
-              onCancel={onCancel}
-              onCanvasColorSpaceChange={onCanvasColorSpaceChange}
-            />
+            <>
+              <ColorPlane
+                value={revision.source}
+                semanticContextKey={revision.contextKey}
+                field={field}
+                guides={guides}
+                reference={reference}
+                warning={warning}
+                markerCss={detail.markerCss}
+                getEditReference={getHueReference}
+                plane={field.plane}
+                interactionPreview={view === "oklch" && huePreview}
+                onValueChange={onValueChange}
+                onValueCommit={onValueCommit}
+                onCancel={onCancel}
+                onCanvasColorSpaceChange={onCanvasColorSpaceChange}
+              />
+              <GamutContextMenu
+                id={id}
+                state={acceptedState}
+                checks={accepted.exactChecks}
+                paused={pausedGuideIds(accepted.guides, true)}
+                readOnly={readOnly}
+                request={(action) =>
+                  requestState(requestGamutAction(acceptedState, action, currentGuideIds))
+                }
+              />
+            </>
           ) : (
             <>
               {accepted.selection.editorId !== null && (

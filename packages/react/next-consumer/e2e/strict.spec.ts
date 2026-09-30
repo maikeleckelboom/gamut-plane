@@ -7,6 +7,7 @@ declare global {
       disconnected: number;
       active: number;
       handlers: number;
+      menuHandlers: number;
       windowHandlers: number;
       resolutionHandlers: number;
       controlHandlers: number;
@@ -49,6 +50,7 @@ test.beforeEach(async ({ page }) => {
       disconnected: 0,
       active: 0,
       handlers: 0,
+      menuHandlers: 0,
       windowHandlers: 0,
       resolutionHandlers: 0,
       controlHandlers: 0,
@@ -95,6 +97,11 @@ test.beforeEach(async ({ page }) => {
       Map<string, Set<EventListenerOrEventListenerObject>>
     >();
     function category(target: EventTarget, type: string) {
+      if (target instanceof Element && target.matches(".gp-gamut-menu")) {
+        // React installs its own nondelegated popover toggle listeners. Count the controller's
+        // click/keydown handlers here; the UI unit contract proves all three native removals.
+        return type === "click" || type === "keydown" ? "menuHandlers" : null;
+      }
       if (target instanceof Element && target.matches(".gpr-color-plane-surface"))
         return "handlers";
       if (
@@ -146,7 +153,8 @@ async function open(page: Page) {
       created: 4,
       disconnected: 2,
       active: 2,
-      handlers: 12,
+      handlers: 14, // Six gesture/keyboard handlers and one contextmenu listener per plane.
+      menuHandlers: 4,
       controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,
       resolutionHandlers: 2,
@@ -167,6 +175,62 @@ async function startDrag(page: Page) {
   return { surface, box };
 }
 
+test("root Strict Mode opens one menu per keyboard invocation and disposes open resources on unmount", async ({
+  page,
+}) => {
+  const errors = await open(page);
+  const root = page.locator('[data-host="first"] [data-gp-root]');
+  const surface = root.getByRole("application");
+  const popup = root.locator('[data-gp-part="gamut-context-menu"]');
+  const initial = await color(page);
+  const probe = await popup.evaluateHandle((element) => {
+    element.setAttribute("data-open-count", "0");
+    const listener = (event: Event) => {
+      if ((event as ToggleEvent).newState === "open")
+        element.setAttribute(
+          "data-open-count",
+          String(Number(element.getAttribute("data-open-count")) + 1),
+        );
+    };
+    element.addEventListener("beforetoggle", listener);
+    return () => element.removeEventListener("beforetoggle", listener);
+  });
+  await surface.press("Shift+F10");
+  await expect(popup).toBeVisible();
+  await expect(popup).toHaveAttribute("data-open-count", "1");
+  await probe.evaluate((remove) => remove());
+  await probe.dispose();
+  await control(page, "Rerender parent");
+  await expect(popup).toBeVisible();
+  await popup.getByRole("menuitemradio", { name: "Display P3", exact: true }).click();
+  await expect(popup).toBeHidden();
+  await expect(surface).toBeFocused();
+  expect(await color(page)).toEqual(initial);
+  expect(await events(page)).toEqual({ changes: 0, commits: 0, cancels: 0, final: null });
+  await surface.press("ContextMenu");
+  await expect(
+    popup.getByRole("menuitemradio", { name: "Display P3", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await control(page, "Toggle mount");
+  await expect(page.locator('[data-gp-part="gamut-context-menu"]')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => window.planeResources))
+    .toEqual({
+      created: 6,
+      disconnected: 6,
+      active: 0,
+      handlers: 0,
+      menuHandlers: 0,
+      controlHandlers: 0,
+      windowHandlers: 0,
+      resolutionHandlers: 0,
+      selectorCreated: 4,
+      selectorDisconnected: 4,
+      selectorActive: 0,
+    });
+  expect(errors).toEqual([]);
+});
+
 test("root Strict Mode replays setup and cleans all handlers/observers on unmount", async ({
   page,
 }) => {
@@ -183,6 +247,7 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       disconnected: 4,
       active: 0,
       handlers: 0,
+      menuHandlers: 0,
       controlHandlers: 0,
       windowHandlers: 0,
       resolutionHandlers: 0,
@@ -200,7 +265,8 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       created: 8,
       disconnected: 6,
       active: 2,
-      handlers: 12,
+      handlers: 14,
+      menuHandlers: 4,
       controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,
       resolutionHandlers: 2,

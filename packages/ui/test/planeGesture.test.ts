@@ -112,6 +112,25 @@ afterEach(() => {
 });
 
 describe("shared plane pointer gesture", () => {
+  it("ignores secondary-button pointermove transitions without ending a primary mouse drag", () => {
+    const f = fixture();
+    f.pointer("pointerdown", 1);
+    f.flush();
+    const before = [...f.log];
+    f.pointer("pointermove", 1, 1, { button: 2, buttons: 3 });
+    f.pointer("pointermove", 1, 1, { button: 2, buttons: 1 });
+    f.flush();
+    expect(f.log).toEqual(before);
+    expect(f.gesture.active).toBe(true);
+    expect(f.commits).toHaveLength(0);
+    f.pointer("pointermove", 4, 1, { button: -1, buttons: 1 });
+    f.flush();
+    expect(f.changes.map((value) => value.definition)).toEqual(["1", "4"]);
+    f.pointer("pointerup", 5, 1, { button: 0 });
+    expect(f.commits).toEqual([{ definition: "5" }]);
+    expect(f.log).not.toContain("cancel");
+    f.gesture.dispose();
+  });
   it("qualifies one pointer, rejects secondary mouse, and ignores foreign pointers", () => {
     const f = fixture();
     f.pointer("pointerdown", 2, 8, { button: 2 });

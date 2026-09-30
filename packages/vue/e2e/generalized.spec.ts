@@ -1,5 +1,44 @@
 import { expect, test } from "@playwright/test";
 
+test("packed Vue plane context menu reuses accepted gamut actions without authoring", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const root = page.locator("[data-gp-root]");
+  const plane = root.getByRole("application");
+  const popup = root.getByRole("menu", { name: "Gamut actions" });
+  const definition = await page.locator("[data-definition]").getAttribute("data-definition");
+  await plane.click({ button: "right", position: { x: 30, y: 40 } });
+  await expect(popup).toBeVisible();
+  await popup.getByRole("menuitemradio", { name: "sRGB", exact: true }).click();
+  await expect(popup).toBeHidden();
+  await expect(plane).toBeFocused();
+  await plane.press("Shift+F10");
+  await expect(popup.getByRole("menuitemradio", { name: "sRGB", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(
+    popup
+      .getByRole("group", { name: "Status" })
+      .getByRole("menuitemcheckbox", { name: "sRGB", exact: true }),
+  ).toHaveAccessibleDescription("Status off");
+  await popup
+    .getByRole("group", { name: "Boundary" })
+    .getByRole("menuitemcheckbox", { name: "sRGB", exact: true })
+    .click();
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(1);
+  await plane.press("ContextMenu");
+  await popup
+    .getByRole("group", { name: "Status" })
+    .getByRole("menuitemcheckbox", { name: "sRGB", exact: true })
+    .click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
+  await expect(root.getByRole("checkbox", { name: "sRGB Status" })).toBeChecked();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
+});
+
 test("packed Vue host imports, observes, and authors a generalized edit", async ({ page }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");

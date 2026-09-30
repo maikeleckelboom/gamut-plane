@@ -14,6 +14,7 @@ import {
 } from "../../../../packages/ui/src/index.js";
 import GamutPlane from "../../../../packages/vue/src/components/GamutPlane.vue";
 import GamutComparison from "../../../../packages/vue/src/components/GamutComparison.vue";
+import GamutContextMenu from "../../../../packages/vue/src/components/GamutContextMenu.vue";
 import SelectionContext from "../../../../packages/vue/src/components/SelectionContext.vue";
 import type { GamutPlaneState } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
@@ -21,15 +22,25 @@ import "@gamut-plane/vue/style.css";
 document.body.style.cssText =
   "margin:24px;background:#15171a;color:white;font-family:Arial,sans-serif";
 const query = new URLSearchParams(location.search);
-const created = query.has("lab")
+const created = query.has("tolerance")
   ? createColorValue({
-      space: "oklab",
-      channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
-      alpha: 0.37,
+      space: "oklch",
+      channels: [0.5415923764146119, 0.09244884602706227, 194.76895989787468],
+      alpha: 1,
     })
-  : query.has("unavailable")
-    ? createColorValue({ space: "srgb", channels: [1e308, 0, 0], alpha: 1 })
-    : createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+  : query.has("lab")
+    ? createColorValue({
+        space: "oklab",
+        channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
+        alpha: 0.37,
+      })
+    : query.has("unavailable")
+      ? createColorValue({ space: "srgb", channels: [1e308, 0, 0], alpha: 1 })
+      : createColorValue({
+          space: "oklch",
+          channels: [0.68, 0.18, 252],
+          alpha: query.has("alpha") ? 0.37 : 1,
+        });
 if (!created.ok) throw Error("fixture");
 const initial = created.value;
 const readOnly = query.has("readonly");
@@ -45,13 +56,14 @@ createApp({
     const value = ref(initial);
     const state = ref<GamutPlaneState>({
       selection: { representationId: "oklch", editorId: "oklch-lc" },
-      checkedGamuts: ["srgb-gamut", "display-p3-gamut"],
-      visibleGuides: ["srgb-boundary", "display-p3-boundary"],
+      checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
+      visibleGuides: [...guideIds],
       referenceGamutId: "srgb-gamut",
     });
     const selection = ref<ShellSelection>({ representationId: "oklch", editorId: "test-hc" });
     const commits = ref(0);
     const updates = ref(0);
+    const cancels = ref(0);
     const requests = ref(0);
     const reject = ref(false);
     const requestState = (next: GamutPlaneState) => {
@@ -69,6 +81,28 @@ createApp({
         onRequest: (action: GamutAction<(typeof guideIds)[number]>) =>
           requestState(requestGamutAction(state.value, action, guideIds)),
       });
+    // Opt-in surface for shared shell mechanics with the test-only Area catalog and nested hosts.
+    // Paused supplies an unavailable sampled contour fixture, without changing action semantics.
+    const accelerator = (id: string) =>
+      query.has("context")
+        ? h("div", { "data-gp-part": "field" }, [
+            h("div", {
+              "data-gp-part": "surface",
+              tabindex: 0,
+              "aria-label": "Fixture editable plane",
+              style: "height:96px",
+            }),
+            h(GamutContextMenu, {
+              id,
+              state: state.value,
+              checks: analyzeRequestedGamuts(value.value, state.value.checkedGamuts),
+              paused: query.has("paused") ? guideIds : [],
+              readOnly: false,
+              onRequest: (action: GamutAction<(typeof guideIds)[number]>) =>
+                requestState(requestGamutAction(state.value, action, guideIds)),
+            }),
+          ])
+        : null;
     return () =>
       h("main", [
         h("div", { id: "controls" }, [
@@ -113,6 +147,9 @@ createApp({
             onCommit: () => {
               commits.value++;
             },
+            onCancel: () => {
+              cancels.value++;
+            },
             ...(readOnly ? {} : { "onUpdate:state": requestState }),
           }),
         ]),
@@ -120,7 +157,9 @@ createApp({
           id: "events",
           "data-commits": commits.value,
           "data-updates": updates.value,
+          "data-cancels": cancels.value,
           "data-requests": requests.value,
+          "data-state": JSON.stringify(state.value),
           "data-definition": JSON.stringify(definitionOf(value.value)),
           "data-context": semanticContextKey(state.value.selection),
         }),
@@ -143,6 +182,7 @@ createApp({
               },
             }),
             gamuts("area-gamuts"),
+            accelerator("area-menu"),
           ],
         ),
         h("output", { id: "area-context" }, semanticContextKey(selection.value)),
@@ -159,6 +199,7 @@ createApp({
               },
             }),
             gamuts("dialog-gamuts"),
+            accelerator("dialog-menu"),
           ]),
         ]),
         h("div", { id: "host-popover", popover: "auto" }, [
@@ -174,6 +215,7 @@ createApp({
               },
             }),
             gamuts("popover-gamuts"),
+            accelerator("popover-menu"),
           ]),
         ]),
       ]);

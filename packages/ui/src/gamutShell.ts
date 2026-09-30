@@ -176,7 +176,7 @@ export function boundaryPausedCopy(selection: Readonly<{ editorId: string | null
   }`;
 }
 
-/** The single accepted-state route for the popup and future accelerators; no coupling. */
+/** The single accepted-state route for the inspector and plane accelerator; no coupling. */
 export function requestGamutAction<G extends string>(
   state: InstrumentViewState<G>,
   action: GamutAction<G>,

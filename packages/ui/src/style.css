@@ -567,6 +567,101 @@
   }
 }
 
+/* Ephemeral plane accelerator. Its intrinsic size belongs to the overlay, not the instrument. */
+[data-gp-root] .gp-gamut-menu {
+  position: fixed;
+  inset: auto;
+  z-index: 10;
+  inline-size: max-content;
+  max-inline-size: calc(100vw - 16px);
+  margin: 0;
+  padding: 4px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 5px;
+  background: var(--gp-surface-2);
+  color: var(--gp-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  box-shadow: 0 6px 20px oklch(0 0 0 / 0.38);
+}
+[data-gp-root] .gp-gamut-menu[hidden] {
+  display: none;
+}
+[data-gp-root] .gp-gamut-menu-heading {
+  padding: 0.35em 0.7em 0.2em;
+  color: var(--gp-quiet);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+[data-gp-root] .gp-gamut-menu-separator {
+  border: 0;
+  margin: 4px 3px;
+  border-block-start: 1px solid var(--gp-hairline);
+}
+[data-gp-root] .gp-gamut-menu-item {
+  display: grid;
+  grid-template-columns: 1em minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.65em;
+  inline-size: 100%;
+  min-block-size: max(28px, 2em);
+  padding: 0.3em 0.6em;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+[data-gp-root] .gp-gamut-menu-item:hover,
+[data-gp-root] .gp-gamut-menu-item:focus-visible {
+  background: var(--gp-surface-3);
+}
+[data-gp-root] .gp-gamut-menu-item:focus-visible {
+  outline-offset: -2px;
+}
+[data-gp-root] .gp-gamut-menu-indicator {
+  text-align: center;
+}
+[data-gp-root]
+  .gp-gamut-menu-item[role="menuitemradio"][aria-checked="true"]
+  .gp-gamut-menu-indicator::before {
+  content: "●";
+  font-size: 0.65em;
+}
+[data-gp-root]
+  .gp-gamut-menu-item[role="menuitemcheckbox"][aria-checked="true"]
+  .gp-gamut-menu-indicator::before {
+  content: "✓";
+}
+[data-gp-root] .gp-gamut-menu-fact {
+  max-inline-size: 12ch;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  text-align: end;
+}
+[data-gp-root] .gp-gamut-menu-fact[data-gp-status="outside"] {
+  color: var(--gp-status-outside);
+}
+[data-gp-root] .gp-gamut-menu-item[aria-disabled="true"] {
+  color: var(--gp-quiet);
+  cursor: default;
+}
+@media (forced-colors: active) {
+  [data-gp-root] .gp-gamut-menu {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+  [data-gp-root] .gp-gamut-menu-item:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
 [data-gp-root] [data-gp-part="availability-message"] {
   margin: 8px 0;
   color: var(--gp-quiet);

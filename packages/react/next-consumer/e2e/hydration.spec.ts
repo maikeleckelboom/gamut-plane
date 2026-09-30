@@ -88,6 +88,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         expect(html).toContain('data-gp-part="representation-control"');
         expect(html).toContain('data-gp-part="gamut-trigger"');
         expect(html).toMatch(/data-gp-part="gamut-popup"[^>]*hidden/);
+        expect(html).toMatch(/data-gp-part="gamut-context-menu"[^>]*hidden/);
         expect(html).toContain("612.123456");
         expect(html).toContain("OKLab a numeric value");
         expect(html).toContain("OKLab b numeric value");
@@ -203,6 +204,19 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       expect(await color(host)).toEqual(colors[index]);
       await painted(host.locator("canvas"));
       const surface = host.getByRole("application");
+      const popup = host.getByRole("menu", { name: "Gamut actions" });
+      await expect(popup).toBeHidden();
+      await surface.press("ContextMenu");
+      await expect(popup).toBeVisible();
+      await popup.getByRole("menuitemradio", { name: "Display P3", exact: true }).click();
+      await expect(popup).toBeHidden();
+      await expect(surface).toBeFocused();
+      await surface.press("Shift+F10");
+      await expect(
+        popup.getByRole("menuitemradio", { name: "Display P3", exact: true }),
+      ).toHaveAttribute("aria-checked", "true");
+      await page.keyboard.press("Escape");
+      expect(await color(host)).toEqual(colors[index]);
       await surface.press("ArrowLeft");
       expect(await color(host)).not.toEqual(colors[index]);
       expect((await color(host)).alpha).toBe(colors[index]!.alpha);
