@@ -36,7 +36,7 @@ test("narrow layout, landmarks, and exact status retain their semantics", async 
   await expect(page.getByRole("region", { name: "Gamut Plane instrument" })).toHaveCount(1);
   await expect(page.getByRole("complementary", { name: "Output examples" })).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 1, name: "Gamut Plane" })).toHaveCount(1);
-  await page.getByText("Gamuts", { exact: true }).click();
+  await page.getByRole("button", { name: "Gamuts" }).click();
   await page.getByLabel("sRGB Status", { exact: true }).check();
   await expect(page.locator("[data-gp-part='exact-result']").first()).toContainText(
     /Inside|Outside/,

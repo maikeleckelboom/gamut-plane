@@ -26,10 +26,14 @@ export const gpPart = {
   representationControl: "representation-control",
   authorshipContext: "authorship-context",
   inspectionReadout: "inspection-readout",
-  exactResults: "exact-results",
+  gamuts: "gamuts",
+  gamutTrigger: "gamut-trigger",
+  gamutSummary: "gamut-summary",
+  gamutPopup: "gamut-popup",
+  gamutRow: "gamut-row",
   exactResult: "exact-result",
-  gamutDisclosure: "gamut-disclosure",
   guidePreference: "guide-preference",
+  referenceChoice: "reference-choice",
   availabilityMessage: "availability-message",
 } as const;
 
@@ -47,6 +51,7 @@ export const gpAttribute = {
   status: "data-gp-status",
   overflow: "data-gp-overflow",
   pointerFocus: "data-gp-pointer-focus",
+  close: "data-gp-close",
   visuallyHidden: "data-gp-visually-hidden",
 } as const;
 

@@ -34,16 +34,15 @@ import {
   currentEditorHelp,
   generalizedCopy,
   authorshipContextCopy,
+  pausedGuideIds,
   referenceWarning,
+  requestGamutAction,
 } from "@gamut-plane/ui";
-import { useGeneralizedState } from "./hooks/useGeneralizedState.js";
+import { currentGuideIds, useGeneralizedState } from "./hooks/useGeneralizedState.js";
 import { ColorPlane } from "./components/ColorPlane.js";
 import { ColorChannelControl } from "./components/ColorChannelControl.js";
-import {
-  GeneralizedComparison,
-  GeneralizedInspection,
-  GeneralizedSelection,
-} from "./components/GeneralizedControls.js";
+import { GamutComparison } from "./components/GamutComparison.js";
+import { GeneralizedInspection, GeneralizedSelection } from "./components/GeneralizedControls.js";
 import { resolveAcceptedRevision } from "./model/acceptedResolution.js";
 import { presentAcceptedRevision } from "./model/acceptedPresentation.js";
 import type { GamutPlaneState } from "./model/publicState.js";
@@ -449,12 +448,15 @@ export function GamutPlane(props: GamutPlaneProps) {
               {authorshipContextCopy(accepted.authored.representationId)}
             </p>
           )}
-          <GeneralizedComparison
-            accepted={accepted}
+          <GamutComparison
+            id={id}
             state={acceptedState}
-            request={requestState}
+            checks={accepted.exactChecks}
+            paused={pausedGuideIds(accepted.guides, field !== null && detail !== null)}
             readOnly={readOnly}
-            hasPlane={field !== null && detail !== null}
+            request={(action) =>
+              requestState(requestGamutAction(acceptedState, action, currentGuideIds))
+            }
           />
         </div>
       </div>

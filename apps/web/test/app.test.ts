@@ -51,7 +51,10 @@ describe("standalone application", () => {
         .findAll("[data-gp-part='representation-control'] [role='option']")
         .map((option) => option.attributes("data-value")),
     ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
-    expect(wrapper.get("[data-gp-part='exact-results']").text()).toContain("Gamuts");
+    const gamuts = wrapper.get("[data-gp-part='gamut-trigger']");
+    expect(gamuts.text()).toContain("Gamuts");
+    expect(gamuts.get("[data-gp-part='gamut-summary']").text()).toBe("Reference sRGB · Outside");
+    expect(gamuts.attributes("aria-expanded")).toBe("false");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(2);
     expect(
       wrapper
@@ -71,7 +74,8 @@ describe("standalone application", () => {
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
-    await wrapper.get("[data-gp-part='gamut-disclosure'] summary").trigger("click");
+    await wrapper.get("[data-gp-part='gamut-trigger']").trigger("click");
+    expect(wrapper.get("[data-gp-part='gamut-trigger']").attributes("aria-expanded")).toBe("true");
     await wrapper.get('[aria-label="Display P3 Status"]').setValue(false);
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(false);

@@ -24,13 +24,15 @@ test("Status, Boundary and Reference have independent observable effects", async
   const triangle = await warning.boundingBox();
   expect(triangle!.x).toBeGreaterThan(selected!.x + selected!.width + 2);
   expect(triangle!.y + triangle!.height).toBeLessThan(selected!.y - 2);
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);
   await expect(warning).toHaveCount(0);
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
-  await expect(root.getByLabel("Use sRGB as Reference")).toBeChecked();
+  await expect(
+    root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true }),
+  ).toBeChecked();
   await expect(source).toHaveText(original!);
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await expect(connector).toHaveCount(1);
@@ -44,15 +46,17 @@ test("Status, Boundary and Reference have independent observable effects", async
   await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);
-  await expect(root.getByLabel("Use sRGB as Reference")).toBeChecked();
+  await expect(
+    root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true }),
+  ).toBeChecked();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await expect(warning).toHaveCount(1);
   await expect(connector).toHaveCount(0);
-  await root.getByLabel("Use Display P3 as Reference").check();
+  await root.getByRole("radio", { name: "Display P3", includeHidden: true }).check();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);
   await expect(warning).toHaveCount(0);
-  await root.getByLabel("No Reference").check();
+  await root.getByRole("radio", { name: "None", includeHidden: true }).check();
   await expect(connector).toHaveCount(0);
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(1);
   await expect(root.locator('[data-gp-part="exact-result"]')).toHaveCount(2);
@@ -107,14 +111,14 @@ test("Reference radios support keyboard navigation, inspection and returning to 
 }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
-  await root.locator("summary").focus();
+  await root.getByRole("button", { name: "Gamuts" }).focus();
   await page.keyboard.press("Enter");
-  const srgb = root.getByLabel("Use sRGB as Reference");
+  const srgb = root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true });
   await srgb.focus();
   await page.keyboard.press("ArrowDown");
-  await expect(root.getByLabel("Use Display P3 as Reference")).toBeChecked();
+  await expect(root.getByRole("radio", { name: "Display P3", includeHidden: true })).toBeChecked();
   await page.keyboard.press("ArrowDown");
-  await expect(root.getByLabel("No Reference")).toBeChecked();
+  await expect(root.getByRole("radio", { name: "None", includeHidden: true })).toBeChecked();
   await page.keyboard.press("ArrowDown");
   await expect(srgb).toBeChecked();
   for (const coordinates of ["srgb", "display-p3", "oklab", "oklch"]) {

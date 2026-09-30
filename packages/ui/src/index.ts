@@ -10,6 +10,24 @@ export {
   type ShellEditor,
 } from "./selectionShell.js";
 export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";
+export { mountGamutPopup } from "./interaction/gamutInteraction.js";
+export {
+  requestedGamutStatus,
+  gamutStatusCopy,
+  pausedGuideIds,
+  gamutRows,
+  gamutSummary,
+  gamutSummaryCopy,
+  referenceChoices,
+  boundaryPausedCopy,
+  requestGamutAction,
+  gamutCloseGlyphPath,
+  type ExactStatus,
+  type GamutStatus,
+  type GamutRow,
+  type GamutSummary,
+  type GamutAction,
+} from "./gamutShell.js";
 export {
   inspectionUi,
   currentRepresentationOptions,

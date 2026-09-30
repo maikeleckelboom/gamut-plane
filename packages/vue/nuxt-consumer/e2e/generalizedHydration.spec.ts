@@ -41,7 +41,8 @@ test("generalized observation-only server HTML hydrates in place and restores re
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]")!,
         document.querySelector("[data-gp-part='inspection-readout']")!,
         document.querySelector("[data-gp-part='exact-result']")!,
-        document.querySelector("[data-gp-part='gamut-disclosure']")!,
+        document.querySelector("[data-gp-part='gamut-trigger']")!,
+        document.querySelector("[data-gp-part='gamut-popup']")!,
       ];
     });
   } finally {
@@ -61,13 +62,28 @@ test("generalized observation-only server HTML hydrates in place and restores re
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]"),
         document.querySelector("[data-gp-part='inspection-readout']"),
         document.querySelector("[data-gp-part='exact-result']"),
-        document.querySelector("[data-gp-part='gamut-disclosure']"),
+        document.querySelector("[data-gp-part='gamut-trigger']"),
+        document.querySelector("[data-gp-part='gamut-popup']"),
       ];
       return now.every((node, index) => node === window.generalizedBefore[index]);
     }),
   ).toBe(true);
   const root = page.locator("[data-gp-root]");
   const definition = await page.locator("[data-definition]").getAttribute("data-definition");
+  // Hydration leaves Gamuts closed and unfocused; the mounted controller then opens it on request.
+  const gamuts = root.getByRole("button", { name: "Gamuts" });
+  await expect(gamuts).toHaveAttribute("aria-expanded", "false");
+  await expect(root.locator("[data-gp-part='gamut-popup']")).toBeHidden();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+  await gamuts.click();
+  await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeVisible();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
+    "Paused: Requested boundary appears when editing a color space.",
+  );
+  await gamuts.press("Escape");
+  await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeHidden();
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="oklch"]').click();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);

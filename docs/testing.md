@@ -39,7 +39,7 @@ A failing aggregate command is investigated at its failing selection. Use Playwr
 
 ## Visual references
 
-Canonical app screenshots are stored at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png` for the local Windows workflow and Ubuntu CI. They cover the 440px editable instrument, OKLab, sRGB inspection, requested comparison, narrow editable layout, and enlarged text. React packed parity images cover only editable and inspection states; the Vue packed host has no screenshot baseline. CI never updates screenshots automatically.
+Canonical app screenshots are stored at `apps/web/e2e/screenshots/<name>-win32.png` and `<name>-linux.png` for the local Windows workflow and Ubuntu CI. They cover the 440px editable instrument, OKLab, sRGB inspection, requested comparison, narrow editable layout, enlarged text, and the open Gamuts popup at 320–480px and in its Reference, Status off, within-tolerance, unavailable, paused-boundary, read-only, enlarged-text and forced-colors states. React packed parity images cover only editable and inspection states; the Vue packed host has no screenshot baseline. CI never updates screenshots automatically.
 
 Playwright uses pinned Chromium, DPR 1, dark color scheme, `en-US`, reduced motion, disabled screenshot animations, and a 0.003 maximum differing-pixel ratio. A changed reference requires a reviewed product change and inspection of layout, field, contours, controls, and typography on the affected platform. Do not relax the threshold to hide a failure.
 

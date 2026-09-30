@@ -84,17 +84,19 @@ describe("native range lifecycle", () => {
       const range = get<HTMLInputElement>(ui.element, '[data-picker-control="h"] [type="range"]');
       await event(range, "pointerdown");
       await input(range, "360");
-      const details = get<HTMLDetailsElement>(ui.element, "details");
-      details.open = true;
       if (comparison) {
-        const checks = get<HTMLElement>(ui.element, "fieldset");
-        await act(async () => get<HTMLInputElement>(checks, "input").click());
+        await act(async () =>
+          get<HTMLInputElement>(ui.element, '[aria-label="sRGB Status"]').click(),
+        );
         await act(async () =>
           get<HTMLInputElement>(ui.element, '[aria-label="sRGB Boundary"]').click(),
         );
       }
       await act(async () =>
-        get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+        get<HTMLInputElement>(
+          ui.element,
+          '[data-gp-part="reference-choice"] [value="display-p3-gamut"]',
+        ).click(),
       );
       expect(get(ui.element, '[data-picker-control="h"] [type="range"]')).toBe(range);
       await clock.flush();

@@ -90,7 +90,8 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         const html = await response!.text();
         expect(html).toContain("data-active-marker");
         expect(html).toContain('data-gp-part="representation-control"');
-        expect(html).toContain('data-gp-part="gamut-disclosure"');
+        expect(html).toContain('data-gp-part="gamut-trigger"');
+        expect(html).toMatch(/data-gp-part="gamut-popup"[^>]*hidden/);
         expect(html).toContain("612.123456");
         await expect(page.locator("[data-plane-instrument]")).toHaveCount(2);
         await expect
@@ -118,7 +119,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
             ].map((el) => el.value),
             presentation: [
               ...document.querySelectorAll(
-                "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
+                "[data-gp-part='representation-control'], [data-gp-part='gamuts'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
               ),
             ].map((el) => el.outerHTML),
             focus: document.activeElement,
@@ -157,7 +158,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         ].map((el) => el.value),
         presentation: [
           ...document.querySelectorAll(
-            "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
+            "[data-gp-part='representation-control'], [data-gp-part='gamuts'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
           ),
         ].map((el) => el.outerHTML),
         focus: document.activeElement === before.focus,

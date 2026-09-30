@@ -17,10 +17,10 @@ async function ready(page: Page): Promise<void> {
     "data-canvas-capability",
     "pending",
   );
-  await page.getByText("Gamuts", { exact: true }).click();
+  await page.getByRole("button", { name: "Gamuts" }).click();
   await page.getByLabel("sRGB Boundary", { exact: true }).check();
   await page.getByLabel("Display P3 Boundary", { exact: true }).check();
-  await page.getByText("Gamuts", { exact: true }).click();
+  await page.getByRole("button", { name: "Gamuts" }).click();
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
 }
 

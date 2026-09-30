@@ -36,7 +36,7 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
   await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
-  await root.getByText("Gamuts").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("Display P3 Status", { exact: true }).check();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
@@ -47,8 +47,10 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(0);
   await root.getByLabel("sRGB Boundary", { exact: true }).check();
-  await expect(root).toContainText("Requested boundaries appear");
-  await root.getByText("Gamuts").click();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
+    "Paused: Requested boundary appears when editing a color space.",
+  );
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="oklch"]').click();
@@ -190,7 +192,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
     expect(rootOverflow).toBeLessThanOrEqual(0);
   }
   const root = page.locator("[data-gp-root]");
-  await root.getByText("Gamuts", { exact: true }).click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.getByLabel("Display P3 Boundary", { exact: true }).check();
   expect(

@@ -23,7 +23,7 @@ test("packed React anatomy matches the shared visual owner in editable and obser
 }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
-  await root.getByText("Gamuts").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.getByLabel("sRGB Boundary", { exact: true }).check();
   expect(await root.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);

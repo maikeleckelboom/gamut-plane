@@ -108,10 +108,7 @@ describe("ColorValue plane interaction", () => {
     const surface = get<HTMLElement>(ui.element, '[role="application"]');
     await event(surface, "pointerdown", { clientX: 80, clientY: 100 });
     await event(surface, "pointermove", { clientX: 120, clientY: 140 });
-    const details = get<HTMLDetailsElement>(ui.element, "details");
-    details.open = true;
-    const checks = get<HTMLElement>(ui.element, "fieldset");
-    const check = get<HTMLInputElement>(checks, "input");
+    const check = get<HTMLInputElement>(ui.element, '[aria-label="sRGB Status"]');
     await act(async () => check.click());
     expect(get(ui.element, '[role="application"]')).toBe(surface);
     expect(surface.hasPointerCapture(1)).toBe(true);
@@ -121,7 +118,10 @@ describe("ColorValue plane interaction", () => {
       get<HTMLInputElement>(ui.element, '[aria-label="sRGB Boundary"]').click(),
     );
     await act(async () =>
-      get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+      get<HTMLInputElement>(
+        ui.element,
+        '[data-gp-part="reference-choice"] [value="display-p3-gamut"]',
+      ).click(),
     );
     await event(surface, "pointerup", { clientX: 200, clientY: 210 });
     expect(ui.order).toEqual(["change", "change", "commit"]);
@@ -142,7 +142,10 @@ describe("ColorValue plane interaction", () => {
       if (published) await clock.flush();
       const before = ui.changes.mock.calls.length;
       await act(async () =>
-        get<HTMLInputElement>(ui.element, '[aria-label="Use Display P3 as Reference"]').click(),
+        get<HTMLInputElement>(
+          ui.element,
+          '[data-gp-part="reference-choice"] [value="display-p3-gamut"]',
+        ).click(),
       );
       expect(get(ui.element, '[role="application"]')).toBe(surface);
       expect(surface.hasPointerCapture(1)).toBe(true);

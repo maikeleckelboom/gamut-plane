@@ -1,13 +1,19 @@
-import { representationDefinitions } from "@gamut-plane/core/internal/capabilities";
+import {
+  analyzeRequestedGamuts,
+  representationDefinitions,
+} from "@gamut-plane/core/internal/capabilities";
 import { createApp, h, ref } from "vue";
 import { createColorValue, definitionOf } from "@gamut-plane/core";
 import {
   coordinatesOptions,
+  requestGamutAction,
   shellSelectionFacts,
   semanticContextKey,
+  type GamutAction,
   type ShellSelection,
 } from "../../../../packages/ui/src/index.js";
 import GamutPlane from "../../../../packages/vue/src/components/GamutPlane.vue";
+import GamutComparison from "../../../../packages/vue/src/components/GamutComparison.vue";
 import SelectionContext from "../../../../packages/vue/src/components/SelectionContext.vue";
 import type { GamutPlaneState } from "@gamut-plane/vue";
 import "@gamut-plane/vue/style.css";
@@ -21,9 +27,13 @@ const created = query.has("lab")
       channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
       alpha: 0.37,
     })
-  : createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+  : query.has("unavailable")
+    ? createColorValue({ space: "srgb", channels: [1e308, 0, 0], alpha: 1 })
+    : createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
 if (!created.ok) throw Error("fixture");
 const initial = created.value;
+const readOnly = query.has("readonly");
+const guideIds = ["display-p3-boundary", "srgb-boundary"] as const;
 const alternate = { id: "test-hc", representationId: "oklch", label: "Hue / Chroma" } as const;
 const facts = {
   ...shellSelectionFacts,
@@ -44,6 +54,21 @@ createApp({
     const updates = ref(0);
     const requests = ref(0);
     const reject = ref(false);
+    const requestState = (next: GamutPlaneState) => {
+      requests.value++;
+      if (!reject.value) state.value = next;
+    };
+    // Secondary hosts use the same shared accepted-state action route as the instrument.
+    const gamuts = (id: string) =>
+      h(GamutComparison, {
+        id,
+        state: state.value,
+        checks: analyzeRequestedGamuts(value.value, state.value.checkedGamuts),
+        paused: [],
+        readOnly: false,
+        onRequest: (action: GamutAction<(typeof guideIds)[number]>) =>
+          requestState(requestGamutAction(state.value, action, guideIds)),
+      });
     return () =>
       h("main", [
         h("div", { id: "controls" }, [
@@ -88,10 +113,7 @@ createApp({
             onCommit: () => {
               commits.value++;
             },
-            "onUpdate:state": (next) => {
-              requests.value++;
-              if (!reject.value) state.value = next;
-            },
+            ...(readOnly ? {} : { "onUpdate:state": requestState }),
           }),
         ]),
         h("output", {
@@ -120,6 +142,7 @@ createApp({
                 selection.value = next;
               },
             }),
+            gamuts("area-gamuts"),
           ],
         ),
         h("output", { id: "area-context" }, semanticContextKey(selection.value)),
@@ -135,6 +158,7 @@ createApp({
                 selection.value = next;
               },
             }),
+            gamuts("dialog-gamuts"),
           ]),
         ]),
         h("div", { id: "host-popover", popover: "auto" }, [
@@ -149,6 +173,7 @@ createApp({
                 selection.value = next;
               },
             }),
+            gamuts("popover-gamuts"),
           ]),
         ]),
       ]);

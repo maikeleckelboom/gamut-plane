@@ -58,16 +58,21 @@ describe("Vue public generalized instrument", () => {
 
   it("owns local default only once and restores a guide without exact analysis", async () => {
     const wrapper = mount(GamutPlane, { props: { modelValue: value, defaultState: observed } });
-    const details = wrapper.get("details").element as HTMLDetailsElement;
-    details.open = true;
+    await wrapper.get("[data-gp-part='gamut-trigger']").trigger("click");
     await wrapper.get("[data-gp-part='guide-preference'] input").setValue(true);
+    // Local ownership accepts immediately; the restored native input follows the accepted render.
+    expect(
+      (wrapper.get("[data-gp-part='guide-preference'] input").element as HTMLInputElement).checked,
+    ).toBe(true);
     expect(wrapper.emitted("update:state")?.at(-1)?.[0]).toMatchObject({
       checkedGamuts: [],
       referenceGamutId: null,
       visibleGuides: ["srgb-boundary"],
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Requested boundaries appear");
+    expect(wrapper.get("[data-gp-part='guide-preference'] [data-gp-visually-hidden]").text()).toBe(
+      "Paused: Requested boundary appears when editing a color space.",
+    );
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="oklch"]').trigger("click");
     await nextTick();
@@ -83,10 +88,11 @@ describe("Vue public generalized instrument", () => {
     const wrapper = mount(GamutPlane, { props: { modelValue: value, state: observed } });
     expect((wrapper.get('[role="combobox"]').element as HTMLButtonElement).disabled).toBe(true);
     expect(
-      wrapper
-        .findAll("details input")
-        .every((input) => (input.element as HTMLInputElement).disabled),
-    ).toBe(true);
+      (wrapper.get("[data-gp-part='gamut-trigger']").element as HTMLButtonElement).disabled,
+    ).toBe(false);
+    const inputs = wrapper.findAll("[data-gp-part='gamut-popup'] input");
+    expect(inputs).toHaveLength(7);
+    expect(inputs.every((input) => (input.element as HTMLInputElement).disabled)).toBe(true);
     wrapper.unmount();
     expect(() =>
       mount(GamutPlane, {
@@ -233,7 +239,9 @@ describe("Vue public generalized instrument", () => {
     expect((wrapper.get('input[value="edit"]').element as HTMLInputElement).checked).toBe(true);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Alpha");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
-    expect(wrapper.text()).toContain("Some requested boundaries cannot be drawn here");
+    expect(wrapper.get("[data-gp-part='guide-preference'] [data-gp-visually-hidden]").text()).toBe(
+      "Paused: Requested boundary cannot be drawn here.",
+    );
     wrapper.unmount();
   });
 });

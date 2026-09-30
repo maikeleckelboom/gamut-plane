@@ -123,8 +123,9 @@ export function referenceContract(
             }
             expect(boundaries()).toEqual(ordinary);
             expect(
-              host.element.querySelector<HTMLInputElement>('[aria-label="Use sRGB as Reference"]')
-                ?.checked,
+              host.element.querySelector<HTMLInputElement>(
+                '[data-gp-part="reference-choice"] [value="srgb-gamut"]',
+              )?.checked,
             ).toBe(true);
             expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(
               show ? 1 : 0,
@@ -200,8 +201,9 @@ export function referenceContract(
               ?.includes("Outside sRGB"),
           ).toBe(status);
           expect(
-            host.element.querySelector<HTMLInputElement>('[aria-label="Use sRGB as Reference"]')
-              ?.checked,
+            host.element.querySelector<HTMLInputElement>(
+              '[data-gp-part="reference-choice"] [value="srgb-gamut"]',
+            )?.checked,
           ).toBe(true);
           expect(host.element.querySelectorAll('[data-gp-part="exact-result"]')).toHaveLength(
             status ? 1 : 0,
@@ -254,8 +256,9 @@ export function referenceContract(
             ),
           ).toHaveLength(0);
           expect(
-            host.element.querySelector<HTMLInputElement>('[aria-label="Use sRGB as Reference"]')
-              ?.checked,
+            host.element.querySelector<HTMLInputElement>(
+              '[data-gp-part="reference-choice"] [value="srgb-gamut"]',
+            )?.checked,
           ).toBe(true);
           expect(host.element.querySelectorAll('[data-gp-part="exact-result"]')).toHaveLength(2);
           await host.update({

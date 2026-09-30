@@ -62,13 +62,16 @@ describe("React public generalized instrument", () => {
       />,
     );
     expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
-    const details = get<HTMLDetailsElement>(ui.element, "details");
-    details.open = true;
+    await act(async () =>
+      get<HTMLButtonElement>(ui.element, "[data-gp-part='gamut-trigger']").click(),
+    );
     const guide = get<HTMLInputElement>(ui.element, "[data-gp-part='guide-preference'] input");
     await act(async () => guide.click());
     expect(requests.mock.lastCall?.[0].visibleGuides).toEqual(["srgb-boundary"]);
     expect(ui.element.querySelector("[data-picker-plane]")).toBeNull();
-    expect(ui.element.textContent).toContain("Requested boundaries appear");
+    expect(
+      get(ui.element, "[data-gp-part='guide-preference'] [data-gp-visually-hidden]").textContent,
+    ).toBe("Paused: Requested boundary appears when editing a color space.");
     await select(ui.element, "oklch");
     expect(get(ui.element, "[data-picker-plane]")).toBeTruthy();
     expect(ui.element.querySelector("[data-gamut-boundary='srgb']")).not.toBeNull();
@@ -88,11 +91,14 @@ describe("React public generalized instrument", () => {
   it("keeps controlled state read-only and rejects invalid state", async () => {
     const ui = await mount(<GamutPlane value={initial} onValueChange={vi.fn()} state={observed} />);
     expect(get<HTMLButtonElement>(ui.element, '[role="combobox"]').disabled).toBe(true);
-    expect(
-      [...ui.element.querySelectorAll<HTMLInputElement>("details input")].every(
-        (input) => input.disabled,
-      ),
-    ).toBe(true);
+    expect(get<HTMLButtonElement>(ui.element, "[data-gp-part='gamut-trigger']").disabled).toBe(
+      false,
+    );
+    const inputs = [
+      ...ui.element.querySelectorAll<HTMLInputElement>("[data-gp-part='gamut-popup'] input"),
+    ];
+    expect(inputs).toHaveLength(7);
+    expect(inputs.every((input) => input.disabled)).toBe(true);
     const invalid: GamutPlaneProps = {
       value: initial,
       onValueChange: vi.fn(),
@@ -334,6 +340,8 @@ describe("React public generalized instrument", () => {
     expect(get<HTMLInputElement>(ui.element, 'input[value="edit"]').checked).toBe(true);
     expect(get(ui.element, "[data-gp-part='inspection-readout']").textContent).toContain("Alpha");
     expect(ui.element.querySelectorAll("[data-gp-part='exact-result']")).toHaveLength(1);
-    expect(ui.element.textContent).toContain("Some requested boundaries cannot be drawn here");
+    expect(
+      get(ui.element, "[data-gp-part='guide-preference'] [data-gp-visually-hidden]").textContent,
+    ).toBe("Paused: Requested boundary cannot be drawn here.");
   });
 });

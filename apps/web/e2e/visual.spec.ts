@@ -40,7 +40,7 @@ test("generalized narrow and enlarged-text references", async ({ page }) => {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
-  await page.locator("[data-gp-root] summary").click();
+  await page.getByRole("button", { name: "Gamuts" }).click();
   await expect(page).toHaveScreenshot("generalized-editable-enlarged-text.png", {
     fullPage: true,
   });
@@ -55,22 +55,22 @@ test("Reference warning, Display P3 and no Reference at 440 px", async ({ page }
   await root.getByLabel("Chroma numeric value").fill("0.24");
   await root.getByLabel("Chroma numeric value").press("Enter");
   await expect(root).toHaveScreenshot("reference-srgb-outside-440.png");
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
   await expect(root.locator('[data-gp-part="reference-connector"]')).toHaveCount(0);
   await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(0);
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
   await expect(root).toHaveScreenshot("reference-srgb-unchecked-440.png");
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
-  await root.getByLabel("Use Display P3 as Reference").check();
-  await root.locator("summary").click();
+  await root.getByRole("radio", { name: "Display P3", includeHidden: true }).check();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(root).toHaveScreenshot("reference-display-p3-440.png");
-  await root.locator("summary").click();
-  await root.getByLabel("No Reference").check();
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("radio", { name: "None", includeHidden: true }).check();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(root).toHaveScreenshot("reference-none-440.png");
 });
 
@@ -89,20 +89,22 @@ test("interior OKLCH and OKLab keep ordinary boundaries without excursion annota
   await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
   await expect(root).toHaveScreenshot("reference-inside-oklch.png");
   const source = await page.locator('[data-css-representation="oklch"] code').textContent();
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
-  await expect(root.getByLabel("Use sRGB as Reference")).toBeChecked();
+  await expect(
+    root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true }),
+  ).toBeChecked();
   await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(source!);
   // The complete instrument must remain visually identical when only an interior Status is disabled.
   await root.getByLabel("Chroma numeric value").focus();
   await expect(root).toHaveScreenshot("reference-inside-oklch.png");
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await page.getByRole("combobox", { name: "Coordinates" }).click();
   await page.locator('[role="option"][data-value="oklab"]').click();
   await expect(
@@ -127,11 +129,11 @@ test("within-tolerance exact status keeps ordinary boundaries without excursion 
     await root.getByLabel(`${label} numeric value`).fill(value!);
     await root.getByLabel(`${label} numeric value`).press("Enter");
   }
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(
     root.locator('[data-gp-part="exact-result"]').filter({ hasText: "Within tolerance" }),
   ).toHaveCount(1);
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await expect(root.locator('[data-gp-part="reference-connector"]')).toHaveCount(0);
   await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(0);
   await expect(root.locator("[data-gamut-boundary]")).toHaveCount(2);
@@ -144,7 +146,7 @@ test("explicit guides and exact checks reference", async ({ page }) => {
   await page.evaluate(() => {
     document.querySelector<HTMLElement>(".instrument-primary")!.style.width = "440px";
   });
-  await page.getByText("Gamuts", { exact: true }).click();
+  await page.getByRole("button", { name: "Gamuts" }).click();
   await page.getByLabel("sRGB Status", { exact: true }).check();
   await page.getByLabel("Display P3 Boundary", { exact: true }).uncheck();
   await expect(page.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);

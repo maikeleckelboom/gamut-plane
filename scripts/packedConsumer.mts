@@ -315,7 +315,7 @@ async function verifyInstalledUiMetadata(consumer: string) {
   await writeFile(
     join(consumer, "metadataContract.mts"),
     `
-import { currentPrimaryEditors, currentSelectionFacts, currentAdmittedEditorsForRepresentation, defaultSelection, editorUi, representationUi, generalizedCopy, orderedExactChecks } from "@gamut-plane/ui";
+import { currentPrimaryEditors, currentSelectionFacts, currentAdmittedEditorsForRepresentation, defaultSelection, editorUi, representationUi, generalizedCopy, orderedExactChecks, gamutSummary, gamutSummaryCopy } from "@gamut-plane/ui";
 import type { ChannelId, EditOperationId, EditorId, RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
 // The existing render root includes the browser Canvas contract; check type exclusion here,
 // separately from the ES-only internal-entry graph above.
@@ -345,7 +345,8 @@ if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw ne
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
 if (currentSelectionFacts.admittedEditors.length !== 2 || currentAdmittedEditorsForRepresentation("srgb").length !== 0) throw new Error("Packed admission policy changed");
 if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== null) throw new Error("Packed preferred editor changed");
-if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.disclosure !== "Gamuts") throw new Error("Packed shared copy changed");
+if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.comparison !== "Gamuts") throw new Error("Packed shared copy changed");
+if (gamutSummaryCopy(gamutSummary({ checkedGamuts: [], referenceGamutId: "srgb-gamut" }, [])).description !== "Reference sRGB, Status off") throw new Error("Packed Gamuts summary policy changed");
 if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");
 `,
   );

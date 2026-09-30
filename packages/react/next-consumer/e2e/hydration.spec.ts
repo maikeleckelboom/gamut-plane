@@ -86,7 +86,8 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         const html = await response!.text();
         expect(html).toContain("data-active-marker");
         expect(html).toContain('data-gp-part="representation-control"');
-        expect(html).toContain('data-gp-part="gamut-disclosure"');
+        expect(html).toContain('data-gp-part="gamut-trigger"');
+        expect(html).toMatch(/data-gp-part="gamut-popup"[^>]*hidden/);
         expect(html).toContain("612.123456");
         expect(html).toContain("OKLab a numeric value");
         expect(html).toContain("OKLab b numeric value");
@@ -106,7 +107,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
           const nodes = roots.flatMap((root) => [
             root,
             ...root.querySelectorAll(
-              "canvas, svg, path, input, button, select, label, details, summary, [data-legend], [data-active-marker], [role=application]",
+              "canvas, svg, path, input, button, select, label, [role=dialog], [data-legend], [data-active-marker], [role=application]",
             ),
           ]);
           window.beforeHydration = {
@@ -117,7 +118,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
             ].map((el) => el.value),
             presentation: [
               ...document.querySelectorAll(
-                "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
+                "[data-gp-part='representation-control'], [data-gp-part='gamuts'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
               ),
             ].map((el) => el.outerHTML),
             focus: document.activeElement,
@@ -143,7 +144,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       const current = [...document.querySelectorAll("[data-plane-instrument]")].flatMap((root) => [
         root,
         ...root.querySelectorAll(
-          "canvas, svg, path, input, button, select, label, details, summary, [data-legend], [data-active-marker], [role=application]",
+          "canvas, svg, path, input, button, select, label, [role=dialog], [data-legend], [data-active-marker], [role=application]",
         ),
       ]);
       return {
@@ -156,7 +157,7 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
         ].map((el) => el.value),
         presentation: [
           ...document.querySelectorAll(
-            "[data-gp-part='representation-control'], [data-gp-part='exact-results'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
+            "[data-gp-part='representation-control'], [data-gp-part='gamuts'], [data-gp-part='channel-field'], [data-gp-part='native-range'], [data-gp-part='numeric-input']",
           ),
         ].map((el) => el.outerHTML),
         focus: document.activeElement === before.focus,

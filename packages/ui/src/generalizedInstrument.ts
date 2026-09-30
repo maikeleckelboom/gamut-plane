@@ -101,14 +101,17 @@ export const generalizedCopy = Object.freeze({
   planeUnavailable: "Editing plane unavailable for this color.",
   alpha: "Alpha",
   comparison: "Gamuts",
-  disclosure: "Gamuts",
   exactChecks: "Status",
+  statusOff: "Status off",
   visibleGuides: "Boundary",
   reference: "Reference",
   noReference: "No Reference",
-  boundaryPaused: "Boundaries paused",
-  guidesPending: "Requested boundaries appear when editing a color space.",
-  guidesUnavailable: "Some requested boundaries cannot be drawn here.",
+  referenceNone: "None",
+  boundaryPaused: "Paused",
+  guidesPending: "Requested boundary appears when editing a color space.",
+  guidesUnavailable: "Requested boundary cannot be drawn here.",
+  close: "Close",
+  readOnly: "Read-only",
 });
 
 export function authorshipContextCopy(authoredRepresentationId: RepresentationId): string {

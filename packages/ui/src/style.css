@@ -237,75 +237,334 @@
   font-variant-numeric: tabular-nums;
 }
 
-[data-gp-root] [data-gp-part="exact-results"] {
-  min-width: 0;
-  color: var(--gp-quiet);
-  font-size: 0.8125rem;
+/* Gamuts: a calm Reference-first trigger and a nonmodal inspector grouped by gamut. */
+[data-gp-root] [data-gp-part="gamuts"] {
+  min-inline-size: 0;
 }
 
-[data-gp-root] [data-gp-part="exact-result"] {
+[data-gp-root] .gp-gamuts-trigger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "label outside chevron"
+    "summary summary chevron";
+  align-items: baseline;
+  gap: 1px 10px;
+  position: relative;
+  inline-size: 100%;
+  min-block-size: 46px;
+  padding: 6px 10px 7px 12px;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--gp-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  text-align: start;
+  cursor: pointer;
+}
+[data-gp-root] .gp-gamuts-trigger:hover,
+[data-gp-root] .gp-gamuts-trigger[aria-expanded="true"] {
+  background: var(--gp-surface-2);
+}
+[data-gp-root] .gp-gamuts-label {
+  grid-area: label;
+  font-weight: 600;
+}
+[data-gp-root] .gp-gamuts-outside {
+  grid-area: outside;
+  font-size: 0.75rem;
+  text-align: end;
+}
+[data-gp-root] .gp-gamuts-chevron {
+  grid-area: chevron;
+  align-self: center;
+  color: var(--gp-quiet);
+}
+[data-gp-root] .gp-gamuts-summary {
+  grid-area: summary;
+  min-inline-size: 0;
+  word-spacing: 0.1em;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+}
+[data-gp-root] :is(.gp-gamuts-target, .gp-gamuts-status) {
+  white-space: nowrap;
+}
+[data-gp-root] .gp-gamuts-target {
+  color: var(--gp-foreground);
+  font-weight: 500;
+}
+[data-gp-root] .gp-gamuts-summary [data-gp-status] {
+  color: var(--gp-foreground);
+}
+[data-gp-root] :is(.gp-gamuts-summary, .gp-gamuts-trigger) [data-gp-status="outside"] {
+  color: var(--gp-status-outside);
+}
+[data-gp-root] .gp-gamuts-summary :is([data-gp-status="off"], [data-gp-status="unavailable"]) {
+  color: var(--gp-quiet);
+}
+
+[data-gp-root] .gp-gamuts-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 2px 12px 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 6px;
+  outline: 0;
+  background: var(--gp-surface-2);
+  color: var(--gp-foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  box-shadow: 0 12px 32px oklch(0 0 0 / 0.42);
+  container: gamut-popup / inline-size;
+}
+[data-gp-root] .gp-gamuts-popup[hidden] {
+  display: none;
+}
+[data-gp-root] .gp-gamuts-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 38px;
+  margin-inline-end: -8px;
+}
+[data-gp-root] .gp-gamuts-heading {
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+[data-gp-root] .gp-gamuts-read-only {
+  padding: 0 6px;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 3px;
+  color: var(--gp-quiet);
+  font-size: 0.6875rem;
+}
+[data-gp-root] .gp-gamuts-close {
+  display: grid;
+  place-items: center;
+  inline-size: max(32px, 2em);
+  block-size: max(32px, 2em);
+  margin-inline-start: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gp-quiet);
+  cursor: pointer;
+}
+[data-gp-root] .gp-gamuts-close:hover {
+  background: var(--gp-surface-3);
+  color: var(--gp-foreground);
+}
+[data-gp-root] .gp-gamuts-close svg {
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+[data-gp-root] .gp-gamut-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name status"
+    "toggles toggles";
+  align-items: center;
+  column-gap: 12px;
+  padding-block: 4px;
+}
+[data-gp-root] .gp-gamut-name {
+  grid-area: name;
+  font-weight: 600;
+}
+[data-gp-root] .gp-gamut-status {
+  grid-area: status;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  text-align: end;
+}
+[data-gp-root] .gp-gamut-status[data-gp-status] {
+  color: var(--gp-foreground);
+  font-weight: 500;
+}
+[data-gp-root] .gp-gamut-status[data-gp-status="outside"] {
+  color: var(--gp-status-outside);
+}
+[data-gp-root] .gp-gamut-status[data-gp-status="unavailable"] {
+  color: var(--gp-quiet);
+  font-style: italic;
+}
+[data-gp-root] .gp-gamut-toggles {
+  grid-area: toggles;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2px;
+  min-inline-size: 0;
+  margin-inline: -8px;
+}
+[data-gp-root] .gp-gamut-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-block-size: 36px;
+  padding-inline: 8px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+[data-gp-root] .gp-gamut-toggle:hover {
+  background: var(--gp-surface-3);
+}
+[data-gp-root] .gp-gamut-toggle input {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  margin: 0;
+  accent-color: var(--gp-user-accent);
+  cursor: inherit;
+}
+[data-gp-root] .gp-gamut-toggle:has(input:disabled) {
+  color: var(--gp-quiet);
+  cursor: default;
+}
+[data-gp-root] .gp-gamut-toggle:has(input:disabled):hover {
+  background: transparent;
+}
+[data-gp-root] .gp-boundary-sample {
+  inline-size: 1.25em;
+  block-size: 0.3em;
+  overflow: visible;
+  color: var(--gp-quiet);
+}
+[data-gp-root] .gp-boundary-sample path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+[data-gp-root] [data-gp-gamut="srgb-gamut"] .gp-boundary-sample path {
+  stroke-dasharray: 3 2;
+}
+[data-gp-root] .gp-boundary-paused {
+  color: var(--gp-quiet);
   font-size: 0.75rem;
 }
 
-[data-gp-root] [data-gp-part="exact-result"] strong {
-  color: var(--gp-foreground);
-  font-weight: 600;
-}
-
-[data-gp-root] [data-gp-part="exact-result"][data-gp-status="outside"] strong,
-[data-gp-root] [data-gp-part="exact-result"][data-gp-status="unavailable"] strong {
-  color: var(--gp-status-outside);
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] {
-  border-top: 1px solid var(--gp-hairline);
-  padding-top: 10px;
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] summary {
-  cursor: pointer;
-  color: var(--gp-foreground);
-  font-weight: 600;
-  min-block-size: 26px;
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] summary small {
-  float: inline-end;
-  padding-inline-start: 8px;
-  color: var(--gp-quiet);
-  font-weight: 400;
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] fieldset {
-  min-inline-size: 0;
-  margin: 10px 0 0;
-  padding: 0 0 8px;
-  border: 0;
-  border-bottom: 1px solid var(--gp-hairline);
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] legend {
-  color: var(--gp-foreground);
-  font-weight: 600;
-  padding: 0;
-  margin-bottom: 4px;
-}
-
-[data-gp-root] .gp-gamut-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 16px;
-}
-
-[data-gp-root] .gp-no-reference {
-  margin-top: 6px;
-}
-
-[data-gp-root] [data-gp-part="gamut-disclosure"] label {
-  display: inline-flex;
+[data-gp-root] .gp-reference {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
-  min-height: 34px;
+  gap: 6px 12px;
+  margin-block-start: 6px;
+  padding-block-start: 10px;
+  border-top: 1px solid var(--gp-hairline);
+}
+[data-gp-root] .gp-reference-label {
+  font-weight: 600;
+}
+[data-gp-root] .gp-reference-options {
+  display: flex;
+  min-inline-size: 0;
+  padding: 2px;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 5px;
+  background: var(--gp-surface-1);
+}
+[data-gp-root] .gp-reference-options label {
+  position: relative;
+  flex: 1 1 auto;
+  cursor: pointer;
+}
+[data-gp-root] .gp-reference-options input {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+[data-gp-root] .gp-reference-options label > span {
+  display: grid;
+  place-items: center;
+  min-block-size: 32px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--gp-quiet);
+  text-align: center;
+}
+[data-gp-root] .gp-reference-options input:checked + span {
+  border-color: var(--gp-user-accent);
+  background: var(--gp-surface-3);
+  color: var(--gp-foreground);
+}
+[data-gp-root] .gp-reference-options input:focus-visible + span {
+  outline: 2px solid var(--gp-user-accent);
+  outline-offset: 2px;
+}
+[data-gp-root] .gp-reference-options input:disabled {
+  cursor: default;
+}
+
+/* Only enlarged text makes the instrument this narrow in em: status takes its own line. */
+@container gamut-plane (max-width: 15em) {
+  [data-gp-root] .gp-gamuts-status {
+    display: block;
+  }
+  [data-gp-root] .gp-gamuts-status > [aria-hidden="true"] {
+    display: none;
+  }
+}
+
+/* Wide: the name/status unit reads down the left edge; configuration aligns on the right. */
+@container gamut-popup (min-width: 23rem) {
+  [data-gp-root] .gp-gamut-row {
+    grid-template-areas:
+      "name toggles"
+      "status toggles";
+    padding-block: 6px;
+  }
+  [data-gp-root] .gp-gamut-status {
+    text-align: start;
+  }
+  [data-gp-root] .gp-gamut-toggles {
+    justify-content: end;
+    margin-inline: 0 -8px;
+  }
+  [data-gp-root] .gp-reference {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+@container gamut-popup (max-width: 14rem) {
+  [data-gp-root] .gp-reference-options {
+    flex-direction: column;
+  }
+}
+@media (forced-colors: active) {
+  [data-gp-root] .gp-gamuts-trigger[aria-expanded="true"] {
+    border-color: Highlight;
+  }
+  /* Selection must not depend on border hue alone; system colors only, without text backplates. */
+  [data-gp-root] .gp-reference-options label > span {
+    forced-color-adjust: none;
+    border-color: Canvas;
+    background: Canvas;
+    color: CanvasText;
+  }
+  [data-gp-root] .gp-reference-options input:checked + span {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+  [data-gp-root] .gp-reference-options input:focus-visible + span {
+    outline-color: CanvasText;
+  }
 }
 
 [data-gp-root] [data-gp-part="availability-message"] {

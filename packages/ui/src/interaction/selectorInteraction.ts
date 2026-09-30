@@ -1,5 +1,6 @@
 import type { SelectorOption } from "../selectionShell.js";
 import { hasInstrumentPointer } from "./pointerOwnership.js";
+import { claimShellPopup, releaseShellPopup } from "./shellPopup.js";
 
 export interface SelectorInput {
   value: string;
@@ -7,7 +8,6 @@ export interface SelectorInput {
   disabled: boolean;
   request(value: string): void;
 }
-const openSelectors = new WeakMap<Element, () => void>();
 
 /** Mounted DOM mechanics only. Accepted values and option markup belong to the adapter.
  * Candidate changes touch only this selector, below accepted color resolution. */
@@ -67,13 +67,12 @@ export function mountSelector(
     popup.hidden = true;
     for (const option of popup.querySelectorAll("[data-highlighted]"))
       option.removeAttribute("data-highlighted");
-    if (openSelectors.get(root) === close) openSelectors.delete(root);
+    releaseShellPopup(root, close);
     if (restore && trigger.isConnected) trigger.focus({ preventScroll: true });
   }
   function show() {
     if (disposed || current().disabled || hasInstrumentPointer(trigger)) return;
-    openSelectors.get(root)?.();
-    openSelectors.set(root, close);
+    claimShellPopup(root, close);
     open = true;
     popup.hidden = false;
     trigger.setAttribute("aria-expanded", "true");

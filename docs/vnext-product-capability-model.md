@@ -40,4 +40,4 @@ The standalone app's CSS/Hex output uses explicit serialization policies and rep
 
 ## Current boundary
 
-The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a Coordinates context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a gamut disclosure. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.
+The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a Coordinates context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a Gamuts popup. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.

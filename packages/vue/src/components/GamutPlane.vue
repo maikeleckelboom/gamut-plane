@@ -4,7 +4,6 @@ import {
   represent,
   type ColorResult,
   type ColorValue,
-  type GamutId,
   type PlaneEditError,
   type PlaneEditReference,
 } from "@gamut-plane/core";
@@ -21,22 +20,20 @@ import {
   representationUi,
   currentEditorHelp,
   canonicalInstrumentState,
-  exactGamutUi,
-  exactStatusCopy,
   generalizedCopy,
   authorshipContextCopy,
-  admittedReferenceGamuts,
-  requestReferenceGamut,
   referenceWarning,
   formatInspectionNumber,
   initialInstrumentState,
   inspectionUi,
   instrumentViewStatesEqual,
-  requestCheckedGamut,
-  requestVisibleGuide,
+  pausedGuideIds,
+  requestGamutAction,
+  type GamutAction,
 } from "@gamut-plane/ui";
 import { coordinatesOptions, validateSelection, type ShellSelection } from "@gamut-plane/ui";
 import SelectionContext from "./SelectionContext.vue";
+import GamutComparison from "./GamutComparison.vue";
 import { resolveAcceptedRevision } from "../model/acceptedResolution.js";
 import { presentAcceptedRevision } from "../model/acceptedPresentation.js";
 
@@ -48,7 +45,6 @@ import {
   generalizedGuideDisplay,
   referenceDisplay,
 } from "@gamut-plane/render/internal/current";
-import { referenceGuidePolicy } from "@gamut-plane/render/internal/capabilities";
 import type { GamutPlaneState } from "../model/publicState.js";
 
 const props = defineProps<{
@@ -100,7 +96,6 @@ function requestState(nextInput: GamutPlaneState): void {
   emit("update:state", next);
 }
 const instanceId = useId();
-const comparison = ref<HTMLDetailsElement | null>(null);
 const titleId = `${instanceId}-instrument-title`;
 
 const [hue, lightness, chroma] = editorUi["oklch-lc"].companions;
@@ -137,21 +132,6 @@ const reference = computed(() =>
 const warning = computed(() =>
   referenceWarning(acceptedState.value.referenceGamutId, accepted.value.exactChecks),
 );
-const gamutRows = computed(() =>
-  admittedReferenceGamuts.map((gamutId) => {
-    const check = accepted.value.exactChecks.find((row) => row.gamutId === gamutId);
-    return {
-      gamutId,
-      label: exactGamutUi[gamutId].label,
-      guideId: referenceGuidePolicy[gamutId],
-      status: check
-        ? check.result.ok
-          ? check.result.value.status
-          : ("unavailable" as const)
-        : null,
-    };
-  }),
-);
 const help = computed(() =>
   field.value && oklch.value
     ? currentEditorHelp(
@@ -162,14 +142,8 @@ const help = computed(() =>
       )
     : null,
 );
-const unavailableGuides = computed(() =>
-  accepted.value.guides.filter(
-    (guide) =>
-      !field.value ||
-      !detail.value ||
-      guide.kind !== "resolved" ||
-      guide.forms.contour.kind !== "available",
-  ),
+const pausedGuides = computed(() =>
+  pausedGuideIds(accepted.value.guides, field.value !== null && detail.value !== null),
 );
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
@@ -189,28 +163,8 @@ function selectContext(selection: ShellSelection): void {
   if (result.ok) requestState({ ...acceptedState.value, selection: result.value });
 }
 
-function toggleCheck(gamutId: GamutId, event: Event): void {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  requestState(requestCheckedGamut(acceptedState.value, gamutId, target.checked));
-  target.checked = acceptedState.value.checkedGamuts.includes(gamutId);
-}
-
-function toggleGuide(guideId: GuideId, event: Event): void {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  requestState(requestVisibleGuide(acceptedState.value, guideId, target.checked, guideIds));
-  target.checked = acceptedState.value.visibleGuides.includes(guideId);
-}
-
-function selectReference(gamutId: GamutId | null): void {
-  requestState(requestReferenceGamut(acceptedState.value, gamutId));
-  // A controlled parent may reject the native radio change; restore the entire group.
-  for (const input of comparison.value?.querySelectorAll<HTMLInputElement>(
-    "input[data-reference-choice]",
-  ) ?? []) {
-    input.checked = input.value === (acceptedState.value.referenceGamutId ?? "none");
-  }
+function requestGamut(action: GamutAction<GuideId>): void {
+  requestState(requestGamutAction(acceptedState.value, action, guideIds));
 }
 
 function publish(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean): void {
@@ -481,85 +435,14 @@ watch(
         >
           {{ authorshipContextCopy(accepted.authored.representationId) }}
         </p>
-        <section
-          class="gp-generalized-comparison"
-          :data-gp-part="gpPart.exactResults"
-          :aria-label="generalizedCopy.comparison"
-        >
-          <details ref="comparison" :data-gp-part="gpPart.gamutDisclosure">
-            <summary>
-              <span>{{ generalizedCopy.disclosure }}</span>
-              <small v-if="unavailableGuides.length > 0">{{
-                generalizedCopy.boundaryPaused
-              }}</small>
-            </summary>
-            <fieldset v-for="row in gamutRows" :key="row.gamutId" class="gp-gamut-row">
-              <legend>{{ row.label }}</legend>
-              <span
-                v-if="row.status !== null"
-                :data-gp-part="gpPart.exactResult"
-                :data-gp-gamut="row.gamutId"
-                :data-gp-status="row.status"
-              >
-                <strong>{{ exactStatusCopy[row.status] }}</strong>
-              </span>
-              <div class="gp-gamut-choices">
-                <label>
-                  <input
-                    type="checkbox"
-                    :aria-label="`${row.label} Status`"
-                    :checked="acceptedState.checkedGamuts.includes(row.gamutId)"
-                    :disabled="readOnlyState()"
-                    @change="toggleCheck(row.gamutId, $event)"
-                  />
-                  {{ generalizedCopy.exactChecks }}
-                </label>
-                <label :data-gp-part="gpPart.guidePreference">
-                  <input
-                    type="checkbox"
-                    :aria-label="`${row.label} Boundary`"
-                    :checked="acceptedState.visibleGuides.includes(row.guideId)"
-                    :disabled="readOnlyState()"
-                    @change="toggleGuide(row.guideId, $event)"
-                  />
-                  {{ generalizedCopy.visibleGuides }}
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    :name="`${instanceId}-reference`"
-                    :value="row.gamutId"
-                    data-reference-choice
-                    :aria-label="`Use ${row.label} as Reference`"
-                    :checked="acceptedState.referenceGamutId === row.gamutId"
-                    :disabled="readOnlyState()"
-                    @change="selectReference(row.gamutId)"
-                  />
-                  {{ generalizedCopy.reference }}
-                </label>
-              </div>
-            </fieldset>
-            <label class="gp-no-reference">
-              <input
-                type="radio"
-                :name="`${instanceId}-reference`"
-                value="none"
-                data-reference-choice
-                :checked="acceptedState.referenceGamutId === null"
-                :disabled="readOnlyState()"
-                @change="selectReference(null)"
-              />
-              {{ generalizedCopy.noReference }}
-            </label>
-            <p v-if="unavailableGuides.length > 0" :data-gp-part="gpPart.availabilityMessage">
-              {{
-                !field && accepted.selection.editorId === null
-                  ? generalizedCopy.guidesPending
-                  : generalizedCopy.guidesUnavailable
-              }}
-            </p>
-          </details>
-        </section>
+        <GamutComparison
+          :id="instanceId"
+          :state="acceptedState"
+          :checks="accepted.exactChecks"
+          :paused="pausedGuides"
+          :read-only="readOnlyState()"
+          @request="requestGamut"
+        />
       </div>
     </div>
   </section>

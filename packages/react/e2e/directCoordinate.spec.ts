@@ -86,10 +86,10 @@ test("direct L/a/b keyboard, numeric and pointer edits retain coordinates and no
   const beforeL = await definition(page);
   await root.getByRole("slider", { name: "Lightness", exact: true }).press("Home");
   expect((await definition(page)).channels).toEqual([0, ...beforeL.channels.slice(1)]);
-  await root.locator("summary").click();
+  await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
   await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
-  await root.getByLabel("Use Display P3 as Reference").check();
+  await root.getByRole("radio", { name: "Display P3", includeHidden: true }).check();
   for (const node of nodes)
     expect(await node.evaluate((element) => element.isConnected)).toBe(true);
   await root.getByRole("radio", { name: "Inspect", exact: true }).check();
