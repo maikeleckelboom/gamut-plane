@@ -201,18 +201,21 @@ for (const path of ["/", "/prerendered", "/?narrow=1"]) {
       expect(await color(host)).toEqual(colors[index]);
       await painted(host.locator("canvas"));
       const surface = host.getByRole("application");
-      const popup = host.getByRole("menu", { name: "Gamut actions" });
-      await expect(popup).toBeHidden();
-      await surface.press("ContextMenu");
-      await expect(popup).toBeVisible();
-      await popup.getByRole("menuitemradio", { name: "Display P3", exact: true }).click();
-      await expect(popup).toBeHidden();
-      await expect(surface).toBeFocused();
-      await surface.press("Shift+F10");
-      await expect(
-        popup.getByRole("menuitemradio", { name: "Display P3", exact: true }),
-      ).toHaveAttribute("aria-checked", "true");
-      await page.keyboard.press("Escape");
+      // One hydrated menu sentinel per route; the second instance proves independent color edits.
+      if (index === 0) {
+        const popup = host.getByRole("menu", { name: "Gamut actions" });
+        await expect(popup).toBeHidden();
+        await surface.press("ContextMenu");
+        await expect(popup).toBeVisible();
+        await popup.getByRole("menuitemradio", { name: "Display P3", exact: true }).click();
+        await expect(popup).toBeHidden();
+        await expect(surface).toBeFocused();
+        await surface.press("Shift+F10");
+        await expect(
+          popup.getByRole("menuitemradio", { name: "Display P3", exact: true }),
+        ).toHaveAttribute("aria-checked", "true");
+        await page.keyboard.press("Escape");
+      }
       expect(await color(host)).toEqual(colors[index]);
       await surface.press("ArrowLeft");
       expect(await color(host)).not.toEqual(colors[index]);

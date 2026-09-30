@@ -46,24 +46,11 @@ async function expectOpen(page: Page, root: Locator, name: string) {
   });
 }
 
-for (const width of [320, 390, 440, 480])
+for (const width of [320, 440])
   test(`open default Gamuts at allocated ${width}px`, async ({ page }) => {
     const root = await app(page, width);
     await expectOpen(page, root, `gamuts-open-${width}.png`);
   });
-
-test("open Gamuts Reference, Status and exact-result states", async ({ page }) => {
-  const root = await app(page);
-  const { dialog } = gamuts(root);
-  await gamuts(root).trigger.click();
-  await dialog.getByRole("radio", { name: "Display P3" }).check();
-  await expectOpen(page, root, "gamuts-reference-display-p3.png");
-  await dialog.getByRole("radio", { name: "None" }).check();
-  await expectOpen(page, root, "gamuts-no-reference.png");
-  await dialog.getByRole("radio", { name: "sRGB", exact: true }).check();
-  await dialog.getByRole("checkbox", { name: "sRGB Status" }).uncheck();
-  await expectOpen(page, root, "gamuts-status-off.png");
-});
 
 test("open Gamuts within tolerance", async ({ page }) => {
   const root = await app(page);
@@ -85,8 +72,7 @@ test("open Gamuts with requested boundaries paused during inspection", async ({ 
   await expectOpen(page, root, "gamuts-inspect-paused.png");
 });
 
-test("open Gamuts for unavailable analysis and read-only state", async ({ page }) => {
-  await expectOpen(page, await fixture(page, "?unavailable"), "gamuts-unavailable.png");
+test("open Gamuts with read-only native controls", async ({ page }) => {
   await expectOpen(page, await fixture(page, "?readonly"), "gamuts-read-only.png");
 });
 

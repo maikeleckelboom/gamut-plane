@@ -95,6 +95,17 @@ export function mountPlaneGesture<Value, Point>(
 
   function move(event: PointerEvent): void {
     if (disposed || pointerId !== event.pointerId) return;
+    // A chorded primary release is a pointermove while another mouse button remains held.
+    // Complete now, before implicit capture loss or later secondary-only movement can roll back.
+    if (
+      event.pointerType === "mouse" &&
+      event.button === 0 &&
+      event.buttons > 0 &&
+      (event.buttons & 1) === 0
+    ) {
+      up(event);
+      return;
+    }
     // Chromium represents a secondary mouse-button transition during a primary drag as a
     // pointermove. It is context-menu intent, not a new authored plane point.
     if (event.pointerType === "mouse" && event.button === 2) return;

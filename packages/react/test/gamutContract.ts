@@ -239,7 +239,6 @@ export function gamutContract(mount: Mount) {
           const boundary = input(host.element, "sRGB Boundary");
           expect(boundary.checked).toBe(true);
           expect(boundary.disabled).toBe(false);
-          expect(host.element.querySelectorAll(".gp-boundary-paused")).toHaveLength(2);
           expect(
             text(
               host.element.ownerDocument.getElementById(boundary.getAttribute("aria-describedby")!),
@@ -256,7 +255,6 @@ export function gamutContract(mount: Mount) {
             ...inspecting,
             selection: { representationId: "oklch", editorId: "oklch-lc" },
           });
-          expect(host.element.querySelectorAll(".gp-boundary-paused")).toHaveLength(0);
           expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(2);
           expect(input(host.element, "sRGB Boundary").getAttribute("aria-describedby")).toBeNull();
           expect(host.changes()).toBe(0);

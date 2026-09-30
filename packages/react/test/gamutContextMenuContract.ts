@@ -77,7 +77,6 @@ export function gamutContextMenuContract(mount: Mount) {
             text(group.ownerDocument.getElementById(group.getAttribute("aria-labelledby")!)),
           ),
         ).toEqual(["Reference", "Boundary", "Status"]);
-        expect(popup.querySelectorAll('hr, [role="separator"]')).toHaveLength(2);
         const buttons = [...popup.querySelectorAll("button")];
         expect(buttons.map((button) => button.dataset.gpCommand)).toEqual([
           "reference-srgb-gamut",

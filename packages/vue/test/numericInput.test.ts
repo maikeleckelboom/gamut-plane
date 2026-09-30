@@ -46,41 +46,27 @@ describe("Vue numeric draft lifecycle", () => {
     expect(html).toContain('type="number"');
     expect(html).toContain('value="0.2000"');
   });
-  it.each(["Enter", "change", "blur"])(
-    "keeps typing local and completes once via %s",
-    async (action) => {
-      const ui = numeric();
-      ui.edit("0.3");
-      expect(ui.element.value).toBe("0.3");
-      expect(ui.wrapper.emitted("update:modelValue")).toBeUndefined();
+  // Exhaustive bad-input, clamping and composition rules belong to UI numericInteraction tests.
+  it("delivers each native completion once, in update then commit order, without remounting", async () => {
+    const ui = numeric();
+    const values = [0.3, 0.1, -0.1];
+    for (const [index, action] of ["Enter", "change", "blur"].entries()) {
+      ui.edit(String(values[index]));
+      expect(ui.wrapper.emitted("commit")?.length ?? 0).toBe(index);
       ui.dispatch(action === "Enter" ? "keydown" : action, "Enter");
       ui.dispatch("change");
       ui.dispatch("blur");
-      expect(ui.wrapper.emitted("update:modelValue")).toEqual([[0.3]]);
-      expect(ui.wrapper.emitted("commit")).toEqual([[0.3]]);
-      expect(ui.order).toEqual(["update", "commit"]);
-      ui.wrapper.unmount();
-    },
-  );
-  it.each(["", "-", "invalid"])("restores invalid draft %s", async (draft) => {
-    const ui = numeric();
-    ui.edit(draft);
-    ui.dispatch("blur");
-    await nextTick();
-    expect(ui.element.value).toBe("0.2000");
-    expect(ui.wrapper.emitted("commit")).toBeUndefined();
-    expect(ui.wrapper.emitted("cancel")).toBeUndefined();
-    ui.wrapper.unmount();
-  });
-  it.each([
-    ["-1", -0.4],
-    ["1", 0.4],
-  ])("clamps %s only on completion", (draft, expected) => {
-    const ui = numeric();
-    ui.edit(String(draft));
-    expect(ui.wrapper.emitted("commit")).toBeUndefined();
-    ui.dispatch("change");
-    expect(ui.wrapper.emitted("commit")).toEqual([[expected]]);
+      expect(ui.wrapper.emitted("update:modelValue")).toEqual(
+        values.slice(0, index + 1).map((value) => [value]),
+      );
+      expect(ui.wrapper.emitted("commit")).toEqual(
+        values.slice(0, index + 1).map((value) => [value]),
+      );
+      expect(ui.order).toEqual(
+        Array.from({ length: index + 1 }, () => ["update", "commit"]).flat(),
+      );
+      await nextTick();
+    }
     ui.wrapper.unmount();
   });
   it("stops dirty Escape and lets idle Escape bubble", () => {
@@ -134,49 +120,15 @@ describe("Vue numeric draft lifecycle", () => {
     expect(ui.wrapper.emitted("cancel")).toBeUndefined();
     ui.wrapper.unmount();
   });
-  it.each(["change", "blur"])("retains an active composition through %s", (action) => {
+  it("unmount disposes an active composition without callbacks", () => {
     const ui = numeric();
     ui.dispatch("compositionstart");
     ui.edit("0.3");
-    ui.dispatch("keydown", "Enter", true);
-    ui.dispatch("keydown", "Enter");
+    ui.wrapper.unmount();
+    ui.dispatch("change");
+    ui.dispatch("compositionend");
     ui.dispatch("keydown", "Escape");
     expect(ui.wrapper.emitted("commit")).toBeUndefined();
     expect(ui.wrapper.emitted("cancel")).toBeUndefined();
-    ui.dispatch(action);
-    expect(ui.element.value).toBe("0.3");
-    expect(ui.wrapper.emitted("commit")).toBeUndefined();
-    ui.dispatch("compositionend");
-    expect(ui.wrapper.emitted("commit")).toBeUndefined();
-    ui.dispatch(action);
-    expect(ui.wrapper.emitted("commit")).toEqual([[0.3]]);
-    ui.dispatch("blur");
-    expect(ui.wrapper.emitted("commit")).toEqual([[0.3]]);
-    ui.wrapper.unmount();
   });
-  it("cancels dirty input normally after compositionend", () => {
-    const ui = numeric();
-    ui.dispatch("compositionstart");
-    ui.edit("0.3");
-    ui.dispatch("compositionend");
-    ui.dispatch("keydown", "Escape");
-    expect(ui.element.value).toBe("0.2000");
-    expect(ui.wrapper.emitted("cancel")).toEqual([[]]);
-    expect(ui.wrapper.emitted("commit")).toBeUndefined();
-    ui.wrapper.unmount();
-  });
-  it.each([false, true])(
-    "disposes a dirty draft without callbacks (composing: %s)",
-    (composing) => {
-      const ui = numeric();
-      if (composing) ui.dispatch("compositionstart");
-      ui.edit("0.3");
-      ui.wrapper.unmount();
-      ui.dispatch("change");
-      ui.dispatch("compositionend");
-      ui.dispatch("keydown", "Escape");
-      expect(ui.wrapper.emitted("commit")).toBeUndefined();
-      expect(ui.wrapper.emitted("cancel")).toBeUndefined();
-    },
-  );
 });

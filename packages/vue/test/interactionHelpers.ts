@@ -34,15 +34,15 @@ export function dispatchPointer(
   init: number | Partial<PointerEventInit>,
 ): void {
   const options = typeof init === "number" ? { pointerId: init } : init;
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  for (const [key, value] of Object.entries({
+  const event = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
     clientX: 0,
     clientY: 0,
     pointerType: "mouse",
-    button: 0,
+    button: type === "pointermove" ? -1 : 0,
+    buttons: ["pointerup", "pointercancel", "lostpointercapture"].includes(type) ? 0 : 1,
     ...options,
-  })) {
-    Object.defineProperty(event, key, { value });
-  }
+  });
   element.dispatchEvent(event);
 }

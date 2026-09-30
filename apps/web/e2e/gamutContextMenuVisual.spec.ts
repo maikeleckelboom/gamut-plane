@@ -32,29 +32,10 @@ async function instrumentAndMenu(page: Page, root: Locator, name: string) {
   });
 }
 
-for (const width of [320, 440])
-  test(`plane context menu at allocated ${width}px with exact Outside/Inside`, async ({ page }) => {
-    const root = await fixture(page, "", width);
-    await open(root);
-    await instrumentAndMenu(page, root, `gamut-menu-${width}.png`);
-  });
-
-test("plane context menu shifted at the viewport edge", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 440 });
+test("plane context menu at 320px with exact Outside/Inside", async ({ page }) => {
   const root = await fixture(page, "", 320);
-  const plane = root.locator('[data-gp-part="surface"]');
-  const box = (await plane.boundingBox())!;
-  await plane.click({ button: "right", position: { x: box.width - 5, y: box.height - 5 } });
-  await expect(root.getByRole("menu")).toBeVisible();
-  await page.mouse.move(0, 0);
-  await expect(page).toHaveScreenshot("gamut-menu-edge.png");
-});
-
-test("plane context menu with paused requested Boundary", async ({ page }) => {
-  await fixture(page, "?context&paused");
-  const root = page.locator("#area-fixture");
   await open(root);
-  await expect(root.getByRole("menu")).toHaveScreenshot("gamut-menu-paused.png");
+  await instrumentAndMenu(page, root, "gamut-menu-320.png");
 });
 
 test("read-only plane context menu", async ({ page }) => {

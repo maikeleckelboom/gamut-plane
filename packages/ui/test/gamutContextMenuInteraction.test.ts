@@ -237,6 +237,28 @@ describe("plane gamut context menu mechanics", () => {
     },
   );
 
+  it("suppresses delayed secondary contextmenu from a gesture, then admits a fresh right-click", () => {
+    const f = fixture();
+    setPointerOwnership(f.plane, true);
+    f.plane.dispatchEvent(
+      new PointerEvent("pointermove", {
+        pointerType: "mouse",
+        button: 2,
+        buttons: 3,
+        bubbles: true,
+      }),
+    );
+    setPointerOwnership(f.plane, false);
+    expect(f.invoke().defaultPrevented).toBe(true);
+    expect(f.menu.hidden).toBe(true);
+    expect(f.request).not.toHaveBeenCalled();
+    f.plane.dispatchEvent(
+      new PointerEvent("pointerdown", { pointerType: "mouse", button: 2, buttons: 2 }),
+    );
+    f.invoke();
+    expect(f.menu.hidden).toBe(false);
+  });
+
   it("does not take touch-derived contextmenu events or add long-press recognition", () => {
     const f = fixture();
     expect(f.invoke({ pointerType: "touch" }).defaultPrevented).toBe(false);
@@ -295,6 +317,7 @@ describe("plane gamut context menu mechanics", () => {
     const remove = vi.spyOn(document, "removeEventListener");
     const windowRemove = vi.spyOn(window, "removeEventListener");
     const menuRemove = vi.spyOn(f.menu, "removeEventListener");
+    const planeRemove = vi.spyOn(f.plane, "removeEventListener");
     f.invoke();
     f.binding.dispose();
     expect(remove.mock.calls.map(([type]) => type)).toEqual(["pointerdown", "focusin"]);
@@ -303,6 +326,11 @@ describe("plane gamut context menu mechanics", () => {
       "click",
       "keydown",
       "beforetoggle",
+    ]);
+    expect(planeRemove.mock.calls.map(([type]) => type)).toEqual([
+      "pointerdown",
+      "pointermove",
+      "contextmenu",
     ]);
     expect(f.menu.hidden).toBe(true);
     expect(f.invoke().defaultPrevented).toBe(false);

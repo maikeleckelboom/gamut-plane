@@ -21,6 +21,7 @@ export function mountGamutContextMenu<G extends string>(
   const nativePopover = typeof menu.showPopover === "function";
   let open = false;
   let disposed = false;
+  let suppressSecondary = false;
   let anchor: Readonly<{ x: number; y: number }> | null = null;
   let resize: ResizeObserver | null = null;
 
@@ -81,6 +82,10 @@ export function mountGamutContextMenu<G extends string>(
     for (const button of items()) button.tabIndex = -1;
     if (restore && plane.isConnected) plane.focus({ preventScroll: true });
   }
+  function secondary(event: PointerEvent) {
+    if (event.pointerType === "mouse" && event.button === 2 && (event.buttons & 2) !== 0)
+      suppressSecondary = hasInstrumentPointer(plane);
+  }
   function invoke(event: MouseEvent) {
     if (disposed) return;
     const pointerType = "pointerType" in event ? (event as PointerEvent).pointerType : "";
@@ -89,7 +94,11 @@ export function mountGamutContextMenu<G extends string>(
     // finish, cancel or queue an action on the owning controller's behalf.
     event.preventDefault();
     event.stopPropagation();
-    if (hasInstrumentPointer(plane)) return;
+    // Windows can dispatch the chord's contextmenu after primary completion. Its intent still
+    // originated during the owned gesture; a subsequent independent right press clears it.
+    const suppressed = event.button === 2 && suppressSecondary;
+    if (event.button === 2) suppressSecondary = false;
+    if (suppressed || hasInstrumentPointer(plane)) return;
     // Chromium emits button -1 for both ContextMenu and Shift+F10. Legacy keyboard events
     // can instead have button 0 and no pointer coordinates. The browser event is the only opener.
     const keyboard =
@@ -160,6 +169,8 @@ export function mountGamutContextMenu<G extends string>(
   function toggle(event: Event) {
     if ((event as ToggleEvent).newState === "closed") close(false, true);
   }
+  plane.addEventListener("pointerdown", secondary);
+  plane.addEventListener("pointermove", secondary);
   plane.addEventListener("contextmenu", invoke);
   menu.addEventListener("click", activate);
   menu.addEventListener("keydown", key);
@@ -171,6 +182,8 @@ export function mountGamutContextMenu<G extends string>(
     dispose() {
       close();
       disposed = true;
+      plane.removeEventListener("pointerdown", secondary);
+      plane.removeEventListener("pointermove", secondary);
       plane.removeEventListener("contextmenu", invoke);
       menu.removeEventListener("click", activate);
       menu.removeEventListener("keydown", key);

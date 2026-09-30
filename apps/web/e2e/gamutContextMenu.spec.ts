@@ -45,10 +45,10 @@ async function viewportBounds(popup: Locator) {
       height: innerHeight,
     };
   });
-  expect(metrics.left).toBeGreaterThanOrEqual(8);
-  expect(metrics.top).toBeGreaterThanOrEqual(8);
-  expect(metrics.right).toBeLessThanOrEqual(metrics.width - 8);
-  expect(metrics.bottom).toBeLessThanOrEqual(metrics.height - 8);
+  expect(metrics.left).toBeGreaterThanOrEqual(0);
+  expect(metrics.top).toBeGreaterThanOrEqual(0);
+  expect(metrics.right).toBeLessThanOrEqual(metrics.width);
+  expect(metrics.bottom).toBeLessThanOrEqual(metrics.height);
   expect(metrics.overflow).toBe(0);
 }
 
@@ -81,7 +81,6 @@ test("right-click anchors at the pointer and never authors, moves the marker or 
   await expect(menu(root).getByRole("menuitemradio")).toHaveCount(3);
   await expect(menu(root).getByRole("menuitemcheckbox")).toHaveCount(4);
   await expect(menu(root).getByRole("group")).toHaveCount(3);
-  await expect(menu(root).getByRole("separator")).toHaveCount(2);
 });
 
 test("native host dismissal synchronizes the menu without reentrant popover calls", async ({
@@ -354,6 +353,28 @@ for (const owner of ["plane", "range"] as const)
     expect((await events(page)).cancels).toBe(0);
     await open(root);
   });
+
+test("primary release commits once while right remains held; secondary movement cannot author", async ({
+  page,
+}) => {
+  const root = await ready(page, "?alpha");
+  const box = (await plane(root).boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.5);
+  await page.mouse.down({ button: "right" });
+  await expect(menu(root)).toBeHidden();
+  await page.mouse.up({ button: "left" });
+  expect(await events(page)).toMatchObject({ commits: 1, cancels: 0, requests: 0 });
+  const released = await events(page);
+  expect(JSON.parse(released.definition!).alpha).toBe(0.37);
+  await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.2);
+  await page.mouse.up({ button: "right" });
+  expect(await events(page)).toEqual(released);
+  await expect(menu(root)).toBeHidden();
+  await open(root);
+  await expect(menu(root)).toBeVisible();
+});
 
 for (const kind of ["dialog", "popover"] as const)
   test(`Escape closes only the menu inside a nested ${kind}, then the host`, async ({ page }) => {

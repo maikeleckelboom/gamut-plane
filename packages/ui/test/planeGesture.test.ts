@@ -112,6 +112,27 @@ afterEach(() => {
 });
 
 describe("shared plane pointer gesture", () => {
+  it.each([2, 4])(
+    "completes primary release with buttons=%s before capture loss or queued publication",
+    (buttons) => {
+      const f = fixture();
+      f.pointer("pointerdown", 1);
+      f.pointer("pointermove", 4, 1, { button: -1, buttons: 1 | buttons });
+      f.pointer("pointermove", 5, 1, { button: 0, buttons });
+      expect(f.gesture.active).toBe(false);
+      expect(f.frames.size).toBe(0);
+      expect(f.changes).toEqual([{ definition: "5" }]);
+      expect(f.commits).toEqual([{ definition: "5" }]);
+      const completed = [...f.log];
+      f.pointer("lostpointercapture", 6, 1, { buttons });
+      f.pointer("pointermove", 7, 1, { button: -1, buttons });
+      f.pointer("pointerup", 8, 1, { button: buttons === 2 ? 2 : 1 });
+      f.flush();
+      expect(f.log).toEqual(completed);
+      expect(f.log).not.toContain("cancel");
+      f.gesture.dispose();
+    },
+  );
   it("ignores secondary-button pointermove transitions without ending a primary mouse drag", () => {
     const f = fixture();
     f.pointer("pointerdown", 1);
