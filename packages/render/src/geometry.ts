@@ -16,12 +16,16 @@ export function pointStyle(point: PlanePoint): Record<string, string> {
   return { left: percentage(point.x), top: percentage(point.y) };
 }
 
-export function geometryToSvgPath(geometry: Float32Array, closed: boolean): string {
+export function geometryToSvgPath(geometry: Float32Array | Float64Array, closed: boolean): string {
+  if (geometry.length === 0) return "";
   let path = "";
   for (let index = 0; index < geometry.length; index += 2) {
     const x = (geometry[index] ?? 0) * VIEWBOX_SIZE;
     const y = (geometry[index + 1] ?? 0) * VIEWBOX_SIZE;
     path += `${index === 0 ? "M" : " L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }
+  // A zero-length round-capped stroke presents a point without inventing a segment or area.
+  if (geometry.length === 2)
+    return `${path} L ${((geometry[0] ?? 0) * VIEWBOX_SIZE).toFixed(2)} ${((geometry[1] ?? 0) * VIEWBOX_SIZE).toFixed(2)}`;
   return closed ? `${path} Z` : path;
 }

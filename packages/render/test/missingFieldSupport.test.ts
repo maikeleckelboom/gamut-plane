@@ -32,7 +32,21 @@ it("resolves core editor and geometry when the field support row is absent", () 
       chromaIntervals: { kind: "available" },
     },
   });
-  if (guide?.kind !== "resolved") throw new Error("Expected a guide without Canvas field support");
+  if (guide?.kind !== "resolved" || guide.forms.kind !== "perceptual")
+    throw new Error("Expected a guide without Canvas field support");
   expect(guide.support).toBe(guideSupport["oklab-ab"]["srgb-boundary"]);
   expect(guide.forms.hueIntervals).toBeNull();
+});
+
+it("resolves native slices independently of missing Canvas field support", () => {
+  const editor = resolveEditorVisualSupport("srgb-rg");
+  const source = createColorValue({ space: "srgb", channels: [0.2, 0.4, 0.6], alpha: 1 });
+  if (!source.ok) throw Error("fixture");
+  expect(resolveField(source.value, editor)).toEqual({ kind: "field-unsupported" });
+  expect(resolveRequestedGuides(source.value, editor, ["srgb-boundary"])).toMatchObject([
+    {
+      kind: "resolved",
+      forms: { kind: "rgb", contour: { kind: "available", value: { coverage: "full" } } },
+    },
+  ]);
 });

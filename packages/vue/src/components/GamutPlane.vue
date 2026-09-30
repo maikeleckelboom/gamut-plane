@@ -484,6 +484,7 @@ watch(
               :step="control.step"
               :precision="control.precision"
               :gradient="detail.gradients[control.coordinate]"
+              :intervals="guides.rgbIntervals[control.coordinate]"
               :coordinate-context="rgbChannelContext(control.coordinate, detail.rgb)"
               :help="help.domainHelp ?? ''"
               help-visually-hidden

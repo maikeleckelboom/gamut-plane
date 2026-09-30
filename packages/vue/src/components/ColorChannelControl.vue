@@ -192,6 +192,7 @@ onBeforeUnmount(() => {
           :class="`channel-control__gamut-range--${section.tone}`"
           :style="sectionStyle(section)"
           :data-gamut-range="section.tone"
+          :data-range-point="section.point ? '' : undefined"
           :data-range-start="section.start"
           :data-range-end="section.end"
         />

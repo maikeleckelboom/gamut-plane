@@ -34,6 +34,8 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
     expect(html).toMatch(/left:120(?:\.0+)?%/);
     expect(html).toContain('data-gp-part="exact-result"');
     expect(html).toContain('aria-label="sRGB Boundary"');
+    expect(html).toContain('data-gamut-boundary="display-p3"');
+    expect(html).toContain('data-gamut-range="display-p3"');
     const root = page.locator("[data-gp-root]");
     await expect(root.locator("canvas")).toHaveCount(1);
     await expect(root.getByLabel("Red numeric value")).toHaveValue("1.2000");
@@ -44,6 +46,8 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]")!,
         document.querySelector("[data-gp-part='surface']")!,
         document.querySelector("[data-active-marker]")!,
+        document.querySelector("[data-gamut-boundary='display-p3']")!,
+        document.querySelector("[data-gamut-range='display-p3']")!,
         document.querySelector("[role=combobox][id$='-area']")!,
         document.querySelector("[data-gp-part='exact-result']")!,
         document.querySelector("[data-gp-part='gamut-trigger']")!,
@@ -67,6 +71,8 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]"),
         document.querySelector("[data-gp-part='surface']"),
         document.querySelector("[data-active-marker]"),
+        document.querySelector("[data-gamut-boundary='display-p3']"),
+        document.querySelector("[data-gamut-range='display-p3']"),
         document.querySelector("[role=combobox][id$='-area']"),
         document.querySelector("[data-gp-part='exact-result']"),
         document.querySelector("[data-gp-part='gamut-trigger']"),
@@ -96,7 +102,7 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
   await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeVisible();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
-    "Paused: Requested boundary cannot be drawn here.",
+    "",
   );
   await gamuts.press("Escape");
   await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeHidden();

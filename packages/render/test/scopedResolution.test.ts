@@ -52,7 +52,8 @@ function resolvedGuide(
 ) {
   const [row] = resolveRequestedGuides(value, resolveEditorVisualSupport(editorId), [guideId]);
   if (row?.kind !== "resolved") throw new Error("Expected a supported guide");
-  return row;
+  if (row.forms.kind !== "perceptual") throw new Error("Expected perceptual forms");
+  return { ...row, forms: row.forms };
 }
 
 describe("editor and field resolution", () => {
@@ -78,7 +79,7 @@ describe("editor and field resolution", () => {
     expect(core.analyzeGamut).not.toHaveBeenCalled();
   });
 
-  it("resolves six native RGB fields while leaving guides honestly unavailable", () => {
+  it("resolves six native RGB fields and independent guide forms", () => {
     for (const id of [
       "srgb-rg",
       "srgb-rb",
@@ -93,14 +94,18 @@ describe("editor and field resolution", () => {
       expect(context.geometry).toBe(geometryDefinitions[editorDefinitions[id].geometryId]);
       expect(context.field).toBe(fieldSupport[id]);
       expect(resolveField(ordinary, context).kind).toBe("available");
-      expect(resolveRequestedGuides(ordinary, context, guideIds)).toEqual(
-        guideIds.map((guideId) => ({ guideId, kind: "no-guide-for-editor" })),
+      expect(resolveRequestedGuides(ordinary, context, guideIds)).toMatchObject(
+        guideIds.map((guideId) => ({
+          guideId,
+          kind: "resolved",
+          forms: { kind: "rgb", contour: { kind: "available" } },
+        })),
       );
     }
     expect(geometryDefinitions["oklch-lc-rectangle"].project).not.toHaveBeenCalled();
     expect(geometryDefinitions["oklab-ab-disc"].project).not.toHaveBeenCalled();
     expect(core.analyzeGamut).not.toHaveBeenCalled();
-    expect(core.getPickerGuide).not.toHaveBeenCalled();
+    expect(core.getPickerGuide).toHaveBeenCalledTimes(12);
   });
 
   it("treats no editor as a non-error no-request without projecting", () => {
@@ -189,9 +194,11 @@ describe("independent requested guide forms", () => {
       const rows = resolveRequestedGuides(ordinary, resolveEditorVisualSupport(editorId), guideIds);
       expect(rows.map((row) => row.guideId)).toEqual(guideIds);
       for (const row of rows) {
-        if (row.kind !== "resolved") throw new Error("Expected resolved guide");
+        if (row.kind !== "resolved" || row.forms.kind !== "perceptual")
+          throw new Error("Expected resolved perceptual guide");
         expect(row.support).toBe(guideSupport[editorId][row.guideId]);
         expect(Object.keys(row.forms)).toEqual([
+          "kind",
           "contour",
           "hueIntervals",
           "lightnessIntervals",
@@ -218,7 +225,7 @@ describe("independent requested guide forms", () => {
       expect(core.getPickerGuide).toHaveBeenCalledTimes(2);
       // Each needed representation is observed once for the whole requested collection.
       expect(vi.mocked(core.represent).mock.calls.map(([, id]) => id)).toEqual(
-        editorId === "oklch-lc" ? ["oklch"] : ["oklab", "oklch"],
+        editorId === "oklch-lc" ? ["oklch"] : ["oklch", "oklab"],
       );
     },
   );

@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { channelSections } from "../src/channelGeometry.js";
 
 describe("shared visual presentation geometry", () => {
+  it("retains explicitly identified native tangent points without manufacturing interval length", () => {
+    expect(channelSections([{ start: 0, end: 0, tone: "srgb", point: true }])).toEqual([
+      { start: 0, end: 0, tone: "srgb", point: true },
+    ]);
+  });
   it("merges only overlapping sampled intervals in their own gamut without mutating inputs", () => {
     const intervals = [
       { start: -1, end: 0.2, tone: "srgb" },

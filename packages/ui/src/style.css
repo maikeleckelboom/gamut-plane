@@ -1023,6 +1023,10 @@
   opacity: 0.56;
 }
 
+[data-gp-root] [data-gp-part="gamut-interval"][data-range-point] {
+  border-inline-start: 1px solid currentColor;
+}
+
 /* Scientific coordinates retain x-minimum on the left in RTL hosts. */
 [data-gp-root] [data-gp-part="surface"],
 [data-gp-root] [data-gp-part="channel-track"],

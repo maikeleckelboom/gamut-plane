@@ -14,7 +14,9 @@ import {
   currentRgbEditableDetail,
 } from "./editableDetail.js";
 
+type DisplayInterval = Readonly<import("../channelGeometry.js").LinearControlInterval>;
 export interface GeneralizedGuideDisplay {
+  readonly rgbIntervals: Readonly<Record<"r" | "g" | "b", readonly DisplayInterval[]>>;
   readonly srgbPath: string | null;
   readonly displayP3Path: string | null;
   readonly hueIntervals: readonly Readonly<{
@@ -39,12 +41,14 @@ export function generalizedGuideDisplay(
   guides: readonly GuideResolution[],
 ): GeneralizedGuideDisplay {
   const display: {
+    rgbIntervals: Record<"r" | "g" | "b", DisplayInterval[]>;
     srgbPath: string | null;
     displayP3Path: string | null;
     hueIntervals: { start: number; end: number; tone: "srgb" | "display-p3" }[];
     lightnessIntervals: { start: number; end: number; tone: "srgb" | "display-p3" }[];
     chromaIntervals: { start: number; end: number; tone: "srgb" | "display-p3" }[];
   } = {
+    rgbIntervals: { r: [], g: [], b: [] },
     srgbPath: null,
     displayP3Path: null,
     hueIntervals: [],
@@ -60,8 +64,22 @@ export function generalizedGuideDisplay(
     const { forms } = row;
     if (forms.contour.kind === "available") {
       const path = geometryToSvgPath(forms.contour.value.points, forms.contour.value.closed);
-      if (id === "srgb-boundary") display.srgbPath = path;
-      else display.displayP3Path = path;
+      if (id === "srgb-boundary") display.srgbPath = path || null;
+      else display.displayP3Path = path || null;
+    }
+    if (forms.kind === "rgb") {
+      for (const channel of ["r", "g", "b"] as const) {
+        const result = forms.channels[channel].result;
+        if (result.kind === "available" && result.value.interval !== null)
+          display.rgbIntervals[channel].push({
+            ...result.value.interval,
+            tone,
+            ...(result.value.interval.start === result.value.interval.end
+              ? { point: true as const }
+              : {}),
+          });
+      }
+      continue;
     }
     if (forms.hueIntervals?.kind === "available")
       display.hueIntervals.push(

@@ -87,3 +87,34 @@ test("packed React anatomy matches the shared visual owner in editable and obser
     axe.violations.filter((item) => item.impact === "serious" || item.impact === "critical"),
   ).toEqual([]);
 });
+
+test("packed native RGB guides resolve partial and empty slices", async ({ page }) => {
+  await page.goto("/");
+  const root = page.locator("[data-gp-root]");
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="display-p3"]').click();
+  for (const [name, value] of [
+    ["Red", "0.9"],
+    ["Green", "0.2"],
+    ["Blue", "0.4"],
+  ]) {
+    const input = root.getByLabel(`${name} numeric value`);
+    await input.fill(value!);
+    await input.press("Enter");
+  }
+  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("checkbox", { name: "sRGB Boundary" }).check();
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveAttribute("d", /^M.+ Z$/);
+  await expect(root.locator('[data-gp-channel="r"] [data-gamut-range="srgb"]')).toHaveCount(1);
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
+    "",
+  );
+  await root.getByRole("button", { name: "Gamuts" }).press("Escape");
+  await root.getByLabel("Blue numeric value").fill("1.2");
+  await root.getByLabel("Blue numeric value").press("Enter");
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
+  await root.getByRole("button", { name: "Gamuts" }).click();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
+    "",
+  );
+});

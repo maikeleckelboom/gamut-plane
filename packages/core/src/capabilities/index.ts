@@ -4,6 +4,12 @@ export { editorDefinitions } from "./editorDefinitions.js";
 export { geometryDefinitions, keyboardGeometryPoint } from "./geometryDefinitions.js";
 export { authorEditorPoint, editOperationDefinitions } from "./editOperationDefinitions.js";
 export { analyzeRequestedGamuts } from "./requestedGamuts.js";
+export {
+  convertLinearRgb,
+  decodeRgbCoordinate,
+  encodeRgbCoordinate,
+  convertRgbReference,
+} from "./rgbConversion.js";
 export type { GamutCheckResult } from "./requestedGamuts.js";
 export type {
   EditorDefinition,

@@ -85,8 +85,16 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,authorEditorPoint,editOperationDefinitions,editorDefinitions,geometryDefinitions,keyboardGeometryPoint,representationDefinitions") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,authorEditorPoint,convertLinearRgb,convertRgbReference,decodeRgbCoordinate,editOperationDefinitions,editorDefinitions,encodeRgbCoordinate,geometryDefinitions,keyboardGeometryPoint,representationDefinitions") throw new Error("Internal capability surface changed");
 if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
+const linearRgb: readonly [number, number, number] = capabilities.convertLinearRgb([1, 0, 0], "srgb", "display-p3");
+if (!linearRgb.every(Number.isFinite) || linearRgb[0] <= 0 || linearRgb[0] >= 1) throw new Error("Packed linear RGB conversion failed");
+if (Math.abs(capabilities.encodeRgbCoordinate(capabilities.decodeRgbCoordinate(-0.2)) + 0.2) > 1e-12) throw new Error("Packed RGB transfer failed");
+if (!capabilities.convertRgbReference({ l: 0.6, c: 0.1, h: 240, alpha: 1 }, "srgb")?.every(Number.isFinite)) throw new Error("Packed Reference conversion failed");
+// @ts-expect-error the bridge only accepts the two native RGB encodings
+const invalidBridgeSpace: Parameters<typeof capabilities.convertLinearRgb>[2] = "oklab";
+void invalidBridgeSpace;
+
 const editorId: EditorId = "oklch-lc";
 const editor: EditorDefinition = editorDefinitions[editorId];
 const geometryId: GeometryId = editor.geometryId;

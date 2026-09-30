@@ -85,3 +85,5 @@ from the consumer root API. Its runtime exports are `editorDefinitions`, `geomet
 and `analyzeRequestedGamuts`. The latter retains one exact result or native failure per requested
 gamut, always analyzing the supplied authored ColorValue. Adapters own source provenance across
 their synchronous accepted-resolution revisions. This internal entry requires no DOM types.
+
+The internal capability entry also supplies the narrow native RGB guide conversion bridge (`convertLinearRgb`, `decodeRgbCoordinate`, `encodeRgbCoordinate`, `convertRgbReference`). It delegates to the existing color library; render owns intersection geometry and tolerances. The root color API and exact gamut analysis are unchanged.

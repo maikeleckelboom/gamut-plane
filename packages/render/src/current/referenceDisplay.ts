@@ -5,7 +5,11 @@ import {
   type PickerGuide,
   type PlanePoint,
 } from "@gamut-plane/core";
-import type { GamutCheckResult } from "@gamut-plane/core/internal/capabilities";
+import {
+  convertRgbReference,
+  type GamutCheckResult,
+} from "@gamut-plane/core/internal/capabilities";
+import { rgbAxisIndices } from "../rgbGuides.js";
 import { referenceGuidePolicy, type GuideId } from "../capabilities/guideSupport.js";
 import type { GuideResolution } from "../capabilities/guideResolution.js";
 import type { CurrentField } from "./field.js";
@@ -21,6 +25,9 @@ export type ReferenceDisplay = Readonly<{
     | Readonly<{ kind: "unavailable" }>
     | Readonly<{ kind: "available"; point: PlanePoint; markerCss: string }>;
 }>;
+
+/** Encoded RGB units, solely conversion noise; see docs/native-rgb-guides.md. */
+export const RGB_REFERENCE_SLICE_COMPATIBILITY_TOLERANCE = 1e-7;
 
 /** Current supported geometries only; no clamp, authoring, new sampling, or exact analysis. */
 export function referenceDisplay(
@@ -50,8 +57,19 @@ export function referenceDisplay(
       point = field.geometry.toPoint(a!, b!);
       break;
     }
-    default:
-      return { ...fact, spatial: { kind: "unavailable" } };
+    default: {
+      const channels = convertRgbReference(sampled.color, field.geometry.representationId);
+      const axes = rgbAxisIndices(field.geometry);
+      if (
+        channels === null ||
+        !channels.every(Number.isFinite) ||
+        field.projection.coordinates.fixed === null ||
+        Math.abs(channels[axes.fixed] - field.projection.coordinates.fixed) >
+          RGB_REFERENCE_SLICE_COMPATIBILITY_TOLERANCE
+      )
+        return { ...fact, spatial: { kind: "unavailable" } };
+      point = field.geometry.toPoint(channels[axes.x], channels[axes.y]);
+    }
   }
   if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || !field.geometry.contains(point))
     return { ...fact, spatial: { kind: "unavailable" } };

@@ -245,6 +245,16 @@ const display: GeneralizedGuideDisplay = generalizedGuideDisplay(guides);
 const generalized = generalizedEditableDetail(source.value, observation, editor, field);
 if (current.projection !== field.projection || oklch !== observation.value || detail.view !== "oklch" || !display.srgbPath) throw new Error("Packed current presentation lost accepted facts");
 if (generalized.kind !== "available" || generalized.field.projection !== field.projection) throw new Error("Packed generalized field lost accepted facts");
+const nativeGuides = resolveRequestedGuides(source.value, resolveEditorVisualSupport("srgb-rg"), ids);
+for (const row of nativeGuides) {
+  if (row.kind !== "resolved" || row.forms.kind !== "rgb") throw new Error("Packed native guide forms missing");
+  if (row.forms.contour.kind !== "available" || row.forms.contour.value.coverage !== "full") throw new Error("Packed native full coverage missing");
+  if (row.forms.channels.r.channelId !== "srgb.r" || row.forms.channels.g.channelId !== "srgb.g" || row.forms.channels.b.channelId !== "srgb.b") throw new Error("Packed native channels lost identity");
+  // @ts-expect-error Red cannot use the Green channel identity
+  const invalidChannel: typeof row.forms.channels.r.channelId = "srgb.g";
+  void invalidChannel;
+}
+if (generalizedGuideDisplay(nativeGuides).rgbIntervals.r.length !== 2) throw new Error("Packed native channel presentation missing");
 // @ts-expect-error render guide identities remain distinct from gamut identities
 const wrongGuide: GuideId = "srgb-gamut";
 // @ts-expect-error core's new runtime contract is not public root API
@@ -261,7 +271,7 @@ import * as coreInternal from "@gamut-plane/core/internal/capabilities";
 import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
-assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "authorEditorPoint", "editOperationDefinitions", "editorDefinitions", "geometryDefinitions", "keyboardGeometryPoint", "representationDefinitions"]);
+assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "geometryDefinitions", "keyboardGeometryPoint", "representationDefinitions"]);
 assert.deepEqual(Object.values(coreInternal.representationDefinitions).map((definition) => definition.associatedGamutId), [null, null, "srgb-gamut", "display-p3-gamut"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "referenceGuidePolicy", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
 assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentField", "currentOklchObservation", "generalizedEditableDetail", "generalizedGuideDisplay", "planeWarningOffset", "rangeWarningStyle", "referenceDisplay"]);

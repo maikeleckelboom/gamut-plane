@@ -499,7 +499,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                     step={control.step}
                     precision={control.precision}
                     gradient={detail.gradients[control.coordinate]}
-                    intervals={[]}
+                    intervals={guides.rgbIntervals[control.coordinate]}
                     coordinateContext={rgbChannelContext(control.coordinate, detail.rgb)}
                     help={help.domainHelp}
                     helpVisuallyHidden

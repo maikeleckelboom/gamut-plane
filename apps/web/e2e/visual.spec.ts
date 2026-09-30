@@ -18,6 +18,7 @@ test("compact editable instrument in a 440 px host", async ({ page }) => {
 });
 
 test("native RGB field and production Area at 320px", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
   await ready(page);
   await page.locator(".instrument-primary").evaluate((element) => {
     (element as HTMLElement).style.width = "320px";
@@ -29,7 +30,12 @@ test("native RGB field and production Area at 320px", async ({ page }) => {
   await page.getByLabel("Red numeric value").fill("1.2");
   await page.getByLabel("Red numeric value").press("Enter");
   await page.getByRole("combobox", { name: "Area" }).click();
-  await expect(page.locator("[data-gp-root]")).toHaveScreenshot("native-rgb-area-320.png");
+  const popup = page.getByRole("listbox", { name: "Area" });
+  const bounds = (await popup.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  // Page capture includes the complete top-layer popup outside the instrument root.
+  await expect(page).toHaveScreenshot("native-rgb-area-320.png", { fullPage: true });
 });
 
 test("generalized alternate editor reference", async ({ page }) => {

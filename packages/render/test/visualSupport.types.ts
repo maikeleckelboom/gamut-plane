@@ -54,3 +54,25 @@ void [
   invalidGamut,
   invalidGuideEditor,
 ];
+
+const relabeledRgbGuide = {
+  ...guideSupport["srgb-rg"]["srgb-boundary"],
+  editorId: "srgb-rb",
+} as const;
+// @ts-expect-error RGB guide Area and core geometry are correlated
+const invalidRgbGuide: GuideSupport = relabeledRgbGuide;
+const perceptualRgbGuide = {
+  ...guideSupport["oklch-lc"]["srgb-boundary"],
+  editorId: "srgb-rg",
+} as const;
+// @ts-expect-error native RGB forms cannot masquerade as perceptual forms
+const invalidRgbForms: GuideSupport = perceptualRgbGuide;
+import type { RgbResolvedGuideForms } from "../src/capabilities/guideResolution.js";
+declare const rgbForms: Extract<RgbResolvedGuideForms, { geometry: { id: "srgb-rg-rectangle" } }>;
+rgbForms.channels.r.channelId satisfies "srgb.r";
+const wrongRgbChannels: RgbResolvedGuideForms = {
+  ...rgbForms,
+  // @ts-expect-error RGB channel identity cannot be changed to another encoding
+  channels: { ...rgbForms.channels, r: { ...rgbForms.channels.r, channelId: "display-p3.r" } },
+};
+void [invalidRgbGuide, invalidRgbForms, wrongRgbChannels];

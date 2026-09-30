@@ -50,8 +50,12 @@ describe("native RGB field presentation", () => {
       });
       const positive = sampler.sampleField({ x: 0.71, y: 0.37 }, 1.6);
       expect(positive.channels[fixedIndex]).toBe(1.6);
-      expect(resolveRequestedGuides(created.value, editor, ["srgb-boundary"])).toEqual([
-        { guideId: "srgb-boundary", kind: "no-guide-for-editor" },
+      expect(resolveRequestedGuides(created.value, editor, ["srgb-boundary"])).toMatchObject([
+        {
+          guideId: "srgb-boundary",
+          kind: "resolved",
+          forms: { kind: "rgb", contour: { kind: "available" } },
+        },
       ]);
       expect(snapshotColor(created.value)).toEqual(before);
     },

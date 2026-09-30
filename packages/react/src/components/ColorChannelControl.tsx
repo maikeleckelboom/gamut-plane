@@ -147,6 +147,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
                 width: `${(section.end - section.start) * 100}%`,
               }}
               data-gamut-range={section.tone}
+              data-range-point={section.point ? "" : undefined}
               data-range-start={section.start}
               data-range-end={section.end}
             />

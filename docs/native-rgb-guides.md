@@ -1,0 +1,49 @@
+# Native RGB guides (Phase 2N.2)
+
+All six RGB Areas explicitly support both gamut guides. `ColorValue` remains the authored authority. Core's internal capability entry supplies a narrow conversion bridge backed by its existing `@texel/color` dependency: linear RGB conversion, the shared extended sRGB transfer function, and conversion of an unchanged OKLCH sample. Render owns intersections and visual facts; UI consumes availability and owns product policy without importing runtime color math. Adapters bind shared presentation to their existing controls and lifecycle. No new public headless API is introduced.
+
+## Plane intersection
+
+`render/rgbGuides.ts` transforms the target linear RGB unit cube into the editor's linear coordinates, using the library's conversion definitions at double precision. It intersects the twelve cube edges with the plane at the actual decoded fixed coordinate, then orders the resulting points with a deterministic convex hull. R/G fixes B, R/B fixes G, G/B fixes R. Encoding maps the varying coordinates monotonically to screen X and one minus screen Y.
+
+Same-encoding slices preserve the exact unit square for fixed coordinates in the closed unit interval, and are empty outside it. They bypass conversion entirely. For cross-encoding slices, bounded transformed-cube extrema are encoded and compared before decoding the fixed coordinate. Thus an extreme finite authored coordinate can return successful empty without overflowing an unnecessary power operation. Actual nonfinite arithmetic returns `numerical-failure`.
+
+Geometric coincidence uses `RGB_GEOMETRY_EPSILON = 1e-12` in linear coordinates, independently of exact gamut analysis and Reference compatibility. Coincident endpoint intersections are retained once; edges incident to a coincident endpoint do not create roundoff slivers. Exact zero edge coefficients are skipped; small nonzero coefficients are divided only when the bounded edge straddles the plane. The hull retains points and lines rather than discarding zero-area results. This is visual geometry with a documented numerical coincidence policy, not a replacement exact classifier.
+
+## Encoded curves and bounded work
+
+Each genuine linear edge is split at both signed transfer transitions (`±0.0031308`) and zero for both varying coordinates. Each resulting segment is bisected until the scalar interpolation bound `max|f''| * Δlinear² / 8 + 3e-8` is at most `RGB_CURVE_ERROR = 1e-5` per encoded/screen coordinate. In the linear transfer region curvature is zero. Outside it, `|f''(v)| = 1.055 p (1-p) |v|^(p-2)`, where `p = 1/2.4`; the minimum absolute endpoint supplies the maximum. The additive allowance covers the library's rounded transfer-junction discontinuity. This bound does not rely on a midpoint probe, so an inflection or transition cannot hide curvature.
+
+Work is bounded by 24 bisection levels and 16,384 emitted points per contour. Reaching either limit returns explicit `approximation-budget` unavailability, never a successful accuracy claim. Successful geometry stays Float64 through serialization. SVG rounds to 0.01 units in a 1000-unit viewbox, adding at most `5e-6` per screen coordinate. Same-encoding squares have zero approximation error before serialization.
+
+The library's encoded and decoded transition constants are rounded and not perfect inverses. Boundary-oracle tests allow `5e-8` encoded target-coordinate error at those junctions; exact analysis and its tolerance are unchanged. Away from this seam, independent encoded conversion verifies true target boundaries and interior/exterior samples.
+
+## Coverage, dimension, geometry and availability
+
+A successful contour reports `coverage: full | partial | empty` relative to the nominal closed editor square, `dimension` for the complete slice, and `nominalDimension` for its intersection with that square. Dimensions are `empty | point | line | area`. Full coverage checks all four square corners against the target cube. A separately clipped hull supplies the nominal intersection witness. This clipped polygon is never drawn.
+
+The published contour is the complete genuine boundary, including off-square parts; the existing surface clips it. No editor-square edge is fabricated as a gamut boundary, and disconnected visible pieces are never joined across the viewport. Empty nominal coverage can coexist with a nonempty complete slice. Full coverage can coexist with boundaries outside the editor. Neither buffer length, positive area, SVG path presence nor Reference availability determines whether a Boundary is Paused.
+
+Empty buffers serialize to no path. A singleton uses a zero-length round-capped stroke; a line remains open. Neither becomes an area. Unsupported capability, conversion failure, numerical failure and budget exhaustion remain unavailable outcomes distinct from successful full/empty/degenerate results.
+
+## Channel intervals
+
+Each native R/G/B line holds the other two actual encoded coordinates fixed. After bounded-extrema rejection and decoding only those siblings, render intersects the target cube's six linear inequalities with the nominal scalar `[0,1]` track. Convexity yields at most one interval. Endpoints are encoded back to the selected representation; full, partial, empty and tangent/point results are retained separately from failure. A tangent uses a zero-width interval with an explicit point annotation, without enlarging its coordinate extent. Legacy perceptual zero-length interval presentation is unchanged.
+
+Red, Green and Blue keep stable order in every Area. An empty interval never disables editing; full nominal coverage says nothing about an extended current value. Intervals request neither exact analysis nor Reference sampling. Their dependencies are representation, target gamut and the other two channels, independently of Area.
+
+## Sampled Reference
+
+Reference still borrows the matching requested guide's existing `PickerGuide`, preserving endpoint, maximum chroma, delta and object identity. It does not find the nearest RGB-slice boundary. The unchanged sampled endpoint is converted to the selected encoding; its converted fixed channel must match the actual fixed channel within `RGB_REFERENCE_SLICE_COMPATIBILITY_TOLERANCE = 1e-7` encoded coordinate units. Its actual varying channels must then produce a finite point inside the closed editor square. No endpoint coordinate is clamped or substituted.
+
+The tolerance accommodates conversion noise only. A 21³ nominal-grid round trip measured at most `4.06e-14`; transition-focused cases reached approximately `5.55e-8` because of the rounded transfer junctions. Tests include signed/extended coordinates and those junctions, plus compatibility just below and above `1e-7`. The threshold is ten thousand times smaller than a 0.001 slider step, but is derived from conversion error, not that step. It is unrelated to display precision, pixels, exact-analysis tolerance, geometric coincidence or `deltaC`.
+
+Incompatible, nonfinite and out-of-domain endpoints retain the sampled fact with spatial projection unavailable. Annotation requires the complete existing selected-Reference/requested-Status/exact-Outside/requested-Boundary/available-sample/available-spatial gate. Connector origins remain raw accepted authored RGB projections, including overflow. Exact Outside warnings remain independent of slice and spatial availability.
+
+## Integration and evidence
+
+RGB forms have a discriminant and correlated geometry/channel identities; they do not carry dummy perceptual intervals. Native observations resolve slices and channel intervals independently of OKLCH Reference prerequisites. Empty requests do no guide work. Resolution is pure, call-local and independent of Canvas. No new cache or lifecycle owner was added; comparison changes and varying-coordinate edits preserve existing Canvas slice invalidation, drafts, gestures, accepted-state reconciliation and Strict Mode behavior.
+
+Render owner tests carry the six-Area/two-gamut matrix and independent encoded-conversion oracle, transfer error, determinism, extrema, tangencies, overflow, Reference compatibility and serialization. Shared adapter contracts cover native interval wiring and resolved states. Browser sentinels cover partial/full/empty guides and an incompatible Reference with Outside warning. Packed Vue/React hosts exercise installed guides. Nuxt/Next verify meaningful server-rendered contour/interval markup and retain the same nodes through hydration.
+
+Phase 2N.3 remains deferred: integrated acceptance, documentation closeout and focused test-debt review. This phase adds no representation, editor, viewport system, mapping workflow or plugin architecture.

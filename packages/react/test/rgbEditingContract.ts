@@ -79,6 +79,53 @@ export function rgbEditingContract(
 ) {
   describe("native RGB adapter contract", () => {
     it.each(["srgb", "display-p3"] as const)(
+      "presents %s resolved full/partial/empty guides without pausing or reauthoring",
+      async (space) => {
+        const initial = rgb(space, [0.2, 0.4, 0.6]);
+        const state = {
+          ...rgbState(space),
+          visibleGuides: ["srgb-boundary", "display-p3-boundary"] as const,
+        };
+        const host = await mount(initial, state);
+        const intervals = () =>
+          [...host.element.querySelectorAll('[data-gp-part="gamut-interval"]')].map((node) => [
+            node.closest("[data-gp-channel]")?.getAttribute("data-gp-channel"),
+            node.getAttribute("data-gp-gamut"),
+            node.getAttribute("data-range-start"),
+            node.getAttribute("data-range-end"),
+          ]);
+        const before = intervals();
+        expect(before.length).toBeGreaterThan(3);
+        expect(new Set(before.map((row) => row[0]))).toEqual(new Set(["r", "g", "b"]));
+        for (const area of ["rb", "gb", "rg"] as const) {
+          const selection: GamutPlaneState["selection"] =
+            space === "srgb"
+              ? { representationId: space, editorId: `srgb-${area}` }
+              : { representationId: space, editorId: `display-p3-${area}` };
+          await host.state({ ...state, selection });
+          expect(intervals()).toEqual(before);
+          expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(2);
+          expect(host.element.textContent).not.toContain("Paused");
+        }
+        await host.replace(rgb(space, [0.2, 0.4, -0.1]));
+        const same = space === "srgb" ? "srgb" : "display-p3";
+        expect(host.element.querySelector(`[data-gamut-boundary="${same}"]`)).toBeNull();
+        expect(host.element.textContent).not.toContain("Paused");
+        expect(scalar(host, "r", "range").disabled).toBe(false);
+        expect(host.changes()).toBe(0);
+        await host.dispose();
+      },
+    );
+
+    it("retains native tangent annotations as zero-length channel facts", async () => {
+      const host = await mount(rgb("display-p3", [0.8, 0, 0]), rgbState("display-p3"));
+      const point = host.element.querySelector('[data-gp-channel="r"] [data-range-point]');
+      expect(point?.getAttribute("data-range-start")).toBe("0");
+      expect(point?.getAttribute("data-range-end")).toBe("0");
+      expect(scalar(host, "r", "range").disabled).toBe(false);
+      await host.dispose();
+    });
+    it.each(["srgb", "display-p3"] as const)(
       "delivers finite extended %s scalar edits with untouched siblings and alpha",
       async (space) => {
         const host = await mount(rgb(space), rgbState(space));

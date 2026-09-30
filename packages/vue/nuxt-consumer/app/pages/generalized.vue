@@ -14,7 +14,7 @@ const state = ref<GamutPlaneState>({
   selection: { representationId: "srgb", editorId: "srgb-rg" },
   checkedGamuts: ["srgb-gamut"],
   referenceGamutId: null,
-  visibleGuides: ["srgb-boundary"],
+  visibleGuides: ["srgb-boundary", "display-p3-boundary"],
 });
 </script>
 

@@ -8,7 +8,7 @@ const initialState: GamutPlaneState = {
   selection: { representationId: "srgb", editorId: "srgb-rg" },
   checkedGamuts: ["srgb-gamut"],
   referenceGamutId: null,
-  visibleGuides: ["srgb-boundary"],
+  visibleGuides: ["srgb-boundary", "display-p3-boundary"],
 };
 
 export function GeneralizedHost({ initial }: { initial: ColorSnapshotV1 }) {

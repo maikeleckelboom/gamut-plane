@@ -86,7 +86,7 @@ describe("render-owned current visual support", () => {
 
   it("has no other editor/guide rows", () => {
     expect(Object.isFrozen(guideSupport)).toBe(true);
-    expect(Object.keys(guideSupport)).toEqual(["oklch-lc", "oklab-ab"]);
+    expect(Object.keys(guideSupport).sort()).toEqual(Object.keys(editorDefinitions).sort());
     for (const rows of Object.values(guideSupport)) {
       expect(Object.keys(rows)).toEqual(["srgb-boundary", "display-p3-boundary"]);
       expect(Object.isFrozen(rows)).toBe(true);

@@ -12,7 +12,17 @@ import type { EditorId } from "@gamut-plane/core/internal/capabilities";
 import type { EditorVisualSupport } from "./editorResolution.js";
 import { guideDefinitions, guideSupport, type GuideId, type GuideSupport } from "./guideSupport.js";
 
+import {
+  rgbGamutSlice,
+  rgbChannelIntervals,
+  rgbAxisIndices,
+  type RgbContour,
+  type RgbGeometry,
+  type RgbInterval,
+} from "../rgbGuides.js";
+
 type GuideValueIssue =
+  | Readonly<{ reason: "numerical-failure" | "approximation-budget" }>
   | Readonly<{ reason: "observation-failed"; error: ConversionError }>
   | Readonly<{ reason: "lightness-out-of-range"; lightness: number }>;
 
@@ -20,7 +30,8 @@ export type GuideFormResult<T> =
   | Readonly<{ kind: "available"; value: T }>
   | (Readonly<{ kind: "value-unavailable" }> & GuideValueIssue);
 
-export interface ResolvedGuideForms {
+export interface PerceptualGuideForms {
+  readonly kind: "perceptual";
   readonly contour: GuideFormResult<Readonly<{ points: Float32Array; closed: boolean }>>;
   /** Null is structural absence, not a failed observation or an empty successful interval set. */
   readonly hueIntervals: GuideFormResult<readonly HueGuideInterval[]> | null;
@@ -28,6 +39,22 @@ export interface ResolvedGuideForms {
   readonly chromaIntervals: GuideFormResult<readonly Readonly<{ start: number; end: number }>[]>;
   readonly reference: GuideFormResult<PickerGuide>;
 }
+
+export type RgbResolvedGuideForms = {
+  [G in RgbGeometry as G["id"]]: Readonly<{
+    kind: "rgb";
+    geometry: G;
+    contour: GuideFormResult<RgbContour>;
+    channels: {
+      readonly [C in "r" | "g" | "b"]: Readonly<{
+        channelId: `${G["representationId"]}.${C}`;
+        result: GuideFormResult<RgbInterval>;
+      }>;
+    };
+    reference: GuideFormResult<PickerGuide>;
+  }>;
+}[RgbGeometry["id"]];
+export type ResolvedGuideForms = PerceptualGuideForms | RgbResolvedGuideForms;
 
 export type GuideResolution = Readonly<{ guideId: GuideId }> &
   (
@@ -94,7 +121,7 @@ export function resolveRequestedGuides(
     const support = relations[editor.editor.id]?.[guideId];
     if (!support) return { guideId, kind: "no-guide-for-editor" };
     const table = guideDefinitions[guideId].table;
-    const fixed = getContourFixed();
+
     const coordinates = getSample();
     const lightness =
       coordinates.kind === "available" ? boundedLightness(coordinates.value.l) : coordinates;
@@ -104,11 +131,50 @@ export function resolveRequestedGuides(
         : lightness.kind !== "available"
           ? lightness
           : available(support.forms.reference(coordinates.value, table));
+    if (support.forms.kind === "rgb") {
+      const geometry = support.forms.geometry;
+      const observed = represent(value, geometry.representationId);
+      const target = guideId === "srgb-boundary" ? "srgb" : "display-p3";
+      const unavailable = observed.ok
+        ? null
+        : {
+            kind: "value-unavailable" as const,
+            reason: "observation-failed" as const,
+            error: observed.error,
+          };
+      return {
+        guideId,
+        kind: "resolved",
+        support,
+        forms: {
+          kind: "rgb",
+          geometry,
+          contour: observed.ok
+            ? rgbGamutSlice(
+                geometry,
+                target,
+                observed.value.channels[rgbAxisIndices(geometry).fixed],
+              )
+            : unavailable!,
+          channels: observed.ok
+            ? rgbChannelIntervals(observed.value, target)
+            : {
+                r: { channelId: `${geometry.representationId}.r`, result: unavailable! },
+                g: { channelId: `${geometry.representationId}.g`, result: unavailable! },
+                b: { channelId: `${geometry.representationId}.b`, result: unavailable! },
+              },
+          reference,
+          // Observation and qualified channels were constructed from this exact geometry above.
+        } as RgbResolvedGuideForms,
+      };
+    }
+    const fixed = getContourFixed();
     return {
       guideId,
       kind: "resolved",
       support,
       forms: {
+        kind: "perceptual",
         contour:
           fixed.kind === "available"
             ? available({
