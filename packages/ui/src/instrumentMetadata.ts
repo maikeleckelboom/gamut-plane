@@ -164,7 +164,7 @@ export const editorUi = Object.freeze({
       }),
     ] as const),
   }),
-} satisfies { readonly [E in EditorUi as E["id"]]: E });
+} satisfies { readonly [E in EditorUi as E["id"]]?: E });
 
 /** Explicit current admission and order. Never enumerate technical capability catalogs. */
 export const currentPrimaryEditors = Object.freeze([

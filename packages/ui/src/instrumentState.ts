@@ -1,9 +1,15 @@
 import type { GamutId } from "@gamut-plane/core";
-import type { RepresentationDefinition } from "@gamut-plane/core/internal/capabilities";
+import type {
+  EditorDefinition,
+  RepresentationDefinition,
+} from "@gamut-plane/core/internal/capabilities";
 import { currentPrimaryEditors, preferredEditors, representationUi } from "./instrumentMetadata.js";
 
 export type RepresentationId = RepresentationDefinition["id"];
 type EditorIdentity = Readonly<{ id: string; representationId: RepresentationId }>;
+type TechnicalEditorIdentity = {
+  [E in EditorDefinition as E["id"]]: Pick<E, "id" | "representationId">;
+}[EditorDefinition["id"]];
 type ProductEditor = (typeof currentPrimaryEditors)[number] extends infer E
   ? E extends EditorIdentity
     ? Pick<E, "id" | "representationId">
@@ -50,12 +56,21 @@ export type SelectionFacts<E extends EditorIdentity = ProductEditor> = Readonly<
   preferredEditors: Readonly<Partial<Record<RepresentationId, E["id"]>>>;
 }>;
 
-/** Current technical inventory happens to match product admission. Future callers supply both separately. */
-export const currentSelectionFacts: SelectionFacts<ProductEditor> = Object.freeze({
-  knownEditors: currentPrimaryEditors,
+/** Identity-only validation facts keep UI runtime independent of core math and render. */
+const knownEditors: readonly TechnicalEditorIdentity[] = Object.freeze([
+  ...currentPrimaryEditors,
+  Object.freeze({ id: "srgb-rg", representationId: "srgb" }),
+  Object.freeze({ id: "srgb-rb", representationId: "srgb" }),
+  Object.freeze({ id: "srgb-gb", representationId: "srgb" }),
+  Object.freeze({ id: "display-p3-rg", representationId: "display-p3" }),
+  Object.freeze({ id: "display-p3-rb", representationId: "display-p3" }),
+  Object.freeze({ id: "display-p3-gb", representationId: "display-p3" }),
+]);
+export const currentSelectionFacts = Object.freeze({
+  knownEditors,
   admittedEditors: currentPrimaryEditors,
   preferredEditors,
-});
+} satisfies SelectionFacts<TechnicalEditorIdentity>);
 
 const currentGamutIds = Object.freeze([
   "display-p3-gamut",
@@ -149,7 +164,9 @@ export function admittedEditorsForRepresentation<E extends EditorIdentity>(
 export function currentAdmittedEditorsForRepresentation(
   representationId: RepresentationId,
 ): readonly ProductEditor[] {
-  return admittedEditorsForRepresentation(representationId, currentSelectionFacts);
+  return currentSelectionFacts.admittedEditors.filter(
+    (editor) => editor.representationId === representationId,
+  );
 }
 
 /** An explicit editor choice is independent of the default/preferred editor. */

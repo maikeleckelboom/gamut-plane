@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { editorDefinitions } from "@gamut-plane/core/internal/capabilities";
 import { orderedExactChecks } from "../src/generalizedInstrument.js";
 import {
   admittedEditorsForRepresentation,
@@ -24,6 +25,53 @@ const request = {
 };
 
 describe("generalized selection policy", () => {
+  it("knows native RGB editors but rejects them through unchanged product admission", () => {
+    expect(currentSelectionFacts.knownEditors).toHaveLength(8);
+    expect(
+      currentSelectionFacts.knownEditors.map(({ id, representationId }) => ({
+        id,
+        representationId,
+      })),
+    ).toEqual(
+      Object.values(editorDefinitions).map(({ id, representationId }) => ({
+        id,
+        representationId,
+      })),
+    );
+    expect(currentSelectionFacts.admittedEditors.map((editor) => editor.id)).toEqual([
+      "oklch-lc",
+      "oklab-ab",
+    ]);
+    expect(currentSelectionFacts.preferredEditors).toEqual({
+      oklch: "oklch-lc",
+      oklab: "oklab-ab",
+    });
+    for (const [representationId, ids] of [
+      ["srgb", ["srgb-rg", "srgb-rb", "srgb-gb"]],
+      ["display-p3", ["display-p3-rg", "display-p3-rb", "display-p3-gb"]],
+    ] as const) {
+      for (const editorId of ids) {
+        expect(validateSelection({ representationId, editorId })).toEqual({
+          ok: false,
+          issue: { code: "editor-not-admitted" },
+        });
+        expect(
+          validateInstrumentViewState(
+            { ...request, selection: { representationId, editorId } },
+            guides,
+          ),
+        ).toEqual({ ok: false, issue: { code: "editor-not-admitted" } });
+      }
+      expect(
+        validateInstrumentViewState(
+          { ...request, selection: { representationId, editorId: null } },
+          guides,
+        ).ok,
+      ).toBe(true);
+      expect(defaultSelection(representationId)).toEqual({ representationId, editorId: null });
+    }
+  });
+
   it("accepts all four representations and deliberate observation-only selection", () => {
     for (const [representationId, editorId] of [
       ["oklch", "oklch-lc"],

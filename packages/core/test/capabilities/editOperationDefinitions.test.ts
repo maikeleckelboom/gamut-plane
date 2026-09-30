@@ -15,15 +15,18 @@ function value<T>(result: ColorResult<T, unknown>): T {
 
 describe("existing semantic edit operations", () => {
   it("defines six meanings, with the existing authorship and composition functions", () => {
-    expect(Object.keys(operations)).toEqual([
+    const existing = [
       "oklch-channel-patch",
       "oklch-hue-edit",
       "oklch-lc-point",
       "oklab-channel-patch",
       "oklab-ab-point",
       "oklab-disc-coordinate",
-    ]);
-    for (const [id, operation] of Object.entries(operations)) {
+    ] as const;
+    expect(Object.keys(operations).slice(0, existing.length)).toEqual(existing);
+    expect(Object.keys(operations)).toHaveLength(14);
+    for (const id of existing) {
+      const operation = operations[id];
       expect(operation.id).toBe(id);
       expect(operation.author).toBe(authorPlaneEdit);
       expect(operation.request.plane).toBe(operation.representationId);

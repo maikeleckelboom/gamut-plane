@@ -69,10 +69,10 @@ const duplicateEditors = { ...editorDefinitions, "oklab-ab": editor };
 // @ts-expect-error keyed built-ins cannot reuse a different entry's ID
 const invalidDuplicate: EditorDefinitions = duplicateEditors;
 const incompleteOperations = { "oklch-channel-patch": operations["oklch-channel-patch"] };
-// @ts-expect-error built-ins must cover all six closed operation contracts
+// @ts-expect-error built-ins must cover all closed operation contracts
 const incomplete: EditOperationDefinitions = incompleteOperations;
 const wrongRelation = { ...editorsByRepresentation, srgb: [editor.id] } as const;
-// @ts-expect-error constructible RGB has no compatible primary editor
+// @ts-expect-error RGB relations cannot contain an OKLCH editor
 const invalidRelation: EditorsByRepresentation = wrongRelation;
 // @ts-expect-error Hue is an operation, never a primary editor
 const companion: EditorId = "oklch-hue-edit";

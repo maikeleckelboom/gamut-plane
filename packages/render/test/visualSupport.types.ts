@@ -17,6 +17,13 @@ const invalidGeometry: FieldSupport = wrongGeometry;
 const wrongBinding = { ...fieldSupport["oklab-ab"], editorId: "oklch-lc" } as const;
 // @ts-expect-error another editor's geometry/sampler binding cannot be relabeled
 const invalidBinding: FieldSupport = wrongBinding;
+const rgbField = {
+  ...lch,
+  editorId: "srgb-rg",
+  geometry: geometryDefinitions["srgb-rg-rectangle"],
+} as const;
+// @ts-expect-error a technical RGB geometry has no implemented field sampler in 2N.0
+const unsupportedRgbField: FieldSupport = rgbField;
 // @ts-expect-error hypothetical primary editors must first exist in core
 const hypothetical: EditorId = "oklch-hl";
 const wrongGamut = { ...guideDefinitions["srgb-boundary"], gamutId: "srgb" } as const;
@@ -34,6 +41,7 @@ void [
   invalidEditor,
   invalidGeometry,
   invalidBinding,
+  unsupportedRgbField,
   hypothetical,
   invalidGamut,
   invalidGuideEditor,

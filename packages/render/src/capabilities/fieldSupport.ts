@@ -11,15 +11,18 @@ import {
   type GeometryDefinition,
 } from "@gamut-plane/core/internal/capabilities";
 
-/** Correlates each built-in editor geometry with its field sampler. */
+/** Explicit renderer support is narrower than the technical editor inventory. */
+type FieldEditor = Extract<EditorDefinition, { id: "oklch-lc" | "oklab-ab" }>;
+
+/** Correlates supported editor geometries with their existing field samplers. */
 export type FieldSupport = {
-  [E in EditorDefinition as E["id"]]: Readonly<{
+  [E in FieldEditor as E["id"]]: Readonly<{
     editorId: E["id"];
     geometry: Extract<GeometryDefinition, { id: E["geometryId"] }>;
     // The low-level plane type has a broad id; identity/geometry compatibility is proved in tests.
     plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
   }>;
-}[EditorDefinition["id"]];
+}[FieldEditor["id"]];
 
 const lch = editorDefinitions["oklch-lc"];
 const lab = editorDefinitions["oklab-ab"];

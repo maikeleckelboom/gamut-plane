@@ -1,7 +1,22 @@
-import type { EditorVisualSupport, FieldResolution } from "../capabilities/editorResolution.js";
+import type {
+  EditorVisualSupport,
+  FieldResolution,
+  ProductionProjection,
+} from "../capabilities/editorResolution.js";
+import type { FieldSupport } from "../capabilities/fieldSupport.js";
+
+/** The current renderer can compose only the geometries for which it actually has a field. */
+export interface CurrentField {
+  readonly editorId: FieldSupport["editorId"];
+  readonly geometry: FieldSupport["geometry"];
+  readonly plane: FieldSupport["plane"];
+  readonly projection: ProductionProjection;
+  readonly samplingFixed: number;
+  readonly markerInDomain: boolean;
+}
 
 /** Available built-in field composition, keyed by selected geometry rather than view. */
-export function currentField(editor: EditorVisualSupport, field: FieldResolution) {
+export function currentField(editor: EditorVisualSupport, field: FieldResolution): CurrentField {
   if (
     editor.kind !== "editor" ||
     editor.field === null ||
@@ -21,8 +36,8 @@ export function currentField(editor: EditorVisualSupport, field: FieldResolution
       // Retain successful projection facts for scoped unavailability; the generalized
       // composition decides whether an editor field can be mounted.
       return {
-        editorId: editor.editor.id,
-        geometry: editor.geometry,
+        editorId: editor.field.editorId,
+        geometry: editor.field.geometry,
         plane: editor.field.plane,
         projection: field.projection,
         samplingFixed: field.fixedCoordinate.value ?? 0,
@@ -30,8 +45,8 @@ export function currentField(editor: EditorVisualSupport, field: FieldResolution
       };
     case "available":
       return {
-        editorId: editor.editor.id,
-        geometry: editor.geometry,
+        editorId: editor.field.editorId,
+        geometry: editor.field.geometry,
         plane: editor.field.plane,
         projection: field.projection,
         samplingFixed: field.samplingFixed,
@@ -39,5 +54,3 @@ export function currentField(editor: EditorVisualSupport, field: FieldResolution
       };
   }
 }
-
-export type CurrentField = ReturnType<typeof currentField>;

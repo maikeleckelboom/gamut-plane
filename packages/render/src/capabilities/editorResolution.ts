@@ -98,5 +98,5 @@ export function resolveGeometryField<P extends GeometryProjection>(
 export function resolveField(value: ColorValue, support: EditorVisualSupport): FieldResolution {
   if (support.kind === "no-editor-requested") return { kind: "no-field-requested" };
   if (support.field === null) return { kind: "field-unsupported" };
-  return resolveGeometryField<ProductionProjection>(value, support.geometry);
+  return resolveGeometryField<ProductionProjection>(value, support.field.geometry);
 }

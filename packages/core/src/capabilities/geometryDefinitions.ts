@@ -15,8 +15,9 @@ import { keyboardPlanePoint } from "../picker/keyboard.js";
 import type { ColorValue } from "../color/value.js";
 import type { PickerPlaneKeyboardAction } from "../picker/keyboard.js";
 import type { PlanePoint } from "../picker/geometry.js";
-import type { GeometryProjection } from "./types/editingDefinitions.js";
+import type { BuiltinGeometryProjection, GeometryProjection } from "./types/editingDefinitions.js";
 import type { GeometryDefinitions } from "./types/editingDefinitions.js";
+import { createRgbGeometry } from "./rgbEditing.js";
 
 export type {
   GeometryContract,
@@ -123,17 +124,78 @@ export const geometryDefinitions: GeometryDefinitions = Object.freeze({
     samplingFixed: (fixed: number | null) =>
       fixed !== null && fixed >= 0 && fixed <= 1 ? fixed : null,
   }),
+  "srgb-rg-rectangle": createRgbGeometry({
+    id: "srgb-rg-rectangle",
+    representationId: "srgb",
+    x: "srgb.r",
+    y: "srgb.g",
+    fixed: "srgb.b",
+    indices: { x: 0, y: 1, fixed: 2 },
+  }),
+  "srgb-rb-rectangle": createRgbGeometry({
+    id: "srgb-rb-rectangle",
+    representationId: "srgb",
+    x: "srgb.r",
+    y: "srgb.b",
+    fixed: "srgb.g",
+    indices: { x: 0, y: 2, fixed: 1 },
+  }),
+  "srgb-gb-rectangle": createRgbGeometry({
+    id: "srgb-gb-rectangle",
+    representationId: "srgb",
+    x: "srgb.g",
+    y: "srgb.b",
+    fixed: "srgb.r",
+    indices: { x: 1, y: 2, fixed: 0 },
+  }),
+  "display-p3-rg-rectangle": createRgbGeometry({
+    id: "display-p3-rg-rectangle",
+    representationId: "display-p3",
+    x: "display-p3.r",
+    y: "display-p3.g",
+    fixed: "display-p3.b",
+    indices: { x: 0, y: 1, fixed: 2 },
+  }),
+  "display-p3-rb-rectangle": createRgbGeometry({
+    id: "display-p3-rb-rectangle",
+    representationId: "display-p3",
+    x: "display-p3.r",
+    y: "display-p3.b",
+    fixed: "display-p3.g",
+    indices: { x: 0, y: 2, fixed: 1 },
+  }),
+  "display-p3-gb-rectangle": createRgbGeometry({
+    id: "display-p3-gb-rectangle",
+    representationId: "display-p3",
+    x: "display-p3.g",
+    y: "display-p3.b",
+    fixed: "display-p3.r",
+    indices: { x: 1, y: 2, fixed: 0 },
+  }),
 });
 
 /** Built-in keyboard binding follows geometry identity, not a representation-named plane. */
 export function keyboardGeometryPoint(
-  projection:
-    | GeometryProjection<"oklch", "oklch-lc-rectangle", "oklch.c", "oklch.l", "oklch.h">
-    | GeometryProjection<"oklab", "oklab-ab-disc", "oklab.a", "oklab.b", "oklab.l">,
+  projection: BuiltinGeometryProjection,
   action: PickerPlaneKeyboardAction,
   coarse: boolean,
 ): PlanePoint {
-  if (projection.geometryId === "oklch-lc-rectangle")
-    return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
-  return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+  switch (projection.geometryId) {
+    case "oklch-lc-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "oklab-ab-disc":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "srgb-rg-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "srgb-rb-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "srgb-gb-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "display-p3-rg-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "display-p3-rb-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+    case "display-p3-gb-rectangle":
+      return geometryDefinitions[projection.geometryId].keyboard(projection, action, coarse);
+  }
 }

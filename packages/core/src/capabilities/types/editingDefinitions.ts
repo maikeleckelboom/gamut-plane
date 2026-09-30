@@ -18,6 +18,11 @@ import type {
 } from "../../picker/keyboard.js";
 import type { ChannelDefinition } from "./representationDefinitions.js";
 import type { resolveOklabDirectRange, authorOklabDirectCoordinate } from "../directCoordinate.js";
+import type {
+  RgbChannelOperation,
+  RgbGeometryDefinition,
+  RgbPointOperation,
+} from "./rgbEditing.js";
 
 type ChannelOf<R extends ColorSpaceId> = Extract<ChannelDefinition, { representationId: R }>["id"];
 
@@ -89,10 +94,21 @@ export type GeometryDefinition =
       Readonly<{ kind: "disc"; radius: number }>,
       typeof oklabCoordinatesToPlanePoint,
       typeof oklabCoordinatesFromPlanePoint
-    >;
+    >
+  | RgbGeometryDefinition;
 
 export type GeometryId = GeometryDefinition["id"];
 export type GeometryDefinitions = { readonly [G in GeometryDefinition as G["id"]]: G };
+
+export type BuiltinGeometryProjection = {
+  [G in GeometryDefinition as G["id"]]: GeometryProjection<
+    G["representationId"],
+    G["id"],
+    G["x"],
+    G["y"],
+    G["fixed"]
+  >;
+}[GeometryId];
 
 type EditRequest<S extends PickerPlaneId, K extends ColorPlaneEdit["kind"]> = Extract<
   ColorPlaneEdit,
@@ -136,11 +152,17 @@ interface EditOperationContracts {
     }>;
 }
 
-export type EditOperationDefinitions = {
+type ExistingEditOperationDefinition = {
   readonly [Id in keyof EditOperationContracts]: Readonly<{ id: Id }> & EditOperationContracts[Id];
+}[keyof EditOperationContracts];
+export type EditOperationDefinition =
+  | ExistingEditOperationDefinition
+  | RgbPointOperation
+  | RgbChannelOperation;
+export type EditOperationDefinitions = {
+  readonly [O in EditOperationDefinition as O["id"]]: O;
 };
 export type EditOperationId = keyof EditOperationDefinitions;
-export type EditOperationDefinition = EditOperationDefinitions[EditOperationId];
 
 export type EditorContract<
   R extends ColorSpaceId,
@@ -156,7 +178,13 @@ export type EditorContract<
 
 export type EditorDefinition =
   | EditorContract<"oklch", "oklch-lc", "oklch-lc-rectangle", "oklch-lc-point">
-  | EditorContract<"oklab", "oklab-ab", "oklab-ab-disc", "oklab-ab-point">;
+  | EditorContract<"oklab", "oklab-ab", "oklab-ab-disc", "oklab-ab-point">
+  | EditorContract<"srgb", "srgb-rg", "srgb-rg-rectangle", "srgb-rg-point">
+  | EditorContract<"srgb", "srgb-rb", "srgb-rb-rectangle", "srgb-rb-point">
+  | EditorContract<"srgb", "srgb-gb", "srgb-gb-rectangle", "srgb-gb-point">
+  | EditorContract<"display-p3", "display-p3-rg", "display-p3-rg-rectangle", "display-p3-rg-point">
+  | EditorContract<"display-p3", "display-p3-rb", "display-p3-rb-rectangle", "display-p3-rb-point">
+  | EditorContract<"display-p3", "display-p3-gb", "display-p3-gb-rectangle", "display-p3-gb-point">;
 
 export type EditorId = EditorDefinition["id"];
 export type EditorDefinitions = { readonly [E in EditorDefinition as E["id"]]: E };

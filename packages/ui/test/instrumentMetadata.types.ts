@@ -50,6 +50,13 @@ const wrongCompanions: EditorUi = {
 };
 // @ts-expect-error product metadata is readonly
 editorUi["oklch-lc"].companions[0].step = 1;
+// @ts-expect-error technical existence does not fabricate RGB UI metadata
+void editorUi["srgb-rg"];
+// @ts-expect-error the new patch encoding cannot accept another RGB representation's channel
+const wrongRgbCompanion: CompanionBinding = {
+  channelId: "display-p3.r",
+  operationId: "srgb-channel-patch",
+};
 void [
   wrongRepresentation,
   wrongHue,
@@ -58,4 +65,5 @@ void [
   inventedOperation,
   wrongEditor,
   wrongCompanions,
+  wrongRgbCompanion,
 ];

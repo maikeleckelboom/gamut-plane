@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as core from "@gamut-plane/core";
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
-import { resolveEditorVisualSupport, resolveField } from "../src/capabilities/editorResolution.js";
+import {
+  resolveEditorVisualSupport,
+  resolveField,
+  resolveGeometryField,
+} from "../src/capabilities/editorResolution.js";
 import { resolveRequestedGuides } from "../src/capabilities/guideResolution.js";
 import { fieldSupport } from "../src/capabilities/fieldSupport.js";
 import { guideSupport, type GuideId } from "../src/capabilities/guideSupport.js";
@@ -52,6 +56,52 @@ function resolvedGuide(
 }
 
 describe("editor and field resolution", () => {
+  it("keeps RGB raw projection, extended fixed slices and marker membership as independent geometry facts", () => {
+    const source = defined({ space: "srgb", channels: [1.2, 0.4, -0.1], alpha: 0.37 });
+    const before = core.snapshotColor(source);
+    expect(resolveGeometryField(source, geometryDefinitions["srgb-rg-rectangle"])).toMatchObject({
+      kind: "available",
+      samplingFixed: -0.1,
+      markerInDomain: false,
+      fixedCoordinate: { channelId: "srgb.b", value: -0.1 },
+      projection: {
+        point: { x: 1.2, y: 0.6 },
+        representation: { channels: [1.2, 0.4, -0.1], alpha: 0.37 },
+      },
+    });
+    expect(core.snapshotColor(source)).toEqual(before);
+    expect(resolveField(source, resolveEditorVisualSupport("srgb-rg"))).toEqual({
+      kind: "field-unsupported",
+    });
+    expect(core.analyzeGamut).not.toHaveBeenCalled();
+  });
+
+  it("retains six technical RGB geometries without fabricating fields, guides or observations", () => {
+    for (const id of [
+      "srgb-rg",
+      "srgb-rb",
+      "srgb-gb",
+      "display-p3-rg",
+      "display-p3-rb",
+      "display-p3-gb",
+    ] as const) {
+      const context = resolveEditorVisualSupport(id);
+      if (context.kind !== "editor") throw new Error("Expected a technical editor");
+      expect(context.editor).toBe(editorDefinitions[id]);
+      expect(context.geometry).toBe(geometryDefinitions[editorDefinitions[id].geometryId]);
+      expect(context.field).toBeNull();
+      expect(resolveField(ordinary, context)).toEqual({ kind: "field-unsupported" });
+      expect(resolveRequestedGuides(ordinary, context, guideIds)).toEqual(
+        guideIds.map((guideId) => ({ guideId, kind: "no-guide-for-editor" })),
+      );
+    }
+    for (const geometry of Object.values(geometryDefinitions))
+      expect(geometry.project).not.toHaveBeenCalled();
+    expect(core.represent).not.toHaveBeenCalled();
+    expect(core.analyzeGamut).not.toHaveBeenCalled();
+    expect(core.getPickerGuide).not.toHaveBeenCalled();
+  });
+
   it("treats no editor as a non-error no-request without projecting", () => {
     const context = resolveEditorVisualSupport(null);
     expect(context).toEqual({ kind: "no-editor-requested" });

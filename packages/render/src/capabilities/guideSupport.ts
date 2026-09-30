@@ -79,7 +79,7 @@ const labForms = Object.freeze({
   reference: getPickerGuide,
 } satisfies GuideForms);
 
-/** Only the four currently admitted editor/guide combinations. */
+/** Technical existence implies neither a guide relation nor any successful forms. */
 export const guideSupport = Object.freeze({
   "oklch-lc": Object.freeze({
     "srgb-boundary": Object.freeze({
@@ -106,7 +106,7 @@ export const guideSupport = Object.freeze({
     }),
   }),
 } satisfies {
-  readonly [E in EditorId]: {
-    readonly [G in GuideId]: GuideSupport & { readonly editorId: E; readonly guideId: G };
+  readonly [E in EditorId]?: {
+    readonly [G in GuideId]?: GuideSupport & { readonly editorId: E; readonly guideId: G };
   };
 });

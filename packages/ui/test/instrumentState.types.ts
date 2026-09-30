@@ -14,6 +14,13 @@ state.visibleGuides[0] satisfies "srgb-boundary" | "display-p3-boundary" | undef
 
 const observationOnly: InstrumentSelection = { representationId: "oklch", editorId: null };
 const rgbObservation: InstrumentSelection = { representationId: "srgb", editorId: null };
+// @ts-expect-error technically defined RGB editors remain outside public product admission
+const nativeRgbEditor: InstrumentSelection = { representationId: "srgb", editorId: "srgb-rg" };
+const nativeP3Editor: InstrumentSelection = {
+  representationId: "display-p3",
+  // @ts-expect-error Display P3 technical existence also grants no product admission
+  editorId: "display-p3-rg",
+};
 // @ts-expect-error representation identities are core-defined
 const inventedRepresentation: InstrumentSelection = { representationId: "hsl", editorId: null };
 // @ts-expect-error known editor belongs to OKLab, not OKLCH
@@ -41,6 +48,8 @@ void state.exactAnalysis;
 void [
   observationOnly,
   rgbObservation,
+  nativeRgbEditor,
+  nativeP3Editor,
   inventedRepresentation,
   mismatched,
   inventedEditor,

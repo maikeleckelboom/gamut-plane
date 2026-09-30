@@ -7,7 +7,7 @@ This document describes the current generalized instrument contract. [ADR 0003](
 | Family         | Current meaning                                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Representation | A coordinate space in which the authored color can be observed: OKLCH, OKLab, sRGB, Display P3.                     |
-| Editor         | A product-admitted way to author in a representation, or `null` for inspection.                                     |
+| Editor         | A technical authoring context; public selection admits an explicit subset, or `null` for inspection.                |
 | Geometry       | An editor's X, Y, fixed channel, domain, projection, constraints, and keyboard behavior, with its own `GeometryId`. |
 | Operation      | The selected editor's point authoring or a companion control's declared channel operation.                          |
 | Gamut check    | Exact analysis of the original authored color for sRGB or Display P3.                                               |
@@ -22,11 +22,48 @@ Technical editor existence, product admission, and preferred initialization are 
 
 The policy handles zero, one, and multiple admitted editors for a representation. The shipped product currently admits exactly one OKLCH editor (`oklch-lc`) and one OKLab editor (`oklab-ab`); sRGB and Display P3 admit none. The compact UI offers Edit / Inspect where editing is admitted; inspection-only representations show Inspecting. Area appears only when multiple admitted editors exist. Returning to Edit selects the admitted preferred editor, with no remembered Area/editor behavior. A test-only alternate OKLCH H/C editor with fixed Lightness exercises the multiple-editor architecture without changing the public catalog or interface.
 
+Phase 2N.0 defines three technical editors per RGB representation. Technical cardinality is three while current product admission remains zero. Missing field, guide or UI metadata support does not invalidate technical geometry or establish a preferred editor. Public state and explicit inspection remain unchanged; selecting an unadmitted RGB editor rejects the state with `editor-not-admitted`.
+
 ## Geometry and authorship
 
 Geometry identity is independent of representation identity. The OKLCH lightness/chroma rectangle uses X Chroma, Y Lightness, fixed Hue. The OKLab disc uses X a, Y b, fixed Lightness. The test-only H/C rectangle uses X Hue, Y Chroma, fixed Lightness in the same OKLCH representation as the shipped editor. Projections carry `geometryId`, representation, channel bindings, point, and coordinates; field/resource caches key by geometry. Pointer and keyboard actions use the selected editor's geometry and operation. Companion controls declare operation IDs in UI metadata and call the matching core author function.
 
 This separation permits another editor for a known representation without pretending that the representation has only one plane. It does not imply that every technical geometry is a product choice or that all future geometries are rectangular.
+
+## Native RGB contracts (Phase 2N.0)
+
+Phase 2N.0 implements the following internal core bindings. Coordinates use the encoded RGB interpretation already declared by `representationDefinitions`, including the representation's primaries and transfer function.
+
+| Editor          | Representation | Geometry                  | X              | Y              | Fixed          | Point operation       |
+| --------------- | -------------- | ------------------------- | -------------- | -------------- | -------------- | --------------------- |
+| `srgb-rg`       | `srgb`         | `srgb-rg-rectangle`       | `srgb.r`       | `srgb.g`       | `srgb.b`       | `srgb-rg-point`       |
+| `srgb-rb`       | `srgb`         | `srgb-rb-rectangle`       | `srgb.r`       | `srgb.b`       | `srgb.g`       | `srgb-rb-point`       |
+| `srgb-gb`       | `srgb`         | `srgb-gb-rectangle`       | `srgb.g`       | `srgb.b`       | `srgb.r`       | `srgb-gb-point`       |
+| `display-p3-rg` | `display-p3`   | `display-p3-rg-rectangle` | `display-p3.r` | `display-p3.g` | `display-p3.b` | `display-p3-rg-point` |
+| `display-p3-rb` | `display-p3`   | `display-p3-rb-rectangle` | `display-p3.r` | `display-p3.b` | `display-p3.g` | `display-p3-rb-point` |
+| `display-p3-gb` | `display-p3`   | `display-p3-gb-rectangle` | `display-p3.g` | `display-p3.b` | `display-p3.r` | `display-p3-gb-point` |
+
+X increases left to right; the Y channel increases bottom to top. Normalized screen coordinates are `{ x: X, y: 1 - Y }`. The nominal interaction domain is the closed `[0,1]²` square. Any finite fixed channel defines the actual slice, including values below zero or above one. Projection observes the selected RGB representation and retains its actual channels and alpha. Raw `toPoint` and `fromPoint` do not constrain coordinates. `contains` and downstream `markerInDomain` report nominal-domain membership independently. An out-of-domain point is a successful projection, distinct from a representation-conversion or numerical failure.
+
+For `srgb-rg`, `[1.2, 0.4, -0.1]` projects to `{ x: 1.2, y: 0.6 }` at fixed B `-0.1`, outside the nominal square, without modifying its `ColorValue`. Editing at `{ x: 0.6, y: 0.3 }` authors `[0.6, 0.7, -0.1]` in sRGB. Point requests carry the selected geometry identity and use its distinct operation, never a representation-based preferred Area. Finite explicit interaction points are constrained before authoring only the two varying channels. The observed fixed channel and alpha remain exact, including signed zero. Normalized keyboard movement uses the existing fine/coarse steps (`0.005` / `0.02`), with Home/End selecting minimum/maximum X. Keyboard results are constrained interaction points; recovery from raw overflow happens only because of an explicit editing action. Projection, selection, initialization, focus and passive presentation never reauthor the color.
+
+`srgb-channel-patch` and `display-p3-channel-patch` observe through `represent()` and patch R, G or B in the selected encoding. A single-channel edit preserves the other two observed coordinates and alpha; the established optional alpha mechanism allows a deliberate alpha change. Patches accept finite extended channel values without mapping, clamping or authored-coordinate rounding. They cannot copy a source representation's tuple and relabel it. Malformed requests, unsupported channels and missing data return `invalid-plane-edit`; invalid resulting coordinates/alpha retain `invalid-definition`; genuine conversion failures propagate `numerical-range`. Native RGB projection and authorship require no intermediate OKLCH observation. `ColorValue` remains the only authored authority, with exact defining equality.
+
+### Authored marker and direct-control presentation (2N.1)
+
+RGB authored markers use raw projected coordinates. Interaction previews use constrained interaction coordinates. Cancellation, rejected controlled edits, resize and reconciliation restore or use the raw authored projection. An extended authored point must not be displayed at a substituted edge position, and a Reference connector must originate at that raw point rather than a clamped substitute.
+
+Current integration finding: both Vue and React constrain authored marker presentation in declarative markup and in imperative resource/restoration paths. Phase 2N.1 must introduce an explicit RGB presentation policy covering both paths. Existing OKLab marker behavior is preserved in 2N.0; the RGB contract does not opportunistically change it.
+
+R/G/B controls retain stable order across all Areas. Sliders use `[0,1]`; numeric editing accepts finite extended coordinates. Out-of-range counterparts do not disable independent RGB channel editing. Phase 2N.1 will admit all six editors, with `srgb-rg` and `display-p3-rg` as preferred Areas, and add native fields, direct controls and truthful markers. No remembered Area state or public headless API is introduced.
+
+### RGB gamut slices and Reference (2N.2)
+
+Coverage is relative to the nominal editor square at the actual fixed coordinate. Successful results distinguish full, partial and empty coverage. Full and empty remain successes; they are neither unsupported/failed resolution nor reasons for Paused. A nonempty point or line intersection is successful degenerate geometry. Coverage and visible contour geometry are independent facts. Preserve genuine gamut boundaries: clipping must not fabricate boundaries along editor edges. Empty geometry serializes to no path, never an invalid closed-path fragment. The current generic closed-path serializer appends `Z` even for an empty buffer; 2N.2 must handle successful empty geometry before enabling RGB guide presentation. Contours and channel intervals do not determine exact membership or request hidden analysis.
+
+Reference preserves the existing sampled `PickerGuide` endpoint meaning. Do not invent a nearest-boundary endpoint in the active RGB slice. Convert the unchanged endpoint to the selected RGB representation. Spatial availability requires compatibility with the selected geometry's actual fixed channel, then truthful in-domain projection. A dedicated RGB slice-compatibility tolerance, expressed in encoded coordinate units, may accommodate numerical conversion error only. It must not reuse exact gamut-analysis, sampled `deltaC`, display-precision or pixel tolerances. Implement and numerically justify this tolerance in 2N.2; 2N.0 adds no unused runtime constant.
+
+Never modify the endpoint's fixed channel or clamp its projected point to make it drawable. Preserve the sampled fact when spatial projection is unavailable. The explicitly requested exact Outside warning remains independent of slice/spatial availability. No placeholder slice solver, coverage declaration or Reference converter is introduced before it has a concrete implementation owner and use.
 
 ## Independent Status, Boundary and Reference
 
@@ -40,4 +77,11 @@ The standalone app's CSS/Hex output uses explicit serialization policies and rep
 
 ## Current boundary
 
-The public two-view props and boundary-target product state are retired. The existing two editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a Coordinates context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a Gamuts popup. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.
+The public two-view props and boundary-target product state are retired. The existing two product editors retain their authored behavior and geometry. The current product is a compact vertical instrument with a Coordinates context, square editing field, direct channel controls, concise authorship context, inspection coordinates where no editor is selected, and a Gamuts popup. The standalone host adds CSS output and Canvas capability. No new representation, product editor, registry, framework, or mapping workflow is shipped here.
+
+| Phase | Status      | Scope                                                                                                                                                                     |
+| ----- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2N.0  | Implemented | Six technical RGB editors/geometries, native point/channel authorship, raw projection, constrained interaction and core/type invariants.                                  |
+| 2N.1  | Deferred    | Product admission, preferred Areas, Area UI, native fields, R/G/B controls and raw authored marker presentation in both adapters.                                         |
+| 2N.2  | Deferred    | RGB gamut cross-sections, channel intervals, full/partial/empty/degenerate successful results and unchanged Reference endpoint conversion with justified slice tolerance. |
+| 2N.3  | Deferred    | Integrated acceptance, documentation closeout and focused test-debt review.                                                                                               |

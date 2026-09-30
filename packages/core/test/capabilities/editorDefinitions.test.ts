@@ -17,13 +17,22 @@ function value<T>(result: ColorResult<T, unknown>): T {
 }
 
 describe("primary editor relations and geometry", () => {
-  it("defines exactly two contexts and keeps construction/observation independent of editors", () => {
-    expect(Object.keys(editorDefinitions)).toEqual(["oklch-lc", "oklab-ab"]);
+  it("defines eight technical contexts and keeps construction/observation independent of editors", () => {
+    expect(Object.keys(editorDefinitions)).toEqual([
+      "oklch-lc",
+      "oklab-ab",
+      "srgb-rg",
+      "srgb-rb",
+      "srgb-gb",
+      "display-p3-rg",
+      "display-p3-rb",
+      "display-p3-gb",
+    ]);
     expect(editorsByRepresentation).toEqual({
       oklch: ["oklch-lc"],
       oklab: ["oklab-ab"],
-      srgb: [],
-      "display-p3": [],
+      srgb: ["srgb-rg", "srgb-rb", "srgb-gb"],
+      "display-p3": ["display-p3-rg", "display-p3-rb", "display-p3-gb"],
     });
     for (const definition of [
       representationDefinitions.srgb,
@@ -35,7 +44,7 @@ describe("primary editor relations and geometry", () => {
         primaries: definition.id,
         transfer: "srgb",
       });
-      expect(editorsByRepresentation[definition.id]).toHaveLength(0);
+      expect(editorsByRepresentation[definition.id]).toHaveLength(3);
     }
     const srgb = representationDefinitions.srgb;
     const p3 = representationDefinitions["display-p3"];
@@ -71,12 +80,14 @@ describe("primary editor relations and geometry", () => {
     expect(relation.oklch).toHaveLength(2);
     expect(relation.oklab).toHaveLength(1);
     expect(relation.srgb).toHaveLength(0);
-    expect(Object.keys(editorDefinitions)).toHaveLength(2);
+    expect(Object.keys(editorDefinitions)).toHaveLength(8);
   });
 
   it("references the existing geometry authorities without bringing in their labels or samplers", () => {
-    expect(Object.keys(geometryDefinitions)).toEqual(["oklch-lc-rectangle", "oklab-ab-disc"]);
-    for (const geometry of Object.values(geometryDefinitions)) {
+    for (const geometry of [
+      geometryDefinitions["oklch-lc-rectangle"],
+      geometryDefinitions["oklab-ab-disc"],
+    ]) {
       const plane =
         geometry.representationId === "oklch" ? OKLCH_LIGHTNESS_CHROMA_PLANE : OKLAB_AB_PLANE;
       expect(geometry.constrain).toBe(plane.constrainPoint);
@@ -159,7 +170,7 @@ describe("primary editor relations and geometry", () => {
     }
     for (const geometry of Object.values(geometryDefinitions)) {
       expect(Object.isFrozen(geometry.domain)).toBe(true);
-      if (geometry.domain.kind === "rectangle")
+      if (geometry.id === "oklch-lc-rectangle")
         expect(Object.isFrozen(geometry.domain.lightness)).toBe(true);
     }
   });

@@ -6,6 +6,8 @@ import type { PlaneEditReference } from "../picker/edit.js";
 import type { PlanePoint } from "../picker/geometry.js";
 import type { ColorValue } from "../color/value.js";
 import type { EditOperationDefinitions, EditorDefinition } from "./types/editingDefinitions.js";
+import { geometryDefinitions } from "./geometryDefinitions.js";
+import { createRgbChannelPatch, createRgbPointOperation } from "./rgbEditing.js";
 
 export type { EditOperationDefinition, EditOperationId } from "./types/editingDefinitions.js";
 
@@ -72,6 +74,32 @@ export const editOperationDefinitions: EditOperationDefinitions = Object.freeze(
     authorCoordinate: authorOklabDirectCoordinate,
     author: authorPlaneEdit,
   }),
+  "srgb-channel-patch": createRgbChannelPatch("srgb"),
+  "display-p3-channel-patch": createRgbChannelPatch("display-p3"),
+  "srgb-rg-point": createRgbPointOperation(
+    "srgb-rg-point",
+    geometryDefinitions["srgb-rg-rectangle"],
+  ),
+  "srgb-rb-point": createRgbPointOperation(
+    "srgb-rb-point",
+    geometryDefinitions["srgb-rb-rectangle"],
+  ),
+  "srgb-gb-point": createRgbPointOperation(
+    "srgb-gb-point",
+    geometryDefinitions["srgb-gb-rectangle"],
+  ),
+  "display-p3-rg-point": createRgbPointOperation(
+    "display-p3-rg-point",
+    geometryDefinitions["display-p3-rg-rectangle"],
+  ),
+  "display-p3-rb-point": createRgbPointOperation(
+    "display-p3-rb-point",
+    geometryDefinitions["display-p3-rb-rectangle"],
+  ),
+  "display-p3-gb-point": createRgbPointOperation(
+    "display-p3-gb-point",
+    geometryDefinitions["display-p3-gb-rectangle"],
+  ),
 });
 
 /** The selected editor binds point authorship; adapters never infer it from a representation. */
@@ -90,6 +118,18 @@ export function authorEditorPoint(
         ...(reference ? { reference } : {}),
       });
     case "oklab-ab-point":
+      return operation.author(value, { ...operation.request, point });
+    case "srgb-rg-point":
+      return operation.author(value, { ...operation.request, point });
+    case "srgb-rb-point":
+      return operation.author(value, { ...operation.request, point });
+    case "srgb-gb-point":
+      return operation.author(value, { ...operation.request, point });
+    case "display-p3-rg-point":
+      return operation.author(value, { ...operation.request, point });
+    case "display-p3-rb-point":
+      return operation.author(value, { ...operation.request, point });
+    case "display-p3-gb-point":
       return operation.author(value, { ...operation.request, point });
   }
 }
