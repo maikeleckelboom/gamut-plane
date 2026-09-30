@@ -179,7 +179,7 @@ describe("React public generalized instrument", () => {
     await select(ui.element, "srgb");
     expect(requests.mock.lastCall?.[0].selection).toEqual({
       representationId: "srgb",
-      editorId: null,
+      editorId: "srgb-rg",
     });
     await ui.render(render(state));
     expect(get(ui.element, '[aria-label="Lightness numeric value"]')).toBe(number);

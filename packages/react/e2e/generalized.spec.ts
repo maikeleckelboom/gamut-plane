@@ -51,13 +51,20 @@ test("packed React host imports and authors a generalized edit", async ({ page }
   await expect(root).toHaveAttribute("data-active-plane", "oklch");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
   await expect(definition).toHaveAttribute("data-definition", initial!);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
-  await root.locator('[role="option"][data-value="oklch"]').click();
-  await root.getByLabel("Chroma numeric value").fill("0.25");
-  await root.getByLabel("Chroma numeric value").press("Enter");
+  await root.locator('[role="option"][data-value="display-p3"]').click();
+  await root.getByRole("combobox", { name: "Area" }).click();
+  await root.locator('[role="option"][data-value="display-p3-rb"]').click();
+  await root.getByLabel("Green numeric value").fill("-0.125");
+  await root.getByLabel("Green numeric value").press("Enter");
   await expect(definition).not.toHaveAttribute("data-definition", initial!);
+  await expect(root.getByLabel("Green numeric value")).toHaveValue("-0.1250");
+  const authored = JSON.parse((await definition.getAttribute("data-definition"))!);
+  expect(authored).toMatchObject({ space: "display-p3", alpha: 0.37 });
+  expect(authored.channels[1]).toBe(-0.125);
 });
 
 test("packed React anatomy matches the shared visual owner in editable and observation states", async ({
@@ -72,6 +79,7 @@ test("packed React anatomy matches the shared visual owner in editable and obser
   await expect(root).toHaveScreenshot("generalized-editable-440.png");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(root.locator("canvas")).toHaveCount(0);
   await expect(root).toHaveScreenshot("generalized-observation-440.png");
   const axe = await new AxeBuilder({ page }).include("[data-gp-root]").analyze();

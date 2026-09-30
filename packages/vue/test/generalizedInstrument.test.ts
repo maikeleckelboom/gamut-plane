@@ -156,7 +156,7 @@ describe("Vue public generalized instrument", () => {
     await wrapper.get('[role="option"][data-value="srgb"]').trigger("click");
     expect(requests.mock.lastCall?.[0].selection).toEqual({
       representationId: "srgb",
-      editorId: null,
+      editorId: "srgb-rg",
     });
     await wrapper.setProps({ state });
     expect(wrapper.get('[aria-label="Lightness numeric value"]').element).toBe(number.element);

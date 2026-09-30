@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 import { createColorValue, snapshotColor } from "@gamut-plane/core";
 import { GamutPlane, type GamutPlaneState } from "@gamut-plane/vue";
 
-const initial = createColorValue({ space: "oklch", channels: [0.62, 0.2, 45], alpha: 0.37 });
+const initial = createColorValue({ space: "srgb", channels: [1.2, 0.4, -0.1], alpha: 0.37 });
 if (!initial.ok) throw new Error("Invalid generalized Nuxt color");
 const value = ref(initial.value);
 const hydrated = ref(false);
@@ -11,7 +11,7 @@ onMounted(() => {
   hydrated.value = true;
 });
 const state = ref<GamutPlaneState>({
-  selection: { representationId: "srgb", editorId: null },
+  selection: { representationId: "srgb", editorId: "srgb-rg" },
   checkedGamuts: ["srgb-gamut"],
   referenceGamutId: null,
   visibleGuides: ["srgb-boundary"],

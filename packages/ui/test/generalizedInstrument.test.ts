@@ -28,7 +28,7 @@ describe("public instrument state requests", () => {
     const guide = requestVisibleGuide(both, "srgb-boundary", true, guides);
     const bothGuides = requestVisibleGuide(guide, "display-p3-boundary", true, guides);
     expect(original.selection).toEqual({ representationId: "oklch", editorId: "oklch-lc" });
-    expect(rgb.selection).toEqual({ representationId: "srgb", editorId: null });
+    expect(rgb.selection).toEqual({ representationId: "srgb", editorId: "srgb-rg" });
     expect(check.visibleGuides).toEqual([]);
     expect(both.checkedGamuts).toEqual(["display-p3-gamut", "srgb-gamut"]);
     expect(guide.visibleGuides).toEqual(["srgb-boundary"]);

@@ -17,6 +17,7 @@ import {
   editorUi,
   directCoordinateHelp,
   directCoordinateContext,
+  rgbChannelContext,
   representationUi,
   currentEditorHelp,
   canonicalInstrumentState,
@@ -134,11 +135,11 @@ const warning = computed(() =>
   referenceWarning(acceptedState.value.referenceGamutId, accepted.value.exactChecks),
 );
 const help = computed(() =>
-  field.value && oklch.value
+  field.value
     ? currentEditorHelp(
         field.value.editorId,
         field.value.geometry.domain.kind,
-        oklch.value.channels[2] === null,
+        oklch.value?.channels[2] === null,
         field.value.markerInDomain,
       )
     : null,
@@ -151,6 +152,7 @@ const hueReference = ref<PlaneEditReference>();
 watch(
   [() => props.modelValue, () => revision.value.contextKey],
   () => {
+    if (view.value !== "oklch" && view.value !== "oklab") return;
     const hue = oklch.value?.channels[2] ?? null;
     if (hue !== null) hueReference.value = { hue };
     else hueReference.value = undefined;
@@ -170,9 +172,11 @@ function requestGamut(action: GamutAction<GuideId>): void {
 
 function publish(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean): void {
   if (!result.ok) return;
-  const observed = represent(result.value, "oklch");
-  if (observed.ok && observed.value.channels[2] !== null)
-    hueReference.value = { hue: observed.value.channels[2] };
+  if (view.value === "oklch" || view.value === "oklab") {
+    const observed = represent(result.value, "oklch");
+    if (observed.ok && observed.value.channels[2] !== null)
+      hueReference.value = { hue: observed.value.channels[2] };
+  }
   if (complete) emit("commit", result.value);
   else emit("update:modelValue", result.value);
 }
@@ -224,6 +228,35 @@ function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): 
     const control = channel === "a" ? a : b;
     const operation = editOperationDefinitions[control.operationId];
     publish(operation.authorCoordinate(revision.value.source, channel, value), complete);
+  }
+}
+
+const rgbCompanions = computed(() =>
+  detail.value?.view === "srgb"
+    ? editorUi["srgb-rg"].companions
+    : detail.value?.view === "display-p3"
+      ? editorUi["display-p3-rg"].companions
+      : [],
+);
+function editRgb(coordinate: "r" | "g" | "b", next: number, complete: boolean): void {
+  if (detail.value?.view === "srgb") {
+    const operation = editOperationDefinitions["srgb-channel-patch"];
+    publish(
+      operation.author(revision.value.source, {
+        ...operation.request,
+        channels: { [coordinate]: next },
+      }),
+      complete,
+    );
+  } else if (detail.value?.view === "display-p3") {
+    const operation = editOperationDefinitions["display-p3-channel-patch"];
+    publish(
+      operation.author(revision.value.source, {
+        ...operation.request,
+        channels: { [coordinate]: next },
+      }),
+      complete,
+    );
   }
 }
 
@@ -328,8 +361,8 @@ watch(
       </div>
 
       <div class="plane-instrument__controls" :data-gp-part="gpPart.controls">
-        <template v-if="field && detail && oklch && help">
-          <template v-if="detail.view === 'oklch'">
+        <template v-if="field && detail && help">
+          <template v-if="detail.view === 'oklch' && oklch">
             <ColorChannelControl
               :warning="warning"
               :key="`${revision.contextKey}:${hue.channelId}:${hue.operationId}`"
@@ -382,7 +415,7 @@ watch(
               :precision="chroma.precision"
               :gradient="detail.chromaGradient"
               :intervals="guides.chromaIntervals"
-              :overflow-max="!('max' in chroma.numericBounds)"
+              :numeric-bounds="chroma.numericBounds"
               :help="help.chromaHelp ?? ''"
               @update:model-value="editOklch('c', $event, false)"
               @commit="editOklch('c', $event, true)"
@@ -390,7 +423,7 @@ watch(
             />
           </template>
 
-          <template v-else>
+          <template v-else-if="detail.view === 'oklab'">
             <ColorChannelControl
               :warning="warning"
               :key="`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`"
@@ -434,6 +467,29 @@ watch(
               :warning="warning"
               @update:model-value="editOklab(control.symbol, $event, false)"
               @commit="editOklab(control.symbol, $event, true)"
+              @cancel="emit('cancel')"
+            />
+          </template>
+          <template v-else-if="detail.view === 'srgb' || detail.view === 'display-p3'">
+            <ColorChannelControl
+              v-for="control in rgbCompanions"
+              :key="`${revision.contextKey}:${control.channelId}:${control.operationId}`"
+              :id="`${instanceId}-${detail.view}-${control.coordinate}`"
+              :channel="control.symbol"
+              :label="control.label"
+              :model-value="detail.rgb.channels[{ r: 0, g: 1, b: 2 }[control.coordinate]]!"
+              :min="control.sliderRange.min"
+              :max="control.sliderRange.max"
+              :numeric-bounds="control.numericBounds"
+              :step="control.step"
+              :precision="control.precision"
+              :gradient="detail.gradients[control.coordinate]"
+              :coordinate-context="rgbChannelContext(control.coordinate, detail.rgb)"
+              :help="help.domainHelp ?? ''"
+              help-visually-hidden
+              :warning="warning"
+              @update:model-value="editRgb(control.coordinate, $event, false)"
+              @commit="editRgb(control.coordinate, $event, true)"
               @cancel="emit('cancel')"
             />
           </template>

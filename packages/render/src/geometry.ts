@@ -4,7 +4,16 @@ export const VIEWBOX_SIZE = 1000;
 export function pointStyle(point: PlanePoint): Record<string, string> {
   // Transcendental math can differ in the last bit between Node and browsers.
   // Stabilize presentation only; never quantize the authored color or projection math.
-  return { left: `${(point.x * 100).toFixed(8)}%`, top: `${(point.y * 100).toFixed(8)}%` };
+  const percentage = (coordinate: number): string => {
+    const scaled = coordinate * 100;
+    if (Number.isFinite(coordinate) && !Number.isFinite(scaled)) {
+      // Keep extended authored positions valid CSS even when scaling exceeds a JS number.
+      const [mantissa, exponent] = coordinate.toExponential().split("e");
+      return `${mantissa}e${Number(exponent) + 2}%`;
+    }
+    return `${scaled.toFixed(8)}%`;
+  };
+  return { left: percentage(point.x), top: percentage(point.y) };
 }
 
 export function geometryToSvgPath(geometry: Float32Array, closed: boolean): string {

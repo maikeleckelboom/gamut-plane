@@ -71,6 +71,8 @@ describe("standalone application", () => {
 
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="srgb"]').trigger("click");
+    expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
+    await wrapper.get('.gp-mode input[value="inspect"]').setValue(true);
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);

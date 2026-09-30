@@ -12,12 +12,21 @@ import { guideDefinitions, guideSupport } from "../src/capabilities/guideSupport
 import { PICKER_GAMUT_TABLES } from "../src/generated/gamutTables.js";
 
 describe("render-owned current visual support", () => {
-  it("binds exactly two core editors to the existing field samplers and core geometry", () => {
-    expect(Object.keys(fieldSupport)).toEqual(["oklch-lc", "oklab-ab"]);
+  it("retains the existing perceptual samplers alongside native RGB fields", () => {
+    expect(Object.keys(fieldSupport)).toEqual([
+      "oklch-lc",
+      "oklab-ab",
+      "srgb-rg",
+      "srgb-rb",
+      "srgb-gb",
+      "display-p3-rg",
+      "display-p3-rb",
+      "display-p3-gb",
+    ]);
     expect(fieldSupport["oklch-lc"].plane).toBe(OKLCH_LIGHTNESS_CHROMA_PLANE);
     expect(fieldSupport["oklab-ab"].plane).toBe(OKLAB_AB_PLANE);
     expect(Object.isFrozen(fieldSupport)).toBe(true);
-    for (const support of Object.values(fieldSupport)) {
+    for (const support of [fieldSupport["oklch-lc"], fieldSupport["oklab-ab"]]) {
       const editor = editorDefinitions[support.editorId];
       expect(support.geometry).toBe(geometryDefinitions[editor.geometryId]);
       expect(support.plane.id).toBe(editor.representationId);
@@ -28,10 +37,11 @@ describe("render-owned current visual support", () => {
       const scratch = { input: [0, 0, 0], converted: [0, 0, 0] };
       expect(support.plane.sampleField({ x: 0.6, y: 0.4 }, 0.5, output, scratch)).toBe(output);
     }
-    expect(Object.values(fieldSupport).map((row) => row.geometry.representationId)).toEqual([
-      "oklch",
-      "oklab",
-    ]);
+    expect(
+      [fieldSupport["oklch-lc"], fieldSupport["oklab-ab"]].map(
+        (row) => row.geometry.representationId,
+      ),
+    ).toEqual(["oklch", "oklab"]);
   });
 
   it("defines precisely the two sampled guides and their corresponding gamut/table", () => {

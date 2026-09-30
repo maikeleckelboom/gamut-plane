@@ -16,12 +16,16 @@ import {
 export interface SelectorOption {
   readonly value: string;
   readonly label: string;
+  readonly optionLabel?: string;
+  readonly description?: string;
   readonly status?: keyof typeof exactStatusCopy;
 }
 export type ShellEditor = Readonly<{
   id: string;
   representationId: RepresentationId;
   label: string;
+  optionLabel?: string;
+  description?: string;
 }>;
 export type ShellSelection = Readonly<{
   representationId: RepresentationId;
@@ -68,7 +72,14 @@ export function selectionContext(selection: ShellSelection, facts = shellSelecti
     editing: selection.editorId !== null,
     areas:
       selection.editorId !== null && editors.length > 1
-        ? editors.map((editor) => ({ value: editor.id, label: editor.label }))
+        ? editors.map((editor) => ({
+            value: editor.id,
+            label: editor.label,
+            ...(editor.optionLabel && {
+              optionLabel: editor.optionLabel,
+              description: editor.description,
+            }),
+          }))
         : [],
   };
 }

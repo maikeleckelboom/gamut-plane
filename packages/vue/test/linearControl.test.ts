@@ -421,7 +421,7 @@ describe("ColorChannelControl gamut annotations", () => {
       max: 0.4,
       step: 0.001,
       precision: 4,
-      overflowMax: true,
+      numericBounds: { min: 0 },
     });
 
     expect(wrapper.attributes("data-instrument-overflow")).toBe("true");

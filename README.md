@@ -1,6 +1,6 @@
 # Gamut Plane
 
-Gamut Plane provides one compact color instrument in native Vue and React. Pick in OKLCH or OKLab, or inspect OKLCH, OKLab, sRGB, and Display P3 coordinates without changing the authored `ColorValue`. Exact gamut checks, sampled boundaries and a Reference focus are independent choices in a compact Gamuts popup. The standalone Vue app hosts the same instrument beside CSS output examples.
+Gamut Plane provides one compact color instrument in native Vue and React. Edit or inspect OKLCH, OKLab, sRGB and Display P3 coordinates. RGB editing offers R/G, R/B and G/B Areas with native Red, Green and Blue controls. Selection preserves the authored `ColorValue`; explicit edits preserve alpha and untouched observed channels. Exact gamut checks, sampled boundaries and a Reference focus are independent choices in a compact Gamuts popup. RGB boundaries and spatial Reference are temporarily unavailable pending Phase 2N.2. The standalone Vue app hosts the same instrument beside CSS output examples.
 
 **Live demo:** [gamut-plane.eckelboommaikel.workers.dev](https://gamut-plane.eckelboommaikel.workers.dev)
 

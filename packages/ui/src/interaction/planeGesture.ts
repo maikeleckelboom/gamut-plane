@@ -39,6 +39,15 @@ export function mountPlaneGesture<Value, Point>(
   let frame: number | null = null;
   let viewKey = current().viewKey;
 
+  function restoreAcceptedAfterDelivery(): void {
+    const completedView = current().viewKey;
+    // Framework callbacks may accept on their next microtask, or reject without a render.
+    queueMicrotask(() => {
+      if (disposed || pointerId !== null || current().viewKey !== completedView) return;
+      current().onRestorePresentation(current().value);
+    });
+  }
+
   function end(): void {
     if (frame !== null) window.cancelAnimationFrame(frame);
     frame = null;
@@ -122,6 +131,7 @@ export function mountPlaneGesture<Value, Point>(
     if (disposed || point === null) return;
     const result = publish(point, false);
     if (result !== null && !disposed) current().onCommit(result);
+    if (!disposed) restoreAcceptedAfterDelivery();
   }
 
   function rollback(): boolean {
@@ -133,6 +143,7 @@ export function mountPlaneGesture<Value, Point>(
     if (disposed) return true;
     current().onRestorePresentation(start);
     if (!disposed) current().onCancel();
+    if (!disposed) restoreAcceptedAfterDelivery();
     return true;
   }
 

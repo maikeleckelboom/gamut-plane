@@ -112,6 +112,15 @@ afterEach(() => {
 });
 
 describe("shared plane pointer gesture", () => {
+  it("restores accepted presentation after a rejected completion without requiring a render", async () => {
+    const f = fixture();
+    f.pointer("pointerdown", 1);
+    f.pointer("pointerup", 5);
+    expect(f.commits).toEqual([{ definition: "5" }]);
+    await Promise.resolve();
+    expect(f.restored.at(-1)).toBe(f.origin);
+    f.gesture.dispose();
+  });
   it.each([2, 4])(
     "completes primary release with buttons=%s before capture loss or queued publication",
     (buttons) => {

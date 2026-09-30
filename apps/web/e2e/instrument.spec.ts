@@ -33,9 +33,11 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   const root = page.locator("[data-gp-root]");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
+  await expect(root.getByRole("combobox", { name: "Area" })).toContainText("R / G");
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
-  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
+  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(1);
   await root.getByRole("button", { name: "Gamuts" }).click();
   await root.getByLabel("Display P3 Status", { exact: true }).check();
   await root.getByLabel("sRGB Status", { exact: true }).check();
@@ -200,6 +202,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
   ).toBeLessThanOrEqual(0);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),

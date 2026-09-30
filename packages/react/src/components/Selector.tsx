@@ -32,11 +32,21 @@ export function Selector(props: SelectorInput & { id: string; label: string }) {
         aria-expanded="false"
         aria-haspopup="listbox"
         aria-controls={`${props.id}-list`}
+        aria-describedby={
+          props.options.find((option) => option.value === props.value)?.description
+            ? `${props.id}-description`
+            : undefined
+        }
         disabled={props.disabled}
       >
         <span>{props.options.find((option) => option.value === props.value)?.label}</span>
         <span aria-hidden="true">▾</span>
       </button>
+      {props.options.find((option) => option.value === props.value)?.description && (
+        <span id={`${props.id}-description`} data-gp-visually-hidden="">
+          {props.options.find((option) => option.value === props.value)?.description}
+        </span>
+      )}
       <div
         ref={popup}
         id={`${props.id}-list`}
@@ -56,13 +66,13 @@ export function Selector(props: SelectorInput & { id: string; label: string }) {
             aria-label={
               option.status
                 ? `${option.label}, gamut status ${exactStatusCopy[option.status]}`
-                : option.label
+                : `${option.optionLabel ?? option.label}${option.description ? `. ${option.description}` : ""}`
             }
           >
             <span className="gp-selector-check" aria-hidden="true">
               {option.value === props.value ? "✓" : ""}
             </span>
-            <span>{option.label}</span>
+            <span>{option.optionLabel ?? option.label}</span>
             <span className="gp-selector-status" data-gp-status={option.status}>
               {option.status ? exactStatusCopy[option.status] : ""}
             </span>

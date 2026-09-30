@@ -22,8 +22,14 @@ const rgbField = {
   editorId: "srgb-rg",
   geometry: geometryDefinitions["srgb-rg-rectangle"],
 } as const;
-// @ts-expect-error a technical RGB geometry has no implemented field sampler in 2N.0
+// @ts-expect-error native RGB geometry cannot use the legacy OKLCH sampler
 const unsupportedRgbField: FieldSupport = rgbField;
+const wrongRgbSampler = { ...fieldSupport["srgb-rg"], plane: fieldSupport["srgb-rb"].plane };
+// @ts-expect-error native Area and sampler identity remain correlated within a representation
+const invalidRgbSampler: FieldSupport = wrongRgbSampler;
+const wrongRgbSpace = { ...fieldSupport["display-p3-rg"], plane: fieldSupport["srgb-rg"].plane };
+// @ts-expect-error native samplers cannot be relabeled across encoded representations
+const invalidRgbSpace: FieldSupport = wrongRgbSpace;
 // @ts-expect-error hypothetical primary editors must first exist in core
 const hypothetical: EditorId = "oklch-hl";
 const wrongGamut = { ...guideDefinitions["srgb-boundary"], gamutId: "srgb" } as const;
@@ -42,6 +48,8 @@ void [
   invalidGeometry,
   invalidBinding,
   unsupportedRgbField,
+  invalidRgbSampler,
+  invalidRgbSpace,
   hypothetical,
   invalidGamut,
   invalidGuideEditor,

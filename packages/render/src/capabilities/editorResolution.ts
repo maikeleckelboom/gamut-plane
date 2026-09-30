@@ -6,6 +6,7 @@ import {
   type EditorId,
   type GeometryDefinition,
   type GeometryProjection,
+  type BuiltinGeometryProjection,
 } from "@gamut-plane/core/internal/capabilities";
 import { fieldSupport, type FieldSupport } from "./fieldSupport.js";
 
@@ -19,9 +20,7 @@ export type EditorVisualSupport =
       field: FieldSupport | null;
     }>;
 
-export type ProductionProjection =
-  | GeometryProjection<"oklch", "oklch-lc-rectangle", "oklch.c", "oklch.l", "oklch.h">
-  | GeometryProjection<"oklab", "oklab-ab-disc", "oklab.a", "oklab.b", "oklab.l">;
+export type ProductionProjection = BuiltinGeometryProjection;
 
 /** Technical facts only. Product admission and environment readiness belong to callers. */
 export function resolveEditorVisualSupport(editorId: EditorId | null): EditorVisualSupport {

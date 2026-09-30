@@ -18,18 +18,46 @@ import {
 } from "../src/generalizedInstrument.js";
 
 describe("accepted Coordinates / mode / Area policy", () => {
-  it("declares technical associated gamuts explicitly without admitting editors", () => {
+  it("declares associated gamuts independently of RGB editing admission", () => {
     expect(
       Object.values(representationDefinitions).map((definition) => definition.associatedGamutId),
     ).toEqual([null, null, "srgb-gamut", "display-p3-gamut"]);
     for (const representationId of ["srgb", "display-p3"] as const) {
       expect(selectionContext({ representationId, editorId: null })).toEqual({
-        canEdit: false,
+        canEdit: true,
         editing: false,
         areas: [],
       });
     }
   });
+  it.each(["srgb", "display-p3"] as const)(
+    "uses preferred %s re-entry and preserves explicit Areas",
+    (representationId) => {
+      const preferred = requestShellSelection(
+        { representationId: "oklch", editorId: null },
+        { kind: "representation", value: representationId },
+      );
+      expect(preferred).toEqual({ representationId, editorId: `${representationId}-rg` });
+      const context = selectionContext(preferred);
+      expect(context.areas.map((area) => [area.label, area.optionLabel, area.description])).toEqual(
+        [
+          ["R / G", "R / G · fixed B", "Horizontal Red and vertical Green with fixed Blue."],
+          ["R / B", "R / B · fixed G", "Horizontal Red and vertical Blue with fixed Green."],
+          ["G / B", "G / B · fixed R", "Horizontal Green and vertical Blue with fixed Red."],
+        ],
+      );
+      const selected = requestShellSelection(preferred, {
+        kind: "area",
+        value: `${representationId}-gb`,
+      });
+      expect(selected.editorId).toBe(`${representationId}-gb`);
+      expect(requestShellSelection(selected, { kind: "mode", value: "edit" })).toBe(selected);
+      const inspect = requestShellSelection(selected, { kind: "mode", value: "inspect" });
+      expect(inspect.editorId).toBeNull();
+      expect(selectionContext(inspect).areas).toEqual([]);
+      expect(requestShellSelection(inspect, { kind: "mode", value: "edit" })).toEqual(preferred);
+    },
+  );
   it.each([
     ["inside", [0.5, 0.5, 0.5]],
     ["within-tolerance", [-1e-10, 0.5, 0.5]],

@@ -2,20 +2,29 @@ import { describe, expect, it } from "vitest";
 import { currentPrimaryEditors, editorUi, representationUi } from "../src/instrumentMetadata.js";
 
 describe("current instrument metadata", () => {
-  it("labels all four qualified representations without admitting RGB views", () => {
+  it("labels all four representations and explicitly admits the eight editors", () => {
     expect(Object.entries(representationUi).map(([key, row]) => [key, row.id, row.label])).toEqual([
       ["oklch", "oklch", "OKLCH"],
       ["oklab", "oklab", "OKLab"],
       ["srgb", "srgb", "sRGB"],
       ["display-p3", "display-p3", "Display P3"],
     ]);
-    expect(currentPrimaryEditors.map((editor) => editor.id)).toEqual(["oklch-lc", "oklab-ab"]);
+    expect(currentPrimaryEditors.map((editor) => editor.id)).toEqual([
+      "oklch-lc",
+      "oklab-ab",
+      "srgb-rg",
+      "srgb-rb",
+      "srgb-gb",
+      "display-p3-rg",
+      "display-p3-rb",
+      "display-p3-gb",
+    ]);
   });
 
   it("composes only the six shipped companions in display order with semantic operations", () => {
-    expect(Object.keys(editorUi)).toEqual(["oklch-lc", "oklab-ab"]);
+    expect(Object.keys(editorUi)).toEqual(currentPrimaryEditors.map((editor) => editor.id));
     expect(
-      currentPrimaryEditors.map((editor) =>
+      [editorUi["oklch-lc"], editorUi["oklab-ab"]].map((editor) =>
         editor.companions.map((control) => [
           control.channelId,
           control.operationId,
@@ -42,7 +51,7 @@ describe("current instrument metadata", () => {
 
   it("keeps slider spans, numeric completion bounds and display precision distinct", () => {
     expect(
-      currentPrimaryEditors.map((editor) =>
+      [editorUi["oklch-lc"], editorUi["oklab-ab"]].map((editor) =>
         editor.companions.map((control) => [
           "sliderRange" in control ? control.sliderRange : null,
           control.numericBounds,
@@ -62,6 +71,31 @@ describe("current instrument metadata", () => {
         ["geometry", "geometry", 0.001, 4],
       ],
     ]);
+  });
+
+  it("keeps R/G/B order, native operations and unbounded numbers across RGB Areas", () => {
+    for (const editor of currentPrimaryEditors) {
+      if (editor.representationId !== "srgb" && editor.representationId !== "display-p3") continue;
+      expect(
+        editor.companions.map((control) => [
+          control.symbol,
+          control.label,
+          control.channelId,
+          control.operationId,
+        ]),
+      ).toEqual([
+        ["R", "Red", `${editor.representationId}.r`, `${editor.representationId}-channel-patch`],
+        ["G", "Green", `${editor.representationId}.g`, `${editor.representationId}-channel-patch`],
+        ["B", "Blue", `${editor.representationId}.b`, `${editor.representationId}-channel-patch`],
+      ]);
+      for (const control of editor.companions)
+        expect(control).toMatchObject({
+          sliderRange: { min: 0, max: 1 },
+          numericBounds: {},
+          step: 0.001,
+          precision: 4,
+        });
+    }
   });
 
   it("freezes every nested product descriptor without functions or value-dependent facts", () => {

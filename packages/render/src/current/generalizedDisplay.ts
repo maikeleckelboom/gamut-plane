@@ -8,7 +8,11 @@ import type { EditorVisualSupport, FieldResolution } from "../capabilities/edito
 import type { GuideResolution } from "../capabilities/guideResolution.js";
 import { geometryToSvgPath } from "../geometry.js";
 import { currentField, type CurrentField } from "./field.js";
-import { currentEditableDetail, currentOklchObservation } from "./editableDetail.js";
+import {
+  currentEditableDetail,
+  currentOklchObservation,
+  currentRgbEditableDetail,
+} from "./editableDetail.js";
 
 export interface GeneralizedGuideDisplay {
   readonly srgbPath: string | null;
@@ -82,6 +86,12 @@ export type GeneralizedEditableDetail =
       field: CurrentField;
       oklch: ColorRepresentation<"oklch">;
       detail: ReturnType<typeof currentEditableDetail>;
+    }>
+  | Readonly<{
+      kind: "available";
+      field: CurrentField;
+      oklch: null;
+      detail: ReturnType<typeof currentRgbEditableDetail>;
     }>;
 
 /** Current visuals are optional in generalized mode; the accepted facts remain available. */
@@ -93,6 +103,23 @@ export function generalizedEditableDetail(
 ): GeneralizedEditableDetail {
   if (field.kind !== "available") return { kind: "unavailable" };
   const current = currentField(editor, field);
+  if (
+    current.projection.representationId === "srgb" ||
+    current.projection.representationId === "display-p3"
+  ) {
+    if (
+      !observation.ok ||
+      (observation.value.space !== "srgb" && observation.value.space !== "display-p3") ||
+      observation.value.space !== current.projection.representationId
+    )
+      return { kind: "unavailable" };
+    return {
+      kind: "available",
+      field: current,
+      oklch: null,
+      detail: currentRgbEditableDetail(observation.value),
+    };
+  }
   try {
     const oklch = currentOklchObservation(source, observation);
     return {

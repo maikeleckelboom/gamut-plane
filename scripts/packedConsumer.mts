@@ -335,16 +335,22 @@ for (const editor of currentPrimaryEditors) {
 }
 const admitted: import("@gamut-plane/ui").InstrumentSelection = { representationId: "oklch", editorId: "oklch-lc" };
 const inspection: import("@gamut-plane/ui").InstrumentSelection = { representationId: "srgb", editorId: null };
+const nativeRgb: import("@gamut-plane/ui").InstrumentSelection = { representationId: "srgb", editorId: "srgb-rb" };
+// @ts-expect-error public RGB selection preserves encoding/editor correlation
+const mismatchedRgb: import("@gamut-plane/ui").InstrumentSelection = { representationId: "srgb", editorId: "display-p3-rb" };
 void admitted;
 void inspection;
+void nativeRgb;
+void mismatchedRgb;
 // @ts-expect-error public selection rejects an unadmitted technical editor
 const unadmitted: import("@gamut-plane/ui").InstrumentSelection = { representationId: "oklch", editorId: "test-oklch-hc" };
 void unadmitted;
-if (currentPrimaryEditors.map((editor) => editor.id).join() !== "oklch-lc,oklab-ab") throw new Error("Packed primary exposure changed");
+if (currentPrimaryEditors.map((editor) => editor.id).join() !== "oklch-lc,oklab-ab,srgb-rg,srgb-rb,srgb-gb,display-p3-rg,display-p3-rb,display-p3-gb") throw new Error("Packed primary exposure changed");
 if (!Object.isFrozen(editorUi["oklch-lc"].companions[2].numericBounds)) throw new Error("Packed metadata is mutable");
 if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("Packed Chroma bound changed");
-if (currentSelectionFacts.admittedEditors.length !== 2 || currentAdmittedEditorsForRepresentation("srgb").length !== 0) throw new Error("Packed admission policy changed");
-if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== null) throw new Error("Packed preferred editor changed");
+if (currentSelectionFacts.admittedEditors.length !== 8 || currentAdmittedEditorsForRepresentation("srgb").length !== 3 || currentAdmittedEditorsForRepresentation("display-p3").length !== 3) throw new Error("Packed admission policy changed");
+if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== "srgb-rg" || defaultSelection("display-p3").editorId !== "display-p3-rg") throw new Error("Packed preferred editor changed");
+if (new Set(currentSelectionFacts.knownEditors.map((editor) => editor.id)).size !== currentSelectionFacts.knownEditors.length) throw new Error("Packed known editors duplicated");
 if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.comparison !== "Gamuts") throw new Error("Packed shared copy changed");
 if (gamutSummaryCopy(gamutSummary({ checkedGamuts: [], referenceGamutId: "srgb-gamut" }, [])).description !== "Reference sRGB, Status off") throw new Error("Packed Gamuts summary policy changed");
 if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");

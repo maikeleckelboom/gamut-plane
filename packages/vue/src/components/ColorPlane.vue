@@ -6,6 +6,7 @@ import {
   gpMarker,
   gpPart,
   currentEditorCopy,
+  authoredMarkerPoint,
   exactGamutUi,
   referenceWarningGlyphPath,
   mountPlaneGesture,
@@ -14,8 +15,6 @@ import {
 import {
   definingEquals,
   type ColorValue,
-  type PickerPlaneFieldSampler,
-  type PickerPlaneGeometry,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
   type PlaneEditReference,
@@ -56,7 +55,7 @@ const props = withDefaults(
     reference?: ReferenceDisplay | null;
     warning?: string | null;
     editReference?: PlaneEditReference | undefined;
-    plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
+    plane: CurrentField["plane"];
     interactionPreview?: boolean;
   }>(),
   {
@@ -90,8 +89,8 @@ let surfaceLocalSize = { width: 0, height: 0 };
 const activeProjection = computed(() => props.field.projection);
 const fixedAxis = computed(() => props.field.samplingFixed);
 const activePoint = computed(() => activeProjection.value.point);
-const boundedActivePoint = computed(() => props.field.geometry.constrain(activePoint.value));
-const markerStyle = computed(() => pointStyle(boundedActivePoint.value));
+const authoredPoint = computed(() => authoredMarkerPoint(props.field.geometry, activePoint.value));
+const markerStyle = computed(() => pointStyle(authoredPoint.value));
 const spatialReference = computed(() =>
   props.reference?.showExcursion && props.reference.spatial.kind === "available"
     ? props.reference.spatial
@@ -105,7 +104,7 @@ const referenceLabel = computed(() =>
 
 const planeLabel = computed(() => {
   const { coordinates } = activeProjection.value;
-  return `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${coordinates.x?.toFixed(3) ?? "missing"}. Vertical ${props.plane.yAxis.label} ${coordinates.y?.toFixed(3) ?? "missing"}. Arrow keys adjust the selected point.${props.field.geometry.fixed === "oklch.h" && coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${props.warning ? ` ${props.warning}.` : ""}`;
+  return `${props.plane.label} plane. Horizontal ${props.plane.xAxis.label} ${coordinates.x?.toFixed(3) ?? "missing"}. Vertical ${props.plane.yAxis.label} ${coordinates.y?.toFixed(3) ?? "missing"}.${"sampleKind" in props.plane ? ` Fixed ${props.plane.fixedAxis.label} ${props.field.samplingFixed}.` : ""} Arrow keys adjust the selected point.${props.field.geometry.fixed === "oklch.h" && coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${"sampleKind" in props.plane && !props.field.markerInDomain ? ` ${currentEditorCopy.rgbOverflow}` : ""}${props.warning ? ` ${props.warning}.` : ""}`;
 });
 const instrumentStyle = {
   "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
@@ -171,8 +170,7 @@ function measureSurface(): void {
 function positionActiveAnnotations(point: PlanePoint): void {
   const activeMarker = marker.value;
   if (activeMarker) {
-    activeMarker.style.left = `${point.x * 100}%`;
-    activeMarker.style.top = `${point.y * 100}%`;
+    Object.assign(activeMarker.style, pointStyle(point));
     const offset = planeWarningOffset(point, surfaceLocalSize);
     activeMarker.style.setProperty("--gp-warning-offset-x", `${offset.x}px`);
     activeMarker.style.setProperty("--gp-warning-offset-y", `${offset.y}px`);
@@ -188,7 +186,7 @@ function authorPoint(value: ColorValue, point: PlanePoint): ColorValue | null {
 function restorePresentation(value: ColorValue): void {
   const projected = props.field.geometry.project(value);
   if (projected.ok)
-    positionActiveAnnotations(props.field.geometry.constrain(projected.value.point));
+    positionActiveAnnotations(authoredMarkerPoint(props.field.geometry, projected.value.point));
 }
 function onKeydown(event: KeyboardEvent): void {
   surface.value?.removeAttribute("data-pointer-focus");
@@ -240,7 +238,7 @@ watch(
 watch(pixelRatio, () => {
   scheduleFieldDraw();
 });
-watch(boundedActivePoint, (point) => positionActiveAnnotations(point));
+watch(authoredPoint, (point) => positionActiveAnnotations(point));
 
 onMounted(() => {
   isMounted = true;
@@ -276,7 +274,7 @@ onMounted(() => {
   watch(device.pixelRatio, (value) => (pixelRatio.value = value), { immediate: true });
   useResizeObserver(surface, () => {
     measureSurface();
-    positionActiveAnnotations(boundedActivePoint.value);
+    positionActiveAnnotations(authoredPoint.value);
     scheduleFieldDraw();
   });
   useEventListener(
@@ -289,7 +287,7 @@ onMounted(() => {
   void nextTick(() => {
     if (isUnmounted) return;
     measureSurface();
-    positionActiveAnnotations(boundedActivePoint.value);
+    positionActiveAnnotations(authoredPoint.value);
     drawField();
   });
 });
@@ -405,8 +403,8 @@ onBeforeUnmount(() => {
         <line
           v-if="spatialReference"
           :data-gp-part="gpPart.referenceConnector"
-          :x1="boundedActivePoint.x * VIEWBOX_SIZE"
-          :y1="boundedActivePoint.y * VIEWBOX_SIZE"
+          :x1="authoredPoint.x * VIEWBOX_SIZE"
+          :y1="authoredPoint.y * VIEWBOX_SIZE"
           :x2="spatialReference.point.x * VIEWBOX_SIZE"
           :y2="spatialReference.point.y * VIEWBOX_SIZE"
           vector-effect="non-scaling-stroke"

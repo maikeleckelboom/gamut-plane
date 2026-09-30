@@ -1,5 +1,20 @@
 import type { ColorRepresentation } from "@gamut-plane/core";
 
+/** Observed sibling coordinates are operation inputs; comparison preferences are not. */
+export function rgbChannelContext(
+  coordinate: "r" | "g" | "b",
+  representation: ColorRepresentation<"srgb" | "display-p3">,
+): string {
+  const index = { r: 0, g: 1, b: 2 }[coordinate];
+  return [
+    representation.space,
+    ...representation.channels.filter((_, channel) => channel !== index),
+    representation.alpha,
+  ]
+    .map((value) => (Object.is(value, -0) ? "-0" : String(value)))
+    .join(":");
+}
+
 /** Fixed operation inputs, excluding the directly authored coordinate and comparison state. */
 export function directCoordinateContext(
   coordinate: "a" | "b",

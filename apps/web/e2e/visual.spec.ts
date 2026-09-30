@@ -17,12 +17,19 @@ test("compact editable instrument in a 440 px host", async ({ page }) => {
   await expect(page.locator("[data-gp-root]")).toHaveScreenshot("compact-editable-440.png");
 });
 
-test("generalized observation desktop reference", async ({ page }) => {
+test("native RGB field and production Area at 320px", async ({ page }) => {
   await ready(page);
+  await page.locator(".instrument-primary").evaluate((element) => {
+    (element as HTMLElement).style.width = "320px";
+  });
   await page.getByRole("combobox", { name: "Coordinates" }).click();
   await page.locator('[role="option"][data-value="srgb"]').click();
-  await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
-  await expect(page).toHaveScreenshot("generalized-observation-desktop.png", { fullPage: true });
+  await page.getByLabel("Blue numeric value").fill("-0.1");
+  await page.getByLabel("Blue numeric value").press("Enter");
+  await page.getByLabel("Red numeric value").fill("1.2");
+  await page.getByLabel("Red numeric value").press("Enter");
+  await page.getByRole("combobox", { name: "Area" }).click();
+  await expect(page.locator("[data-gp-root]")).toHaveScreenshot("native-rgb-area-320.png");
 });
 
 test("generalized alternate editor reference", async ({ page }) => {

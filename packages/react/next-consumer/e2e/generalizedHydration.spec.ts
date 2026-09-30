@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-test("generalized observation-only server HTML hydrates in place and restores requested guide", async ({
+test("native RGB server HTML hydrates raw placement in place and preserves requested guides", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -29,17 +29,22 @@ test("generalized observation-only server HTML hydrates in place and restores re
   try {
     const response = await page.goto("/generalized", { waitUntil: "commit" });
     const html = await response!.text();
-    expect(html).toContain("sRGB coordinates");
+    expect(html).toContain("sRGB plane.");
+    expect(html).toContain("color(srgb 1.2 0.4 -0.1)");
+    expect(html).toMatch(/left:120(?:\.0+)?%/);
     expect(html).toContain('data-gp-part="exact-result"');
     expect(html).toContain('aria-label="sRGB Boundary"');
     const root = page.locator("[data-gp-root]");
-    await expect(root.locator("canvas")).toHaveCount(0);
-    await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
+    await expect(root.locator("canvas")).toHaveCount(1);
+    await expect(root.getByLabel("Red numeric value")).toHaveValue("1.2000");
+    await expect(root.getByRole("combobox", { name: "Area" })).toContainText("R / G");
     await page.evaluate(() => {
       window.generalizedBefore = [
         document.querySelector("[data-gp-root]")!,
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]")!,
-        document.querySelector("[data-gp-part='inspection-readout']")!,
+        document.querySelector("[data-gp-part='surface']")!,
+        document.querySelector("[data-active-marker]")!,
+        document.querySelector("[role=combobox][id$='-area']")!,
         document.querySelector("[data-gp-part='exact-result']")!,
         document.querySelector("[data-gp-part='gamut-trigger']")!,
         document.querySelector("[data-gp-part='gamut-popup']")!,
@@ -60,7 +65,9 @@ test("generalized observation-only server HTML hydrates in place and restores re
       const now = [
         document.querySelector("[data-gp-root]"),
         document.querySelector("[data-gp-part='representation-control'] [role=combobox]"),
-        document.querySelector("[data-gp-part='inspection-readout']"),
+        document.querySelector("[data-gp-part='surface']"),
+        document.querySelector("[data-active-marker]"),
+        document.querySelector("[role=combobox][id$='-area']"),
         document.querySelector("[data-gp-part='exact-result']"),
         document.querySelector("[data-gp-part='gamut-trigger']"),
         document.querySelector("[data-gp-part='gamut-popup']"),
@@ -70,6 +77,16 @@ test("generalized observation-only server HTML hydrates in place and restores re
   ).toBe(true);
   const root = page.locator("[data-gp-root]");
   const definition = await page.locator("[data-definition]").getAttribute("data-definition");
+  expect(JSON.parse(definition!)).toMatchObject({
+    space: "srgb",
+    channels: [1.2, 0.4, -0.1],
+    alpha: 0.37,
+  });
+  expect(
+    await root
+      .locator("[data-active-marker]")
+      .evaluate((element) => (element as HTMLElement).style.left),
+  ).toBe("120%");
   // Hydration leaves Gamuts closed and unfocused; the mounted controller then opens it on request.
   const gamuts = root.getByRole("button", { name: "Gamuts" });
   await expect(gamuts).toHaveAttribute("aria-expanded", "false");
@@ -79,7 +96,7 @@ test("generalized observation-only server HTML hydrates in place and restores re
   await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeVisible();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
-    "Paused: Requested boundary appears when editing a color space.",
+    "Paused: Requested boundary cannot be drawn here.",
   );
   await gamuts.press("Escape");
   await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeHidden();
@@ -89,5 +106,14 @@ test("generalized observation-only server HTML hydrates in place and restores re
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[role="option"][data-value="srgb"]').click();
+  await root.getByLabel("Green numeric value").fill("0.2");
+  await root.getByLabel("Green numeric value").press("Enter");
+  expect(
+    JSON.parse((await page.locator("[data-definition]").getAttribute("data-definition"))!),
+  ).toMatchObject({ space: "srgb", channels: [1.2, 0.2, -0.1], alpha: 0.37 });
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
+  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
   expect(errors).toEqual([]);
 });

@@ -50,8 +50,14 @@ const wrongCompanions: EditorUi = {
 };
 // @ts-expect-error product metadata is readonly
 editorUi["oklch-lc"].companions[0].step = 1;
-// @ts-expect-error technical existence does not fabricate RGB UI metadata
-void editorUi["srgb-rg"];
+editorUi["srgb-rg"].companions[0].channelId satisfies "srgb.r";
+editorUi["display-p3-gb"].companions[2].operationId satisfies "display-p3-channel-patch";
+// @ts-expect-error RGB companion metadata cannot be relabelled to another encoding
+const wrongRgbMetadata: EditorUi = {
+  ...editorUi["srgb-rg"],
+  companions: editorUi["display-p3-rg"].companions,
+};
+void wrongRgbMetadata;
 // @ts-expect-error the new patch encoding cannot accept another RGB representation's channel
 const wrongRgbCompanion: CompanionBinding = {
   channelId: "display-p3.r",

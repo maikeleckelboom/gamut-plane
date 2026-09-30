@@ -69,6 +69,7 @@ test("open Gamuts with requested boundaries paused during inspection", async ({ 
   const root = await app(page);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
+  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expectOpen(page, root, "gamuts-inspect-paused.png");
 });
 

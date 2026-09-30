@@ -23,6 +23,9 @@ test("editable, alternate editor, and observation states remain accessible", asy
   await expectNoHighImpactViolations(page);
   await page.getByRole("combobox", { name: "Coordinates" }).click();
   await page.locator('[role="option"][data-value="srgb"]').click();
+  await expect(page.getByRole("combobox", { name: "Area" })).toBeVisible();
+  await expectNoHighImpactViolations(page);
+  await page.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(
     page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),
   ).toBeVisible();

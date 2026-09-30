@@ -99,6 +99,16 @@ test("the production build preserves generalized editing, inspection, and respon
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
   await page.getByRole("combobox", { name: "Coordinates" }).click();
   await page.locator('[role="option"][data-value="srgb"]').click();
+  await expect(page.getByRole("combobox", { name: "Area" })).toContainText("R / G");
+  await page.getByRole("combobox", { name: "Area" }).click();
+  await page.locator('[role="option"][data-value="srgb-rb"]').click();
+  await expect(page.getByRole("application", { name: /sRGB plane/ })).toHaveAccessibleName(
+    /Horizontal Red.*Vertical Blue.*Fixed Green/,
+  );
+  await page.getByLabel("Green numeric value").fill("-0.1");
+  await page.getByLabel("Green numeric value").press("Enter");
+  await expect(page.getByLabel("Green numeric value")).toHaveValue("-0.1000");
+  await page.getByRole("radio", { name: "Inspect", exact: true }).check();
   await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
   await expect(
     page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),

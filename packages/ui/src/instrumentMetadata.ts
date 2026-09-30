@@ -36,12 +36,12 @@ export type CompanionControl = CompanionBinding &
   NumericPresentation &
   Readonly<{
     controlKind: "range-and-number";
-    symbol: "H" | "L" | "C" | "a" | "b";
+    symbol: "H" | "L" | "C" | "a" | "b" | "R" | "G" | "B";
   }> &
   (
     | Readonly<{
         sliderRange: Readonly<{ min: number; max: number }>;
-        numericBounds: Readonly<{ min: number; max?: number }>;
+        numericBounds: Readonly<{ min?: number; max?: number }>;
       }>
     | Readonly<{
         operationId: "oklab-disc-coordinate";
@@ -57,6 +57,7 @@ export type EditorUi = {
     representationId: E["representationId"];
     label: string;
     description: string;
+    optionLabel?: string;
     companions: readonly (CompanionControl & {
       readonly channelId: ChannelDefinition<E["representationId"]>["id"];
     })[];
@@ -78,6 +79,43 @@ const unitBounds = Object.freeze({ min: 0, max: 1 });
 const hueBounds = Object.freeze({ min: 0, max: 360 });
 const chromaSliderRange = Object.freeze({ min: 0, max: 0.4 });
 const chromaNumericBounds = Object.freeze({ min: 0 });
+const rgbNumericBounds = Object.freeze({});
+
+function rgbCompanions<R extends "srgb" | "display-p3">(representationId: R) {
+  const common = {
+    operationId: `${representationId}-channel-patch`,
+    controlKind: "range-and-number",
+    sliderRange: unitBounds,
+    numericBounds: rgbNumericBounds,
+    step: 0.001,
+    precision: 4,
+  } as const;
+  return Object.freeze([
+    Object.freeze({
+      ...common,
+      channelId: `${representationId}.r`,
+      coordinate: "r",
+      symbol: "R",
+      label: "Red",
+    } as const),
+    Object.freeze({
+      ...common,
+      channelId: `${representationId}.g`,
+      coordinate: "g",
+      symbol: "G",
+      label: "Green",
+    } as const),
+    Object.freeze({
+      ...common,
+      channelId: `${representationId}.b`,
+      coordinate: "b",
+      symbol: "B",
+      label: "Blue",
+    } as const),
+  ] as const);
+}
+const srgbCompanions = rgbCompanions("srgb");
+const p3Companions = rgbCompanions("display-p3");
 
 export const editorUi = Object.freeze({
   "oklch-lc": Object.freeze({
@@ -164,16 +202,72 @@ export const editorUi = Object.freeze({
       }),
     ] as const),
   }),
+  "srgb-rg": Object.freeze({
+    id: "srgb-rg",
+    representationId: "srgb",
+    label: "R / G",
+    optionLabel: "R / G · fixed B",
+    description: "Horizontal Red and vertical Green with fixed Blue.",
+    companions: srgbCompanions,
+  }),
+  "srgb-rb": Object.freeze({
+    id: "srgb-rb",
+    representationId: "srgb",
+    label: "R / B",
+    optionLabel: "R / B · fixed G",
+    description: "Horizontal Red and vertical Blue with fixed Green.",
+    companions: srgbCompanions,
+  }),
+  "srgb-gb": Object.freeze({
+    id: "srgb-gb",
+    representationId: "srgb",
+    label: "G / B",
+    optionLabel: "G / B · fixed R",
+    description: "Horizontal Green and vertical Blue with fixed Red.",
+    companions: srgbCompanions,
+  }),
+  "display-p3-rg": Object.freeze({
+    id: "display-p3-rg",
+    representationId: "display-p3",
+    label: "R / G",
+    optionLabel: "R / G · fixed B",
+    description: "Horizontal Red and vertical Green with fixed Blue.",
+    companions: p3Companions,
+  }),
+  "display-p3-rb": Object.freeze({
+    id: "display-p3-rb",
+    representationId: "display-p3",
+    label: "R / B",
+    optionLabel: "R / B · fixed G",
+    description: "Horizontal Red and vertical Blue with fixed Green.",
+    companions: p3Companions,
+  }),
+  "display-p3-gb": Object.freeze({
+    id: "display-p3-gb",
+    representationId: "display-p3",
+    label: "G / B",
+    optionLabel: "G / B · fixed R",
+    description: "Horizontal Green and vertical Blue with fixed Red.",
+    companions: p3Companions,
+  }),
 } satisfies { readonly [E in EditorUi as E["id"]]?: E });
 
 /** Explicit current admission and order. Never enumerate technical capability catalogs. */
 export const currentPrimaryEditors = Object.freeze([
   editorUi["oklch-lc"],
   editorUi["oklab-ab"],
+  editorUi["srgb-rg"],
+  editorUi["srgb-rb"],
+  editorUi["srgb-gb"],
+  editorUi["display-p3-rg"],
+  editorUi["display-p3-rb"],
+  editorUi["display-p3-gb"],
 ] as const);
 
 /** Admission is a product decision; this default says nothing about technical cardinality. */
 export const preferredEditors = Object.freeze({
   oklch: editorUi["oklch-lc"].id,
   oklab: editorUi["oklab-ab"].id,
+  srgb: editorUi["srgb-rg"].id,
+  "display-p3": editorUi["display-p3-rg"].id,
 } as const);

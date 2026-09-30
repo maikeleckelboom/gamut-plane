@@ -62,7 +62,11 @@ export {
   currentPrimaryEditors,
   preferredEditors,
 } from "./instrumentMetadata.js";
-export { currentEditorHelp, currentEditorCopy } from "./currentProductPresentation.js";
+export {
+  currentEditorHelp,
+  currentEditorCopy,
+  authoredMarkerPoint,
+} from "./currentProductPresentation.js";
 export {
   currentSelectionFacts,
   admittedReferenceGamuts,
@@ -93,4 +97,8 @@ export {
   type PlaneGestureBinding,
 } from "./interaction/planeGesture.js";
 
-export { directCoordinateHelp, directCoordinateContext } from "./directCoordinateControl.js";
+export {
+  directCoordinateHelp,
+  directCoordinateContext,
+  rgbChannelContext,
+} from "./directCoordinateControl.js";

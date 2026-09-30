@@ -3,13 +3,15 @@ import {
   type OklchSample,
   type PickerPlaneFieldSampler,
   type PickerPlaneSampleScratch,
+  type PlanePoint,
 } from "@gamut-plane/core";
+import { serializeNativeRgbSample, type NativeRgbFieldSampler } from "./rgbField.js";
 
 /** The context actually granted by the browser, not the display hardware. */
 export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
 export type RenderedFieldQuality = "full" | "preview";
 export interface FieldRenderInput {
-  plane: PickerPlaneFieldSampler;
+  plane: PickerPlaneFieldSampler | NativeRgbFieldSampler;
   /** Geometry/sampler identity, independent of representation-named legacy plane IDs. */
   fieldId: string;
   fixed: number;
@@ -28,7 +30,7 @@ export function fieldCacheKey(
   colorSpace: CanvasColorSpaceStatus,
   quality: RenderedFieldQuality,
 ): string {
-  return `${input.fieldId}:${size.width}:${size.height}:${size.pixelRatio}:${input.fixed}:${colorSpace}:${quality}`;
+  return `${input.fieldId}:${input.plane.id}:${size.width}:${size.height}:${size.pixelRatio}:${input.fixed}:${colorSpace}:${quality}`;
 }
 
 /** Create in committed lifecycle setup. Drawing is synchronous; adapters own scheduling. */
@@ -42,12 +44,17 @@ export function createFieldRenderer(
   let discFieldContext: CanvasRenderingContext2D | null = null;
   let columnPreviewBuffer: HTMLCanvasElement | null = null;
   let columnPreviewContext: CanvasRenderingContext2D | null = null;
-  let plane: PickerPlaneFieldSampler;
+  let plane: FieldRenderInput["plane"];
   let canvasColorSpace: CanvasColorSpaceStatus = "pending";
   let lastFieldKey = "";
   let quality: RenderedFieldQuality = "full";
   let disposed = false;
   const fieldScratch: PickerPlaneSampleScratch = { input: [0, 0, 0], converted: [0, 0, 0] };
+  function sampleCss(point: PlanePoint, fixed: number, color: OklchSample): string {
+    if ("sampleKind" in plane) return serializeNativeRgbSample(plane.sampleField(point, fixed));
+    plane.sampleField(point, fixed, color, fieldScratch);
+    return serializeOklchSample(color);
+  }
   function publishCanvasColorSpace(status: CanvasColorSpaceStatus): void {
     if (status === canvasColorSpace) return;
     canvasColorSpace = status;
@@ -110,8 +117,10 @@ export function createFieldRenderer(
 
       for (let index = 0; index < rowCount; index += 1) {
         const row = Math.min(index * sampling.rowStep, logicalHeight);
-        plane.sampleField({ x, y: row / logicalHeight }, fixed, color, fieldScratch);
-        gradient.addColorStop(index / Math.max(1, rowCount - 1), serializeOklchSample(color));
+        gradient.addColorStop(
+          index / Math.max(1, rowCount - 1),
+          sampleCss({ x, y: row / logicalHeight }, fixed, color),
+        );
       }
 
       target.fillStyle = gradient;
@@ -221,8 +230,7 @@ export function createFieldRenderer(
 
         for (let column = 0; column < columnSamples; column += 1) {
           const position = column / (columnSamples - 1);
-          plane.sampleField({ x: position, y }, fixed, color, fieldScratch);
-          gradient.addColorStop(position, serializeOklchSample(color));
+          gradient.addColorStop(position, sampleCss({ x: position, y }, fixed, color));
         }
 
         bufferContext.fillStyle = gradient;

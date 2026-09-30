@@ -5,7 +5,7 @@ import { restoreColor, snapshotColor, type ColorSnapshotV1 } from "@gamut-plane/
 import { GamutPlane, type GamutPlaneState } from "@gamut-plane/react";
 
 const initialState: GamutPlaneState = {
-  selection: { representationId: "srgb", editorId: null },
+  selection: { representationId: "srgb", editorId: "srgb-rg" },
   checkedGamuts: ["srgb-gamut"],
   referenceGamutId: null,
   visibleGuides: ["srgb-boundary"],

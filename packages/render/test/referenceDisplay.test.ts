@@ -96,8 +96,12 @@ describe("sampled spatial Reference", () => {
         "display-p3-boundary",
         "srgb-boundary",
       ]);
+      if (field.editorId !== "oklch-lc" && field.editorId !== "oklab-ab") throw Error("fixture");
       const constrain = vi.fn(field.geometry.constrain);
-      const context = { ...field, geometry: { ...field.geometry, constrain } };
+      const context =
+        field.editorId === "oklch-lc"
+          ? { ...field, geometry: { ...field.geometry, constrain } }
+          : { ...field, geometry: { ...field.geometry, constrain } };
       for (const gamutId of ["srgb-gamut", "display-p3-gamut"] as const) {
         const result = referenceDisplay(gamutId, guides, context, checks);
         expect(result?.guideId).toBe(referenceGuidePolicy[gamutId]);
@@ -136,7 +140,11 @@ describe("sampled spatial Reference", () => {
         },
       ];
       const constrain = vi.fn(field.geometry.constrain);
-      const context = { ...field, geometry: { ...field.geometry, constrain } };
+      if (field.editorId !== "oklch-lc" && field.editorId !== "oklab-ab") throw Error("fixture");
+      const context =
+        field.editorId === "oklch-lc"
+          ? { ...field, geometry: { ...field.geometry, constrain } }
+          : { ...field, geometry: { ...field.geometry, constrain } };
       const result = referenceDisplay("srgb-gamut", outside, context, checks);
       expect(result?.showExcursion).toBe(true);
       expect(constrain).not.toHaveBeenCalled();
@@ -145,10 +153,11 @@ describe("sampled spatial Reference", () => {
       expect(referenceDisplay("srgb-gamut", guides, null, checks)?.spatial).toEqual({
         kind: "unavailable",
       });
-      const nonfinite = {
-        ...field,
-        geometry: { ...field.geometry, toPoint: () => ({ x: Infinity, y: 0 }) },
-      };
+      const toPoint = () => ({ x: Infinity, y: 0 });
+      const nonfinite =
+        field.editorId === "oklch-lc"
+          ? { ...field, geometry: { ...field.geometry, toPoint } }
+          : { ...field, geometry: { ...field.geometry, toPoint } };
       expect(referenceDisplay("srgb-gamut", guides, nonfinite, checks)?.spatial).toEqual({
         kind: "unavailable",
       });

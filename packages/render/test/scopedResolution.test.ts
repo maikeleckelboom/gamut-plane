@@ -70,13 +70,15 @@ describe("editor and field resolution", () => {
       },
     });
     expect(core.snapshotColor(source)).toEqual(before);
-    expect(resolveField(source, resolveEditorVisualSupport("srgb-rg"))).toEqual({
-      kind: "field-unsupported",
+    expect(resolveField(source, resolveEditorVisualSupport("srgb-rg"))).toMatchObject({
+      kind: "available",
+      markerInDomain: false,
+      samplingFixed: -0.1,
     });
     expect(core.analyzeGamut).not.toHaveBeenCalled();
   });
 
-  it("retains six technical RGB geometries without fabricating fields, guides or observations", () => {
+  it("resolves six native RGB fields while leaving guides honestly unavailable", () => {
     for (const id of [
       "srgb-rg",
       "srgb-rb",
@@ -89,15 +91,14 @@ describe("editor and field resolution", () => {
       if (context.kind !== "editor") throw new Error("Expected a technical editor");
       expect(context.editor).toBe(editorDefinitions[id]);
       expect(context.geometry).toBe(geometryDefinitions[editorDefinitions[id].geometryId]);
-      expect(context.field).toBeNull();
-      expect(resolveField(ordinary, context)).toEqual({ kind: "field-unsupported" });
+      expect(context.field).toBe(fieldSupport[id]);
+      expect(resolveField(ordinary, context).kind).toBe("available");
       expect(resolveRequestedGuides(ordinary, context, guideIds)).toEqual(
         guideIds.map((guideId) => ({ guideId, kind: "no-guide-for-editor" })),
       );
     }
-    for (const geometry of Object.values(geometryDefinitions))
-      expect(geometry.project).not.toHaveBeenCalled();
-    expect(core.represent).not.toHaveBeenCalled();
+    expect(geometryDefinitions["oklch-lc-rectangle"].project).not.toHaveBeenCalled();
+    expect(geometryDefinitions["oklab-ab-disc"].project).not.toHaveBeenCalled();
     expect(core.analyzeGamut).not.toHaveBeenCalled();
     expect(core.getPickerGuide).not.toHaveBeenCalled();
   });

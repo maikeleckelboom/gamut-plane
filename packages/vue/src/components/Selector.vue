@@ -33,11 +33,22 @@ onBeforeUnmount(() => binding?.dispose());
       aria-expanded="false"
       aria-haspopup="listbox"
       :aria-controls="`${id}-list`"
+      :aria-describedby="
+        options.find((option) => option.value === value)?.description
+          ? `${id}-description`
+          : undefined
+      "
       :disabled="disabled"
     >
       <span>{{ options.find((option) => option.value === value)?.label }}</span
       ><span aria-hidden="true">▾</span>
     </button>
+    <span
+      v-if="options.find((option) => option.value === value)?.description"
+      :id="`${id}-description`"
+      data-gp-visually-hidden
+      >{{ options.find((option) => option.value === value)?.description }}</span
+    >
     <div
       ref="popup"
       :id="`${id}-list`"
@@ -57,13 +68,13 @@ onBeforeUnmount(() => binding?.dispose());
         :aria-label="
           option.status
             ? `${option.label}, gamut status ${exactStatusCopy[option.status]}`
-            : option.label
+            : `${option.optionLabel ?? option.label}${option.description ? `. ${option.description}` : ''}`
         "
       >
         <span class="gp-selector-check" aria-hidden="true">{{
           option.value === value ? "✓" : ""
         }}</span>
-        <span>{{ option.label }}</span>
+        <span>{{ option.optionLabel ?? option.label }}</span>
         <span class="gp-selector-status" :data-gp-status="option.status">{{
           option.status ? exactStatusCopy[option.status] : ""
         }}</span>

@@ -14,6 +14,7 @@ import {
 } from "@gamut-plane/core";
 import { colorGradient } from "../presentation.js";
 import type { CurrentField } from "./field.js";
+import { serializeNativeRgbSample } from "../rgbField.js";
 
 /** Reuse selected OKLCH; OKLab needs one companion observation for current CSS detail. */
 export function currentOklchObservation(
@@ -58,6 +59,8 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
       })),
     };
   }
+  if (field.projection.representationId !== "oklab")
+    throw new Error("Perceptual editable detail requires an OKLCH or OKLab field");
   const projection = field.projection;
   const [labL, a, b] = projection.representation.channels;
   const coordinateDetail = (coordinate: "a" | "b") => {
@@ -99,4 +102,27 @@ export function currentEditableDetail(field: CurrentField, oklch: ColorRepresent
       };
     }),
   };
+}
+
+/** RGB visuals use the successful selected observation, including actual extended siblings. */
+export function currentRgbEditableDetail(rgb: ColorRepresentation<"srgb" | "display-p3">) {
+  const [r, g, b] = rgb.channels;
+  const gradient = (coordinate: "r" | "g" | "b") =>
+    colorGradient(12, (position) => ({
+      space: rgb.space,
+      channels: [
+        coordinate === "r" ? position : r,
+        coordinate === "g" ? position : g,
+        coordinate === "b" ? position : b,
+      ],
+      alpha: 1,
+    }));
+  const common = {
+    activeCss: serializeNativeRgbSample(rgb),
+    markerCss: serializeNativeRgbSample({ ...rgb, alpha: 1 }),
+    gradients: { r: gradient("r"), g: gradient("g"), b: gradient("b") },
+  };
+  return rgb.space === "srgb"
+    ? { ...common, view: "srgb" as const, rgb }
+    : { ...common, view: "display-p3" as const, rgb };
 }

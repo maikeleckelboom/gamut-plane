@@ -1,22 +1,32 @@
-import {
-  type ColorValue,
-  type PickerPlaneFieldSampler,
-  type PickerPlaneGeometry,
-  type PlanePoint,
-} from "@gamut-plane/core";
+import { type ColorValue, type PlanePoint } from "@gamut-plane/core";
 import {
   createFieldRenderer,
   pointStyle,
   type CanvasColorSpaceStatus,
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
+import { authoredMarkerPoint } from "@gamut-plane/ui";
 import { planeWarningOffset, type CurrentField } from "@gamut-plane/render/internal/current";
 
 export interface PlaneResourceInput {
   value: ColorValue;
-  plane: PickerPlaneGeometry & PickerPlaneFieldSampler;
+  plane: CurrentField["plane"];
   field: CurrentField;
   interactionPreview: boolean;
+}
+
+export interface PlaneResourceBinding {
+  readonly plane: CurrentField["plane"];
+  projection(value: ColorValue): CurrentField["projection"];
+  activePoint(value: ColorValue): PlanePoint;
+  position(point: PlanePoint): void;
+  measure(): void;
+  point(event: PointerEvent): PlanePoint | null;
+  redraw(): void;
+  start(): void;
+  updatePlane(): boolean;
+  reconcile(allowPosition: boolean): void;
+  dispose(): void;
 }
 
 /** React's committed Canvas, environment, geometry, and marker binding. */
@@ -27,7 +37,7 @@ export function mountPlaneResources(
   current: () => PlaneResourceInput,
   onCapability: (status: CanvasColorSpaceStatus) => void,
   onQuality: (quality: RenderedFieldQuality) => void,
-) {
+): PlaneResourceBinding {
   const renderer = createFieldRenderer(canvas, onCapability);
   let disposed = false;
   let fieldFrame: number | null = null;
@@ -43,7 +53,7 @@ export function mountPlaneResources(
     return observed.value;
   }
   function activePoint(value: ColorValue): PlanePoint {
-    return current().field.geometry.constrain(projection(value).point);
+    return authoredMarkerPoint(current().field.geometry, projection(value).point);
   }
   function fixed(): number {
     return current().field.samplingFixed;
@@ -96,7 +106,7 @@ export function mountPlaneResources(
   }
   function resize(): void {
     measure();
-    position(current().field.geometry.constrain(current().field.projection.point));
+    position(authoredMarkerPoint(current().field.geometry, current().field.projection.point));
     redraw();
   }
   function scroll(): void {
@@ -126,7 +136,7 @@ export function mountPlaneResources(
       window.addEventListener("scroll", scroll, { capture: true, passive: true });
       window.addEventListener("resize", resize);
       measure();
-      position(current().field.geometry.constrain(current().field.projection.point));
+      position(authoredMarkerPoint(current().field.geometry, current().field.projection.point));
       draw();
       trackResolution();
     },
@@ -137,7 +147,7 @@ export function mountPlaneResources(
     },
     reconcile(allowPosition: boolean): void {
       if (allowPosition)
-        position(current().field.geometry.constrain(current().field.projection.point));
+        position(authoredMarkerPoint(current().field.geometry, current().field.projection.point));
       const nextInput = `${current().field.geometry.id}:${fixed()}:${current().interactionPreview}`;
       if (nextInput !== fieldInput) {
         fieldInput = nextInput;

@@ -25,7 +25,7 @@ const request = {
 };
 
 describe("generalized selection policy", () => {
-  it("knows native RGB editors but rejects them through unchanged product admission", () => {
+  it("admits all six RGB editors explicitly, without duplicate known identities", () => {
     expect(currentSelectionFacts.knownEditors).toHaveLength(8);
     expect(
       currentSelectionFacts.knownEditors.map(({ id, representationId }) => ({
@@ -41,10 +41,18 @@ describe("generalized selection policy", () => {
     expect(currentSelectionFacts.admittedEditors.map((editor) => editor.id)).toEqual([
       "oklch-lc",
       "oklab-ab",
+      "srgb-rg",
+      "srgb-rb",
+      "srgb-gb",
+      "display-p3-rg",
+      "display-p3-rb",
+      "display-p3-gb",
     ]);
     expect(currentSelectionFacts.preferredEditors).toEqual({
       oklch: "oklch-lc",
       oklab: "oklab-ab",
+      srgb: "srgb-rg",
+      "display-p3": "display-p3-rg",
     });
     for (const [representationId, ids] of [
       ["srgb", ["srgb-rg", "srgb-rb", "srgb-gb"]],
@@ -52,15 +60,15 @@ describe("generalized selection policy", () => {
     ] as const) {
       for (const editorId of ids) {
         expect(validateSelection({ representationId, editorId })).toEqual({
-          ok: false,
-          issue: { code: "editor-not-admitted" },
+          ok: true,
+          value: { representationId, editorId },
         });
         expect(
           validateInstrumentViewState(
             { ...request, selection: { representationId, editorId } },
             guides,
           ),
-        ).toEqual({ ok: false, issue: { code: "editor-not-admitted" } });
+        ).toMatchObject({ ok: true, value: { selection: { representationId, editorId } } });
       }
       expect(
         validateInstrumentViewState(
@@ -68,8 +76,12 @@ describe("generalized selection policy", () => {
           guides,
         ).ok,
       ).toBe(true);
-      expect(defaultSelection(representationId)).toEqual({ representationId, editorId: null });
+      expect(defaultSelection(representationId)).toEqual({ representationId, editorId: ids[0] });
     }
+    expect(new Set(currentSelectionFacts.knownEditors.map((editor) => editor.id)).size).toBe(8);
+    expect(
+      currentSelectionFacts.knownEditors.every((editor) => Object.keys(editor).length === 2),
+    ).toBe(true);
   });
 
   it("accepts all four representations and deliberate observation-only selection", () => {
@@ -87,10 +99,10 @@ describe("generalized selection policy", () => {
     }
     expect(defaultSelection("oklch")).toEqual({ representationId: "oklch", editorId: "oklch-lc" });
     expect(defaultSelection("oklab")).toEqual({ representationId: "oklab", editorId: "oklab-ab" });
-    expect(defaultSelection("srgb")).toEqual({ representationId: "srgb", editorId: null });
+    expect(defaultSelection("srgb")).toEqual({ representationId: "srgb", editorId: "srgb-rg" });
     expect(defaultSelection("display-p3")).toEqual({
       representationId: "display-p3",
-      editorId: null,
+      editorId: "display-p3-rg",
     });
     expect(validateSelection({ representationId: "oklch", editorId: null })).toMatchObject({
       ok: true,

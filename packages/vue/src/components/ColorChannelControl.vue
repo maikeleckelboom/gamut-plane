@@ -17,7 +17,7 @@ const props = withDefaults(
   defineProps<{
     id: string;
     label: string;
-    channel: "L" | "C" | "H" | "a" | "b";
+    channel: "L" | "C" | "H" | "a" | "b" | "R" | "G" | "B";
     modelValue: number;
     min?: number | undefined;
     max?: number | undefined;
@@ -29,7 +29,7 @@ const props = withDefaults(
     normalizeValue?: (value: number) => number;
     precision?: number;
     intervals?: readonly LinearControlInterval[];
-    overflowMax?: boolean;
+    numericBounds?: Readonly<{ min?: number; max?: number }>;
     help?: string;
     helpVisuallyHidden?: boolean;
     warning?: string | null;
@@ -37,7 +37,6 @@ const props = withDefaults(
   {
     precision: 3,
     intervals: () => [],
-    overflowMax: false,
     help: "",
   },
 );
@@ -62,7 +61,7 @@ const boundedModelValue = computed(() => clamp(props.modelValue));
 const isOutsideInstrument = computed(
   () => available.value && (props.modelValue < props.min! || props.modelValue > props.max!),
 );
-const numericMax = computed<number | undefined>(() => (props.overflowMax ? undefined : props.max));
+const numericBounds = computed(() => props.numericBounds ?? { min: props.min, max: props.max });
 const rangeElement = ref<HTMLInputElement>();
 let rangeBinding: ReturnType<typeof mountRange> | undefined;
 // SSR supplies the initial value; mountRange owns the live native value after mount.
@@ -167,8 +166,8 @@ onBeforeUnmount(() => {
         :aria-disabled="!available || undefined"
         :context="coordinateContext"
         :precision="precision"
-        :min="min"
-        :max="numericMax"
+        :min="numericBounds.min"
+        :max="numericBounds.max"
         :step="step"
         @update:model-value="emit('update:modelValue', $event)"
         @commit="emit('commit', $event)"

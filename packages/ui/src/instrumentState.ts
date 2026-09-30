@@ -58,7 +58,8 @@ export type SelectionFacts<E extends EditorIdentity = ProductEditor> = Readonly<
 
 /** Identity-only validation facts keep UI runtime independent of core math and render. */
 const knownEditors: readonly TechnicalEditorIdentity[] = Object.freeze([
-  ...currentPrimaryEditors,
+  Object.freeze({ id: "oklch-lc", representationId: "oklch" }),
+  Object.freeze({ id: "oklab-ab", representationId: "oklab" }),
   Object.freeze({ id: "srgb-rg", representationId: "srgb" }),
   Object.freeze({ id: "srgb-rb", representationId: "srgb" }),
   Object.freeze({ id: "srgb-gb", representationId: "srgb" }),

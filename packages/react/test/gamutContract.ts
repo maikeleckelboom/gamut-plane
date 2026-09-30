@@ -225,7 +225,7 @@ export function gamutContract(mount: Mount) {
     });
 
     it.each(["srgb", "display-p3"] as const)(
-      "retains paused Boundary requests while %s is inspection-only",
+      "retains paused Boundary requests while inspecting %s",
       async (representationId) => {
         const inspecting: GamutPlaneState = {
           selection: { representationId, editorId: null },

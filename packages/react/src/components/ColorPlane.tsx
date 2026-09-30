@@ -5,7 +5,15 @@ import type {
   GeneralizedGuideDisplay,
   ReferenceDisplay,
 } from "@gamut-plane/render/internal/current";
-import { currentEditorCopy, gpAttribute, gpAxis, gpGamut, gpMarker, gpPart } from "@gamut-plane/ui";
+import {
+  authoredMarkerPoint,
+  currentEditorCopy,
+  gpAttribute,
+  gpAxis,
+  gpGamut,
+  gpMarker,
+  gpPart,
+} from "@gamut-plane/ui";
 import { exactGamutUi, referenceWarningGlyphPath } from "@gamut-plane/ui";
 import {
   pointStyle,
@@ -37,7 +45,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const projection = field.projection;
   const x = projection.coordinates.x;
   const y = projection.coordinates.y;
-  const activePoint = field.geometry.constrain(projection.point);
+  const activePoint = authoredMarkerPoint(field.geometry, projection.point);
   const spatialReference =
     props.reference?.showExcursion && props.reference.spatial.kind === "available"
       ? props.reference.spatial
@@ -69,7 +77,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   useLayoutEffect(() => {
     binding.current?.reconcile();
   });
-  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x?.toFixed(3) ?? "missing"}. Vertical ${plane.yAxis.label} ${y?.toFixed(3) ?? "missing"}. Arrow keys adjust the selected point.${field.geometry.fixed === "oklch.h" && projection.coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}`;
+  const label = `${plane.label} plane. Horizontal ${plane.xAxis.label} ${x?.toFixed(3) ?? "missing"}. Vertical ${plane.yAxis.label} ${y?.toFixed(3) ?? "missing"}.${"sampleKind" in plane ? ` Fixed ${plane.fixedAxis.label} ${field.samplingFixed}.` : ""} Arrow keys adjust the selected point.${field.geometry.fixed === "oklch.h" && projection.coordinates.fixed === null ? ` ${currentEditorCopy.chromaMissingHue}` : ""}${"sampleKind" in plane && !field.markerInDomain ? ` ${currentEditorCopy.rgbOverflow}` : ""}`;
   const geometryStyle = {
     "--picker-active-marker-size": `${PICKER_ACTIVE_MARKER_RADIUS * 2}px`,
   };

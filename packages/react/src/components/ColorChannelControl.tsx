@@ -16,7 +16,7 @@ import { NumericInput } from "./NumericInput.js";
 
 export interface ColorChannelControlProps {
   id: string;
-  channel: "H" | "L" | "C" | "a" | "b";
+  channel: "H" | "L" | "C" | "a" | "b" | "R" | "G" | "B";
   label: string;
   value: number;
   min?: number | undefined;
@@ -28,7 +28,7 @@ export interface ColorChannelControlProps {
   precision: number;
   gradient: string;
   intervals: readonly LinearControlInterval[];
-  overflowMax?: boolean;
+  numericBounds?: Readonly<{ min?: number; max?: number }>;
   help?: string | undefined;
   helpVisuallyHidden?: boolean;
   warning?: string | null;
@@ -58,12 +58,12 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     precision,
     gradient,
     intervals,
-    overflowMax,
     help,
     onComplete,
     onCancel,
   } = props;
   const available = min !== undefined && max !== undefined;
+  const numericBounds = props.numericBounds ?? { min, max };
   const range = useRef<HTMLInputElement>(null);
   const current = useCommitted({
     ...props,
@@ -118,8 +118,8 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
           readOnly={!available}
           aria-disabled={!available || undefined}
           context={props.coordinateContext}
-          min={min}
-          max={overflowMax ? undefined : max}
+          min={numericBounds.min}
+          max={numericBounds.max}
           step={step}
           precision={precision}
           onComplete={onComplete}

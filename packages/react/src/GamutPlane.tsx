@@ -31,6 +31,7 @@ import {
   editorUi,
   directCoordinateHelp,
   directCoordinateContext,
+  rgbChannelContext,
   currentEditorHelp,
   generalizedCopy,
   authorshipContextCopy,
@@ -137,15 +138,14 @@ export function GamutPlane(props: GamutPlaneProps) {
   const oklch = visual.kind === "available" ? visual.oklch : null;
   const detail = visual.kind === "available" ? visual.detail : null;
   const view = field?.projection.representationId ?? null;
-  const help =
-    field && oklch
-      ? currentEditorHelp(
-          field.editorId,
-          field.geometry.domain.kind,
-          oklch.channels[2] === null,
-          field.markerInDomain,
-        )
-      : null;
+  const help = field
+    ? currentEditorHelp(
+        field.editorId,
+        field.geometry.domain.kind,
+        oklch?.channels[2] === null,
+        field.markerInDomain,
+      )
+    : null;
   const guides = generalizedGuideDisplay(accepted.guides);
   const reference = referenceDisplay(
     acceptedState.referenceGamutId,
@@ -160,11 +160,12 @@ export function GamutPlane(props: GamutPlaneProps) {
   const getHueReference = () =>
     hueReferenceContext.current === revision.contextKey ? hueReference.current : undefined;
   useLayoutEffect(() => {
+    if (view !== "oklch" && view !== "oklab") return;
     hueReferenceContext.current = revision.contextKey;
     const hue = acceptedHue;
     if (hue !== null) hueReference.current = { hue };
     else hueReference.current = undefined;
-  }, [value, revision.contextKey, acceptedHue]);
+  }, [value, revision.contextKey, acceptedHue, view]);
   const [huePreview, setHuePreview] = useState(false);
   // An accepted editor transition interrupts temporary preview ownership.
   useLayoutEffect(() => {
@@ -172,12 +173,40 @@ export function GamutPlane(props: GamutPlaneProps) {
   }, [revision.contextKey]);
   function edit(result: ColorResult<ColorValue, PlaneEditError>, complete: boolean) {
     if (!result.ok) return;
-    const observed = represent(result.value, "oklch");
-    if (observed.ok && observed.value.channels[2] !== null) {
-      hueReference.current = { hue: observed.value.channels[2] };
+    if (view === "oklch" || view === "oklab") {
+      const observed = represent(result.value, "oklch");
+      if (observed.ok && observed.value.channels[2] !== null) {
+        hueReference.current = { hue: observed.value.channels[2] };
+      }
     }
     onValueChange(result.value);
     if (complete) onValueCommit?.(result.value);
+  }
+  function editRgb(
+    space: "srgb" | "display-p3",
+    coordinate: "r" | "g" | "b",
+    next: number,
+    complete: boolean,
+  ) {
+    if (space === "srgb") {
+      const operation = editOperationDefinitions["srgb-channel-patch"];
+      edit(
+        operation.author(revision.source, {
+          ...operation.request,
+          channels: { [coordinate]: next },
+        }),
+        complete,
+      );
+    } else {
+      const operation = editOperationDefinitions["display-p3-channel-patch"];
+      edit(
+        operation.author(revision.source, {
+          ...operation.request,
+          channels: { [coordinate]: next },
+        }),
+        complete,
+      );
+    }
   }
   const dom = Object.fromEntries(
     Object.entries(rootProps).filter(
@@ -261,9 +290,8 @@ export function GamutPlane(props: GamutPlaneProps) {
         <div className="gpr-plane-instrument-controls" data-gp-part={gpPart.controls}>
           {field &&
             detail &&
-            oklch &&
             help &&
-            (detail.view === "oklch" ? (
+            (detail.view === "oklch" && oklch ? (
               <>
                 <ColorChannelControl
                   key={`${revision.contextKey}:${hue.channelId}:${hue.operationId}`}
@@ -345,7 +373,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                   precision={chroma.precision}
                   gradient={detail.chromaGradient}
                   intervals={guides.chromaIntervals}
-                  overflowMax={!("max" in chroma.numericBounds)}
+                  numericBounds={chroma.numericBounds}
                   help={help.chromaHelp}
                   onInput={(next) =>
                     edit(
@@ -369,7 +397,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                   }
                 />
               </>
-            ) : (
+            ) : detail.view === "oklab" ? (
               <>
                 <ColorChannelControl
                   key={`${revision.contextKey}:${fixedLightness.channelId}:${fixedLightness.operationId}`}
@@ -455,7 +483,32 @@ export function GamutPlane(props: GamutPlaneProps) {
                   );
                 })}
               </>
-            ))}
+            ) : detail.view === "srgb" || detail.view === "display-p3" ? (
+              editorUi[detail.view === "srgb" ? "srgb-rg" : "display-p3-rg"].companions.map(
+                (control) => (
+                  <ColorChannelControl
+                    key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
+                    {...shared}
+                    id={`${id}-${detail.view}-${control.coordinate}`}
+                    channel={control.symbol}
+                    label={control.label}
+                    value={detail.rgb.channels[{ r: 0, g: 1, b: 2 }[control.coordinate]]!}
+                    min={control.sliderRange.min}
+                    max={control.sliderRange.max}
+                    numericBounds={control.numericBounds}
+                    step={control.step}
+                    precision={control.precision}
+                    gradient={detail.gradients[control.coordinate]}
+                    intervals={[]}
+                    coordinateContext={rgbChannelContext(control.coordinate, detail.rgb)}
+                    help={help.domainHelp}
+                    helpVisuallyHidden
+                    onInput={(next) => editRgb(detail.view, control.coordinate, next, false)}
+                    onComplete={(next) => editRgb(detail.view, control.coordinate, next, true)}
+                  />
+                ),
+              )
+            ) : null)}
           {accepted.authored.representationId !== accepted.selection.representationId && (
             <p data-gp-part={gpPart.authorshipContext}>
               {authorshipContextCopy(accepted.authored.representationId)}

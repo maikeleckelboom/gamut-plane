@@ -14,11 +14,9 @@ state.visibleGuides[0] satisfies "srgb-boundary" | "display-p3-boundary" | undef
 
 const observationOnly: InstrumentSelection = { representationId: "oklch", editorId: null };
 const rgbObservation: InstrumentSelection = { representationId: "srgb", editorId: null };
-// @ts-expect-error technically defined RGB editors remain outside public product admission
 const nativeRgbEditor: InstrumentSelection = { representationId: "srgb", editorId: "srgb-rg" };
 const nativeP3Editor: InstrumentSelection = {
   representationId: "display-p3",
-  // @ts-expect-error Display P3 technical existence also grants no product admission
   editorId: "display-p3-rg",
 };
 // @ts-expect-error representation identities are core-defined
@@ -30,8 +28,11 @@ const inventedEditor: InstrumentSelection = {
   // @ts-expect-error semantic edit operations are not editor identities
   editorId: "oklch-hue-edit",
 };
-// @ts-expect-error an RGB representation has no admitted current editor
+// @ts-expect-error an RGB representation cannot select an OKLCH editor
 const rgbEditor: InstrumentSelection = { representationId: "srgb", editorId: "oklch-lc" };
+// @ts-expect-error RGB Area identities retain encoding correlation
+const mismatchedRgb: InstrumentSelection = { representationId: "srgb", editorId: "display-p3-rb" };
+void mismatchedRgb;
 const syntheticEditor: InstrumentSelection = {
   representationId: "oklch",
   // @ts-expect-error technical existence does not grant public product admission
