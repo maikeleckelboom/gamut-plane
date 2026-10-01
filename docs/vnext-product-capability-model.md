@@ -88,4 +88,4 @@ The public two-view props and boundary-target product state are retired. The two
 | 2N.0  | Implemented | Six technical RGB editors/geometries, native point/channel authorship, raw projection, constrained interaction and core/type invariants.                                  |
 | 2N.1  | Implemented | Product admission, preferred Areas, Area UI, native fields, R/G/B controls and raw authored marker presentation in both adapters.                                         |
 | 2N.2  | Implemented | RGB gamut cross-sections, channel intervals, full/partial/empty/degenerate successful results and unchanged Reference endpoint conversion with justified slice tolerance. |
-| 2N.3  | Deferred    | Integrated acceptance, documentation closeout and focused test-debt review.                                                                                               |
+| 2N.3  | Candidate   | Integrated verification, documentation closeout and focused test-debt review; [evidence and remaining external acceptance](phase-2n3-acceptance.md).                      |

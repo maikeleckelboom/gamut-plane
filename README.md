@@ -8,6 +8,7 @@ The selected `ColorValue` retains its defining representation. Changing the sele
 
 - **OKLCH:** lightness and chroma at a fixed hue.
 - **OKLab:** `a` and `b` at a fixed lightness.
+- **sRGB and Display P3:** R/G at fixed B, R/B at fixed G, or G/B at fixed R, in the selected encoded RGB space.
 
 Alpha and ordinary out-of-gamut coordinates are preserved. `analyzeGamut` reports exact `inside`, `within-tolerance` or `outside` status independently of the sampled guides. Editing never silently maps into a display gamut; `mapToGamut` is explicit. Strict CSS and Hex output use explicit `serializeCss` and `serializeHex` policies and can reject a value.
 

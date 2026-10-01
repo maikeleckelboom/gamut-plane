@@ -1,10 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import * as core from "@gamut-plane/core";
-import {
-  geometryDefinitions,
-  convertLinearRgb,
-  encodeRgbCoordinate,
-} from "@gamut-plane/core/internal/capabilities";
+import { geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
 import {
   rgbGamutSlice,
   rgbChannelInterval,
@@ -94,6 +90,7 @@ describe("analytic native RGB slices", () => {
           );
           expect(result.dimension).toBe(tangent);
           expect(result.closed).toBe(false);
+          expect(geometryToSvgPath(result.points, result.closed)).not.toContain("Z");
           expect(result.points.length).toBeGreaterThan(0);
           expect(result.points.length / 2).toBeLessThanOrEqual(RGB_CURVE_MAX_POINTS);
           for (let i = 0; i < result.points.length; i += 2) {
@@ -214,28 +211,6 @@ describe("analytic native RGB slices", () => {
     expect(off.points.length).toBeGreaterThan(0);
   });
 
-  it("retains tangent point/line geometry at transformed-cube extrema", () => {
-    // P3 red in sRGB has the largest R; at that R, the third primary is free (R matrix B=0).
-    const vertices = Array.from({ length: 8 }, (_, i) =>
-      convertLinearRgb([i & 1, (i >> 1) & 1, (i >> 2) & 1], "display-p3", "srgb"),
-    );
-    for (const [editor, axis] of [
-      ["srgb-rg", 2],
-      ["srgb-gb", 0],
-    ] as const) {
-      const minimum = Math.min(...vertices.map((v) => v[axis]));
-      const result = slice(
-        geometryDefinitions[`${editor}-rectangle`],
-        "display-p3",
-        encodeRgbCoordinate(minimum),
-      );
-      expect(["point", "line"]).toContain(result.dimension);
-      expect(result.closed).toBe(false);
-      expect(result.points.length).toBeGreaterThan(0);
-      expect(geometryToSvgPath(result.points, result.closed)).not.toContain("Z");
-    }
-  });
-
   it("bounds chord error through both transfer junctions and negative extended coordinates", () => {
     const result = slice(geometryDefinitions["srgb-rg-rectangle"], "display-p3", 0.2);
     expect(result.points.length).toBeGreaterThan(20);
@@ -295,6 +270,7 @@ describe("native channel intersections and independent forms", () => {
       // The blue primary ray is shared, but its unit endpoint has different luminance.
       for (const channels of [
         [0, 0, 0.5],
+        [1, 1, 0.5],
         [1, 1, 1],
       ] as const) {
         expect(inside(observed(space, target, channels))).toBe(true);
@@ -305,6 +281,7 @@ describe("native channel intersections and independent forms", () => {
           const interval = result.value.interval!;
           expect(interval.start).toBeLessThanOrEqual(channels[axis] + RGB_GEOMETRY_EPSILON);
           expect(interval.end).toBeGreaterThanOrEqual(channels[axis] - RGB_GEOMETRY_EPSILON);
+          if (channels[0] === 1 && channels[1] === 1) expect(interval.end).toBeCloseTo(1, 12);
           for (const endpoint of [interval.start, interval.end]) {
             const native: [number, number, number] = [...channels];
             native[axis] = endpoint;
@@ -337,23 +314,6 @@ describe("native channel intersections and independent forms", () => {
       }
     },
   );
-  it.each([
-    [[1, 1, 0.5], 2],
-    [[1, 1, 1], 0],
-    [[1, 1, 1], 1],
-    [[1, 1, 1], 2],
-  ] as const)("retains the white endpoint for %s on axis %s", (channels, axis) => {
-    expect(core.analyzeGamut(color("display-p3", [1, 1, 1]), "srgb-gamut")).toMatchObject({
-      ok: true,
-      value: { status: "inside" },
-    });
-    const result = rgbChannelInterval("display-p3", "srgb", channels, axis);
-    expect(result.kind).toBe("available");
-    if (result.kind !== "available") throw Error("interval");
-    expect(result.value.interval).not.toBeNull();
-    expect(result.value.interval!.start).toBeLessThanOrEqual(channels[axis] + 1e-12);
-    expect(result.value.interval!.end).toBeCloseTo(1, 12);
-  });
   it("retains a tangent black-only interval along the P3 red primary in sRGB", () => {
     expect(rgbChannelInterval("display-p3", "srgb", [0.8, 0, 0], 0)).toMatchObject({
       kind: "available",

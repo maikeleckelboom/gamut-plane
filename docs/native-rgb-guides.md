@@ -1,4 +1,4 @@
-# Native RGB guides (Phase 2N.2)
+# Native RGB guides
 
 All six RGB Areas explicitly support both gamut guides. `ColorValue` remains the authored authority. Core's internal capability entry supplies a narrow conversion bridge backed by its existing `@texel/color` dependency: linear RGB conversion, the shared extended sRGB transfer function, and conversion of an unchanged OKLCH sample. Render owns intersections and visual facts; UI consumes availability and owns product policy without importing runtime color math. Adapters bind shared presentation to their existing controls and lifecycle. No new public headless API is introduced.
 
@@ -46,4 +46,6 @@ RGB forms have a discriminant and correlated geometry/channel identities; they d
 
 Render owner tests carry the six-Area/two-gamut matrix and independent encoded-conversion oracle, transfer error, determinism, extrema, tangencies, overflow, Reference compatibility and serialization. Shared adapter contracts cover native interval wiring and resolved states. Browser sentinels cover partial/full/empty guides and an incompatible Reference with Outside warning. Packed Vue/React hosts exercise installed guides. Nuxt/Next verify meaningful server-rendered contour/interval markup and retain the same nodes through hydration.
 
-Phase 2N.3 remains deferred: integrated acceptance, documentation closeout and focused test-debt review. This phase adds no representation, editor, viewport system, mapping workflow or plugin architecture.
+`rgbApproximationBudget.test.ts` deterministically exhausts both production limits through extreme cube inputs at the internal conversion seam. It runs the real intersection, transfer, chord certificate and bounded recursion with unchanged policies. The point fixture reaches the emitted-point ceiling; the depth fixture fails before that ceiling. Both retain explicit `approximation-budget` without a successful geometry/error claim, serialize no path, preserve independent intervals/Reference/native editing, and leave the authored snapshot and exact checks unchanged. These are defensive extreme-input fixtures, not evidence that ordinary built-in sRGB/P3 cubes exhaust the limits. UI's `gamutShell.test.ts` independently proves unavailable contours remain requested and Paused; successful empty/point/line contours are covered in both adapters.
+
+The [2N.3 acceptance candidate](phase-2n3-acceptance.md) records integrated verification, test-debt consolidation and limitations. Implementation closeout does not imply external review acceptance or completion of the entire vNext roadmap. This phase adds no representation, editor, viewport system, mapping workflow or plugin architecture.

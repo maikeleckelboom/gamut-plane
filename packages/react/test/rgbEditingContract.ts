@@ -81,12 +81,22 @@ export function rgbEditingContract(
     it.each(["srgb", "display-p3"] as const)(
       "presents %s resolved full/partial/empty guides without pausing or reauthoring",
       async (space) => {
-        const initial = rgb(space, [0.2, 0.4, 0.6]);
+        const initial = rgb(space, [0.95, 0.1, 0.4]);
         const state = {
           ...rgbState(space),
           visibleGuides: ["srgb-boundary", "display-p3-boundary"] as const,
         };
         const host = await mount(initial, state);
+        if (space === "display-p3") {
+          expect(
+            host.element.querySelector("[role=application]")?.getAttribute("aria-label"),
+          ).toContain("Outside sRGB");
+          expect(
+            host.element.querySelector(
+              '[data-gp-marker="reference"], [data-gp-part="reference-connector"]',
+            ),
+          ).toBeNull();
+        }
         const intervals = () =>
           [...host.element.querySelectorAll('[data-gp-part="gamut-interval"]')].map((node) => [
             node.closest("[data-gp-channel]")?.getAttribute("data-gp-channel"),
@@ -117,12 +127,24 @@ export function rgbEditingContract(
       },
     );
 
-    it("retains native tangent annotations as zero-length channel facts", async () => {
+    it("retains point and line contours and zero-length channel facts without pausing", async () => {
       const host = await mount(rgb("display-p3", [0.8, 0, 0]), rgbState("display-p3"));
       const point = host.element.querySelector('[data-gp-channel="r"] [data-range-point]');
       expect(point?.getAttribute("data-range-start")).toBe("0");
       expect(point?.getAttribute("data-range-end")).toBe("0");
+      const boundary = () =>
+        host.element.querySelector('[data-gamut-boundary="srgb"]')?.getAttribute("d");
+      expect(boundary()).toMatch(/^M .+ L .+$/);
+      expect(host.element.textContent).not.toContain("Paused");
       expect(scalar(host, "r", "range").disabled).toBe(false);
+      await host.replace(rgb("display-p3", [1, 1, 0.5]));
+      await host.state({
+        ...rgbState("display-p3"),
+        selection: { representationId: "display-p3", editorId: "display-p3-rb" },
+      });
+      expect(boundary()).toMatch(/^M .+ L .+$/);
+      expect(host.element.textContent).not.toContain("Paused");
+      expect(host.changes()).toBe(0);
       await host.dispose();
     });
     it.each(["srgb", "display-p3"] as const)(
