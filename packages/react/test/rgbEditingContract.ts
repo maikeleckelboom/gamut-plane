@@ -73,6 +73,21 @@ function pointer(element: Element, type: string) {
   );
 }
 
+function openStrokePoints(path: string | null | undefined): readonly (readonly [number, number])[] {
+  expect(path).toBeTruthy();
+  expect(path).not.toMatch(/[zZ]/);
+  const segments = path!.trim().split(/\s+(?=[ML])/);
+  expect(segments.length).toBeGreaterThanOrEqual(2);
+  return segments.map((segment, index) => {
+    const [command, x, y, ...extra] = segment.split(/\s+/);
+    expect(command).toBe(index === 0 ? "M" : "L");
+    expect(extra).toHaveLength(0);
+    const point = [Number(x), Number(y)] as const;
+    expect(point.every(Number.isFinite)).toBe(true);
+    return point;
+  });
+}
+
 /** Delivery and adapter markup sentinels; core owns the exhaustive six-binding operation matrix. */
 export function rgbEditingContract(
   mount: (value: ColorValue, state: GamutPlaneState, options?: RgbHostOptions) => Promise<RgbHost>,
@@ -134,7 +149,8 @@ export function rgbEditingContract(
       expect(point?.getAttribute("data-range-end")).toBe("0");
       const boundary = () =>
         host.element.querySelector('[data-gamut-boundary="srgb"]')?.getAttribute("d");
-      expect(boundary()).toMatch(/^M .+ L .+$/);
+      const pointStroke = openStrokePoints(boundary());
+      for (const endpoint of pointStroke) expect(endpoint).toEqual(pointStroke[0]);
       expect(host.element.textContent).not.toContain("Paused");
       expect(scalar(host, "r", "range").disabled).toBe(false);
       await host.replace(rgb("display-p3", [1, 1, 0.5]));
@@ -142,7 +158,8 @@ export function rgbEditingContract(
         ...rgbState("display-p3"),
         selection: { representationId: "display-p3", editorId: "display-p3-rb" },
       });
-      expect(boundary()).toMatch(/^M .+ L .+$/);
+      const lineStroke = openStrokePoints(boundary());
+      expect(new Set(lineStroke.map((point) => point.join(","))).size).toBeGreaterThan(1);
       expect(host.element.textContent).not.toContain("Paused");
       expect(host.changes()).toBe(0);
       await host.dispose();
