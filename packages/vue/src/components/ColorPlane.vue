@@ -98,7 +98,7 @@ const spatialReference = computed(() =>
 );
 const referenceLabel = computed(() =>
   props.reference
-    ? `Sampled ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
+    ? `${props.reference.kind === "rgb" ? "Nearest slice" : "Sampled"} ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
     : "",
 );
 

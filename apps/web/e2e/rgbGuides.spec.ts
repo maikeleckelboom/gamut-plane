@@ -37,7 +37,7 @@ test("closed P3 boundaries retain the genuine sRGB line and white channel endpoi
   expect(definition).toMatchObject({ space: "display-p3", channels: [1, 1, 1], alpha: 0.37 });
 });
 
-test("native cross-gamut slice and RGB intervals retain an incompatible Reference warning", async ({
+test("native cross-gamut slice connects its Reference and retains independent RGB intervals", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 440, height: 1000 });
@@ -49,7 +49,7 @@ test("native cross-gamut slice and RGB intervals retain an incompatible Referenc
   await expect(root.getByRole("application")).toHaveAccessibleName(/Outside sRGB/);
   await expect(
     root.locator('[data-gp-part="reference-connector"], [data-gp-marker="reference"]'),
-  ).toHaveCount(0);
+  ).toHaveCount(2);
   await expect(root.locator('[data-gp-channel="r"] [data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root.locator('[data-gp-channel="g"] [data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root.locator('[data-gp-channel="b"] [data-gamut-range="srgb"]')).toHaveCount(0);
@@ -60,6 +60,7 @@ test("native cross-gamut slice and RGB intervals retain an incompatible Referenc
     "",
   );
   await root.getByRole("checkbox", { name: "sRGB Status" }).uncheck();
+  await expect(root.locator('[data-gp-part="reference-connector"]')).toHaveCount(0);
   await expect(boundary).toHaveCount(1);
   await expect(page.locator("#events")).toHaveAttribute("data-definition", authored!);
 });
@@ -86,4 +87,61 @@ test("full and empty RGB slices resolve without Paused and retain independent ch
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );
+});
+
+test("reported green RGB colors connect to the visible slice and respect comparison controls", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto("/");
+  const root = page.locator("[data-gp-root]");
+  const connector = root.locator('[data-gp-part="reference-connector"]');
+  const marker = root.locator('[data-gp-marker="reference"]');
+  for (const values of [
+    [0.130072, 0.831742, 0.510769],
+    [0.134845, 0.756961, 0.510769],
+  ]) {
+    await coordinates(root, "display-p3", values);
+    await expect(connector).toHaveCount(1);
+    await expect(marker).toHaveAccessibleName("Nearest slice sRGB Reference boundary");
+    for (const area of ["rg", "rb", "gb", "rg"]) {
+      await root.getByRole("combobox", { name: "Area", exact: true }).click();
+      await root.locator(`[role=option][data-value="display-p3-${area}"]`).click();
+      await expect(connector).toHaveCount(1);
+      const distance = await root.evaluate((element) => {
+        const line = element.querySelector<SVGLineElement>('[data-gp-part="reference-connector"]')!;
+        const path = element.querySelector<SVGPathElement>('[data-gamut-boundary="srgb"]')!;
+        const endpoint = { x: line.x2.baseVal.value, y: line.y2.baseVal.value };
+        let nearest = Infinity;
+        for (let at = 0; at <= path.getTotalLength(); at += 0.1) {
+          const p = path.getPointAtLength(at);
+          nearest = Math.min(nearest, Math.hypot(p.x - endpoint.x, p.y - endpoint.y));
+        }
+        return nearest;
+      });
+      // Browser SVG geometry, in the 1000-unit viewbox, independently verifies the landing point.
+      expect(distance).toBeLessThan(0.12);
+    }
+  }
+  await page.screenshot({
+    path: testInfo.outputPath("reported-rgb-reference.png"),
+    fullPage: true,
+  });
+  const authored = await page.locator('[data-css-representation="oklch"] code').textContent();
+  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("radio", { name: "Display P3", exact: true, includeHidden: true }).check();
+  await expect(connector).toHaveCount(0);
+  await expect(root.locator('[data-gamut-warning="planar"]')).toHaveCount(0);
+  await root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true }).check();
+  await expect(connector).toHaveCount(1);
+  await root.getByLabel("sRGB Boundary", { exact: true }).uncheck();
+  await expect(connector).toHaveCount(0);
+  await expect(root.locator('[data-gamut-warning="planar"]')).toHaveCount(1);
+  await root.getByLabel("sRGB Boundary", { exact: true }).check();
+  await root.getByLabel("sRGB Status", { exact: true }).uncheck();
+  await expect(connector).toHaveCount(0);
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(1);
+  await root.getByLabel("sRGB Status", { exact: true }).check();
+  await expect(connector).toHaveCount(1);
+  await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(authored!);
 });

@@ -107,10 +107,10 @@ export function rgbEditingContract(
             host.element.querySelector("[role=application]")?.getAttribute("aria-label"),
           ).toContain("Outside sRGB");
           expect(
-            host.element.querySelector(
+            host.element.querySelectorAll(
               '[data-gp-marker="reference"], [data-gp-part="reference-connector"]',
             ),
-          ).toBeNull();
+          ).toHaveLength(2);
         }
         const intervals = () =>
           [...host.element.querySelectorAll('[data-gp-part="gamut-interval"]')].map((node) => [

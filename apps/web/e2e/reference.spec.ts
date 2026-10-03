@@ -125,8 +125,9 @@ test("Reference radios support keyboard navigation, inspection and returning to 
     await root.getByRole("combobox", { name: "Coordinates" }).click();
     await root.locator(`[role="option"][data-value="${coordinates}"]`).click();
     await expect(srgb).toBeChecked();
+    // The initial color's sRGB Blue is > 1, so its fixed-Blue sRGB slice is empty.
     await expect(root.locator('[data-gp-marker="reference"]')).toHaveCount(
-      coordinates === "oklch" || coordinates === "oklab" ? 1 : 0,
+      coordinates === "srgb" ? 0 : 1,
     );
   }
 });

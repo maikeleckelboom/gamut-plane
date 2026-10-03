@@ -51,7 +51,7 @@ export function ColorPlane(props: ColorPlaneProps) {
       ? props.reference.spatial
       : null;
   const referenceLabel = props.reference
-    ? `Sampled ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
+    ? `${props.reference.kind === "rgb" ? "Nearest slice" : "Sampled"} ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
     : "";
   useLayoutEffect(() => {
     const mounted = mountPlane(

@@ -42,7 +42,7 @@ describe("sampled spatial Reference", () => {
           throw new Error("Missing fact");
         expect(result?.sampled).toBe(row.forms.reference.value);
         if (status === "inside") {
-          expect(result?.sampled.deltaC).toBe(0);
+          expect(result?.sampled?.deltaC).toBe(0);
           expect(result?.spatial.kind === "available" && result.spatial.point).not.toEqual(
             field.projection.point,
           );

@@ -1,5 +1,7 @@
 # Phase 2N.3 acceptance candidate
 
+Subsequent correction: the RGB sampled-endpoint compatibility behavior recorded below has been replaced by a nearest visible slice Reference after reports of missing connectors. See [the current Reference contract](native-rgb-guides.md#slice-reference). This acceptance record describes the earlier candidate.
+
 This closes implementation, integrated verification, documentation and focused test-debt review for native RGB editing/guides. Phases 2N.0–2N.2 were accepted separately. This record prepares 2N.3 for external review; it does not assert that review has accepted the candidate or that the vNext roadmap is complete.
 
 ## Baseline and scope
