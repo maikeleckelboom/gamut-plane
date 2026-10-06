@@ -79,7 +79,9 @@ test("the production build preserves generalized editing, inspection, and respon
   await p3Copy.click();
   await expect(p3Copy).toHaveText("Copied");
   await expect(p3Copy).toHaveAccessibleName("Copied Display P3 CSS value");
-  await expect(page.getByRole("button", { name: "Copy sRGB CSS value" })).toBeDisabled();
+  // The initial color is inside sRGB: Copy is available and there is nothing to clip.
+  await expect(page.getByRole("button", { name: "Copy sRGB CSS value" })).toBeEnabled();
+  await expect(page.locator('[data-clip-representation="srgb"]')).toBeDisabled();
 
   const channels = page.locator('[data-css-representation="oklch"] code');
   const beforeKeyboard = await channels.textContent();

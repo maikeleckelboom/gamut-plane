@@ -171,12 +171,21 @@ test("alternate editor keeps authored color until an explicit edit", async ({ pa
 test("copy output has honest disabled and success states", async ({ page }) => {
   await openInstrument(page);
   const srgb = page.locator('[data-css-representation="srgb"]');
-  await expect(srgb.getByRole("button")).toBeEnabled();
+  const srgbCopy = srgb.locator("[data-copy-representation]");
+  const srgbClip = srgb.locator("[data-clip-representation]");
+  await expect(srgbCopy).toBeEnabled();
+  await expect(srgbClip).toBeDisabled();
   await moveOutsideSrgb(page.locator("[data-gp-root]"));
-  await expect(srgb.getByRole("button")).toBeDisabled();
+  await expect(srgbCopy).toBeDisabled();
+  // Clip is always present and becomes available only when strict output is unavailable.
+  await expect(srgbClip).toBeEnabled();
+  await srgbClip.click();
+  await expect(srgbCopy).toBeEnabled();
+  await expect(srgbClip).toBeDisabled();
   const p3 = page.locator('[data-css-representation="display-p3"]');
-  await p3.getByRole("button").click();
-  await expect(p3.getByRole("button")).toHaveText("Copied");
+  const p3Copy = p3.locator("[data-copy-representation]");
+  await p3Copy.click();
+  await expect(p3Copy).toHaveText("Copied");
   await expect(page.getByRole("status")).toContainText("Copied Display P3");
 });
 

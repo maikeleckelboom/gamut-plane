@@ -169,7 +169,7 @@ button:disabled {
 
 .css-representation {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px 70px 70px;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(70px, max-content) minmax(70px, max-content);
   grid-template-rows: auto auto;
   gap: 3px 8px;
   align-items: center;
@@ -283,7 +283,7 @@ button:disabled {
 
 @media (max-width: 480px) {
   .css-representation {
-    grid-template-columns: minmax(0, 1fr) 24px 56px 56px;
+    grid-template-columns: minmax(0, 1fr) 24px minmax(56px, max-content) minmax(56px, max-content);
     gap: 3px 6px;
   }
 

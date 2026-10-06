@@ -287,7 +287,7 @@ test("Coordinates and Gamuts replace the menu in both directions without state",
     await expect(trigger).toHaveAttribute("data-was-open", "true");
     // The open popup overlays part of the plane; right-click where neither popup reaches.
     const field = (await plane(root).boundingBox())!;
-    await open(root, { x: 30, y: field.height - 20 });
+    await open(root, { x: 12, y: field.height - 20 });
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await trigger.click();
     await expect(menu(root)).toBeHidden();
