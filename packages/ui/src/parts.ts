@@ -14,6 +14,7 @@ export const gpPart = {
   referenceConnector: "reference-connector",
   referenceWarning: "reference-warning",
   axis: "axis",
+  axisEnd: "axis-end",
   renderStatus: "render-status",
   channel: "channel",
   channelSymbol: "channel-symbol",

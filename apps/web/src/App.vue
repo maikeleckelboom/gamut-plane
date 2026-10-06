@@ -2,6 +2,7 @@
 import {
   createColorValue,
   findMaximumChroma,
+  mapToGamut,
   represent,
   serializeCss,
   serializeHex,
@@ -125,6 +126,32 @@ function boundaryPreviewCss(gamut: DisplayGamut): string | null {
   return css.ok ? css.value.text : null;
 }
 
+const clippableGamuts = { srgb: "srgb-gamut", "display-p3": "display-p3-gamut" } as const;
+const canClip = computed(
+  () =>
+    ({
+      hex: hexUnavailable.value?.showBoundaryPreview === true,
+      srgb: srgbUnavailable.value?.showBoundaryPreview === true,
+      "display-p3": displayP3Unavailable.value?.showBoundaryPreview === true,
+    }) as const,
+);
+
+// Explicit, user-initiated mapping: chroma is reduced at fixed lightness and hue. Never implicit.
+function clipToGamut(gamut: DisplayGamut, label: string): void {
+  const result = mapToGamut(
+    selectedColor.value,
+    clippableGamuts[gamut],
+    "oklch-chroma-reduction-v1",
+  );
+  copiedRepresentation.value = null;
+  if (!result.ok || !result.value.changed) {
+    copyAnnouncement.value = `Could not clip the color to ${label}.`;
+    return;
+  }
+  selectedColor.value = result.value.mapped;
+  copyAnnouncement.value = `Clipped the color to ${label}.`;
+}
+
 function isCopied(representation: CssRepresentation): boolean {
   return copiedRepresentation.value === representation;
 }
@@ -230,6 +257,16 @@ async function copyCss(
             />
             <button
               type="button"
+              class="css-clip"
+              data-clip-representation="hex"
+              :disabled="!canClip['hex']"
+              aria-label="Clip color to sRGB"
+              @click="clipToGamut('srgb', 'sRGB')"
+            >
+              Clip
+            </button>
+            <button
+              type="button"
               data-copy-representation="hex"
               :data-copied="isCopied('hex') ? 'true' : 'false'"
               :disabled="!hexColor"
@@ -262,6 +299,16 @@ async function copyCss(
                 !srgbCopyCss && srgbBoundaryPreviewCss ? 'sRGB boundary color preview' : undefined
               "
             />
+            <button
+              type="button"
+              class="css-clip"
+              data-clip-representation="srgb"
+              :disabled="!canClip['srgb']"
+              aria-label="Clip color to sRGB"
+              @click="clipToGamut('srgb', 'sRGB')"
+            >
+              Clip
+            </button>
             <button
               type="button"
               data-copy-representation="srgb"
@@ -300,6 +347,16 @@ async function copyCss(
                   : undefined
               "
             />
+            <button
+              type="button"
+              class="css-clip"
+              data-clip-representation="display-p3"
+              :disabled="!canClip['display-p3']"
+              aria-label="Clip color to Display P3"
+              @click="clipToGamut('display-p3', 'Display P3')"
+            >
+              Clip
+            </button>
             <button
               type="button"
               data-copy-representation="display-p3"

@@ -9,6 +9,7 @@ export {
   type ShellSelection,
   type ShellEditor,
 } from "./selectionShell.js";
+export { planeAxisEnds, type PlaneAxisBounds, type PlaneAxisEnds } from "./planeAxisEnds.js";
 export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";
 export { mountGamutPopup } from "./interaction/gamutInteraction.js";
 export { mountGamutContextMenu } from "./interaction/gamutContextMenuInteraction.js";

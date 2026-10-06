@@ -5,6 +5,7 @@ import {
   gpGamut,
   gpMarker,
   gpPart,
+  planeAxisEnds,
   currentEditorCopy,
   authoredMarkerPoint,
   exactGamutUi,
@@ -62,6 +63,9 @@ const props = withDefaults(
     interactionPreview: false,
   },
 );
+
+const xEnds = computed(() => planeAxisEnds(props.plane.xAxis));
+const yEnds = computed(() => planeAxisEnds(props.plane.yAxis));
 
 const emit = defineEmits<{
   "update:modelValue": [color: ColorValue];
@@ -468,14 +472,26 @@ onBeforeUnmount(() => {
       :data-gp-part="gpPart.axis"
       :data-gp-axis="gpAxis.y"
     >
-      {{ plane.yAxis.symbol }} · {{ plane.yAxis.label }}
+      {{ plane.yAxis.label }}
     </span>
     <span
       class="color-plane__axis color-plane__axis--chroma"
       :data-gp-part="gpPart.axis"
       :data-gp-axis="gpAxis.x"
     >
-      {{ plane.xAxis.symbol }} · {{ plane.xAxis.label }}
+      {{ plane.xAxis.label }}
     </span>
+    <span :data-gp-part="gpPart.axisEnd" data-gp-end="y-end" aria-hidden="true">{{
+      yEnds.end
+    }}</span>
+    <span :data-gp-part="gpPart.axisEnd" data-gp-end="y-start" aria-hidden="true">{{
+      yEnds.start
+    }}</span>
+    <span :data-gp-part="gpPart.axisEnd" data-gp-end="x-start" aria-hidden="true">{{
+      xEnds.start
+    }}</span>
+    <span :data-gp-part="gpPart.axisEnd" data-gp-end="x-end" aria-hidden="true">{{
+      xEnds.end
+    }}</span>
   </div>
 </template>

@@ -39,7 +39,8 @@
   /* A host such as a popover supplies its own chrome: set these to transparent/0 to go flush. */
   background: var(--gamut-plane-surface, var(--gp-surface-1));
   container: gamut-plane / inline-size;
-  --picker-plane-axis-space: clamp(21px, 1.25rem, 36px);
+  --picker-plane-axis-space: clamp(26px, 1.625rem, 42px);
+  --picker-plane-axis-gap: 10px;
   --picker-plane-max-size: 420px;
   inline-size: 100%;
   max-inline-size: 480px;
@@ -722,7 +723,7 @@
 [data-gp-root] [data-gp-part="plane"] {
   position: relative;
   min-width: 0;
-  padding: 0 0 clamp(20px, 1.25rem, 36px) var(--picker-plane-axis-space);
+  padding: 0 0 clamp(23px, 1.45rem, 40px) var(--picker-plane-axis-space);
 }
 
 [data-gp-root] [data-gp-part="surface"] {
@@ -844,15 +845,51 @@
 
 [data-gp-root] [data-gp-axis="y"] {
   top: 50%;
-  left: 0;
-  transform: translate(-38%, -50%) rotate(-90deg);
+  /* Centre line sits one fixed gap from the plane, in the same column as the end labels. */
+  left: calc(var(--picker-plane-axis-space) - var(--picker-plane-axis-gap) - 0.5em);
+  transform: translate(-50%, -50%) rotate(-90deg);
 }
 
 [data-gp-root] [data-gp-axis="x"] {
   right: 0;
-  bottom: 3px;
+  bottom: 4px;
   left: var(--picker-plane-axis-space);
   text-align: center;
+}
+
+/* Domain end labels live in the gutters, never over the field. */
+[data-gp-root] [data-gp-part="axis-end"] {
+  position: absolute;
+  color: var(--gp-quiet);
+  font: clamp(9px, 0.5rem, 14px) / 1 var(--gp-cv-font-mono);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end^="y-"] {
+  left: 0;
+  width: calc(var(--picker-plane-axis-space) - var(--picker-plane-axis-gap));
+  text-align: right;
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end="y-end"] {
+  top: 0;
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end="y-start"] {
+  bottom: clamp(23px, 1.45rem, 40px);
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end^="x-"] {
+  bottom: 4px;
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end="x-start"] {
+  left: var(--picker-plane-axis-space);
+}
+
+[data-gp-root] [data-gp-part="axis-end"][data-gp-end="x-end"] {
+  right: 0;
 }
 
 [data-gp-root] [data-gp-part="controls"] {

@@ -171,12 +171,14 @@ describe("standalone application", () => {
     for (const row of [hex, srgb]) {
       expect(row.attributes("data-output-error")).toBe("out-of-gamut");
       expect(row.get(".css-representation__value").text()).toContain("Unavailable");
-      expect(row.get("button").attributes("disabled")).toBeDefined();
+      expect(row.get("[data-copy-representation]").attributes("disabled")).toBeDefined();
     }
-    expect(srgb.get("button").attributes("aria-describedby")).toBe("srgb-copy-reason");
+    expect(srgb.get("[data-copy-representation]").attributes("aria-describedby")).toBe(
+      "srgb-copy-reason",
+    );
     expect(wrapper.get("#srgb-copy-reason").exists()).toBe(true);
 
-    await srgb.get("button").trigger("click");
+    await srgb.get("[data-copy-representation]").trigger("click");
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(document.execCommand).not.toHaveBeenCalled();
 
@@ -188,15 +190,17 @@ describe("standalone application", () => {
     expect(p3Swatch.attributes("style")).toContain("color(display-p3 ");
     expect(p3Swatch.attributes("aria-label")).toBe("Display P3 boundary color preview");
     expect(p3.attributes("data-output-error")).toBe("out-of-gamut");
-    expect(p3.get("button").attributes("disabled")).toBeDefined();
-    expect(p3.get("button").attributes("aria-describedby")).toBe("display-p3-copy-reason");
+    expect(p3.get("[data-copy-representation]").attributes("disabled")).toBeDefined();
+    expect(p3.get("[data-copy-representation]").attributes("aria-describedby")).toBe(
+      "display-p3-copy-reason",
+    );
     expect(outputRow("oklch").get("code").text()).toContain("0.52");
 
     await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0");
     await flushPromises();
     expect(hex.get("code").text()).toMatch(/^#[0-9A-F]{6}$/);
     expect(srgb.get("code").text()).toMatch(/^color\(srgb /);
-    expect(hex.get("button").attributes("disabled")).toBeUndefined();
+    expect(hex.get("[data-copy-representation]").attributes("disabled")).toBeUndefined();
     const normalizedPreview = document.createElement("span");
     normalizedPreview.style.backgroundColor = hex.get("code").text();
     expect(hexSwatch.attributes("style")).toContain(normalizedPreview.style.backgroundColor);
@@ -204,6 +208,41 @@ describe("standalone application", () => {
     expect(p3Swatch.attributes("data-preview-kind")).toBe("output");
     expect(wrapper.find("#srgb-copy-reason").exists()).toBe(false);
 
+    wrapper.unmount();
+  });
+
+  it("keeps an explicit Clip left of Copy, enabled only for outputs unavailable at the gamut boundary", async () => {
+    const wrapper = mount(App, { attachTo: document.body });
+    await flushPromises();
+    const clip = (id: "hex" | "srgb" | "display-p3") =>
+      wrapper.get(`[data-clip-representation="${id}"]`);
+    const disabled = (id: "hex" | "srgb" | "display-p3") =>
+      clip(id).attributes("disabled") !== undefined;
+    // Always present so rows never shift; the OKLCH row has no gamut to clip to.
+    expect(wrapper.find('[data-clip-representation="oklch"]').exists()).toBe(false);
+    expect(["hex", "srgb", "display-p3"].map((id) => disabled(id as "hex"))).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    const hexRow = wrapper.get('[data-css-representation="hex"]');
+    const buttons = hexRow.findAll("button");
+    expect(buttons.map((button) => button.text())).toEqual(["Clip", "Copy"]);
+
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.18");
+    await flushPromises();
+    expect(disabled("hex")).toBe(false);
+    expect(disabled("srgb")).toBe(false);
+    expect(disabled("display-p3")).toBe(true);
+    const before = wrapper.get('[data-css-representation="oklch"] code').text();
+    expect(before).toContain("0.18");
+
+    await clip("hex").trigger("click");
+    await flushPromises();
+    expect(wrapper.get('[role="status"]').text()).toContain("Clipped the color to sRGB");
+    expect(wrapper.get('[data-css-representation="oklch"] code').text()).not.toBe(before);
+    expect(wrapper.get('[data-css-representation="hex"] code').text()).toMatch(/^#[0-9A-F]{6}$/);
+    expect(disabled("hex")).toBe(true);
     wrapper.unmount();
   });
 
@@ -226,7 +265,7 @@ describe("standalone application", () => {
       const row = wrapper.get(`[data-css-representation="${name}"]`);
       expect(row.attributes("data-output-error")).toBe("boundary-tolerance");
       expect(row.get(".css-representation__value").text()).toContain("Unavailable");
-      expect(row.get("button").attributes("disabled")).toBeDefined();
+      expect(row.get("[data-copy-representation]").attributes("disabled")).toBeDefined();
       expect(row.get(".css-representation__swatch").attributes("data-preview-kind")).toBe(
         "boundary",
       );

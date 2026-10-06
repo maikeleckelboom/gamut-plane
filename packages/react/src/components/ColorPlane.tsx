@@ -14,7 +14,7 @@ import {
   gpMarker,
   gpPart,
 } from "@gamut-plane/ui";
-import { exactGamutUi, referenceWarningGlyphPath } from "@gamut-plane/ui";
+import { exactGamutUi, planeAxisEnds, referenceWarningGlyphPath } from "@gamut-plane/ui";
 import {
   pointStyle,
   VIEWBOX_SIZE,
@@ -34,6 +34,8 @@ interface ColorPlaneProps extends PlaneInput {
 
 export function ColorPlane(props: ColorPlaneProps) {
   const { plane, field, guides, markerCss } = props;
+  const xEnds = planeAxisEnds(plane.xAxis);
+  const yEnds = planeAxisEnds(plane.yAxis);
   const surface = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
@@ -252,15 +254,27 @@ export function ColorPlane(props: ColorPlaneProps) {
         data-gp-part={gpPart.axis}
         data-gp-axis={gpAxis.y}
       >
-        {plane.yAxis.symbol} · {plane.yAxis.label}
+        {plane.yAxis.label}
       </span>
       <span
         className="gpr-color-plane-axis gpr-color-plane-axis--chroma"
         data-gp-part={gpPart.axis}
         data-gp-axis={gpAxis.x}
       >
-        {plane.xAxis.symbol} · {plane.xAxis.label}
+        {plane.xAxis.label}
       </span>
+      {(
+        [
+          ["y-end", yEnds.end],
+          ["y-start", yEnds.start],
+          ["x-start", xEnds.start],
+          ["x-end", xEnds.end],
+        ] as const
+      ).map(([end, text]) => (
+        <span key={end} data-gp-part={gpPart.axisEnd} data-gp-end={end} aria-hidden="true">
+          {text}
+        </span>
+      ))}
     </div>
   );
 }
