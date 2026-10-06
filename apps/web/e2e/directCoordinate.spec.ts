@@ -103,18 +103,29 @@ test("direct L/a/b keyboard, numeric and pointer edits retain coordinates and no
 for (const width of [320, 390, 440, 480]) {
   test(`OKLab direct layout ${width}`, async ({ page }) => {
     const root = await ready(page, 0.03, 0.02, width);
-    const railWidths: number[] = [];
+    // Each channel is one row: [symbol or label] [track] [value]. Rows share their columns.
+    const columns: { rail: number; track: number; trackWidth: number; value: number }[] = [];
     for (const coordinate of ["l", "a", "b"]) {
       const row = root.locator(`[data-gp-channel="${coordinate}"]`);
-      const rail = (await row.locator('[data-gp-part="channel-symbol"]').boundingBox())!;
-      const track = (await row.locator('[data-gp-part="channel-track"]').boundingBox())!;
+      const symbol = (await row.locator('[data-gp-part="channel-symbol"]').boundingBox()) ?? null;
       const label = (await row.locator("label").boundingBox())!;
+      const track = (await row.locator('[data-gp-part="channel-track"]').boundingBox())!;
+      const input = (await row.locator('[data-gp-part="numeric-input"]').boundingBox())!;
+      // Compact shows the symbol; wide shows the channel name instead. Never both, never neither.
+      const rail = symbol ?? label;
       expect(rail.width).toBeGreaterThan(0);
-      railWidths.push(rail.width);
-      expect(Math.abs(label.x - track.x)).toBeLessThan(0.5);
-      expect(Math.abs(rail.x + rail.width - track.x)).toBeLessThan(0.5);
+      expect(rail.x + rail.width).toBeLessThanOrEqual(track.x);
+      expect(track.x + track.width).toBeLessThanOrEqual(input.x);
+      expect(Math.abs(track.y + track.height / 2 - (input.y + input.height / 2))).toBeLessThan(0.5);
+      columns.push({
+        rail: rail.x + rail.width,
+        track: track.x,
+        trackWidth: track.width,
+        value: input.x + input.width,
+      });
     }
-    expect(new Set(railWidths).size).toBe(1);
+    for (const key of ["rail", "track", "trackWidth", "value"] as const)
+      expect(new Set(columns.map((column) => Math.round(column[key]))).size).toBe(1);
     expect(await root.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     if (width === 320) await expect(root).toHaveScreenshot("oklab-direct-320.png");
   });

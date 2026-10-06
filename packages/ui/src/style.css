@@ -36,22 +36,23 @@
   --gp-cv-font-mono: var(--cv-font-mono, ui-monospace, monospace);
   color-scheme: dark;
   color: var(--gp-foreground);
-  background: var(--gp-surface-1);
+  /* A host such as a popover supplies its own chrome: set these to transparent/0 to go flush. */
+  background: var(--gamut-plane-surface, var(--gp-surface-1));
   container: gamut-plane / inline-size;
   --picker-plane-axis-space: clamp(21px, 1.25rem, 36px);
   --picker-plane-max-size: 420px;
   inline-size: 100%;
   max-inline-size: 480px;
   min-inline-size: 0;
-  padding: 14px 16px 12px;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 8px;
+  padding: var(--gamut-plane-padding, 12px);
+  border: 1px solid var(--gamut-plane-border, var(--gp-hairline));
+  border-radius: var(--gamut-plane-radius, 8px);
 }
 
 [data-gp-root] [data-gp-part="representation-control"] {
   display: grid;
-  gap: 5px;
-  margin: 0 0 12px;
+  gap: 6px;
+  margin: 0 0 8px;
   color: var(--gp-quiet);
   font-size: 0.8125rem;
 }
@@ -59,21 +60,44 @@
 [data-gp-root] .gp-context-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 8px 12px;
+  gap: 6px 8px;
 }
 
 [data-gp-root] .gp-selector {
   display: grid;
-  flex: 1 1 13rem;
+  flex: 1 1 7.5rem;
   gap: 5px;
   min-inline-size: 0;
+}
+
+/* The control names itself ("OKLCH ▾"); its label stays in the accessibility tree. */
+[data-gp-root] .gp-context-row .gp-selector > label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 [data-gp-root] .gp-selector label {
   font-weight: 600;
   color: var(--gp-foreground);
+}
+
+/* A selector outside the context row (Area) reads as one line: "Area  [R / G ▾]". */
+[data-gp-root] [data-gp-part="representation-control"] > .gp-selector {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+[data-gp-root] [data-gp-part="representation-control"] > .gp-selector > label {
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  font-weight: 560;
 }
 
 [data-gp-root] .gp-selector [role="combobox"] {
@@ -83,15 +107,20 @@
   gap: 12px;
   inline-size: 100%;
   min-inline-size: 0;
-  min-block-size: 40px;
-  padding: 6px 10px;
+  min-block-size: 38px;
+  padding: 6px 10px 6px 12px;
   border: 1px solid var(--gp-hairline);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--gp-surface-2);
   color: var(--gp-foreground);
   font: inherit;
+  font-weight: 560;
   text-align: start;
   cursor: pointer;
+  transition: border-color 120ms ease;
+}
+[data-gp-root] .gp-selector [role="combobox"]:hover:not(:disabled) {
+  border-color: oklch(0.5 0.02 255 / 0.9);
 }
 
 [data-gp-root] .gp-mode {
@@ -101,13 +130,17 @@
   padding: 2px;
   min-inline-size: 0;
   border: 1px solid var(--gp-hairline);
-  border-radius: 5px;
-  background: var(--gp-surface-2);
-  color: var(--gp-foreground);
+  border-radius: 6px;
+  background: var(--gp-surface-0);
+  color: var(--gp-quiet);
 }
 [data-gp-root] .gp-mode label {
   position: relative;
+  display: flex;
   cursor: pointer;
+}
+[data-gp-root] .gp-mode label:hover input:not(:checked, :disabled) + span {
+  color: var(--gp-foreground);
 }
 [data-gp-root] .gp-mode input {
   position: absolute;
@@ -120,14 +153,18 @@
 [data-gp-root] .gp-mode label > span {
   display: grid;
   place-items: center;
-  min-block-size: 34px;
-  padding: 5px 10px;
+  min-block-size: 32px;
+  padding: 4px 11px;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  transition: color 120ms ease;
 }
 [data-gp-root] .gp-mode input:checked + span {
   border-color: var(--gp-user-accent);
   background: var(--gp-surface-3);
+  color: var(--gp-foreground);
+  font-weight: 560;
 }
 [data-gp-root] .gp-mode input:focus-visible + span {
   outline: 2px solid var(--gp-user-accent);
@@ -252,10 +289,10 @@
   gap: 1px 10px;
   position: relative;
   inline-size: 100%;
-  min-block-size: 46px;
-  padding: 6px 10px 7px 12px;
+  min-block-size: 42px;
+  padding: 5px 10px 6px 12px;
   border: 1px solid var(--gp-hairline);
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--gp-foreground);
   font-size: 0.8125rem;
@@ -672,7 +709,7 @@
 [data-gp-root] [data-gp-part="workspace"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
 
@@ -693,7 +730,8 @@
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid var(--gp-hairline);
-  border-radius: 2px;
+  /* Corners are meaningful extremes (max chroma at full lightness): keep their hit area. */
+  border-radius: 3px;
   outline: 0;
   background: var(--gp-surface-1);
   cursor: crosshair;
@@ -819,7 +857,7 @@
 
 [data-gp-root] [data-gp-part="controls"] {
   display: grid;
-  gap: 12px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -835,56 +873,69 @@
   }
 }
 
+/*
+ * One row per channel: [symbol] [track] [value]. The header is flattened so the
+ * label and numeric input join the channel grid; labels replace the symbol once
+ * the instrument is wide enough (see the container query below).
+ */
 [data-gp-root] [data-gp-part="channel"] {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  gap: 5px 0;
+  grid-template-columns: 1.25rem minmax(0, 1fr) 5.25rem;
+  align-items: center;
+  gap: 4px 8px;
 }
 
 [data-gp-root] [data-gp-part="channel-header"] {
-  grid-column: 2;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
+  display: contents;
 }
 
+/* Name kept for assistive tech and pointer hit-testing of the track; shown when wide. */
 [data-gp-root] [data-gp-part="channel-header"] label {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  gap: 7px;
+  grid-column: 1;
+  grid-row: 1;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   color: var(--gp-quiet);
   font-size: 0.75rem;
 }
 
 [data-gp-root] [data-gp-part="channel-symbol"] {
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 1;
   align-self: center;
   display: grid;
   place-items: center;
-  width: 32px;
   height: var(--picker-slider-track-height, 32px);
-  background: var(--gp-surface-0);
-  color: var(--gp-foreground);
-  font: 0.6875rem/1 var(--gp-cv-font-mono);
+  color: var(--gp-quiet);
+  font: 600 0.75rem/1 var(--gp-cv-font-mono);
 }
 
 [data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"] {
-  grid-column: 2;
-  justify-self: end;
-  width: 9ch;
-  min-width: 82px;
+  grid-column: 3;
+  grid-row: 1;
+  inline-size: 100%;
+  min-width: 0;
   min-height: 32px;
-  padding: 5px 7px;
+  padding: 5px 8px;
   border: 1px solid var(--gp-hairline);
-  border-radius: 4px;
+  border-radius: 5px;
   outline: 0;
-  background: var(--gp-surface-2);
+  background: var(--gp-surface-0);
   color: var(--gp-foreground);
   font: 0.75rem/1.2 var(--gp-cv-font-mono);
+  font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+[data-gp-root]
+  [data-gp-part="channel-header"]
+  [data-gp-part="numeric-input"]:hover:not(:focus-visible) {
+  border-color: oklch(0.5 0.02 255 / 0.9);
 }
 
 [data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"]:focus-visible {
@@ -895,11 +946,11 @@
 
 [data-gp-root] [data-gp-part="channel-track"] {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   position: relative;
   height: var(--picker-slider-track-height, 32px);
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: 4px;
   background: var(--gp-surface-0);
 }
 
@@ -992,7 +1043,8 @@
 }
 
 [data-gp-root] [data-gp-part="channel"] > p[id] {
-  grid-column: 2;
+  grid-column: 2 / -1;
+  grid-row: 2;
   margin: 0;
   color: var(--gp-quiet);
   font-size: 0.75rem;
@@ -1076,6 +1128,46 @@
   left: calc(50% + var(--gp-warning-offset-x, 18px));
   top: calc(50% + var(--gp-warning-offset-y, -18px));
   transform: translate(-50%, -50%);
+}
+
+/* Wide: the channel name replaces the symbol, so each row reads "Lightness ▬▬▬ 0.680". */
+@container gamut-plane (min-width: 26em) {
+  [data-gp-root] [data-gp-part="channel"] {
+    grid-template-columns: 5rem minmax(0, 1fr) 5.25rem;
+  }
+  [data-gp-root] [data-gp-part="channel-header"] label {
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    align-self: center;
+  }
+  [data-gp-root] [data-gp-part="channel-symbol"] {
+    display: none;
+  }
+}
+
+/* Only enlarged text makes the instrument this narrow in em: the value drops under the track. */
+@container gamut-plane (max-width: 16em) {
+  [data-gp-root] [data-gp-part="controls"] {
+    gap: 14px;
+  }
+  [data-gp-root] [data-gp-part="channel"] {
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+  }
+  [data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"] {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    inline-size: min(100%, 7em);
+  }
+  [data-gp-root] [data-gp-part="channel"] > p[id] {
+    grid-row: 3;
+    grid-column: 1 / -1;
+  }
 }
 
 /* A missing slice has no usable position. Overflow uses the native clamped endpoint. */

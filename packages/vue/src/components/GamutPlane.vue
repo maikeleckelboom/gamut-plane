@@ -122,7 +122,9 @@ const detail = computed(() =>
   generalizedVisual.value.kind === "available" ? generalizedVisual.value.detail : null,
 );
 const view = computed(() => field.value?.projection.representationId ?? null);
-const guides = computed(() => generalizedGuideDisplay(accepted.value.guides));
+const guides = computed(() =>
+  generalizedGuideDisplay(accepted.value.guides, generalizedVisual.value),
+);
 const reference = computed(() =>
   referenceDisplay(
     acceptedState.value.referenceGamutId,
@@ -458,6 +460,7 @@ watch(
               :step="control.step"
               :precision="control.precision"
               :gradient="detail.coordinates[control.symbol].gradient"
+              :intervals="guides.oklabIntervals[control.symbol]"
               :continuous="true"
               :coordinate-context="
                 directCoordinateContext(control.symbol, field.projection.representation)

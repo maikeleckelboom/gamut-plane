@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { moveOutsideSrgb } from "./outsideSrgb";
 
 test("Status, Boundary and Reference have independent observable effects", async ({ page }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
+  await moveOutsideSrgb(root);
   const source = page.locator('[data-css-representation="oklch"] code');
   const original = await source.textContent();
   const connector = root.locator('[data-gp-part="reference-connector"]');
@@ -111,6 +113,7 @@ test("Reference radios support keyboard navigation, inspection and returning to 
 }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
+  await moveOutsideSrgb(root);
   await root.getByRole("button", { name: "Gamuts" }).focus();
   await page.keyboard.press("Enter");
   const srgb = root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true });

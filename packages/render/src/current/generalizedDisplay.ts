@@ -13,10 +13,13 @@ import {
   currentOklchObservation,
   currentRgbEditableDetail,
 } from "./editableDetail.js";
+import { oklabCoordinateIntervals } from "./oklabCoordinateIntervals.js";
 
 type DisplayInterval = Readonly<import("../channelGeometry.js").LinearControlInterval>;
 export interface GeneralizedGuideDisplay {
   readonly rgbIntervals: Readonly<Record<"r" | "g" | "b", readonly DisplayInterval[]>>;
+  /** The OKLab a/b sliders' gamut intervals; empty unless OKLab detail is supplied. */
+  readonly oklabIntervals: Readonly<Record<"a" | "b", readonly DisplayInterval[]>>;
   readonly srgbPath: string | null;
   readonly displayP3Path: string | null;
   readonly hueIntervals: readonly Readonly<{
@@ -36,12 +39,17 @@ export interface GeneralizedGuideDisplay {
   }>[];
 }
 
-/** Only available guide forms reach visual serialization; requested failures stay in the revision. */
+/**
+ * Only available guide forms reach visual serialization; requested failures stay in the revision.
+ * The OKLab a/b intervals also need the editable detail, whose direct ranges position them.
+ */
 export function generalizedGuideDisplay(
   guides: readonly GuideResolution[],
+  visual?: GeneralizedEditableDetail,
 ): GeneralizedGuideDisplay {
   const display: {
     rgbIntervals: Record<"r" | "g" | "b", DisplayInterval[]>;
+    oklabIntervals: Readonly<Record<"a" | "b", readonly DisplayInterval[]>>;
     srgbPath: string | null;
     displayP3Path: string | null;
     hueIntervals: { start: number; end: number; tone: "srgb" | "display-p3" }[];
@@ -49,6 +57,7 @@ export function generalizedGuideDisplay(
     chromaIntervals: { start: number; end: number; tone: "srgb" | "display-p3" }[];
   } = {
     rgbIntervals: { r: [], g: [], b: [] },
+    oklabIntervals: { a: [], b: [] },
     srgbPath: null,
     displayP3Path: null,
     hueIntervals: [],
@@ -94,6 +103,12 @@ export function generalizedGuideDisplay(
         ...forms.chromaIntervals.value.map((interval) => ({ ...interval, tone })),
       );
   }
+  if (visual?.kind === "available" && visual.detail.view === "oklab")
+    display.oklabIntervals = oklabCoordinateIntervals(
+      guides,
+      visual.field.projection.representation.channels,
+      visual.detail.coordinates,
+    );
   return display;
 }
 

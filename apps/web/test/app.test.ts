@@ -53,7 +53,7 @@ describe("standalone application", () => {
     ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
     const gamuts = wrapper.get("[data-gp-part='gamut-trigger']");
     expect(gamuts.text()).toContain("Gamuts");
-    expect(gamuts.get("[data-gp-part='gamut-summary']").text()).toBe("Reference sRGB · Outside");
+    expect(gamuts.get("[data-gp-part='gamut-summary']").text()).toBe("Reference sRGB · Inside");
     expect(gamuts.attributes("aria-expanded")).toBe("false");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(2);
     expect(
@@ -127,7 +127,7 @@ describe("standalone application", () => {
 
     const representation = wrapper.get('[data-css-representation="display-p3"]');
     const displayed = representation.get("code").text();
-    expect(displayed).toBe("color(display-p3 0.316504 0.597325 0.983548)");
+    expect(displayed).toBe("color(display-p3 0.37417 0.602697 0.920323)");
 
     const copyButton = representation.get('[data-copy-representation="display-p3"]');
     await copyButton.trigger("click");
@@ -136,7 +136,7 @@ describe("standalone application", () => {
     const announcement = wrapper.get('[role="status"]').text();
     const copiedValue = announcement.replace("Copied Display P3: ", "");
     expect(copiedValue).toMatch(
-      /^color\(display-p3 0\.31650380404936257 0\.5973245576847196 0\.9835484146109986 \/ 1\)$/,
+      /^color\(display-p3 0\.3741704320289741 0\.6026974117635059 0\.9203234531717477 \/ 1\)$/,
     );
     expect(copiedValue).not.toBe(displayed);
     expect(announcement).toContain(copiedValue);
@@ -149,6 +149,9 @@ describe("standalone application", () => {
     await flushPromises();
     const outputRow = (name: "oklch" | "hex" | "srgb" | "display-p3") =>
       wrapper.get(`[data-css-representation="${name}"]`);
+    // The initial color is inside sRGB; unavailable output needs a color beyond its boundary.
+    await wrapper.get('[data-picker-control="c"] input[type="number"]').setValue("0.18");
+    await flushPromises();
 
     for (const representation of wrapper.findAll("[data-css-representation]")) {
       expect(representation.findAll(".css-representation__value")).toHaveLength(1);

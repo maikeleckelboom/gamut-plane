@@ -19,7 +19,7 @@ import {
   unavailableOutput,
 } from "@/colorPresentation";
 
-const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.18, 252], alpha: 1 });
+const fixture = createColorValue({ space: "oklch", channels: [0.68, 0.15, 252], alpha: 1 });
 if (!fixture.ok) throw new Error("Invalid initial selected color");
 const selectedColor = ref<ColorValue>(fixture.value);
 const instrumentState = ref<GamutPlaneState>({

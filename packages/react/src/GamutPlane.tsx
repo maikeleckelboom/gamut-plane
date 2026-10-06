@@ -146,7 +146,7 @@ export function GamutPlane(props: GamutPlaneProps) {
         field.markerInDomain,
       )
     : null;
-  const guides = generalizedGuideDisplay(accepted.guides);
+  const guides = generalizedGuideDisplay(accepted.guides, visual);
   const reference = referenceDisplay(
     acceptedState.referenceGamutId,
     accepted.guides,
@@ -451,7 +451,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                       step={control.step}
                       precision={control.precision}
                       gradient={coordinate.gradient}
-                      intervals={[]}
+                      intervals={guides.oklabIntervals[control.symbol]}
                       continuous
                       coordinateContext={directCoordinateContext(
                         control.symbol,

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { moveOutsideSrgb } from "./outsideSrgb";
 
 async function openInstrument(page: Page): Promise<void> {
   await page.goto("/");
@@ -22,7 +23,8 @@ test("starts with both statuses, both boundaries and sRGB Reference", async ({ p
   await expect(page.locator("[data-gamut-boundary='display-p3']")).toHaveCount(1);
   await expect(page.locator("[data-gp-channel='c'] [data-gamut-range]")).toHaveCount(2);
   await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(2);
-  await expect(page.locator("[data-gp-marker='reference']")).toHaveCount(1);
+  // The initial color is inside sRGB, so there is no excursion to connect to a Reference.
+  await expect(page.locator("[data-gp-marker='reference']")).toHaveCount(0);
   await expect(page.locator("[data-gp-root]")).toContainText("Gamuts");
   expect(errors).toEqual([]);
 });
@@ -169,6 +171,8 @@ test("alternate editor keeps authored color until an explicit edit", async ({ pa
 test("copy output has honest disabled and success states", async ({ page }) => {
   await openInstrument(page);
   const srgb = page.locator('[data-css-representation="srgb"]');
+  await expect(srgb.getByRole("button")).toBeEnabled();
+  await moveOutsideSrgb(page.locator("[data-gp-root]"));
   await expect(srgb.getByRole("button")).toBeDisabled();
   const p3 = page.locator('[data-css-representation="display-p3"]');
   await p3.getByRole("button").click();
