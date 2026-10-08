@@ -12,7 +12,7 @@ const initialState: GamutPlaneState = {
   visibleGuides: [],
 };
 
-/** Parent ownership is ordinary library consumption; all state controls are inside GamutPlane. */
+/** Parent ownership includes an explicit observation-state compatibility sentinel. */
 export function GeneralizedHost() {
   const [value, setValue] = useState(initialColor);
   const [state, setState] = useState(initialState);
@@ -20,6 +20,17 @@ export function GeneralizedHost() {
     <main className="generalized-host">
       <h1>Generalized instrument</h1>
       <GamutPlane value={value} onValueChange={setValue} state={state} onStateChange={setState} />
+      <button
+        type="button"
+        onClick={() =>
+          setState({
+            ...state,
+            selection: { representationId: state.selection.representationId, editorId: null },
+          })
+        }
+      >
+        Set observation
+      </button>
       <output data-definition={JSON.stringify(snapshotColor(value))}>
         {JSON.stringify(snapshotColor(value))}
       </output>

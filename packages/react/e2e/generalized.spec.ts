@@ -34,7 +34,7 @@ test("packed React plane context menu reuses accepted gamut actions without auth
     .getByRole("group", { name: "Status" })
     .getByRole("menuitemcheckbox", { name: "sRGB", exact: true })
     .click();
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Status" })).toBeChecked();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
   await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
@@ -51,8 +51,8 @@ test("packed React host imports and authors a generalized edit", async ({ page }
   await expect(root).toHaveAttribute("data-active-plane", "oklch");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
+  await expect(root.locator("canvas")).toHaveCount(1);
+  await expect(root.locator('[data-gp-control="card"]')).toHaveCount(2);
   await expect(definition).toHaveAttribute("data-definition", initial!);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="display-p3"]').click();
@@ -72,14 +72,17 @@ test("packed React anatomy matches the shared visual owner in editable and obser
 }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.getByLabel("sRGB Boundary", { exact: true }).check();
+  await root.getByRole("button", { name: "Gamut references" }).press("Escape");
+  await expect(root.locator('[data-gp-control="card"]')).toHaveCount(2);
+  await expect(root.getByRole("slider")).toHaveCount(1);
   expect(await root.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await expect(root).toHaveScreenshot("generalized-editable-440.png");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
+  await page.getByRole("button", { name: "Set observation", exact: true }).click();
   await expect(root.locator("canvas")).toHaveCount(0);
   await expect(root).toHaveScreenshot("generalized-observation-440.png");
   const axe = await new AxeBuilder({ page }).include("[data-gp-root]").analyze();
@@ -102,18 +105,18 @@ test("packed native RGB guides resolve partial and empty slices", async ({ page 
     await input.fill(value!);
     await input.press("Enter");
   }
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByRole("checkbox", { name: "sRGB Boundary" }).check();
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveAttribute("d", /^M.+ Z$/);
-  await expect(root.locator('[data-gp-channel="r"] [data-gamut-range="srgb"]')).toHaveCount(1);
+  await expect(root.locator('[data-gp-channel="b"] [data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );
-  await root.getByRole("button", { name: "Gamuts" }).press("Escape");
+  await root.getByRole("button", { name: "Gamut references" }).press("Escape");
   await root.getByLabel("Blue numeric value").fill("1.2");
   await root.getByLabel("Blue numeric value").press("Enter");
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );

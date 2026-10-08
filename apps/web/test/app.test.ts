@@ -44,7 +44,7 @@ describe("standalone application", () => {
     expect(wrapper.get(".project-header").attributes("aria-describedby")).toBe(
       "project-description",
     );
-    expect(wrapper.get("#project-description").text()).toContain("Pick a color in OKLCH");
+    expect(wrapper.get("#project-description").text()).toContain("Edit color coordinates");
     expect(wrapper.get(".output-demo h2").text()).toBe("Output examples");
     expect(
       wrapper
@@ -52,8 +52,9 @@ describe("standalone application", () => {
         .map((option) => option.attributes("data-value")),
     ).toEqual(["oklch", "oklab", "srgb", "display-p3"]);
     const gamuts = wrapper.get("[data-gp-part='gamut-trigger']");
-    expect(gamuts.text()).toContain("Gamuts");
-    expect(gamuts.get("[data-gp-part='gamut-summary']").text()).toBe("Reference sRGB · Inside");
+    expect(gamuts.text()).toContain("Gamut references");
+    expect(gamuts.find("[data-gp-part='gamut-summary']").exists()).toBe(false);
+    expect(gamuts.get("[data-gp-visually-hidden]").text()).toBe("Reference sRGB, Inside");
     expect(gamuts.attributes("aria-expanded")).toBe("false");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(2);
     expect(
@@ -72,9 +73,13 @@ describe("standalone application", () => {
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="srgb"]').trigger("click");
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
-    await wrapper.get('.gp-mode input[value="inspect"]').setValue(true);
-    expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Red (R)");
+    expect(wrapper.find(".gp-mode").exists()).toBe(false);
+    expect(wrapper.findAll('[data-gp-control="card"]')).toHaveLength(2);
+    expect(wrapper.get('[data-gp-control="rail"]').attributes("data-gp-channel")).toBe("b");
+    expect(wrapper.get('[aria-label="Red numeric value"]').element).toHaveProperty(
+      "value",
+      "0.2915",
+    );
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
     await wrapper.get("[data-gp-part='gamut-trigger']").trigger("click");
     expect(wrapper.get("[data-gp-part='gamut-trigger']").attributes("aria-expanded")).toBe("true");
@@ -82,7 +87,7 @@ describe("standalone application", () => {
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(false);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(true);
-    expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(false);
+    expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(true);
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
     await flushPromises();
@@ -90,11 +95,10 @@ describe("standalone application", () => {
     expect(wrapper.get(".output-demo").attributes("aria-labelledby")).toBe("output-demo-title");
     expect(wrapper.get("#output-demo-title").text()).toBe("Output examples");
     expect(wrapper.find("[data-gp-part='coordinate-readout']").exists()).toBe(false);
-    expect(wrapper.findAll("[data-gp-part='channel-symbol']").map((node) => node.text())).toEqual([
-      "L",
-      "a",
-      "b",
-    ]);
+    expect(wrapper.get('[data-gp-control="rail"]').attributes("data-gp-channel")).toBe("l");
+    expect(
+      wrapper.findAll('[data-gp-control="card"]').map((node) => node.attributes("data-gp-channel")),
+    ).toEqual(["a", "b"]);
     expect(wrapper.find('[data-gamut-boundary="srgb"]').exists()).toBe(true);
     expect(wrapper.get('[data-css-representation="oklch"] code').text()).toBe(originalOklch);
 

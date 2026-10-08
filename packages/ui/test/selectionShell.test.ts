@@ -86,13 +86,13 @@ describe("accepted Coordinates / mode / Area policy", () => {
       ).toBe(true);
     },
   );
-  it("treats accepted representation and mode activations as identity no-ops", () => {
+  it("Coordinates requests editing from explicit observation without changing legacy observation helpers", () => {
     const state = requestInspection(initialInstrumentState(), true);
     expect(requestRepresentation(state, "oklch")).toBe(state);
     expect(requestInspection(state, true)).toBe(state);
-    expect(requestShellSelection(state.selection, { kind: "representation", value: "oklch" })).toBe(
-      state.selection,
-    );
+    expect(
+      requestShellSelection(state.selection, { kind: "representation", value: "oklch" }),
+    ).toEqual({ representationId: "oklch", editorId: "oklch-lc" });
     expect(requestShellSelection(state.selection, { kind: "mode", value: "inspect" })).toBe(
       state.selection,
     );

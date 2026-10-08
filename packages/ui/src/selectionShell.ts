@@ -92,7 +92,9 @@ export function requestShellSelection(
 ): ShellSelection {
   if (action.kind === "representation") {
     const representation = currentRepresentationOptions.find((id) => id === action.value);
-    if (!representation || representation === selection.representationId) return selection;
+    if (!representation) return selection;
+    if (representation === selection.representationId && selection.editorId !== null)
+      return selection;
     return defaultSelection(representation, facts);
   }
   if (action.kind === "mode") {

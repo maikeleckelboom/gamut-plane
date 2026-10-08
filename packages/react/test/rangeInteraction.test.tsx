@@ -273,7 +273,7 @@ describe("native range lifecycle", () => {
     expect(ui.cancel).not.toHaveBeenCalled();
     expect(ui.interaction.mock.calls).toEqual([[true]]);
   });
-  it.each(["h", "l", "c", "oklab"])("%s has the correct field preview policy", async (channel) => {
+  it.each(["h", "oklab"])("%s fixed rail has the correct field preview policy", async (channel) => {
     const clock = frames(),
       ui = await host({ defaultState: editingState(channel === "oklab" ? "oklab" : "oklch") });
     await clock.flush();

@@ -15,7 +15,7 @@ interface NumericInputProps extends Omit<
   | "max"
   | "step"
 > {
-  value: number;
+  value: number | null;
   context?: string | undefined;
   min?: number | undefined;
   max?: number | undefined;
@@ -50,7 +50,7 @@ export function NumericInput(props: NumericInputProps) {
       data-gp-part={gpPart.numericInput}
       inputMode="decimal"
       dir="ltr"
-      defaultValue={value.toFixed(precision)}
+      defaultValue={value?.toFixed(precision) ?? ""}
       min={min}
       max={max}
       step={step}

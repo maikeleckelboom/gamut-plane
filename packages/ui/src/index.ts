@@ -44,6 +44,7 @@ export {
   gamutRows,
   gamutSummary,
   gamutSummaryCopy,
+  gamutDisclosureCopy,
   referenceChoices,
   boundaryPausedCopy,
   requestGamutAction,
@@ -80,6 +81,8 @@ export {
   editorUi,
   currentPrimaryEditors,
   preferredEditors,
+  channelControlPresentation,
+  orderedCompanions,
 } from "./instrumentMetadata.js";
 export {
   currentEditorHelp,

@@ -149,6 +149,50 @@ export function gamutSummaryCopy(summary: GamutSummary) {
   });
 }
 
+/** Closed disclosure exposes exceptional accepted facts without a second information panel. */
+export function gamutDisclosureCopy<G extends string>(
+  state: InstrumentViewState<G>,
+  checks: readonly GamutCheckResult[],
+  paused: readonly G[],
+) {
+  const summary = gamutSummary(state, checks);
+  const copy = gamutSummaryCopy(summary);
+  const outside = summary.outside + (summary.reference?.status === "outside" ? 1 : 0);
+  const pausedCount = state.visibleGuides.filter((id) => paused.includes(id)).length;
+  const unavailable = exactResultOrder.filter(
+    (id) => requestedGamutStatus(state.checkedGamuts, checks, id) === "unavailable",
+  );
+  const status =
+    outside > 0
+      ? "outside"
+      : unavailable.length > 0
+        ? "unavailable"
+        : (summary.reference?.status ?? (summary.requested === 0 ? "off" : undefined));
+  const cue =
+    outside > 0
+      ? outside === 1 && summary.reference?.status === "outside"
+        ? `Outside ${summary.reference.label}`
+        : `${outside} outside`
+      : status === "unavailable" || status === "off"
+        ? gamutStatusCopy(status)
+        : null;
+  const details = [
+    ...unavailable
+      .filter((id) => id !== summary.reference?.gamutId)
+      .map((id) => `${exactGamutUi[id].label} unavailable`),
+    pausedCount > 0
+      ? `${pausedCount} requested ${pausedCount === 1 ? "boundary" : "boundaries"} paused`
+      : null,
+  ].filter(Boolean);
+  return {
+    cue:
+      [cue, pausedCount > 0 ? generalizedCopy.boundaryPaused : null].filter(Boolean).join(" · ") ||
+      null,
+    status,
+    description: copy.description + (details.length > 0 ? `. ${details.join(". ")}.` : ""),
+  };
+}
+
 /** One mutually exclusive choice, including the explicit absence of a Reference. */
 export function referenceChoices(referenceGamutId: GamutId | null) {
   return Object.freeze([

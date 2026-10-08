@@ -22,25 +22,27 @@ import "@gamut-plane/vue/style.css";
 document.body.style.cssText =
   "margin:24px;background:#15171a;color:white;font-family:Arial,sans-serif";
 const query = new URLSearchParams(location.search);
-const created = query.has("tolerance")
-  ? createColorValue({
-      space: "oklch",
-      channels: [0.5415923764146119, 0.09244884602706227, 194.76895989787468],
-      alpha: 1,
-    })
-  : query.has("lab")
+const created = query.has("missinghue")
+  ? createColorValue({ space: "oklch", channels: [0.68, 0, null], alpha: 0.37 })
+  : query.has("tolerance")
     ? createColorValue({
-        space: "oklab",
-        channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
-        alpha: 0.37,
+        space: "oklch",
+        channels: [0.5415923764146119, 0.09244884602706227, 194.76895989787468],
+        alpha: 1,
       })
-    : query.has("unavailable")
-      ? createColorValue({ space: "srgb", channels: [1e308, 0, 0], alpha: 1 })
-      : createColorValue({
-          space: "oklch",
-          channels: [0.68, 0.18, 252],
-          alpha: query.has("alpha") ? 0.37 : 1,
-        });
+    : query.has("lab")
+      ? createColorValue({
+          space: "oklab",
+          channels: [0.68, Number(query.get("a") ?? 0.1), Number(query.get("b") ?? 0.2)],
+          alpha: 0.37,
+        })
+      : query.has("unavailable")
+        ? createColorValue({ space: "srgb", channels: [1e308, 0, 0], alpha: 1 })
+        : createColorValue({
+            space: "oklch",
+            channels: [0.68, 0.18, 252],
+            alpha: query.has("alpha") ? 0.37 : 1,
+          });
 if (!created.ok) throw Error("fixture");
 const initial = created.value;
 const readOnly = query.has("readonly");
@@ -106,6 +108,33 @@ createApp({
     return () =>
       h("main", [
         h("div", { id: "controls" }, [
+          h(
+            "button",
+            {
+              onClick: () => {
+                state.value = {
+                  ...state.value,
+                  selection: {
+                    representationId: state.value.selection.representationId,
+                    editorId: null,
+                  },
+                };
+              },
+            },
+            "Set observation",
+          ),
+          h(
+            "button",
+            {
+              onClick: () => {
+                selection.value = {
+                  representationId: selection.value.representationId,
+                  editorId: null,
+                };
+              },
+            },
+            "Observe Area host",
+          ),
           h(
             "button",
             {

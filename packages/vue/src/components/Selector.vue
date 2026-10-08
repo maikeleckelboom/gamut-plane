@@ -7,6 +7,8 @@ const props = defineProps<{
   value: string;
   options: readonly SelectorOption[];
   disabled: boolean;
+  inlineLabel?: boolean;
+  requestCurrent?: boolean;
 }>();
 const emit = defineEmits<{ request: [value: string] }>();
 const trigger = useTemplateRef<HTMLButtonElement>("trigger");
@@ -40,6 +42,9 @@ onBeforeUnmount(() => binding?.dispose());
       "
       :disabled="disabled"
     >
+      <span v-if="inlineLabel" class="gp-selector-inline-label" aria-hidden="true">{{
+        label
+      }}</span>
       <span>{{ options.find((option) => option.value === value)?.label }}</span
       ><span aria-hidden="true">▾</span>
     </button>

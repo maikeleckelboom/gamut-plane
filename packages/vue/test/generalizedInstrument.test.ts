@@ -50,7 +50,7 @@ describe("Vue public generalized instrument", () => {
     expect(Object.isFrozen(requests.mock.calls[0]?.[0])).toBe(true);
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     await wrapper.setProps({ state: observed });
-    expect(wrapper.get('[role="combobox"]').text()).toBe("sRGB▾");
+    expect(wrapper.get('[role="combobox"]').text()).toContain("sRGB");
     expect(definitionOf(value)).toEqual(before);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     wrapper.unmount();
@@ -122,17 +122,26 @@ describe("Vue public generalized instrument", () => {
     },
   );
 
-  it("toggles OKLab editing and inspection without authoring", async () => {
+  it("accepts host observation and re-enters OKLab through Coordinates without authoring", async () => {
     const state: GamutPlaneState = {
       selection: { representationId: "oklab", editorId: "oklab-ab" },
       checkedGamuts: [],
       referenceGamutId: null,
       visibleGuides: [],
     };
-    const wrapper = mount(GamutPlane, { props: { modelValue: value, defaultState: state } });
-    await wrapper.get('.gp-mode input[value="inspect"]').setValue(true);
+    const wrapper = mount(GamutPlane, {
+      props: { modelValue: value, state, "onUpdate:state": vi.fn() },
+    });
+    await wrapper.setProps({
+      state: { ...state, selection: { representationId: "oklab", editorId: null } },
+    });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
-    await wrapper.get('.gp-mode input[value="edit"]').setValue(true);
+    await wrapper.get('[role="combobox"]').trigger("click");
+    await wrapper.get('[data-value="oklab"]').trigger("click");
+    expect(wrapper.emitted("update:state")?.at(-1)?.[0]).toMatchObject({
+      selection: state.selection,
+    });
+    await wrapper.setProps({ state });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(true);
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     wrapper.unmount();
@@ -236,7 +245,7 @@ describe("Vue public generalized instrument", () => {
     });
     expect(wrapper.find("[data-picker-plane]").exists()).toBe(false);
     expect(wrapper.text()).toContain("Editing plane unavailable");
-    expect((wrapper.get('input[value="edit"]').element as HTMLInputElement).checked).toBe(true);
+    expect(wrapper.find(".gp-mode").exists()).toBe(false);
     expect(wrapper.get("[data-gp-part='inspection-readout']").text()).toContain("Alpha");
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
     expect(wrapper.get("[data-gp-part='guide-preference'] [data-gp-visually-hidden]").text()).toBe(

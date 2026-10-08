@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { gpPart, mountNumericInput } from "@gamut-plane/ui";
 
 const props = defineProps<{
-  modelValue: number;
+  modelValue: number | null;
   context?: string | undefined;
   min?: number | undefined;
   max?: number | undefined;
@@ -20,10 +20,10 @@ let binding: ReturnType<typeof mountNumericInput> | undefined;
 // Emit the initial value for SSR, then leave the live native value to the controller.
 const vInitialValue = {
   mounted(element: HTMLInputElement) {
-    element.value = props.modelValue.toFixed(props.precision);
+    element.value = props.modelValue?.toFixed(props.precision) ?? "";
   },
   getSSRProps() {
-    return { value: props.modelValue.toFixed(props.precision) };
+    return { value: props.modelValue?.toFixed(props.precision) ?? "" };
   },
 };
 

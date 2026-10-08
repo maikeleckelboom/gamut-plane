@@ -1,7 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { currentPrimaryEditors, editorUi, representationUi } from "../src/instrumentMetadata.js";
+import { geometryDefinitions, editorDefinitions } from "@gamut-plane/core/internal/capabilities";
+import {
+  currentPrimaryEditors,
+  editorUi,
+  representationUi,
+  orderedCompanions,
+  channelControlPresentation,
+} from "../src/instrumentMetadata.js";
 
 describe("current instrument metadata", () => {
+  it("derives one fixed rail and two plane cards from each admitted geometry", () => {
+    const expected = [
+      ["H", "L", "C"],
+      ["L", "a", "b"],
+      ["B", "R", "G"],
+      ["G", "R", "B"],
+      ["R", "G", "B"],
+      ["B", "R", "G"],
+      ["G", "R", "B"],
+      ["R", "G", "B"],
+    ];
+    for (const [index, editor] of currentPrimaryEditors.entries()) {
+      const geometry = geometryDefinitions[editorDefinitions[editor.id].geometryId];
+      const controls = orderedCompanions<import("../src/instrumentMetadata.js").CompanionControl>(
+        editor.companions,
+        geometry,
+      );
+      expect(controls.map((control) => control.symbol)).toEqual(expected[index]);
+      expect(
+        controls.map((control) => channelControlPresentation(control.channelId, geometry)),
+      ).toEqual(["rail", "card", "card"]);
+      expect(controls[0]?.channelId).toBe(geometry.fixed);
+      expect(new Set(controls.slice(1).map((control) => control.channelId))).toEqual(
+        new Set([geometry.x, geometry.y]),
+      );
+    }
+  });
   it("labels all four representations and explicitly admits the eight editors", () => {
     expect(Object.entries(representationUi).map(([key, row]) => [key, row.id, row.label])).toEqual([
       ["oklch", "oklch", "OKLCH"],

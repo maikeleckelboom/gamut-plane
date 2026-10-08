@@ -7,8 +7,7 @@ import {
   gamutCloseGlyphPath,
   gamutRows,
   gamutStatusCopy,
-  gamutSummary,
-  gamutSummaryCopy,
+  gamutDisclosureCopy,
   generalizedCopy,
   gpPart,
   mountGamutPopup,
@@ -48,7 +47,7 @@ export function GamutComparison({
     binding.current?.reconcile();
   });
   const rows = gamutRows(state, checks, referenceGuidePolicy, paused);
-  const summary = gamutSummaryCopy(gamutSummary(state, checks));
+  const summary = gamutDisclosureCopy(state, checks, paused);
   return (
     <div className="gp-gamuts" data-gp-part={gpPart.gamuts}>
       <button
@@ -64,31 +63,27 @@ export function GamutComparison({
         aria-describedby={`${id}-gamuts-description`}
       >
         <span id={`${id}-gamuts-label`} className="gp-gamuts-label">
-          {generalizedCopy.comparison}
+          <svg
+            className="gp-gamuts-layers"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="m8 2 6 3-6 3-6-3Zm-6 6 6 3 6-3M2 11l6 3 6-3" />
+          </svg>
+          <span>{generalizedCopy.comparison}</span>
         </span>
-        <span className="gp-gamuts-outside" data-gp-status="outside">
-          {summary.outside ?? ""}
-        </span>
+        {summary.cue && (
+          <span
+            className="gp-gamuts-summary"
+            data-gp-part={gpPart.gamutSummary}
+            data-gp-status={summary.status}
+          >
+            {summary.cue}
+          </span>
+        )}
         <span className="gp-gamuts-chevron" aria-hidden="true">
-          ▾
-        </span>
-        <span className="gp-gamuts-summary" data-gp-part={gpPart.gamutSummary}>
-          <span>{summary.reference}</span>
-          {summary.target && (
-            <>
-              {" "}
-              <span className="gp-gamuts-target">{summary.target}</span>
-            </>
-          )}
-          {summary.statusText && (
-            <>
-              {" "}
-              <span className="gp-gamuts-status">
-                <span aria-hidden="true">·</span>{" "}
-                <span data-gp-status={summary.status!}>{summary.statusText}</span>
-              </span>
-            </>
-          )}
+          ›
         </span>
         <span id={`${id}-gamuts-description`} data-gp-visually-hidden="">
           {summary.description}

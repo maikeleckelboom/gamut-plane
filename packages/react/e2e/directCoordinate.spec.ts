@@ -20,8 +20,8 @@ test("packed OKLab controls author a coordinate and reconcile the sibling slice"
   if (!value.ok) throw new Error("Packed host authored color is invalid");
   const observed = represent(value.value, "oklab");
   if (!observed.ok) throw new Error("Packed host OKLab observation is unavailable");
-  const a = root.getByRole("slider", { name: "OKLab a", exact: true });
-  const b = root.getByRole("slider", { name: "OKLab b", exact: true });
+  const a = root.getByRole("spinbutton", { name: "OKLab a numeric value", exact: true });
+  const b = root.getByRole("spinbutton", { name: "OKLab b numeric value", exact: true });
   const previousBound = await b.getAttribute("max");
   const number = root.getByRole("spinbutton", { name: "OKLab a numeric value" });
   await number.fill("0.1");
@@ -32,7 +32,8 @@ test("packed OKLab controls author a coordinate and reconcile the sibling slice"
     channels: [observed.value.channels[0], 0.1, observed.value.channels[2]],
   });
   await expect(b).not.toHaveAttribute("max", previousBound!);
-  await a.press("End");
+  await a.fill((await a.getAttribute("max"))!);
+  await a.press("Enter");
   expect((await definition()).channels[1]).toBe(Number(await a.getAttribute("max")));
   expect((await definition()).channels[2]).toBe(observed.value.channels[2]);
   expect((await definition()).alpha).toBe(before.alpha);

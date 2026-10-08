@@ -53,7 +53,7 @@ test("generalized narrow and enlarged-text references", async ({ page }) => {
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
   });
-  await page.getByRole("button", { name: "Gamuts" }).click();
+  await page.getByRole("button", { name: "Gamut references" }).click();
   await expect(page).toHaveScreenshot("generalized-editable-enlarged-text.png", {
     fullPage: true,
   });

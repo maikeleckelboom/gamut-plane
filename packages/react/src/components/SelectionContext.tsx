@@ -39,30 +39,13 @@ export function SelectionContext({
         <Selector
           id={`${id}-representation`}
           label={generalizedCopy.representation}
+          inlineLabel
+          requestCurrent={selection.editorId === null}
           value={selection.representationId}
           options={options}
           disabled={disabled}
           request={(value) => act({ kind: "representation", value })}
         />
-        {context.canEdit ? (
-          <fieldset className="gp-mode" disabled={disabled}>
-            <legend data-gp-visually-hidden="">{generalizedCopy.interactionMode}</legend>
-            {(["edit", "inspect"] as const).map((mode) => (
-              <label key={mode}>
-                <input
-                  type="radio"
-                  name={`${id}-mode`}
-                  value={mode}
-                  checked={context.editing === (mode === "edit")}
-                  onChange={() => act({ kind: "mode", value: mode })}
-                />
-                <span>{generalizedCopy[mode]}</span>
-              </label>
-            ))}
-          </fieldset>
-        ) : (
-          <span className="gp-context-mode">{generalizedCopy.inspectionOnly}</span>
-        )}
       </div>
       {context.areas.length > 1 && (
         <Selector

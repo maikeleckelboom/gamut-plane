@@ -9,6 +9,7 @@ import {
   gamutRows,
   gamutSummary,
   gamutSummaryCopy,
+  gamutDisclosureCopy,
   pausedGuideIds,
   referenceChoices,
   requestGamutAction,
@@ -55,6 +56,32 @@ function summary(
 const both = ["display-p3-gamut", "srgb-gamut"] as const;
 
 describe("closed Gamuts summary", () => {
+  it("keeps the disclosure quiet until an exceptional accepted status or requested pause exists", () => {
+    const inside = [check("srgb-gamut", "inside"), check("display-p3-gamut", "inside")];
+    expect(gamutDisclosureCopy(initial, inside, [])).toMatchObject({
+      cue: null,
+      description: "Reference sRGB, Inside",
+    });
+    const outside = [check("srgb-gamut", "outside"), check("display-p3-gamut", "inside")];
+    expect(gamutDisclosureCopy(initial, outside, [])).toMatchObject({
+      cue: "Outside sRGB",
+      status: "outside",
+    });
+    expect(gamutDisclosureCopy(state([], "srgb-gamut"), outside, [])).toMatchObject({
+      cue: "Status off",
+      status: "off",
+    });
+    expect(
+      gamutDisclosureCopy(initial, [inside[0]!, check("display-p3-gamut", "unavailable")], []),
+    ).toMatchObject({ cue: "Unavailable", status: "unavailable" });
+    const paused = gamutDisclosureCopy(initial, inside, ["srgb-boundary"]);
+    expect(paused.cue).toBe("Paused");
+    expect(paused.description).toContain("1 requested boundary paused.");
+    expect(
+      gamutDisclosureCopy({ ...initial, visibleGuides: [] }, inside, ["srgb-boundary"]).cue,
+    ).toBeNull();
+    expect(gamutDisclosureCopy(initial, inside, []).description).not.toContain("Paused");
+  });
   it.each([
     ["Inside", "inside", "Inside"],
     ["Outside", "outside", "Outside"],

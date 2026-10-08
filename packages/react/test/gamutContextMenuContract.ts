@@ -182,7 +182,7 @@ export function gamutContextMenuContract(mount: Mount) {
           ),
         ];
         const original = nodes();
-        expect(original).toHaveLength(7);
+        expect(original).toHaveLength(5);
         const draft = host.element.querySelector<HTMLInputElement>(
           '[aria-label="Chroma numeric value"]',
         )!;

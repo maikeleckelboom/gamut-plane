@@ -26,7 +26,7 @@ test("Status, Boundary and Reference have independent observable effects", async
   const triangle = await warning.boundingBox();
   expect(triangle!.x).toBeGreaterThan(selected!.x + selected!.width + 2);
   expect(triangle!.y + triangle!.height).toBeLessThan(selected!.y - 2);
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).uncheck();
   await expect(connector).toHaveCount(0);
   await expect(marker).toHaveCount(0);
@@ -114,7 +114,7 @@ test("Reference radios support keyboard navigation, inspection and returning to 
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
   await moveOutsideSrgb(root);
-  await root.getByRole("button", { name: "Gamuts" }).focus();
+  await root.getByRole("button", { name: "Gamut references" }).focus();
   await page.keyboard.press("Enter");
   const srgb = root.getByRole("radio", { name: "sRGB", exact: true, includeHidden: true });
   await srgb.focus();

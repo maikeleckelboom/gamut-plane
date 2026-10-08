@@ -68,14 +68,12 @@ describe("React Coordinates shell", () => {
     expect(request).not.toHaveBeenCalled();
     await selectRepresentation(ui.element, "srgb");
     expect(request).toHaveBeenCalledTimes(1);
-    expect(trigger.textContent).toBe("OKLCH▾");
-    await act(async () => get<HTMLInputElement>(ui.element, 'input[value="inspect"]').click());
-    expect(get<HTMLInputElement>(ui.element, 'input[value="edit"]').checked).toBe(true);
-    expect(get<HTMLInputElement>(ui.element, 'input[value="inspect"]').checked).toBe(false);
+    expect(trigger.textContent).toContain("OKLCH");
+    expect(ui.element.querySelector(".gp-mode")).toBeNull();
     expect(get(ui.element, '[data-gp-part="surface"]')).toBe(plane);
     expect(color).not.toHaveBeenCalled();
   });
-  it("current Coordinates preserves explicit inspection and live badge updates", async () => {
+  it("current Coordinates requests an editor and preserves rejected observation with live badges", async () => {
     const request = vi.fn();
     const color = vi.fn();
     const state = {
@@ -86,8 +84,12 @@ describe("React Coordinates shell", () => {
       <GamutPlane value={initial} state={state} onStateChange={request} onValueChange={color} />,
     );
     await selectRepresentation(ui.element, "oklch");
-    expect(request).not.toHaveBeenCalled();
-    expect(get<HTMLInputElement>(ui.element, 'input[value="inspect"]').checked).toBe(true);
+    expect(request.mock.lastCall?.[0].selection).toEqual({
+      representationId: "oklch",
+      editorId: "oklch-lc",
+    });
+    expect(ui.element.querySelector('[data-gp-part="inspection-readout"]')).not.toBeNull();
+    expect(ui.element.querySelector('[data-gp-part="surface"]')).toBeNull();
     expect(ui.element.querySelectorAll(".gp-selector-status[data-gp-status]")).toHaveLength(2);
     await ui.render(
       <GamutPlane
@@ -140,7 +142,7 @@ describe("React Coordinates shell", () => {
       />,
     );
     expect(ui.element.querySelector("#test-area")).toBeNull();
-    await act(async () => get<HTMLInputElement>(ui.element, 'input[value="edit"]').click());
+    await selectRepresentation(ui.element, "oklch");
     expect(request.mock.lastCall?.[0]).toEqual({ representationId: "oklch", editorId: "oklch-lc" });
   });
 });

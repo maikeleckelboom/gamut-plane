@@ -60,16 +60,14 @@ describe("Vue Coordinates shell", () => {
     await trigger.trigger("click");
     await ui.get('[data-value="srgb"]').trigger("click");
     expect(request).toHaveBeenCalledTimes(1);
-    expect(trigger.text()).toBe("OKLCH▾");
-    await ui.get('input[value="inspect"]').setValue(true);
-    expect((ui.get('input[value="edit"]').element as HTMLInputElement).checked).toBe(true);
-    expect((ui.get('input[value="inspect"]').element as HTMLInputElement).checked).toBe(false);
+    expect(trigger.text()).toContain("OKLCH");
+    expect(ui.find(".gp-mode").exists()).toBe(false);
     expect(ui.get('[data-gp-part="surface"]').element).toBe(plane);
     expect(ui.emitted("update:modelValue")).toBeUndefined();
     ui.unmount();
     resolve.mockRestore();
   });
-  it("current Coordinates preserves Inspect and removes unchecked badges", async () => {
+  it("current Coordinates requests an editor and preserves rejected observation with live badges", async () => {
     const request = vi.fn();
     const inspect = { ...state, selection: { representationId: "oklch", editorId: null } } as const;
     const ui = mount(GamutPlane, {
@@ -77,8 +75,12 @@ describe("Vue Coordinates shell", () => {
     });
     await ui.get('[role="combobox"]').trigger("click");
     await ui.get('[data-value="oklch"]').trigger("click");
-    expect(request).not.toHaveBeenCalled();
-    expect((ui.get('input[value="inspect"]').element as HTMLInputElement).checked).toBe(true);
+    expect(request.mock.lastCall?.[0].selection).toEqual({
+      representationId: "oklch",
+      editorId: "oklch-lc",
+    });
+    expect(ui.find('[data-gp-part="inspection-readout"]').exists()).toBe(true);
+    expect(ui.find('[data-gp-part="surface"]').exists()).toBe(false);
     expect(ui.findAll(".gp-selector-status[data-gp-status]")).toHaveLength(1);
     await ui.setProps({ state: { ...inspect, checkedGamuts: [] } });
     expect(ui.findAll(".gp-selector-status[data-gp-status]")).toHaveLength(0);
@@ -110,7 +112,8 @@ describe("Vue Coordinates shell", () => {
     expect(ui.get("#test-area").text()).toBe("Hue / Chroma▾");
     await ui.setProps({ selection: { representationId: "oklch", editorId: null } });
     expect(ui.find("#test-area").exists()).toBe(false);
-    await ui.get('input[value="edit"]').setValue(true);
+    await ui.get("#test-representation").trigger("click");
+    await ui.get('#test-representation-list [data-value="oklch"]').trigger("click");
     expect(ui.emitted("request")?.at(-1)?.[0]).toEqual({
       representationId: "oklch",
       editorId: "oklch-lc",

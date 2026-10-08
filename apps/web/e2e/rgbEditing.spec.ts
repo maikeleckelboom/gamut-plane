@@ -31,7 +31,7 @@ test("native RGB Area, pointer, keyboard and extended numeric recovery at 320px"
     await root
       .locator('input[type="number"]')
       .evaluateAll((inputs) => inputs.map((input) => input.getAttribute("aria-label"))),
-  ).toEqual(["Red numeric value", "Green numeric value", "Blue numeric value"]);
+  ).toEqual(["Green numeric value", "Red numeric value", "Blue numeric value"]);
 
   const plane = root.getByRole("application", { name: /Display P3 plane/ });
   const box = (await plane.boundingBox())!;
@@ -76,8 +76,10 @@ test("native RGB Area, pointer, keyboard and extended numeric recovery at 320px"
   expect(recovered).toMatchObject({ space: "display-p3", alpha: 0.37 });
   expect(recovered.channels).toEqual([0.3, -0.1, keyboard.channels[2]]);
   const accepted = await events.getAttribute("data-definition");
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await root.getByRole("radio", { name: "Edit", exact: true }).check();
+  await page.getByRole("button", { name: "Set observation", exact: true }).click();
+  await expect(root.locator("canvas")).toHaveCount(0);
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.locator('[data-value="display-p3"]').click();
   await expect(area).toContainText("R / G");
   await expect(events).toHaveAttribute("data-definition", accepted!);
 

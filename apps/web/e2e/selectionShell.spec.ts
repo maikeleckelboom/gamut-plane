@@ -48,7 +48,7 @@ test("candidate keyboard, typeahead, accepted checks, Tab and outside dismissal"
   await trigger.press("Space");
   await trigger.press("Tab");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await expect(root.getByRole("radio", { name: "Edit", exact: true })).toBeFocused();
+  await expect(root.getByRole("application")).toBeFocused();
   await trigger.press("Alt+ArrowDown");
   await page.getByRole("button", { name: "Reject requests" }).click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -64,8 +64,7 @@ test("candidate keyboard, typeahead, accepted checks, Tab and outside dismissal"
   await root.getByRole("option", { name: /^sRGB/ }).click();
   await expect(events).toHaveAttribute("data-requests", "1");
   await expect(trigger).toContainText("OKLCH");
-  await root.getByRole("radio", { name: "Inspect", exact: true }).click();
-  await expect(root.getByRole("radio", { name: "Edit", exact: true })).toBeChecked();
+  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
 });
 test("pending draft completes once in old context before representation or Inspect", async ({
   page,
@@ -82,12 +81,12 @@ test("pending draft completes once in old context before representation or Inspe
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.getByRole("option", { name: "OKLCH", exact: true }).click();
   await root.getByLabel("Chroma numeric value").fill("0.123");
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
+  await page.getByRole("button", { name: "Set observation", exact: true }).click();
   await expect(events).toHaveAttribute("data-commits", "2");
   await expect(events).toHaveAttribute("data-context", "oklch:none");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.getByRole("option", { name: "OKLCH", exact: true }).click();
-  await expect(events).toHaveAttribute("data-context", "oklch:none");
+  await expect(events).toHaveAttribute("data-context", "oklch:oklch-lc");
   await expect(events).toHaveAttribute("data-commits", "2");
 });
 test("comparison changes preserve mounted controls and popup candidate", async ({ page }) => {
@@ -142,9 +141,10 @@ test("future Area admission, no remembered editor, one popup and nested hosts", 
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await expect(area).toHaveAttribute("aria-expanded", "false");
   await root.getByRole("combobox", { name: "Coordinates" }).press("Escape");
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
+  await page.getByRole("button", { name: "Observe Area host" }).click();
   await expect(area).toHaveCount(0);
-  await root.getByRole("radio", { name: "Edit", exact: true }).check();
+  await root.getByRole("combobox", { name: "Coordinates" }).click();
+  await root.getByRole("option", { name: "OKLCH", exact: true }).click();
   await expect(area).toContainText("Lightness / Chroma");
   for (const kind of ["dialog", "popover"]) {
     await page.getByRole("button", { name: `Open host ${kind}` }).click();

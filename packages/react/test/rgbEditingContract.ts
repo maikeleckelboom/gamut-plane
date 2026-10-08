@@ -120,15 +120,21 @@ export function rgbEditingContract(
             node.getAttribute("data-range-end"),
           ]);
         const before = intervals();
-        expect(before.length).toBeGreaterThan(3);
-        expect(new Set(before.map((row) => row[0]))).toEqual(new Set(["r", "g", "b"]));
+        expect(before.length).toBeGreaterThan(0);
+        expect(new Set(before.map((row) => row[0]))).toEqual(new Set(["b"]));
         for (const area of ["rb", "gb", "rg"] as const) {
           const selection: GamutPlaneState["selection"] =
             space === "srgb"
               ? { representationId: space, editorId: `srgb-${area}` }
               : { representationId: space, editorId: `display-p3-${area}` };
           await host.state({ ...state, selection });
-          expect(intervals()).toEqual(before);
+          const fixed = { rb: "g", gb: "r", rg: "b" }[area];
+          expect(new Set(intervals().map((row) => row[0]))).toEqual(new Set([fixed]));
+          expect(host.element.querySelectorAll('input[type="range"]')).toHaveLength(1);
+          expect(
+            host.element.querySelector('[data-gp-control="rail"]')?.getAttribute("data-gp-channel"),
+          ).toBe(fixed);
+          if (area === "rg") expect(intervals()).toEqual(before);
           expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(2);
           expect(host.element.textContent).not.toContain("Paused");
         }
@@ -136,7 +142,7 @@ export function rgbEditingContract(
         const same = space === "srgb" ? "srgb" : "display-p3";
         expect(host.element.querySelector(`[data-gamut-boundary="${same}"]`)).toBeNull();
         expect(host.element.textContent).not.toContain("Paused");
-        expect(scalar(host, "r", "range").disabled).toBe(false);
+        expect(scalar(host, "b", "range").disabled).toBe(false);
         expect(host.changes()).toBe(0);
         await host.dispose();
       },
@@ -144,15 +150,19 @@ export function rgbEditingContract(
 
     it("retains point and line contours and zero-length channel facts without pausing", async () => {
       const host = await mount(rgb("display-p3", [0.8, 0, 0]), rgbState("display-p3"));
-      const point = host.element.querySelector('[data-gp-channel="r"] [data-range-point]');
-      expect(point?.getAttribute("data-range-start")).toBe("0");
-      expect(point?.getAttribute("data-range-end")).toBe("0");
       const boundary = () =>
         host.element.querySelector('[data-gamut-boundary="srgb"]')?.getAttribute("d");
       const pointStroke = openStrokePoints(boundary());
       for (const endpoint of pointStroke) expect(endpoint).toEqual(pointStroke[0]);
       expect(host.element.textContent).not.toContain("Paused");
-      expect(scalar(host, "r", "range").disabled).toBe(false);
+      expect(scalar(host, "b", "range").disabled).toBe(false);
+      await host.state({
+        ...rgbState("display-p3"),
+        selection: { representationId: "display-p3", editorId: "display-p3-gb" },
+      });
+      const point = host.element.querySelector('[data-gp-channel="r"] [data-range-point]');
+      expect(point?.getAttribute("data-range-start")).toBe("0");
+      expect(point?.getAttribute("data-range-end")).toBe("0");
       await host.replace(rgb("display-p3", [1, 1, 0.5]));
       await host.state({
         ...rgbState("display-p3"),
@@ -169,10 +179,10 @@ export function rgbEditingContract(
       async (space) => {
         const host = await mount(rgb(space), rgbState(space));
         expect(
-          [...host.element.querySelectorAll("[data-gp-part=channel-symbol]")].map((node) =>
-            node.textContent?.trim(),
+          [...host.element.querySelectorAll("[data-gp-part=channel]")].map((node) =>
+            node.getAttribute("data-gp-channel"),
           ),
-        ).toEqual(["R", "G", "B"]);
+        ).toEqual(["b", "r", "g"]);
         expect(host.changes()).toBe(0);
         expect(marker(host).style.left).toBe("120%");
         expect(marker(host).style.top).toBe("60%");
@@ -197,7 +207,7 @@ export function rgbEditingContract(
           "0.001",
           "0.4000",
         ]);
-        const range = scalar(host, "g", "range");
+        const range = scalar(host, "b", "range");
         expect([range.min, range.max, range.disabled]).toEqual(["0", "1", false]);
         for (const next of [-0.123456789, 1.234567891]) {
           const commits = host.commits();
@@ -209,8 +219,10 @@ export function rgbEditingContract(
           });
           expect(host.commits()).toBe(commits + 1);
           expect(scalar(host, "g")).toBe(green);
-          expect(range.valueAsNumber).toBe(next < 0 ? 0 : 1);
-          expect(range.getAttribute("aria-valuetext")).toContain("outside direct range");
+          expect(green.closest("[data-gp-channel]")?.getAttribute("data-gp-overflow")).toBe("true");
+          expect(
+            host.element.querySelector('[data-gp-channel="g"] input[type="range"]'),
+          ).toBeNull();
         }
         await host.interact(() => {
           range.value = "0.6";
@@ -218,7 +230,7 @@ export function rgbEditingContract(
         });
         expect(definitionOf(host.current())).toEqual({
           space,
-          channels: [1.2, 0.6, -0.1],
+          channels: [1.2, 1.234567891, 0.6],
           alpha: 0.37,
         });
         // A sibling edit reconciles a draft via operation inputs; comparison changes leave it alone.
@@ -233,7 +245,7 @@ export function rgbEditingContract(
           visibleGuides: [],
         });
         expect(green.value).toBe("0.7777777");
-        await host.replace(rgb(space, [1.3, 0.6, -0.1]));
+        await host.replace(rgb(space, [1.3, 0.6, 0.6]));
         expect(green.value).toBe("0.6000");
         await host.dispose();
       },
@@ -281,16 +293,19 @@ export function rgbEditingContract(
         host.element.querySelector("[data-geometry-id]")?.getAttribute("data-geometry-id"),
       ).toBe("srgb-gb-rectangle");
       expect(
-        [...host.element.querySelectorAll("[data-gp-part=channel-symbol]")].map((node) =>
-          node.textContent?.trim(),
+        [...host.element.querySelectorAll("[data-gp-part=channel]")].map((node) =>
+          node.getAttribute("data-gp-channel"),
         ),
-      ).toEqual(["R", "G", "B"]);
-      await host.interact(() =>
-        host.element.querySelector<HTMLInputElement>('input[type=radio][value="inspect"]')!.click(),
-      );
-      await host.interact(() =>
-        host.element.querySelector<HTMLInputElement>('input[type=radio][value="edit"]')!.click(),
-      );
+      ).toEqual(["r", "g", "b"]);
+      await host.state({
+        ...rgbState("srgb"),
+        selection: { representationId: "srgb", editorId: null },
+      });
+      expect(host.element.querySelector("canvas")).toBeNull();
+      await host.interact(() => {
+        selector(host, "representation").click();
+        host.element.querySelector<HTMLElement>('[role=option][data-value="srgb"]')!.click();
+      });
       expect(selector(host, "area").textContent).toContain("R / G");
       expect(host.current()).toBe(value);
       expect(host.changes()).toBe(0);

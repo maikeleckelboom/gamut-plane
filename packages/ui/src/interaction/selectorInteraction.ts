@@ -6,6 +6,8 @@ export interface SelectorInput {
   value: string;
   options: readonly SelectorOption[];
   disabled: boolean;
+  /** A selected representation can request an editor from a host-selected observation state. */
+  requestCurrent?: boolean;
   request(value: string): void;
 }
 
@@ -86,7 +88,10 @@ export function mountSelector(
   function activate(value: string) {
     if (!open || current().disabled) return;
     close(true);
-    if (value !== current().value && current().options.some((option) => option.value === value))
+    if (
+      (value !== current().value || current().requestCurrent) &&
+      current().options.some((option) => option.value === value)
+    )
       current().request(value);
   }
   function key(event: KeyboardEvent) {

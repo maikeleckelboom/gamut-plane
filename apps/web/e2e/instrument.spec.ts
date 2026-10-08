@@ -21,11 +21,13 @@ test("starts with both statuses, both boundaries and sRGB Reference", async ({ p
   await expect(page.locator("[data-gamut-boundary]")).toHaveCount(2);
   await expect(page.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
   await expect(page.locator("[data-gamut-boundary='display-p3']")).toHaveCount(1);
-  await expect(page.locator("[data-gp-channel='c'] [data-gamut-range]")).toHaveCount(2);
+  await expect(page.locator("[data-gp-channel='h'] [data-gamut-range]")).not.toHaveCount(0);
+  await expect(page.locator('[data-gp-control="card"]')).toHaveCount(2);
+  await expect(page.locator('[data-gp-part="native-range"]')).toHaveCount(1);
   await expect(page.locator("[data-gp-part='exact-result']")).toHaveCount(2);
   // The initial color is inside sRGB, so there is no excursion to connect to a Reference.
   await expect(page.locator("[data-gp-marker='reference']")).toHaveCount(0);
-  await expect(page.locator("[data-gp-root]")).toContainText("Gamuts");
+  await expect(page.locator("[data-gp-root]")).toContainText("Gamut references");
   expect(errors).toEqual([]);
 });
 
@@ -36,11 +38,9 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
   await expect(root.getByRole("combobox", { name: "Area" })).toContainText("R / G");
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
-  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
-  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(1);
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
+  await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByLabel("Display P3 Status", { exact: true }).check();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
@@ -52,16 +52,13 @@ test("selection, inspection, checks, and guides do not author color", async ({ p
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(0);
   await root.getByLabel("sRGB Boundary", { exact: true }).check();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
-    "Paused: Requested boundary appears when editing a color space.",
+    "",
   );
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.locator("[data-gp-part='exact-result']")).toHaveCount(2);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="oklch"]').click();
   await expect(root.locator("[data-gamut-boundary='srgb']")).toHaveCount(1);
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(root.locator("[data-picker-plane]")).toHaveCount(0);
-  await root.getByRole("radio", { name: "Edit", exact: true }).check();
   await expect(root.locator("[data-picker-plane]")).toHaveCount(1);
   await expect(page.locator('[data-css-representation="oklch"] code')).toHaveText(initial!);
 });
@@ -207,7 +204,7 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
     expect(rootOverflow).toBeLessThanOrEqual(0);
   }
   const root = page.locator("[data-gp-root]");
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByLabel("sRGB Status", { exact: true }).check();
   await root.getByLabel("Display P3 Boundary", { exact: true }).check();
   expect(
@@ -215,8 +212,8 @@ test("narrow and enlarged text keep editable content in bounds", async ({ page }
   ).toBeLessThanOrEqual(0);
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toContainText("Alpha");
+  await expect(root.locator('[data-gp-control="card"]')).toHaveCount(2);
+  await expect(root.locator("canvas")).toHaveCount(1);
   expect(
     await root.evaluate((element) => element.scrollWidth - element.clientWidth),
   ).toBeLessThanOrEqual(0);

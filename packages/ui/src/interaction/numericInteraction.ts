@@ -1,5 +1,5 @@
 export interface NumericInputState {
-  value: number;
+  value: number | null;
   precision: number;
   min?: number | undefined;
   max?: number | undefined;
@@ -21,7 +21,7 @@ export function mountNumericInput(target: HTMLInputElement, current: () => Numer
     if (!element || !readCurrent) return;
     const state = readCurrent();
     // Direct assignment also clears the browser's internal bad-input buffer.
-    element.value = state.value.toFixed(state.precision);
+    element.value = state.value?.toFixed(state.precision) ?? "";
   }
   function edit() {
     revision++;

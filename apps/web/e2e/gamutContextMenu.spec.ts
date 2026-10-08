@@ -179,10 +179,10 @@ for (const [group, name, field, expected] of [
     await expect(menu(root)).toBeHidden();
     await expect(plane(root)).toBeFocused();
     await open(root);
-    const inspector = root.getByRole("button", { name: "Gamuts" });
+    const inspector = root.getByRole("button", { name: "Gamut references" });
     await inspector.click();
     await expect(menu(root)).toBeHidden();
-    await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeVisible();
+    await expect(root.getByRole("dialog", { name: "Gamut references" })).toBeVisible();
     if (group === "Reference")
       await expect(root.getByRole("radio", { name, exact: true })).toBeChecked();
     else
@@ -278,7 +278,7 @@ test("Coordinates and Gamuts replace the menu in both directions without state",
   const root = await ready(page);
   const before = await events(page);
   const coordinates = root.getByRole("combobox", { name: "Coordinates" });
-  const gamuts = root.getByRole("button", { name: "Gamuts" });
+  const gamuts = root.getByRole("button", { name: "Gamut references" });
   for (const trigger of [coordinates, gamuts]) {
     await trigger.click();
     await trigger.evaluate((button: HTMLButtonElement) => {
@@ -412,7 +412,7 @@ test("Tab and Shift+Tab dismiss and continue in normal order from the plane", as
   for (const [key, target] of [
     // The field's own viewport buttons follow the plane in document order.
     ["Tab", root.getByRole("button", { name: "Zoom out" })],
-    ["Shift+Tab", root.getByRole("radio", { name: "Edit", exact: true })],
+    ["Shift+Tab", root.getByRole("combobox", { name: "Coordinates" })],
   ] as const) {
     await plane(root).press("ContextMenu");
     await page.keyboard.press(key);
@@ -539,7 +539,7 @@ test("native contextmenu events outside the editable plane are left alone", asyn
     root.getByLabel("Hue numeric value"),
     root.getByRole("slider", { name: "Hue", exact: true }),
     root.getByRole("combobox", { name: "Coordinates" }),
-    root.getByRole("button", { name: "Gamuts" }),
+    root.getByRole("button", { name: "Gamut references" }),
     page.getByRole("button", { name: "Reject requests" }),
   ]) {
     const handled = await target.evaluate(
@@ -580,8 +580,8 @@ test("touch-derived contextmenu is ignored and the discoverable Gamuts surface s
     expect(handled).toBe(false);
     await expect(menu(root)).toBeHidden();
     expect(await events(page)).toEqual(before);
-    await root.getByRole("button", { name: "Gamuts" }).tap();
-    await expect(root.getByRole("dialog", { name: "Gamuts" })).toBeVisible();
+    await root.getByRole("button", { name: "Gamut references" }).tap();
+    await expect(root.getByRole("dialog", { name: "Gamut references" })).toBeVisible();
   } finally {
     await context.close();
   }

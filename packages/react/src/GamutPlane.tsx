@@ -29,6 +29,8 @@ import {
 import {
   gpPart,
   editorUi,
+  orderedCompanions,
+  channelControlPresentation,
   directCoordinateHelp,
   directCoordinateContext,
   rgbChannelContext,
@@ -221,6 +223,13 @@ export function GamutPlane(props: GamutPlaneProps) {
     Object.entries(style ?? {}).filter(([key]) => !/^--(?:picker-|gp-)/.test(key)),
   );
   const shared = { onCancel, warning };
+  const selectedEditor = field ? editorUi[field.editorId] : null;
+  const rgbCompanions =
+    field && selectedEditor?.representationId === "srgb"
+      ? orderedCompanions(selectedEditor.companions, field.geometry)
+      : field && selectedEditor?.representationId === "display-p3"
+        ? orderedCompanions(selectedEditor.companions, field.geometry)
+        : [];
   return (
     <section
       {...dom}
@@ -299,7 +308,8 @@ export function GamutPlane(props: GamutPlaneProps) {
                   id={`${id}-hue`}
                   channel={hue.symbol}
                   label={hue.label}
-                  value={field.samplingFixed}
+                  presentation={channelControlPresentation(hue.channelId, field.geometry)}
+                  value={oklch.channels[2]}
                   min={hue.sliderRange.min}
                   max={hue.sliderRange.max}
                   step={hue.step}
@@ -334,6 +344,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                   id={`${id}-lightness`}
                   channel={lightness.symbol}
                   label={lightness.label}
+                  presentation={channelControlPresentation(lightness.channelId, field.geometry)}
                   value={oklch.channels[0]}
                   min={lightness.sliderRange.min}
                   max={lightness.sliderRange.max}
@@ -366,6 +377,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                   id={`${id}-chroma`}
                   channel={chroma.symbol}
                   label={chroma.label}
+                  presentation={channelControlPresentation(chroma.channelId, field.geometry)}
                   value={oklch.channels[1]}
                   min={chroma.sliderRange.min}
                   max={chroma.sliderRange.max}
@@ -405,6 +417,10 @@ export function GamutPlane(props: GamutPlaneProps) {
                   id={`${id}-oklab-lightness`}
                   channel={fixedLightness.symbol}
                   label={fixedLightness.label}
+                  presentation={channelControlPresentation(
+                    fixedLightness.channelId,
+                    field.geometry,
+                  )}
                   value={field.samplingFixed}
                   min={fixedLightness.sliderRange.min}
                   max={fixedLightness.sliderRange.max}
@@ -444,6 +460,7 @@ export function GamutPlane(props: GamutPlaneProps) {
                       id={`${id}-oklab-${control.symbol}`}
                       channel={control.symbol}
                       label={control.label}
+                      presentation={channelControlPresentation(control.channelId, field.geometry)}
                       accessibleLabel={control.accessibleLabel}
                       value={scalar}
                       min={coordinate.range?.min}
@@ -484,30 +501,29 @@ export function GamutPlane(props: GamutPlaneProps) {
                 })}
               </>
             ) : detail.view === "srgb" || detail.view === "display-p3" ? (
-              editorUi[detail.view === "srgb" ? "srgb-rg" : "display-p3-rg"].companions.map(
-                (control) => (
-                  <ColorChannelControl
-                    key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
-                    {...shared}
-                    id={`${id}-${detail.view}-${control.coordinate}`}
-                    channel={control.symbol}
-                    label={control.label}
-                    value={detail.rgb.channels[{ r: 0, g: 1, b: 2 }[control.coordinate]]!}
-                    min={control.sliderRange.min}
-                    max={control.sliderRange.max}
-                    numericBounds={control.numericBounds}
-                    step={control.step}
-                    precision={control.precision}
-                    gradient={detail.gradients[control.coordinate]}
-                    intervals={guides.rgbIntervals[control.coordinate]}
-                    coordinateContext={rgbChannelContext(control.coordinate, detail.rgb)}
-                    help={help.domainHelp}
-                    helpVisuallyHidden
-                    onInput={(next) => editRgb(detail.view, control.coordinate, next, false)}
-                    onComplete={(next) => editRgb(detail.view, control.coordinate, next, true)}
-                  />
-                ),
-              )
+              rgbCompanions.map((control) => (
+                <ColorChannelControl
+                  key={`${revision.contextKey}:${control.channelId}:${control.operationId}`}
+                  {...shared}
+                  id={`${id}-${detail.view}-${control.coordinate}`}
+                  channel={control.symbol}
+                  label={control.label}
+                  presentation={channelControlPresentation(control.channelId, field.geometry)}
+                  value={detail.rgb.channels[{ r: 0, g: 1, b: 2 }[control.coordinate]]!}
+                  min={control.sliderRange.min}
+                  max={control.sliderRange.max}
+                  numericBounds={control.numericBounds}
+                  step={control.step}
+                  precision={control.precision}
+                  gradient={detail.gradients[control.coordinate]}
+                  intervals={guides.rgbIntervals[control.coordinate]}
+                  coordinateContext={rgbChannelContext(control.coordinate, detail.rgb)}
+                  help={help.domainHelp}
+                  helpVisuallyHidden
+                  onInput={(next) => editRgb(detail.view, control.coordinate, next, false)}
+                  onComplete={(next) => editRgb(detail.view, control.coordinate, next, true)}
+                />
+              ))
             ) : null)}
           {accepted.authored.representationId !== accepted.selection.representationId && (
             <p data-gp-part={gpPart.authorshipContext}>

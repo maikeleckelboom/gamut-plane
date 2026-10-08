@@ -3,7 +3,8 @@ import { onMounted, ref } from "vue";
 import { createColorValue, snapshotColor } from "@gamut-plane/core";
 import { GamutPlane, type GamutPlaneState } from "@gamut-plane/vue";
 
-const initial = createColorValue({ space: "srgb", channels: [1.2, 0.4, -0.1], alpha: 0.37 });
+// Extended RGB placement plus a genuine P3 interval on the visible fixed Blue rail.
+const initial = createColorValue({ space: "srgb", channels: [1.05, 0.4, -0.1], alpha: 0.37 });
 if (!initial.ok) throw new Error("Invalid generalized Nuxt color");
 const value = ref(initial.value);
 const hydrated = ref(false);

@@ -9,8 +9,7 @@ import {
   gamutCloseGlyphPath,
   gamutRows,
   gamutStatusCopy,
-  gamutSummary,
-  gamutSummaryCopy,
+  gamutDisclosureCopy,
   generalizedCopy,
   gpPart,
   mountGamutPopup,
@@ -32,7 +31,7 @@ const popup = useTemplateRef<HTMLDivElement>("popup");
 const rows = computed(() =>
   gamutRows(props.state, props.checks, referenceGuidePolicy, props.paused),
 );
-const summary = computed(() => gamutSummaryCopy(gamutSummary(props.state, props.checks)));
+const summary = computed(() => gamutDisclosureCopy(props.state, props.checks, props.paused));
 const choices = computed(() => referenceChoices(props.state.referenceGamutId));
 let binding: ReturnType<typeof mountGamutPopup> | undefined;
 onMounted(() => {
@@ -69,24 +68,20 @@ function choose(event: Event, gamutId: GamutId | null): void {
       :aria-labelledby="`${id}-gamuts-label`"
       :aria-describedby="`${id}-gamuts-description`"
     >
-      <span :id="`${id}-gamuts-label`" class="gp-gamuts-label">{{
-        generalizedCopy.comparison
-      }}</span>
-      <span class="gp-gamuts-outside" data-gp-status="outside">{{ summary.outside ?? "" }}</span>
-      <span class="gp-gamuts-chevron" aria-hidden="true">▾</span>
-      <span class="gp-gamuts-summary" :data-gp-part="gpPart.gamutSummary">
-        <span>{{ summary.reference }}</span>
-        <template v-if="summary.target">
-          {{ " " }}<span class="gp-gamuts-target">{{ summary.target }}</span>
-        </template>
-        <template v-if="summary.statusText">
-          {{ " "
-          }}<span class="gp-gamuts-status"
-            ><span aria-hidden="true">·</span>{{ " "
-            }}<span :data-gp-status="summary.status">{{ summary.statusText }}</span></span
-          >
-        </template>
+      <span :id="`${id}-gamuts-label`" class="gp-gamuts-label">
+        <svg class="gp-gamuts-layers" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="m8 2 6 3-6 3-6-3Zm-6 6 6 3 6-3M2 11l6 3 6-3" />
+        </svg>
+        <span>{{ generalizedCopy.comparison }}</span>
       </span>
+      <span
+        v-if="summary.cue"
+        class="gp-gamuts-summary"
+        :data-gp-part="gpPart.gamutSummary"
+        :data-gp-status="summary.status"
+        >{{ summary.cue }}</span
+      >
+      <span class="gp-gamuts-chevron" aria-hidden="true">›</span>
       <span :id="`${id}-gamuts-description`" data-gp-visually-hidden>{{
         summary.description
       }}</span>

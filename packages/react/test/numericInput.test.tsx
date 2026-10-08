@@ -99,9 +99,8 @@ describe("numeric draft lifecycle", () => {
     await event(field, "change");
     expect(definitionOf(ui.commits.mock.calls[0]![0]).channels[1]).toBe(0.72);
     expect(field.value).toBe("0.7200");
-    expect(
-      get<HTMLInputElement>(ui.element, '[data-picker-control="c"] [type="range"]').value,
-    ).toBe("0.4");
+    expect(ui.element.querySelector('[data-picker-control="c"] [type="range"]')).toBeNull();
+    expect(field.closest("[data-picker-control]")?.getAttribute("data-gp-overflow")).toBe("true");
     expect(ui.element.textContent).toContain("outside the visible editing range");
   });
   it("uses plane-domain membership for exact-edge and genuine-overflow help", async () => {

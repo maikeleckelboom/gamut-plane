@@ -15,36 +15,33 @@ async function ready(page: Page, width: number) {
   return root;
 }
 for (const width of [320, 390, 440, 480])
-  test(`shell and technical rail at allocated ${width}px`, async ({ page }) => {
+  test(`compact geometry controls at allocated ${width}px`, async ({ page }) => {
     const root = await ready(page, width);
     const coordinates = root.getByRole("combobox", { name: "Coordinates" });
-    const mode = root.getByRole("group", { name: "Interaction mode" });
     const rootBox = (await root.boundingBox())!;
-    for (const control of [coordinates, mode]) {
+    await expect(root.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
+    for (const control of [coordinates, root.getByRole("button", { name: "Gamut references" })]) {
       const box = (await control.boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(rootBox.x);
       expect(box.x + box.width).toBeLessThanOrEqual(rootBox.x + rootBox.width);
     }
-    // One row per channel: [symbol or name] [track] [value]; rows share their columns.
-    const columns: { rail: number; track: number; value: number }[] = [];
-    for (const channel of ["h", "l", "c"]) {
-      const row = root.locator(`[data-gp-channel="${channel}"]`);
-      const symbol = (await row.locator('[data-gp-part="channel-symbol"]').boundingBox()) ?? null;
-      const label = (await row.locator("label").boundingBox())!;
-      const track = (await row.locator('[data-gp-part="channel-track"]').boundingBox())!;
-      const input = (await row.locator('[data-gp-part="numeric-input"]').boundingBox())!;
-      // Compact shows the symbol; wide shows the channel name instead.
-      const rail = symbol ?? label;
-      expect(rail.width).toBeGreaterThan(0);
-      if (symbol) expect(symbol.height).toBe(track.height);
-      expect(rail.x + rail.width).toBeLessThanOrEqual(track.x);
-      expect(track.x + track.width).toBeLessThanOrEqual(input.x);
-      columns.push({ rail: rail.x + rail.width, track: track.x, value: input.x + input.width });
-      await expect(row.locator('[data-gp-part="reference-warning"]')).toBeVisible();
-      await expect(row.locator('[data-gp-part="gamut-interval"]')).not.toHaveCount(0);
-    }
-    for (const key of ["rail", "track", "value"] as const)
-      expect(new Set(columns.map((column) => Math.round(column[key]))).size).toBe(1);
+    const rail = root.locator('[data-gp-channel="h"]');
+    const railBox = (await rail.boundingBox())!;
+    const trackBox = (await rail.locator('[data-gp-part="channel-track"]').boundingBox())!;
+    const cards = root.locator('[data-gp-control="card"]');
+    const lightness = (await cards.nth(0).boundingBox())!;
+    const chroma = (await cards.nth(1).boundingBox())!;
+    await expect(rail).toHaveAttribute("data-gp-control", "rail");
+    await expect(cards).toHaveCount(2);
+    await expect(root.getByRole("slider")).toHaveCount(1);
+    await expect(cards.getByRole("slider")).toHaveCount(0);
+    expect(trackBox.width).toBeCloseTo(railBox.width, 0);
+    expect(lightness.y).toBe(chroma.y);
+    expect(lightness.width).toBeCloseTo(chroma.width, 0);
+    expect(lightness.x + lightness.width).toBeLessThan(chroma.x);
+    expect(lightness.y).toBeGreaterThanOrEqual(railBox.y + railBox.height);
+    await expect(rail.locator('[data-gp-part="reference-warning"]')).toBeVisible();
+    await expect(rail.locator('[data-gp-part="gamut-interval"]')).not.toHaveCount(0);
     expect(await root.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     if (width === 320) await expect(root).toHaveScreenshot("shell-rail-320.png");
     await coordinates.click();

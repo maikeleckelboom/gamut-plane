@@ -131,7 +131,7 @@ export function referenceContract(
               show ? 1 : 0,
             );
             expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(
-              show ? 3 : 0,
+              show ? 1 : 0,
             );
             expect(host.changes()).toBe(0);
             expect(definitionOf(source)).toEqual(before);
@@ -192,7 +192,7 @@ export function referenceContract(
             status ? 1 : 0,
           );
           expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(
-            status ? 3 : 0,
+            status ? 1 : 0,
           );
           expect(
             host.element
@@ -266,7 +266,7 @@ export function referenceContract(
             selection: { representationId: "oklab", editorId: "oklab-ab" },
           });
           expect(host.element.querySelectorAll('[data-gp-marker="reference"]')).toHaveLength(1);
-          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(3);
+          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(1);
           const line = host.element.querySelector('[data-gp-part="reference-connector"]')!;
           expect(line.getAttribute("x1")).not.toBe(line.getAttribute("x2"));
           expect(line.getAttribute("y1")).not.toBe(line.getAttribute("y2"));

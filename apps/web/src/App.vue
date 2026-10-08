@@ -198,7 +198,7 @@ async function copyCss(
       <div class="project-identity">
         <h1>Gamut Plane</h1>
         <p id="project-description">
-          Pick a color in OKLCH or OKLab. Inspect its coordinates and compare gamuts when needed.
+          Edit color coordinates and compare gamut references in one compact instrument.
         </p>
       </div>
     </header>

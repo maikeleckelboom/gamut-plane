@@ -29,6 +29,9 @@ test("closed P3 boundaries retain the genuine sRGB line and white channel endpoi
   await input.fill("1");
   await input.press("Enter");
   for (const channel of ["r", "g", "b"]) {
+    const area = { r: "gb", g: "rb", b: "rg" }[channel];
+    await root.getByRole("combobox", { name: "Area" }).click();
+    await root.locator('[data-value="display-p3-' + area + '"]').click();
     const interval = root.locator(`[data-gp-channel="${channel}"] [data-gamut-range="srgb"]`);
     await expect(interval).toHaveCount(1);
     expect(Number(await interval.getAttribute("data-range-end"))).toBeCloseTo(1, 12);
@@ -50,12 +53,11 @@ test("native cross-gamut slice connects its Reference and retains independent RG
   await expect(
     root.locator('[data-gp-part="reference-connector"], [data-gp-marker="reference"]'),
   ).toHaveCount(2);
-  await expect(root.locator('[data-gp-channel="r"] [data-gamut-range="srgb"]')).toHaveCount(1);
-  await expect(root.locator('[data-gp-channel="g"] [data-gamut-range="srgb"]')).toHaveCount(1);
+  await expect(root.locator('[data-gp-control="card"] [data-gamut-range="srgb"]')).toHaveCount(0);
   await expect(root.locator('[data-gp-channel="b"] [data-gamut-range="srgb"]')).toHaveCount(0);
   const authored = await page.locator("#events").getAttribute("data-definition");
   await expect(root).toHaveScreenshot("native-rgb-partial-reference.png");
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );
@@ -73,16 +75,16 @@ test("full and empty RGB slices resolve without Paused and retain independent ch
   const root = page.locator("#instrument [data-gp-root]");
   await coordinates(root, "srgb", [0.2, 0.4, 0.6]);
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveAttribute("d", /^M.+ Z$/);
-  await expect(root.locator('[data-gamut-range="srgb"]')).toHaveCount(3);
+  await expect(root.locator('[data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root).toHaveScreenshot("native-rgb-full.png");
   const blue = root.getByLabel("Blue numeric value");
   await blue.fill("-0.1");
   await blue.press("Enter");
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
   await expect(root.locator('[data-gamut-boundary="display-p3"]')).toHaveCount(1);
-  await expect(root.getByRole("slider", { name: "Red", exact: true })).toBeEnabled();
+  await expect(root.getByRole("slider", { name: "Blue", exact: true })).toBeEnabled();
   await expect(root).toHaveScreenshot("native-rgb-empty.png");
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
@@ -128,7 +130,7 @@ test("reported green RGB colors connect to the visible slice and respect compari
     fullPage: true,
   });
   const authored = await page.locator('[data-css-representation="oklch"] code').textContent();
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByRole("radio", { name: "Display P3", exact: true, includeHidden: true }).check();
   await expect(connector).toHaveCount(0);
   await expect(root.locator('[data-gamut-warning="planar"]')).toHaveCount(0);

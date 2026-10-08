@@ -2,17 +2,19 @@
 
 Vue and React expose the same generalized instrument state: one authored `ColorValue`, a representation/editor selection, independent exact checks, independent visible-guide requests, and independent Reference gamut focus. They use core's color and geometry facts, render's resolved field/guide visuals, and UI's product policy, copy, stylesheet, and native interaction controllers. Their public syntax and lifecycle remain framework-native.
 
-| Concern          | Vue                                                    | React                                        | Owner of shared invariant           |
-| ---------------- | ------------------------------------------------------ | -------------------------------------------- | ----------------------------------- |
-| Color            | `v-model`                                              | `value` / `onValueChange`                    | Core definition and edit operations |
-| Instrument state | `v-model:state` or `defaultState`                      | `state` / `onStateChange` or `defaultState`  | UI validation and policy            |
-| Selection        | Coordinates, Edit/Inspect radios and RGB Area selector | Same native controls                         | UI admission/preference and copy    |
-| Inspection       | Observed coordinates and alpha                         | Same semantics                               | Core observation; UI formatting     |
-| Exact checks     | Zero, one, or both                                     | Same                                         | Core analysis; UI display order     |
-| Guides           | Requested independently; unavailable forms retained    | Same                                         | Render resolution                   |
-| Field            | Vue mounted resources                                  | React committed resources                    | Core geometry; render painting      |
-| Input            | Vue native controls and reactive feedback              | React native controls and committed feedback | UI controllers; core authorship     |
-| SSR/hydration    | Packed Nuxt fixture                                    | Packed Next fixture                          | Framework adapter                   |
+| Concern          | Vue                                                 | React                                        | Owner of shared invariant           |
+| ---------------- | --------------------------------------------------- | -------------------------------------------- | ----------------------------------- |
+| Color            | `v-model`                                           | `value` / `onValueChange`                    | Core definition and edit operations |
+| Instrument state | `v-model:state` or `defaultState`                   | `state` / `onStateChange` or `defaultState`  | UI validation and policy            |
+| Selection        | Coordinates and RGB Area selector                   | Same native controls                         | UI admission/preference and copy    |
+| Inspection       | Host-selected null observation and alpha            | Same semantics                               | Core observation; UI formatting     |
+| Exact checks     | Zero, one, or both                                  | Same                                         | Core analysis; UI display order     |
+| Guides           | Requested independently; unavailable forms retained | Same                                         | Render resolution                   |
+| Field            | Vue mounted resources                               | React committed resources                    | Core geometry; render painting      |
+| Input            | Vue native controls and reactive feedback           | React native controls and committed feedback | UI controllers; core authorship     |
+| SSR/hydration    | Packed Nuxt fixture                                 | Packed Next fixture                          | Framework adapter                   |
+
+Both adapters render one fixed-axis rail and two numeric cards from geometry, with the same shared stylesheet and numeric draft controller. There is no ordinary Edit / Inspect switch. Hosts retain explicit null observation; choosing Coordinates from it requests the preferred admitted editor, and controlled rejection preserves the observation. RGB visual order follows Area rather than invariant R/G/B rows.
 
 Both adapters keep a rejected controlled state request out of accepted presentation. A Status/Boundary/Reference-only accepted change preserves the selected editor's semantic key, active drafts, range/gesture work, and Hue reference. An accepted editor or inspection change invalidates old interaction context. Exact results display beside their gamut in sRGB then Display P3 order, independently of canonical wire order. Current copy comes from UI. Neither adapter supports the removed view/target/visibility API.
 

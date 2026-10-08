@@ -15,6 +15,8 @@ import { computed, getCurrentInstance, onBeforeUpdate, ref, shallowRef, useId, w
 import {
   gpPart,
   editorUi,
+  orderedCompanions,
+  channelControlPresentation,
   directCoordinateHelp,
   directCoordinateContext,
   rgbChannelContext,
@@ -233,13 +235,15 @@ function editOklab(channel: "l" | "a" | "b", value: number, complete: boolean): 
   }
 }
 
-const rgbCompanions = computed(() =>
-  detail.value?.view === "srgb"
-    ? editorUi["srgb-rg"].companions
-    : detail.value?.view === "display-p3"
-      ? editorUi["display-p3-rg"].companions
-      : [],
-);
+const rgbCompanions = computed(() => {
+  if (!field.value) return [];
+  const editor = editorUi[field.value.editorId];
+  return editor.representationId === "srgb"
+    ? orderedCompanions(editor.companions, field.value.geometry)
+    : editor.representationId === "display-p3"
+      ? orderedCompanions(editor.companions, field.value.geometry)
+      : [];
+});
 function editRgb(coordinate: "r" | "g" | "b", next: number, complete: boolean): void {
   if (detail.value?.view === "srgb") {
     const operation = editOperationDefinitions["srgb-channel-patch"];
@@ -371,7 +375,8 @@ watch(
               :id="`${instanceId}-hue`"
               :channel="hue.symbol"
               :label="hue.label"
-              :model-value="field.samplingFixed"
+              :presentation="channelControlPresentation(hue.channelId, field.geometry)"
+              :model-value="oklch.channels[2]"
               :min="hue.sliderRange.min"
               :max="hue.sliderRange.max"
               :step="hue.step"
@@ -392,6 +397,7 @@ watch(
               :id="`${instanceId}-lightness`"
               :channel="lightness.symbol"
               :label="lightness.label"
+              :presentation="channelControlPresentation(lightness.channelId, field.geometry)"
               :model-value="oklch.channels[0]"
               :min="lightness.sliderRange.min"
               :max="lightness.sliderRange.max"
@@ -410,6 +416,7 @@ watch(
               :id="`${instanceId}-chroma`"
               :channel="chroma.symbol"
               :label="chroma.label"
+              :presentation="channelControlPresentation(chroma.channelId, field.geometry)"
               :model-value="oklch.channels[1]"
               :min="chroma.sliderRange.min"
               :max="chroma.sliderRange.max"
@@ -432,6 +439,7 @@ watch(
               :id="`${instanceId}-oklab-lightness`"
               :channel="fixedLightness.symbol"
               :label="fixedLightness.label"
+              :presentation="channelControlPresentation(fixedLightness.channelId, field.geometry)"
               :model-value="field.samplingFixed"
               :min="fixedLightness.sliderRange.min"
               :max="fixedLightness.sliderRange.max"
@@ -451,6 +459,7 @@ watch(
               :id="`${instanceId}-oklab-${control.symbol}`"
               :channel="control.symbol"
               :label="control.label"
+              :presentation="channelControlPresentation(control.channelId, field.geometry)"
               :accessible-label="control.accessibleLabel"
               :model-value="
                 field.projection.representation.channels[control.symbol === 'a' ? 1 : 2]!
@@ -480,6 +489,7 @@ watch(
               :id="`${instanceId}-${detail.view}-${control.coordinate}`"
               :channel="control.symbol"
               :label="control.label"
+              :presentation="channelControlPresentation(control.channelId, field.geometry)"
               :model-value="detail.rgb.channels[{ r: 0, g: 1, b: 2 }[control.coordinate]]!"
               :min="control.sliderRange.min"
               :max="control.sliderRange.max"

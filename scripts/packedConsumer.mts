@@ -378,7 +378,7 @@ if ("max" in editorUi["oklch-lc"].companions[2].numericBounds) throw new Error("
 if (currentSelectionFacts.admittedEditors.length !== 8 || currentAdmittedEditorsForRepresentation("srgb").length !== 3 || currentAdmittedEditorsForRepresentation("display-p3").length !== 3) throw new Error("Packed admission policy changed");
 if (defaultSelection("oklch").editorId !== "oklch-lc" || defaultSelection("srgb").editorId !== "srgb-rg" || defaultSelection("display-p3").editorId !== "display-p3-rg") throw new Error("Packed preferred editor changed");
 if (new Set(currentSelectionFacts.knownEditors.map((editor) => editor.id)).size !== currentSelectionFacts.knownEditors.length) throw new Error("Packed known editors duplicated");
-if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.comparison !== "Gamuts") throw new Error("Packed shared copy changed");
+if (generalizedCopy.representation !== "Coordinates" || generalizedCopy.comparison !== "Gamut references") throw new Error("Packed shared copy changed");
 if (gamutSummaryCopy(gamutSummary({ checkedGamuts: [], referenceGamutId: "srgb-gamut" }, [])).description !== "Reference sRGB, Status off") throw new Error("Packed Gamuts summary policy changed");
 if (orderedExactChecks([{ gamutId: "display-p3-gamut" }, { gamutId: "srgb-gamut" }])[0]?.gamutId !== "srgb-gamut") throw new Error("Packed exact display order changed");
 `,

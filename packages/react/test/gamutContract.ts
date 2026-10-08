@@ -60,12 +60,10 @@ export function gamutContract(mount: Mount) {
             .map((id) => text(host.element.ownerDocument.getElementById(id)))
             .filter(Boolean)
             .join(" ");
-        expect(name(button, "aria-labelledby")).toBe("Gamuts");
-        expect(name(surface, "aria-labelledby")).toBe("Gamuts");
+        expect(name(button, "aria-labelledby")).toBe("Gamut references");
+        expect(name(surface, "aria-labelledby")).toBe("Gamut references");
         expect(name(button, "aria-describedby")).toBe("Reference sRGB, Status off");
-        expect(text(button.querySelector('[data-gp-part="gamut-summary"]'))).toBe(
-          "Reference sRGB · Status off",
-        );
+        expect(text(button.querySelector('[data-gp-part="gamut-summary"]'))).toBe("Status off");
         expect(host.element.querySelectorAll('[data-gp-part="exact-result"]')).toHaveLength(0);
         expect(
           host.element.querySelector('[role="radiogroup"][data-gp-part="reference-choice"]'),
@@ -130,7 +128,7 @@ export function gamutContract(mount: Mount) {
         await host.update(host.requests().at(-1)!);
         expect(radio(host.element, "srgb-gamut").checked).toBe(true);
         expect(text(trigger(host.element).querySelector('[data-gp-part="gamut-summary"]'))).toBe(
-          "Reference sRGB · Outside",
+          "Outside sRGB",
         );
         expect(host.changes()).toBe(0);
       } finally {

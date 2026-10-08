@@ -33,7 +33,7 @@ test("packed Vue plane context menu reuses accepted gamut actions without author
     .getByRole("group", { name: "Status" })
     .getByRole("menuitemcheckbox", { name: "sRGB", exact: true })
     .click();
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Status" })).toBeChecked();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();
   await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
@@ -47,11 +47,9 @@ test("packed Vue host imports, observes, and authors a generalized edit", async 
   await expect(root).toHaveAttribute("data-active-plane", "oklch");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(root.getByRole("region", { name: "sRGB coordinates" })).toBeVisible();
+  await expect(root.locator("canvas")).toHaveCount(1);
+  await expect(root.locator('[data-gp-control="card"]')).toHaveCount(2);
   await expect(definition).toHaveAttribute("data-definition", initial!);
-  await root.getByRole("combobox", { name: "Coordinates" }).click();
-  await root.getByRole("radio", { name: "Edit", exact: true }).check();
   await root.getByRole("combobox", { name: "Area" }).click();
   await root.locator('[role="option"][data-value="srgb-rb"]').click();
   await root.getByLabel("Green numeric value").fill("1.125");
@@ -78,18 +76,18 @@ test("packed native RGB guides resolve partial and empty slices", async ({ page 
     await input.fill(value!);
     await input.press("Enter");
   }
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await root.getByRole("checkbox", { name: "sRGB Boundary" }).check();
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveAttribute("d", /^M.+ Z$/);
-  await expect(root.locator('[data-gp-channel="r"] [data-gamut-range="srgb"]')).toHaveCount(1);
+  await expect(root.locator('[data-gp-channel="b"] [data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );
-  await root.getByRole("button", { name: "Gamuts" }).press("Escape");
+  await root.getByRole("button", { name: "Gamut references" }).press("Escape");
   await root.getByLabel("Blue numeric value").fill("1.2");
   await root.getByLabel("Blue numeric value").press("Enter");
   await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
-  await root.getByRole("button", { name: "Gamuts" }).click();
+  await root.getByRole("button", { name: "Gamut references" }).click();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toHaveAccessibleDescription(
     "",
   );

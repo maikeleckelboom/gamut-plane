@@ -26,14 +26,6 @@ function act(action: SelectionAction) {
   const next = requestShellSelection(props.selection, action, props.facts);
   if (next !== props.selection) emit("request", next);
 }
-function modeChange(event: Event, value: "edit" | "inspect") {
-  act({ kind: "mode", value });
-  // Native radio mutation is a request, not accepted UI. Reset the whole group synchronously.
-  const target = event.target as HTMLInputElement;
-  for (const radio of target.closest("fieldset")!.querySelectorAll("input")) {
-    radio.checked = context.value.editing === (radio.value === "edit");
-  }
-}
 </script>
 <template>
   <div class="gp-generalized-selection" :data-gp-part="gpPart.representationControl">
@@ -41,25 +33,13 @@ function modeChange(event: Event, value: "edit" | "inspect") {
       <Selector
         :id="`${id}-representation`"
         :label="generalizedCopy.representation"
+        inline-label
+        :request-current="selection.editorId === null"
         :value="selection.representationId"
         :options="options"
         :disabled="disabled"
         @request="act({ kind: 'representation', value: $event })"
       />
-      <fieldset v-if="context.canEdit" class="gp-mode" :disabled="disabled">
-        <legend data-gp-visually-hidden>{{ generalizedCopy.interactionMode }}</legend>
-        <label v-for="mode in ['edit', 'inspect'] as const" :key="mode">
-          <input
-            type="radio"
-            :name="`${id}-mode`"
-            :value="mode"
-            :checked="context.editing === (mode === 'edit')"
-            @change="modeChange($event, mode)"
-          />
-          <span>{{ generalizedCopy[mode] }}</span>
-        </label>
-      </fieldset>
-      <span v-else class="gp-context-mode">{{ generalizedCopy.inspectionOnly }}</span>
     </div>
     <Selector
       v-if="context.areas.length > 1"

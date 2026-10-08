@@ -20,8 +20,8 @@ async function fixture(page: Page, query: string) {
 }
 function gamuts(root: Locator) {
   return {
-    trigger: root.getByRole("button", { name: "Gamuts" }),
-    dialog: root.getByRole("dialog", { name: "Gamuts" }),
+    trigger: root.getByRole("button", { name: "Gamut references" }),
+    dialog: root.getByRole("dialog", { name: "Gamut references" }),
   };
 }
 /** The complete instrument plus the anchored surface, which may extend beyond it. */
@@ -66,10 +66,10 @@ test("open Gamuts within tolerance", async ({ page }) => {
 });
 
 test("open Gamuts with requested boundaries paused during inspection", async ({ page }) => {
-  const root = await app(page);
+  const root = await fixture(page, "");
   await root.getByRole("combobox", { name: "Coordinates" }).click();
   await root.locator('[role="option"][data-value="srgb"]').click();
-  await root.getByRole("radio", { name: "Inspect", exact: true }).check();
+  await page.getByRole("button", { name: "Set observation", exact: true }).click();
   await expectOpen(page, root, "gamuts-inspect-paused.png");
 });
 

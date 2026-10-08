@@ -9,7 +9,7 @@ function fixture() {
   element.step = "any";
   element.value = "0.2000";
   document.body.append(element);
-  let value = 0.2;
+  let value: number | null = 0.2;
   let precision = 4;
   const complete = vi.fn();
   const cancel = vi.fn();
@@ -44,7 +44,7 @@ function fixture() {
     binding,
     dispatch,
     key,
-    reconcile(nextValue: number, nextPrecision = precision) {
+    reconcile(nextValue: number | null, nextPrecision = precision) {
       value = nextValue;
       precision = nextPrecision;
       binding.reconcile();
@@ -57,6 +57,23 @@ afterEach(() => {
 });
 
 describe("shared native numeric draft interaction", () => {
+  it("displays missing Hue without authoring its sampling fallback, and cancels back to missing", async () => {
+    const f = fixture();
+    f.reconcile(null, 1);
+    expect(f.element.value).toBe("");
+    f.key("Enter");
+    f.dispatch("blur");
+    expect(f.complete).not.toHaveBeenCalled();
+    f.dispatch("input", "0.3");
+    f.key("Escape");
+    expect(f.element.value).toBe("");
+    expect(f.cancel).toHaveBeenCalledOnce();
+    f.dispatch("input", "0.25");
+    f.key("Enter");
+    expect(f.complete).toHaveBeenCalledExactlyOnceWith(0.25);
+    await Promise.resolve();
+    expect(f.element.value).toBe("");
+  });
   it("keeps input local until completion", () => {
     const f = fixture();
     f.dispatch("input", "0.31");

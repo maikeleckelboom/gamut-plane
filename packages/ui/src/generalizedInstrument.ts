@@ -100,7 +100,7 @@ export const generalizedCopy = Object.freeze({
   coordinatesUnavailable: "Coordinates unavailable for this color.",
   planeUnavailable: "Editing plane unavailable for this color.",
   alpha: "Alpha",
-  comparison: "Gamuts",
+  comparison: "Gamut references",
   exactChecks: "Status",
   statusOff: "Status off",
   visibleGuides: "Boundary",

@@ -5,6 +5,7 @@ import type {
   EditOperationId,
   EditorDefinition,
   EditorId,
+  GeometryDefinition,
   RepresentationDefinition,
 } from "@gamut-plane/core/internal/capabilities";
 
@@ -271,3 +272,25 @@ export const preferredEditors = Object.freeze({
   srgb: editorUi["srgb-rg"].id,
   "display-p3": editorUi["display-p3-rg"].id,
 } as const);
+
+/** Geometry assigns presentation; metadata retains channel identity, order and edit policy. */
+export function channelControlPresentation(
+  channelId: ChannelId,
+  geometry: Pick<GeometryDefinition, "fixed" | "x" | "y">,
+): "rail" | "card" {
+  if (channelId === geometry.fixed) return "rail";
+  if (channelId === geometry.x || channelId === geometry.y) return "card";
+  throw new TypeError(`Channel ${channelId} is not part of the selected geometry`);
+}
+
+export function orderedCompanions<C extends CompanionControl>(
+  companions: readonly C[],
+  geometry: Pick<GeometryDefinition, "fixed" | "x" | "y">,
+): readonly C[] {
+  const fixed = companions.find((control) => control.channelId === geometry.fixed);
+  const plane = companions.filter(
+    (control) => control.channelId === geometry.x || control.channelId === geometry.y,
+  );
+  if (!fixed || plane.length !== 2) throw new TypeError("Incomplete editor companion metadata");
+  return [fixed, ...plane];
+}

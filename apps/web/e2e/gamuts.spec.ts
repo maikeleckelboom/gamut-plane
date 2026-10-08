@@ -9,8 +9,8 @@ async function ready(page: Page, query = "") {
 }
 function gamuts(root: Locator) {
   return {
-    trigger: root.getByRole("button", { name: "Gamuts" }),
-    dialog: root.getByRole("dialog", { name: "Gamuts" }),
+    trigger: root.getByRole("button", { name: "Gamut references" }),
+    dialog: root.getByRole("dialog", { name: "Gamut references" }),
     reference: (name: string) =>
       root
         .getByRole("radiogroup", { name: "Reference", includeHidden: true })
@@ -307,7 +307,13 @@ test("read-only state opens for inspection while color editing stays live", asyn
 test("unavailable analysis stays distinct from Outside", async ({ page }) => {
   const root = await ready(page, "?unavailable");
   const { trigger, dialog } = gamuts(root);
-  await expect(trigger).toHaveAccessibleDescription("Reference sRGB, Unavailable");
+  await expect(trigger).toHaveAccessibleDescription(
+    "Reference sRGB, Unavailable. Display P3 unavailable. 2 requested boundaries paused.",
+  );
+  await expect(trigger.locator('[data-gp-part="gamut-summary"]')).toHaveText(
+    "Unavailable · Paused",
+  );
+  await expect(root.locator("[data-gamut-warning]")).toHaveCount(0);
   await trigger.click();
   await expect(dialog.locator('[data-gp-part="exact-result"]')).toHaveText([
     "Unavailable",

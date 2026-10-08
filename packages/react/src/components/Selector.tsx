@@ -2,7 +2,9 @@ import { useLayoutEffect, useRef } from "react";
 import { exactStatusCopy, mountSelector, type SelectorInput } from "@gamut-plane/ui";
 import { useCommitted } from "../hooks/useCommitted.js";
 
-export function Selector(props: SelectorInput & { id: string; label: string }) {
+export function Selector(
+  props: SelectorInput & { id: string; label: string; inlineLabel?: boolean },
+) {
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
   const current = useCommitted(props);
@@ -39,6 +41,11 @@ export function Selector(props: SelectorInput & { id: string; label: string }) {
         }
         disabled={props.disabled}
       >
+        {props.inlineLabel && (
+          <span className="gp-selector-inline-label" aria-hidden="true">
+            {props.label}
+          </span>
+        )}
         <span>{props.options.find((option) => option.value === props.value)?.label}</span>
         <span aria-hidden="true">▾</span>
       </button>

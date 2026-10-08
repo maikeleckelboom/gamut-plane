@@ -18,7 +18,8 @@ export interface ColorChannelControlProps {
   id: string;
   channel: "H" | "L" | "C" | "a" | "b" | "R" | "G" | "B";
   label: string;
-  value: number;
+  value: number | null;
+  presentation?: "rail" | "card";
   min?: number | undefined;
   max?: number | undefined;
   coordinateContext?: string | undefined;
@@ -67,6 +68,7 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
   const range = useRef<HTMLInputElement>(null);
   const current = useCommitted({
     ...props,
+    value: props.value ?? 0,
     context: props.coordinateContext,
     keyboardStep: props.continuous ? props.step : undefined,
     onInteraction: props.onInteraction,
@@ -80,20 +82,22 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     },
   });
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
-  const bounded = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, value));
+  const bounded = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, value ?? 0));
+  const overflow = available && value !== null && (value < min || value > max);
   const sections = channelSections(intervals);
   const helpId = help ? `${id}-help` : undefined;
   const warningId = props.warning ? `${id}-warning` : undefined;
   const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
-  const warningStyle = available ? rangeWarningStyle(value, min, max) : null;
+  const warningStyle = available ? rangeWarningStyle(value ?? 0, min, max) : null;
   useLayoutEffect(() => {
+    if (!range.current) return;
     const mounted = mountRange(range.current!, () => current.current!);
     binding.current = mounted;
     return () => {
       binding.current = null;
       mounted.dispose();
     };
-  }, [current]);
+  }, [current, props.presentation]);
   useLayoutEffect(() => {
     binding.current?.reconcile();
   });
@@ -102,106 +106,114 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
       className="gpr-channel-control"
       data-gp-part={gpPart.channel}
       data-gp-channel={channel.toLowerCase()}
-      data-gp-overflow={String(available && (value < min || value > max))}
+      data-gp-control={props.presentation ?? "rail"}
+      data-gp-missing={String(value === null)}
+      data-gp-overflow={String(overflow)}
       data-gp-unavailable={String(!available)}
       data-picker-control={channel.toLowerCase()}
-      data-instrument-overflow={String(available && (value < min || value > max))}
+      data-instrument-overflow={String(overflow)}
       style={presentationStyle(geometryStyle)}
     >
       <header className="gpr-channel-control-header" data-gp-part={gpPart.channelHeader}>
-        <label htmlFor={id}>{label}</label>
-        <NumericInput
-          className="gpr-channel-control-number"
-          aria-label={`${props.accessibleLabel ?? label} numeric value`}
-          aria-describedby={describedBy}
-          value={value}
-          readOnly={!available}
-          aria-disabled={!available || undefined}
-          context={props.coordinateContext}
-          min={numericBounds.min}
-          max={numericBounds.max}
-          step={step}
-          precision={precision}
-          onComplete={onComplete}
-          onCancel={onCancel}
-        />
-      </header>
-      <span data-gp-part={gpPart.channelSymbol} aria-hidden="true">
-        {channel}
-      </span>
-      <div className="gpr-channel-control-track" data-gp-part={gpPart.channelTrack} dir="ltr">
-        <span
-          className="gpr-channel-control-field"
-          data-gp-part={gpPart.channelField}
-          style={{ backgroundImage: gradient }}
-        />
-        <span className="gpr-channel-control-gamut-ranges" aria-hidden="true">
-          {sections.map((section, index) => (
-            <span
-              key={`${section.tone}-${index}`}
-              className={`gpr-channel-control-gamut-range gpr-channel-control-gamut-range--${section.tone}`}
-              data-gp-part={gpPart.gamutInterval}
-              data-gp-gamut={section.tone}
-              style={{
-                left: `${section.start * 100}%`,
-                width: `${(section.end - section.start) * 100}%`,
-              }}
-              data-gamut-range={section.tone}
-              data-range-point={section.point ? "" : undefined}
-              data-range-start={section.start}
-              data-range-end={section.end}
-            />
-          ))}
+        <label htmlFor={`${id}-number`}>{label}</label>
+        <span className="gp-channel-value">
+          <NumericInput
+            id={`${id}-number`}
+            className="gpr-channel-control-number"
+            aria-label={`${props.accessibleLabel ?? label} numeric value`}
+            aria-describedby={describedBy}
+            value={value}
+            placeholder={value === null ? "unset" : undefined}
+            readOnly={!available}
+            aria-disabled={!available || undefined}
+            context={props.coordinateContext}
+            min={numericBounds.min}
+            max={numericBounds.max}
+            step={step}
+            precision={precision}
+            onComplete={onComplete}
+            onCancel={onCancel}
+          />
+          {channel === "H" && value !== null && (
+            <span className="gp-channel-unit" aria-hidden="true">
+              °
+            </span>
+          )}
         </span>
-        {props.warning && warningStyle && (
-          <svg
-            data-gp-part={gpPart.referenceWarning}
-            data-gamut-warning="linear"
-            style={{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }}
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path d={referenceWarningGlyphPath} />
-          </svg>
-        )}
-        <input
-          ref={range}
-          id={id}
-          className="gpr-channel-control-range"
-          data-gp-part={gpPart.nativeRange}
-          dir="ltr"
-          type="range"
-          aria-label={props.accessibleLabel ?? label}
-          aria-valuetext={
-            available && (value < min || value > max)
-              ? `${value.toFixed(precision)} (outside direct range)`
-              : undefined
-          }
-          disabled={!available || min === max}
-          aria-describedby={describedBy}
-          defaultValue={bounded}
-          min={min}
-          max={max}
-          step={props.continuous ? "any" : step}
-          onBlur={(event) => {
-            event.currentTarget.removeAttribute("data-pointer-focus");
-            event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
-          }}
-          onPointerDown={(event) => {
-            if (event.pointerType !== "mouse" || event.button === 0) {
-              event.currentTarget.dataset.pointerFocus = "";
-              event.currentTarget.setAttribute(gpAttribute.pointerFocus, "");
+      </header>
+      {(props.presentation ?? "rail") === "rail" && (
+        <div className="gpr-channel-control-track" data-gp-part={gpPart.channelTrack} dir="ltr">
+          <span
+            className="gpr-channel-control-field"
+            data-gp-part={gpPart.channelField}
+            style={{ backgroundImage: gradient }}
+          />
+          <span className="gpr-channel-control-gamut-ranges" aria-hidden="true">
+            {sections.map((section, index) => (
+              <span
+                key={`${section.tone}-${index}`}
+                className={`gpr-channel-control-gamut-range gpr-channel-control-gamut-range--${section.tone}`}
+                data-gp-part={gpPart.gamutInterval}
+                data-gp-gamut={section.tone}
+                style={{
+                  left: `${section.start * 100}%`,
+                  width: `${(section.end - section.start) * 100}%`,
+                }}
+                data-gamut-range={section.tone}
+                data-range-point={section.point ? "" : undefined}
+                data-range-start={section.start}
+                data-range-end={section.end}
+              />
+            ))}
+          </span>
+          {props.warning && warningStyle && (
+            <svg
+              data-gp-part={gpPart.referenceWarning}
+              data-gamut-warning="linear"
+              style={{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }}
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d={referenceWarningGlyphPath} />
+            </svg>
+          )}
+          <input
+            ref={range}
+            id={id}
+            className="gpr-channel-control-range"
+            data-gp-part={gpPart.nativeRange}
+            dir="ltr"
+            type="range"
+            aria-label={props.accessibleLabel ?? label}
+            aria-valuetext={
+              overflow ? `${value!.toFixed(precision)} (outside direct range)` : undefined
             }
-          }}
-          onKeyDown={(event) => {
-            event.currentTarget.removeAttribute("data-pointer-focus");
-            event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
-          }}
-        />
-      </div>
+            disabled={!available || min === max}
+            aria-describedby={describedBy}
+            defaultValue={bounded}
+            min={min}
+            max={max}
+            step={props.continuous ? "any" : step}
+            onBlur={(event) => {
+              event.currentTarget.removeAttribute("data-pointer-focus");
+              event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
+            }}
+            onPointerDown={(event) => {
+              if (event.pointerType !== "mouse" || event.button === 0) {
+                event.currentTarget.dataset.pointerFocus = "";
+                event.currentTarget.setAttribute(gpAttribute.pointerFocus, "");
+              }
+            }}
+            onKeyDown={(event) => {
+              event.currentTarget.removeAttribute("data-pointer-focus");
+              event.currentTarget.removeAttribute(gpAttribute.pointerFocus);
+            }}
+          />
+        </div>
+      )}
       {help &&
         (props.helpVisuallyHidden ? (
           <span id={helpId} data-gp-visually-hidden="">

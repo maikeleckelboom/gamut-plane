@@ -18,7 +18,8 @@ const props = withDefaults(
     id: string;
     label: string;
     channel: "L" | "C" | "H" | "a" | "b" | "R" | "G" | "B";
-    modelValue: number;
+    modelValue: number | null;
+    presentation?: "rail" | "card";
     min?: number | undefined;
     max?: number | undefined;
     coordinateContext?: string | undefined;
@@ -36,6 +37,7 @@ const props = withDefaults(
   }>(),
   {
     precision: 3,
+    presentation: "rail",
     intervals: () => [],
     help: "",
   },
@@ -55,11 +57,14 @@ const describedBy = computed(
 );
 const available = computed(() => props.min !== undefined && props.max !== undefined);
 const warningStyle = computed(() =>
-  available.value ? rangeWarningStyle(props.modelValue, props.min!, props.max!) : null,
+  available.value ? rangeWarningStyle(props.modelValue ?? 0, props.min!, props.max!) : null,
 );
-const boundedModelValue = computed(() => clamp(props.modelValue));
+const boundedModelValue = computed(() => clamp(props.modelValue ?? 0));
 const isOutsideInstrument = computed(
-  () => available.value && (props.modelValue < props.min! || props.modelValue > props.max!),
+  () =>
+    available.value &&
+    props.modelValue !== null &&
+    (props.modelValue < props.min! || props.modelValue > props.max!),
 );
 const numericBounds = computed(() => props.numericBounds ?? { min: props.min, max: props.max });
 const rangeElement = ref<HTMLInputElement>();
@@ -83,6 +88,7 @@ const instrumentStyle = {
 const guideSections = computed(() => channelSections(props.intervals));
 
 onMounted(() => {
+  if (!rangeElement.value) return;
   rangeBinding = mountRange(rangeElement.value!, () => ({
     value: boundedModelValue.value,
     min: props.min,
@@ -147,6 +153,8 @@ onBeforeUnmount(() => {
     class="channel-control"
     :data-gp-part="gpPart.channel"
     :data-gp-channel="channel.toLowerCase()"
+    :data-gp-control="presentation"
+    :data-gp-missing="String(modelValue === null)"
     :data-gp-overflow="String(isOutsideInstrument)"
     :data-gp-unavailable="String(!available)"
     :data-picker-control="channel.toLowerCase()"
@@ -154,29 +162,43 @@ onBeforeUnmount(() => {
     :style="instrumentStyle"
   >
     <header class="channel-control__header" :data-gp-part="gpPart.channelHeader">
-      <label :for="id">
+      <label :for="`${id}-number`">
         {{ label }}
       </label>
-      <NumericInput
-        class="channel-control__number"
-        :aria-label="`${accessibleLabel ?? label} numeric value`"
-        :aria-describedby="describedBy"
-        :model-value="modelValue"
-        :readonly="!available"
-        :aria-disabled="!available || undefined"
-        :context="coordinateContext"
-        :precision="precision"
-        :min="numericBounds.min"
-        :max="numericBounds.max"
-        :step="step"
-        @update:model-value="emit('update:modelValue', $event)"
-        @commit="emit('commit', $event)"
-        @cancel="emit('cancel')"
-      />
+      <span class="gp-channel-value">
+        <NumericInput
+          :id="`${id}-number`"
+          class="channel-control__number"
+          :aria-label="`${accessibleLabel ?? label} numeric value`"
+          :aria-describedby="describedBy"
+          :model-value="modelValue"
+          :placeholder="modelValue === null ? 'unset' : undefined"
+          :readonly="!available"
+          :aria-disabled="!available || undefined"
+          :context="coordinateContext"
+          :precision="precision"
+          :min="numericBounds.min"
+          :max="numericBounds.max"
+          :step="step"
+          @update:model-value="emit('update:modelValue', $event)"
+          @commit="emit('commit', $event)"
+          @cancel="emit('cancel')"
+        />
+        <span
+          v-if="channel === 'H' && modelValue !== null"
+          class="gp-channel-unit"
+          aria-hidden="true"
+          >°</span
+        >
+      </span>
     </header>
 
-    <span :data-gp-part="gpPart.channelSymbol" aria-hidden="true">{{ channel }}</span>
-    <div class="channel-control__track" :data-gp-part="gpPart.channelTrack">
+    <div
+      v-if="presentation === 'rail'"
+      class="channel-control__track"
+      :data-gp-part="gpPart.channelTrack"
+      dir="ltr"
+    >
       <span
         class="channel-control__field"
         :data-gp-part="gpPart.channelField"
@@ -220,7 +242,7 @@ onBeforeUnmount(() => {
         :aria-label="accessibleLabel ?? label"
         :aria-valuetext="
           isOutsideInstrument
-            ? `${modelValue.toFixed(precision)} (outside direct range)`
+            ? `${modelValue!.toFixed(precision)} (outside direct range)`
             : undefined
         "
         :disabled="!available || min === max"

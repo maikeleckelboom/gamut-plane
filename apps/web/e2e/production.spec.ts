@@ -110,11 +110,10 @@ test("the production build preserves generalized editing, inspection, and respon
   await page.getByLabel("Green numeric value").fill("-0.1");
   await page.getByLabel("Green numeric value").press("Enter");
   await expect(page.getByLabel("Green numeric value")).toHaveValue("-0.1000");
-  await page.getByRole("radio", { name: "Inspect", exact: true }).check();
-  await expect(page.locator("[data-picker-plane]")).toHaveCount(0);
-  await expect(
-    page.locator("[data-gp-root]").getByRole("region", { name: "sRGB coordinates" }),
-  ).toBeVisible();
+  await expect(page.locator("[data-picker-plane]")).toHaveCount(1);
+  await expect(page.locator('[data-gp-control="rail"]')).toHaveAttribute("data-gp-channel", "g");
+  await expect(page.locator('[data-gp-control="card"]')).toHaveCount(2);
+  await expect(page.getByRole("group", { name: "Interaction mode" })).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {

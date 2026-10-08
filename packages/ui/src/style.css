@@ -26,10 +26,10 @@
 [data-gp-root] {
   --gp-foreground: oklch(0.94 0.008 255);
   --gp-quiet: oklch(0.69 0.012 255);
-  --gp-surface-0: oklch(0.15 0.009 255);
-  --gp-surface-1: oklch(0.18 0.01 255);
-  --gp-surface-2: oklch(0.205 0.011 255);
-  --gp-surface-3: oklch(0.25 0.025 255);
+  --gp-surface-0: oklch(0.15 0.003 255);
+  --gp-surface-1: oklch(0.18 0.003 255);
+  --gp-surface-2: oklch(0.225 0.004 255);
+  --gp-surface-3: oklch(0.27 0.006 255);
   --gp-hairline: oklch(0.36 0.012 255 / 0.72);
   --gp-user-accent: var(--gamut-plane-accent, oklch(0.77 0.13 230));
   --gp-status-outside: oklch(0.77 0.15 45);
@@ -132,58 +132,20 @@
   border-color: oklch(0.5 0.02 255 / 0.9);
 }
 
-[data-gp-root] .gp-mode {
-  display: flex;
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 2px;
-  min-inline-size: 0;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 6px;
-  background: var(--gp-surface-0);
-  color: var(--gp-quiet);
-}
-[data-gp-root] .gp-mode label {
-  position: relative;
-  display: flex;
-  cursor: pointer;
-}
-[data-gp-root] .gp-mode label:hover input:not(:checked, :disabled) + span {
-  color: var(--gp-foreground);
-}
-[data-gp-root] .gp-mode input {
-  position: absolute;
-  opacity: 0;
-  inline-size: 100%;
-  block-size: 100%;
-  margin: 0;
-  cursor: inherit;
-}
-[data-gp-root] .gp-mode label > span {
-  display: grid;
-  place-items: center;
-  min-block-size: 32px;
-  padding: 4px 11px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-  transition: color 120ms ease;
-}
-[data-gp-root] .gp-mode input:checked + span {
-  border-color: var(--gp-user-accent);
-  background: var(--gp-surface-3);
-  color: var(--gp-foreground);
-  font-weight: 560;
-}
-[data-gp-root] .gp-mode input:focus-visible + span {
-  outline: 2px solid var(--gp-user-accent);
-  outline-offset: 2px;
-}
-[data-gp-root] .gp-mode:disabled,
 [data-gp-root] .gp-selector button:disabled {
   opacity: 0.6;
   cursor: default;
 }
+[data-gp-root] .gp-selector-inline-label {
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+[data-gp-root] .gp-selector-inline-label + span {
+  flex: 1;
+  text-align: start;
+}
+
 [data-gp-root] .gp-selector-popup {
   position: fixed;
   inset: auto;
@@ -228,20 +190,12 @@
   color: var(--gp-status-outside);
 }
 @media (forced-colors: active) {
-  [data-gp-root] .gp-selector-popup [data-highlighted],
-  [data-gp-root] .gp-mode input:checked + span {
+  [data-gp-root] .gp-selector-popup [data-highlighted] {
     border-color: Highlight;
   }
   [data-gp-root] .gp-selector-check {
     color: CanvasText;
   }
-}
-
-[data-gp-root] .gp-context-mode {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: 38px;
-  color: var(--gp-quiet);
 }
 
 [data-gp-root] [data-gp-part="authorship-context"] {
@@ -291,19 +245,15 @@
 [data-gp-root] .gp-gamuts-trigger {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas:
-    "label outside chevron"
-    "summary summary chevron";
-  align-items: baseline;
-  gap: 1px 10px;
-  position: relative;
+  align-items: center;
+  gap: 8px;
   inline-size: 100%;
-  min-block-size: 42px;
-  padding: 5px 10px 6px 12px;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 6px;
+  min-block-size: 36px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
   background: transparent;
-  color: var(--gp-foreground);
+  color: var(--gp-quiet);
   font-size: 0.8125rem;
   line-height: 1.35;
   text-align: start;
@@ -311,44 +261,42 @@
 }
 [data-gp-root] .gp-gamuts-trigger:hover,
 [data-gp-root] .gp-gamuts-trigger[aria-expanded="true"] {
+  color: var(--gp-foreground);
   background: var(--gp-surface-2);
 }
 [data-gp-root] .gp-gamuts-label {
-  grid-area: label;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-inline-size: 0;
+  color: var(--gp-foreground);
   font-weight: 600;
 }
-[data-gp-root] .gp-gamuts-outside {
-  grid-area: outside;
-  font-size: 0.75rem;
-  text-align: end;
+[data-gp-root] .gp-gamuts-layers {
+  flex: none;
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--gp-quiet);
 }
 [data-gp-root] .gp-gamuts-chevron {
-  grid-area: chevron;
-  align-self: center;
-  color: var(--gp-quiet);
+  grid-column: 3;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 [data-gp-root] .gp-gamuts-summary {
-  grid-area: summary;
   min-inline-size: 0;
-  word-spacing: 0.1em;
-  color: var(--gp-quiet);
-  font-size: 0.75rem;
+  max-inline-size: 12em;
+  font-size: 0.6875rem;
+  text-align: end;
+  overflow-wrap: anywhere;
 }
-[data-gp-root] :is(.gp-gamuts-target, .gp-gamuts-status) {
-  white-space: nowrap;
-}
-[data-gp-root] .gp-gamuts-target {
-  color: var(--gp-foreground);
-  font-weight: 500;
-}
-[data-gp-root] .gp-gamuts-summary [data-gp-status] {
-  color: var(--gp-foreground);
-}
-[data-gp-root] :is(.gp-gamuts-summary, .gp-gamuts-trigger) [data-gp-status="outside"] {
+[data-gp-root] .gp-gamuts-summary[data-gp-status="outside"] {
   color: var(--gp-status-outside);
-}
-[data-gp-root] .gp-gamuts-summary :is([data-gp-status="off"], [data-gp-status="unavailable"]) {
-  color: var(--gp-quiet);
 }
 
 [data-gp-root] .gp-gamuts-popup {
@@ -458,8 +406,11 @@
 }
 [data-gp-root] .gp-gamut-toggle {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: 2px 7px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   min-block-size: 36px;
   padding-inline: 8px 10px;
   border-radius: 4px;
@@ -907,7 +858,8 @@
 
 [data-gp-root] [data-gp-part="controls"] {
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 8px;
   min-width: 0;
 }
 
@@ -986,87 +938,114 @@
   }
 }
 
-/*
- * One row per channel: [symbol] [track] [value]. The header is flattened so the
- * label and numeric input join the channel grid; labels replace the symbol once
- * the instrument is wide enough (see the container query below).
- */
+/* One fixed-axis rail followed by two peer numeric cards. */
+[data-gp-root]
+  [data-gp-part="controls"]
+  > :is([data-gp-part="gamuts"], [data-gp-part="authorship-context"]) {
+  grid-column: 1 / -1;
+}
 [data-gp-root] [data-gp-part="channel"] {
+  min-inline-size: 0;
+}
+[data-gp-root] [data-gp-control="rail"] {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 1.25rem minmax(0, 1fr) 5.25rem;
-  align-items: center;
-  gap: 4px 8px;
+  gap: 3px;
 }
-
 [data-gp-root] [data-gp-part="channel-header"] {
-  display: contents;
+  min-inline-size: 0;
 }
-
-/* Name kept for assistive tech and pointer hit-testing of the track; shown when wide. */
+[data-gp-root] [data-gp-control="rail"] [data-gp-part="channel-header"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 [data-gp-root] [data-gp-part="channel-header"] label {
-  grid-column: 1;
-  grid-row: 1;
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
   color: var(--gp-quiet);
   font-size: 0.75rem;
+  line-height: 1.4;
+  cursor: text;
 }
-
-[data-gp-root] [data-gp-part="channel-symbol"] {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-  display: grid;
-  place-items: center;
-  height: var(--picker-slider-track-height, 32px);
-  color: var(--gp-quiet);
-  font: 600 0.75rem/1 var(--gp-cv-font-mono);
+[data-gp-root] .gp-channel-value {
+  display: flex;
+  align-items: baseline;
+  min-inline-size: 0;
 }
-
+[data-gp-root] [data-gp-control="rail"] .gp-channel-value {
+  flex: 0 1 9em;
+  gap: 2px;
+  padding-inline: 4px;
+  border-radius: 3px;
+}
 [data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"] {
-  grid-column: 3;
-  grid-row: 1;
   inline-size: 100%;
-  min-width: 0;
-  min-height: 32px;
-  padding: 5px 8px;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 5px;
-  outline: 0;
-  background: var(--gp-surface-0);
+  min-inline-size: 0;
+  padding: 3px 1px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
   color: var(--gp-foreground);
-  font: 0.75rem/1.2 var(--gp-cv-font-mono);
+  font: inherit;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  line-height: 1.3;
 }
-
-[data-gp-root]
-  [data-gp-part="channel-header"]
-  [data-gp-part="numeric-input"]:hover:not(:focus-visible) {
-  border-color: oklch(0.5 0.02 255 / 0.9);
+[data-gp-root] [data-gp-control="rail"] [data-gp-part="numeric-input"] {
+  text-align: end;
 }
-
-[data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"]:focus-visible {
-  border-color: var(--gp-user-accent);
+[data-gp-root] .gp-channel-unit {
+  flex: none;
+  color: var(--gp-quiet);
+}
+[data-gp-root] [data-gp-control="card"] {
+  padding: 10px 12px 11px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--gp-surface-2);
+}
+[data-gp-root] [data-gp-control="card"] [data-gp-part="channel-header"] {
+  display: grid;
+  gap: 4px;
+}
+[data-gp-root] [data-gp-control="card"] [data-gp-part="numeric-input"] {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+[data-gp-root] [data-gp-control="card"]:hover:not([data-gp-unavailable="true"]) {
+  background: var(--gp-surface-3);
+}
+[data-gp-root] [data-gp-control="card"]:has([data-gp-part="numeric-input"]:focus-visible) {
   outline: 2px solid var(--gp-user-accent);
-  box-shadow: 0 0 0 1px var(--gp-user-accent);
+  outline-offset: 2px;
 }
-
+[data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"]:focus-visible {
+  outline: none;
+}
+[data-gp-root]
+  [data-gp-control="rail"]
+  .gp-channel-value:has([data-gp-part="numeric-input"]:focus-visible) {
+  outline: 2px solid var(--gp-user-accent);
+  outline-offset: 2px;
+}
+[data-gp-root] [data-gp-part="numeric-input"]:read-only {
+  color: var(--gp-quiet);
+  cursor: default;
+}
+[data-gp-root] [data-gp-part="numeric-input"]::placeholder {
+  color: var(--gp-quiet);
+}
+[data-gp-root] [data-gp-part="numeric-input"]::-webkit-inner-spin-button,
+[data-gp-root] [data-gp-part="numeric-input"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
 [data-gp-root] [data-gp-part="channel-track"] {
-  grid-column: 2;
-  grid-row: 1;
   position: relative;
   height: var(--picker-slider-track-height, 32px);
   border: 1px solid transparent;
   border-radius: 4px;
-  background: var(--gp-surface-0);
 }
-
 [data-gp-root]
   [data-gp-part="channel-track"]:has(
     > [data-gp-part="native-range"]:focus-visible:not([data-gp-pointer-focus])
@@ -1078,7 +1057,8 @@
   position: absolute;
   z-index: 1;
   inset: var(--picker-slider-field-inset, 5px);
-  border: 1px solid oklch(0.92 0 0 / 0.18);
+  border: 1px solid oklch(0.92 0 0 / 0.12);
+  border-radius: 3px;
   background-color: var(--gp-surface-2);
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -1113,7 +1093,7 @@
   background: var(--picker-active, oklch(0.1 0 0 / 0.68));
   box-shadow:
     0 0 0 1px oklch(0 0 0 / 0.78),
-    0 2px 7px oklch(0 0 0 / 0.8);
+    0 1px 3px oklch(0 0 0 / 0.45);
   cursor: grab;
 }
 
@@ -1131,7 +1111,7 @@
   background: var(--picker-active, oklch(0.1 0 0 / 0.68));
   box-shadow:
     0 0 0 1px oklch(0 0 0 / 0.78),
-    0 2px 7px oklch(0 0 0 / 0.8);
+    0 1px 3px oklch(0 0 0 / 0.45);
   cursor: grab;
 }
 
@@ -1156,9 +1136,7 @@
 }
 
 [data-gp-root] [data-gp-part="channel"] > p[id] {
-  grid-column: 2 / -1;
-  grid-row: 2;
-  margin: 0;
+  margin: 4px 0 0;
   color: var(--gp-quiet);
   font-size: 0.75rem;
   line-height: 1.55;
@@ -1243,43 +1221,33 @@
   transform: translate(-50%, -50%);
 }
 
-/* Wide: the channel name replaces the symbol, so each row reads "Lightness ▬▬▬ 0.680". */
-@container gamut-plane (min-width: 26em) {
-  [data-gp-root] [data-gp-part="channel"] {
-    grid-template-columns: 5rem minmax(0, 1fr) 5.25rem;
-  }
-  [data-gp-root] [data-gp-part="channel-header"] label {
-    position: static;
-    inline-size: auto;
-    block-size: auto;
-    margin: 0;
-    overflow: visible;
-    clip-path: none;
-    white-space: normal;
-    align-self: center;
-  }
-  [data-gp-root] [data-gp-part="channel-symbol"] {
-    display: none;
-  }
-}
-
-/* Only enlarged text makes the instrument this narrow in em: the value drops under the track. */
+/* Allocated space, including host text enlargement, controls card reflow. */
 @container gamut-plane (max-width: 16em) {
-  [data-gp-root] [data-gp-part="controls"] {
-    gap: 14px;
+  [data-gp-root] .gp-context-row .gp-selector [role="combobox"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
   }
-  [data-gp-root] [data-gp-part="channel"] {
-    grid-template-columns: 1.25rem minmax(0, 1fr);
-  }
-  [data-gp-root] [data-gp-part="channel-header"] [data-gp-part="numeric-input"] {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: end;
-    inline-size: min(100%, 7em);
-  }
-  [data-gp-root] [data-gp-part="channel"] > p[id] {
-    grid-row: 3;
+  [data-gp-root] .gp-selector-inline-label {
     grid-column: 1 / -1;
+  }
+  [data-gp-root] [data-gp-control="card"] {
+    grid-column: 1 / -1;
+  }
+  [data-gp-root] [data-gp-control="rail"] [data-gp-part="channel-header"] {
+    flex-wrap: wrap;
+  }
+  [data-gp-root] .gp-gamuts-trigger {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  [data-gp-root] .gp-gamuts-summary {
+    grid-column: 1;
+    max-inline-size: none;
+    text-align: start;
+  }
+  [data-gp-root] .gp-gamuts-chevron {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 }
 

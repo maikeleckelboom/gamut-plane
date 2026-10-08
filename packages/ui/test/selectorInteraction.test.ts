@@ -80,6 +80,15 @@ describe("single-select mounted interaction", () => {
     f.key("Tab");
     expect(f.popup.hidden).toBe(true);
   });
+  it("can request the current representation for explicit observation re-entry when opted in", () => {
+    const f = fixture();
+    Object.assign(f.state, { requestCurrent: true });
+    f.trigger.click();
+    f.key("Enter");
+    expect(f.request).toHaveBeenCalledExactlyOnceWith("OKLCH");
+    expect(f.state.value).toBe("OKLCH");
+    expect(f.popup.hidden).toBe(true);
+  });
   it("dismisses outside, reconciles accepted changes and disables without a request", () => {
     const f = fixture();
     f.trigger.click();

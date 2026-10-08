@@ -157,7 +157,7 @@ async function open(page: Page) {
       // and three context-menu listeners per plane.
       handlers: 36,
       menuHandlers: 4,
-      controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
+      controlHandlers: 52, // Two fixed-axis ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,
       resolutionHandlers: 2,
       selectorCreated: 4,
@@ -269,7 +269,7 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       active: 2,
       handlers: 36,
       menuHandlers: 4,
-      controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
+      controlHandlers: 52, // Two fixed-axis ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,
       resolutionHandlers: 2,
       selectorCreated: 8,
