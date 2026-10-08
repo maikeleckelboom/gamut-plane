@@ -1,6 +1,7 @@
 import type { GamutMenuGroup } from "../gamutContextMenu.js";
 import type { GamutAction } from "../gamutShell.js";
 import { hasInstrumentPointer } from "./pointerOwnership.js";
+import { mountPopoverLifecycle } from "./popoverLifecycle.js";
 import { claimShellPopup, releaseShellPopup } from "./shellPopup.js";
 
 type MenuInput<G extends string> = Readonly<{
@@ -18,12 +19,12 @@ export function mountGamutContextMenu<G extends string>(
   const document = plane.ownerDocument;
   const window = document.defaultView!;
   const root = plane.closest("[data-gp-root]")!;
-  const nativePopover = typeof menu.showPopover === "function";
   let open = false;
   let disposed = false;
   let suppressSecondary = false;
   let anchor: Readonly<{ x: number; y: number }> | null = null;
   let resize: ResizeObserver | null = null;
+  const popover = mountPopoverLifecycle(menu, close);
 
   function items() {
     // ARIA-disabled items remain focusable for inspection, including a wholly read-only menu.
@@ -72,11 +73,10 @@ export function mountGamutContextMenu<G extends string>(
     resize?.disconnect();
     resize = null;
   }
-  function close(restore = false, nativeClosing = false) {
+  function close(restore = false) {
     if (!open) return;
     open = false;
-    if (nativePopover && !nativeClosing && menu.matches(":popover-open")) menu.hidePopover();
-    menu.hidden = true;
+    popover.hide();
     releaseShellPopup(root, close);
     detach();
     for (const button of items()) button.tabIndex = -1;
@@ -107,10 +107,9 @@ export function mountGamutContextMenu<G extends string>(
     if (!open) {
       claimShellPopup(root, close);
       open = true;
-      menu.hidden = false;
       // Manual top-layer markup avoids native light-dismiss on mouseup in browsers that dispatch
-      // contextmenu on mousedown. This controller owns dismissal; source preserves the host invoker.
-      if (nativePopover) menu.showPopover({ source: plane });
+      // contextmenu on mousedown. This controller owns dismissal.
+      popover.show(plane);
       attach();
     }
     place();
@@ -166,15 +165,11 @@ export function mountGamutContextMenu<G extends string>(
     const button = buttons[next];
     if (button) rove(button);
   }
-  function toggle(event: Event) {
-    if ((event as ToggleEvent).newState === "closed") close(false, true);
-  }
   plane.addEventListener("pointerdown", secondary);
   plane.addEventListener("pointermove", secondary);
   plane.addEventListener("contextmenu", invoke);
   menu.addEventListener("click", activate);
   menu.addEventListener("keydown", key);
-  menu.addEventListener("beforetoggle", toggle);
   return {
     reconcile() {
       if (!disposed) place();
@@ -187,7 +182,7 @@ export function mountGamutContextMenu<G extends string>(
       plane.removeEventListener("contextmenu", invoke);
       menu.removeEventListener("click", activate);
       menu.removeEventListener("keydown", key);
-      menu.removeEventListener("beforetoggle", toggle);
+      popover.dispose();
     },
   };
 }

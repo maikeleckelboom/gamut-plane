@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mountGamutPopup } from "../src/interaction/gamutInteraction.js";
 import { mountSelector } from "../src/interaction/selectorInteraction.js";
 import { setPointerOwnership } from "../src/interaction/pointerOwnership.js";
+import { hasShellPopup } from "../src/interaction/shellPopup.js";
 
 const cleanups: (() => void)[] = [];
 afterEach(() => {
@@ -9,7 +10,7 @@ afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
 });
-function fixture() {
+function fixture(nativePopover = false) {
   const root = document.createElement("section");
   root.setAttribute("data-gp-root", "");
   root.innerHTML = `
@@ -25,11 +26,20 @@ function fixture() {
   document.body.append(root, after);
   const trigger = root.querySelector<HTMLButtonElement>("#gamuts")!;
   const popup = root.querySelector<HTMLElement>("#popup")!;
+  const showPopover = vi.fn();
+  const hidePopover = vi.fn(() => {
+    popup.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "closed" }));
+  });
+  if (nativePopover) {
+    Object.assign(popup, { showPopover, hidePopover });
+    // Chromium still matches :popover-open while dispatching the closing beforetoggle.
+    vi.spyOn(popup, "matches").mockReturnValue(true);
+  }
   const binding = mountGamutPopup(trigger, popup);
   cleanups.push(binding.dispose);
   const key = (target: Element, key: string) =>
     target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
-  return { root, trigger, popup, binding, key, outside: after };
+  return { root, trigger, popup, binding, key, outside: after, hidePopover };
 }
 
 describe("nonmodal Gamuts popup mechanics", () => {
@@ -56,6 +66,31 @@ describe("nonmodal Gamuts popup mechanics", () => {
     // Keyboard activation (detail 0) is never suppressed by an earlier press.
     f.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
     expect(f.popup.hidden).toBe(false);
+  });
+
+  it("synchronizes native closure without hiding again, restoring focus or retaining open listeners", () => {
+    const f = fixture(true);
+    const remove = vi.spyOn(document, "removeEventListener");
+    const windowRemove = vi.spyOn(window, "removeEventListener");
+    const focus = vi.spyOn(f.trigger, "focus");
+    f.trigger.click();
+    focus.mockClear();
+    f.popup.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "closed" }));
+    expect(f.hidePopover).not.toHaveBeenCalled();
+    expect(f.popup.hidden).toBe(true);
+    expect(f.trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(hasShellPopup(f.root)).toBe(false);
+    expect(focus).not.toHaveBeenCalled();
+    expect(remove.mock.calls.map(([type]) => type)).toEqual(["pointerdown", "focusin"]);
+    expect(windowRemove.mock.calls.map(([type]) => type)).toEqual(["resize", "scroll"]);
+    f.trigger.click();
+    f.key(f.trigger, "Escape");
+    expect(f.hidePopover).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(f.trigger);
+    f.trigger.click();
+    f.binding.dispose();
+    expect(f.hidePopover).toHaveBeenCalledTimes(2);
+    expect(hasShellPopup(f.root)).toBe(false);
   });
 
   it("consumes Escape from inside and returns focus to the trigger", () => {

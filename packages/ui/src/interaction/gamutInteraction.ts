@@ -1,4 +1,5 @@
 import { hasInstrumentPointer } from "./pointerOwnership.js";
+import { mountPopoverLifecycle } from "./popoverLifecycle.js";
 import { claimShellPopup, releaseShellPopup } from "./shellPopup.js";
 
 /** Mounted DOM mechanics for the nonmodal Gamuts surface. Its native controls stay adapter-owned
@@ -7,11 +8,11 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
   const document = trigger.ownerDocument;
   const window = document.defaultView!;
   const root = trigger.closest("[data-gp-root]") ?? trigger.parentElement!;
-  const nativePopover = typeof popup.showPopover === "function";
   let open = false;
   let disposed = false;
   let pressedOpen = false;
   let resize: ResizeObserver | null = null;
+  const popover = mountPopoverLifecycle(popup, close);
 
   function within(event: Event) {
     const path = event.composedPath();
@@ -60,8 +61,7 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
     if (!open) return;
     open = false;
     trigger.setAttribute("aria-expanded", "false");
-    if (nativePopover && popup.matches(":popover-open")) popup.hidePopover();
-    popup.hidden = true;
+    popover.hide();
     releaseShellPopup(root, close);
     detach();
     if (restore && trigger.isConnected) trigger.focus({ preventScroll: true });
@@ -70,10 +70,8 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
     if (disposed || open || hasInstrumentPointer(trigger)) return;
     claimShellPopup(root, close);
     open = true;
-    popup.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
-    // Source keeps a nested host popover open and associates the top-layer surface with its invoker.
-    if (nativePopover) popup.showPopover({ source: trigger });
+    popover.show(trigger);
     attach();
     place();
     // Nonmodal: focus stays on the invoker, and the surface follows it in sequential focus order.
@@ -105,15 +103,11 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
     if (event.target instanceof window.Element && event.target.closest("[data-gp-close]"))
       close(true);
   }
-  function toggle(event: Event) {
-    if ((event as ToggleEvent).newState === "closed") close();
-  }
   trigger.addEventListener("click", click);
   trigger.addEventListener("keydown", key);
   trigger.addEventListener("pointerdown", guard);
   popup.addEventListener("keydown", key);
   popup.addEventListener("click", dismiss);
-  popup.addEventListener("beforetoggle", toggle);
   return {
     reconcile() {
       if (!disposed) place();
@@ -126,7 +120,7 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
       trigger.removeEventListener("pointerdown", guard);
       popup.removeEventListener("keydown", key);
       popup.removeEventListener("click", dismiss);
-      popup.removeEventListener("beforetoggle", toggle);
+      popover.dispose();
     },
   };
 }

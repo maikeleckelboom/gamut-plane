@@ -1,5 +1,6 @@
 import type { SelectorOption } from "../selectionShell.js";
 import { hasInstrumentPointer } from "./pointerOwnership.js";
+import { mountPopoverLifecycle } from "./popoverLifecycle.js";
 import { claimShellPopup, releaseShellPopup } from "./shellPopup.js";
 
 export interface SelectorInput {
@@ -28,7 +29,7 @@ export function mountSelector(
   let buffer = "";
   let timer: number | undefined;
   let disposed = false;
-  const nativePopover = typeof popup.showPopover === "function";
+  const popover = mountPopoverLifecycle(popup, close);
 
   function clearTypeahead() {
     buffer = "";
@@ -66,8 +67,7 @@ export function mountSelector(
     clearTypeahead();
     trigger.setAttribute("aria-expanded", "false");
     trigger.removeAttribute("aria-activedescendant");
-    if (nativePopover && popup.matches(":popover-open")) popup.hidePopover();
-    popup.hidden = true;
+    popover.hide();
     for (const option of popup.querySelectorAll("[data-highlighted]"))
       option.removeAttribute("data-highlighted");
     releaseShellPopup(root, close);
@@ -77,10 +77,8 @@ export function mountSelector(
     if (disposed || current().disabled || hasInstrumentPointer(trigger)) return;
     claimShellPopup(root, close);
     open = true;
-    popup.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
-    // Source keeps a nested host popover open and associates the top-layer surface with its invoker.
-    if (nativePopover) popup.showPopover({ source: trigger });
+    popover.show(trigger);
     place();
     trigger.focus({ preventScroll: true });
     highlight(current().value);
@@ -173,15 +171,11 @@ export function mountSelector(
     if (open && !event.composedPath().includes(trigger) && !event.composedPath().includes(popup))
       close();
   }
-  function toggle(event: Event) {
-    if ((event as ToggleEvent).newState === "closed") close();
-  }
   trigger.addEventListener("keydown", key);
   trigger.addEventListener("click", click);
   trigger.addEventListener("pointerdown", guard);
   popup.addEventListener("click", optionClick);
   popup.addEventListener("pointerdown", optionDown);
-  popup.addEventListener("beforetoggle", toggle);
   document.addEventListener("pointerdown", outside, true);
   document.addEventListener("focusin", focus);
   window.addEventListener("resize", place);
@@ -209,7 +203,7 @@ export function mountSelector(
       trigger.removeEventListener("pointerdown", guard);
       popup.removeEventListener("click", optionClick);
       popup.removeEventListener("pointerdown", optionDown);
-      popup.removeEventListener("beforetoggle", toggle);
+      popover.dispose();
       document.removeEventListener("pointerdown", outside, true);
       document.removeEventListener("focusin", focus);
       window.removeEventListener("resize", place);

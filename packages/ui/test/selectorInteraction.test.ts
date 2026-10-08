@@ -1,14 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mountSelector } from "../src/interaction/selectorInteraction.js";
 import { setPointerOwnership } from "../src/interaction/pointerOwnership.js";
+import { hasShellPopup } from "../src/interaction/shellPopup.js";
 
 const cleanups: (() => void)[] = [];
 afterEach(() => {
   cleanups.splice(0).forEach((dispose) => dispose());
   document.body.innerHTML = "";
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
-function fixture() {
+function fixture(nativePopover = false) {
   const root = document.createElement("section");
   root.setAttribute("data-gp-root", "");
   root.innerHTML =
@@ -16,6 +18,15 @@ function fixture() {
   document.body.append(root);
   const trigger = root.querySelector("button")!;
   const popup = root.querySelector("div")!;
+  const showPopover = vi.fn();
+  const hidePopover = vi.fn(() => {
+    popup.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "closed" }));
+  });
+  if (nativePopover) {
+    Object.assign(popup, { showPopover, hidePopover });
+    // Chromium still matches :popover-open while dispatching the closing beforetoggle.
+    vi.spyOn(popup, "matches").mockReturnValue(true);
+  }
   const options = ["OKLCH", "OKLab", "sRGB", "Display P3"].map((label) => ({
     value: label,
     label,
@@ -32,7 +43,7 @@ function fixture() {
   cleanups.push(binding.dispose);
   const key = (key: string) =>
     trigger.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
-  return { root, trigger, popup, state, request, binding, key };
+  return { root, trigger, popup, state, request, binding, key, hidePopover };
 }
 describe("single-select mounted interaction", () => {
   it("opens at accepted, navigates without requests, dismisses and clears candidate", () => {
@@ -116,6 +127,33 @@ describe("single-select mounted interaction", () => {
     f.trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
     expect(f.popup.hidden).toBe(false);
     expect(f.request).not.toHaveBeenCalled();
+  });
+  it("synchronizes native closure without hiding again and retains application-driven dismissal", () => {
+    vi.useFakeTimers();
+    const f = fixture(true);
+    f.trigger.click();
+    const initialTimers = vi.getTimerCount();
+    f.key("s");
+    expect(hasShellPopup(f.root)).toBe(true);
+    expect(vi.getTimerCount()).toBe(initialTimers + 1);
+    f.popup.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "closed" }));
+    expect(f.hidePopover).not.toHaveBeenCalled();
+    expect(f.popup.hidden).toBe(true);
+    expect(f.trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(f.trigger.hasAttribute("aria-activedescendant")).toBe(false);
+    expect(f.popup.querySelector("[data-highlighted]")).toBeNull();
+    expect(hasShellPopup(f.root)).toBe(false);
+    expect(vi.getTimerCount()).toBe(initialTimers);
+    expect(f.request).not.toHaveBeenCalled();
+    f.key("Enter");
+    expect(f.trigger.getAttribute("aria-activedescendant")).toBe("o0");
+    f.key("Escape");
+    expect(f.hidePopover).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(f.trigger);
+    f.trigger.click();
+    f.binding.dispose();
+    expect(f.hidePopover).toHaveBeenCalledTimes(2);
+    expect(hasShellPopup(f.root)).toBe(false);
   });
   it("does not steal focus or queue opening while a controller owns a pointer", () => {
     const f = fixture();

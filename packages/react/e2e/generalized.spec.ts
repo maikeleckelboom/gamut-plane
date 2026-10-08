@@ -1,6 +1,43 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./browserFixture";
 
+test("packed React popup dismissal and replacement preserve focus without Chromium warnings", async ({
+  page,
+}) => {
+  const warnings: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "warning") warnings.push(message.text());
+  });
+  await page.goto("/");
+  const root = page.locator("[data-gp-root]");
+  const definition = await page.locator("[data-definition]").getAttribute("data-definition");
+  const triggers = [
+    root.getByRole("combobox", { name: "Coordinates" }),
+    root.getByRole("button", { name: "Gamut references", exact: true }),
+    root.getByRole("application"),
+  ];
+  for (const trigger of triggers.slice(0, 2)) {
+    await trigger.click();
+    await trigger.click();
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await expect(trigger).toBeFocused();
+  }
+  for (let from = 0; from < triggers.length; from++) {
+    for (let to = 0; to < triggers.length; to++) {
+      if (from === to) continue;
+      await triggers[from]!.click(from === 2 ? { button: "right" } : {});
+      await triggers[to]!.click(to === 2 ? { button: "right" } : {});
+      if (from < 2) await expect(triggers[from]!).toHaveAttribute("aria-expanded", "false");
+      await expect(root.locator(":popover-open")).toHaveCount(1);
+      await page.keyboard.press("Escape");
+      await expect(root.locator(":popover-open")).toHaveCount(0);
+      await expect(triggers[to]!).toBeFocused();
+    }
+  }
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
+  expect(warnings).toEqual([]);
+});
+
 test("packed React plane context menu reuses accepted gamut actions without authoring", async ({
   page,
 }) => {
