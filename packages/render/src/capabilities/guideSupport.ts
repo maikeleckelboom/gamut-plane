@@ -1,20 +1,27 @@
 import {
-  OKLAB_AB_PLANE,
-  OKLCH_LIGHTNESS_CHROMA_PLANE,
   getHueGuideIntervals,
   getLightnessGuideIntervals,
   getPickerGuide,
+  type DisplayGamut,
   type GamutBoundaryTable,
   type GamutId,
-  type PickerPlaneGeometry,
+  type OklchSample,
+  type PickerGuide,
 } from "@gamut-plane/core";
 import {
   editorDefinitions,
+  gamutRayIntervals,
   geometryDefinitions,
   type EditorId,
   type EditorDefinition,
   type GeometryDefinition,
 } from "@gamut-plane/core/internal/capabilities";
+import {
+  getTracedPickerGuide,
+  traceLightnessChromaGuide,
+  traceOklabGuide,
+  type TracedGuide,
+} from "../perceptualGuides.js";
 import { PICKER_GAMUT_TABLES } from "../generated/gamutTables.js";
 
 export type GuideId = "srgb-boundary" | "display-p3-boundary";
@@ -44,17 +51,31 @@ export const guideDefinitions = Object.freeze({
   }),
 } satisfies { readonly [G in GuideId]: GuideDefinition & { readonly id: G } });
 
+/** Guide facts for one observed color against one guide's gamut. */
+export type GuideReference = (color: OklchSample, guide: GuideDefinition) => PickerGuide;
+
+/** The sampled table's interpolation, kept for RGB editors whose spatial guide is their own slice. */
+const sampledReference: GuideReference = (color, guide) => getPickerGuide(color, guide.table);
+
 interface GuideForms {
   readonly kind: "perceptual";
+  /**
+   * The traced boundary of this editor's slice at a fixed coordinate, refined toward
+   * render's fidelity target, or an explicit work/topology failure.
+   */
   readonly contour: Readonly<{
-    build: PickerPlaneGeometry["buildGamutContour"];
+    build: (gamut: DisplayGamut, fixed: number) => TracedGuide;
     closed: boolean;
   }>;
+  /** Hue and Lightness slider intervals keep the sampled table; the camera never magnifies them. */
   readonly hueIntervals: typeof getHueGuideIntervals | null;
   readonly lightnessIntervals: typeof getLightnessGuideIntervals;
-  /** Produced for both views; currently displayed only by the OKLCH Chroma control. */
-  readonly chromaIntervals: "oklch-maximum-chroma";
-  readonly reference: typeof getPickerGuide;
+  /**
+   * In-gamut chroma intervals along the observed color's own ray, the same numerical crossings the
+   * traced contour uses. Produced for both views; displayed only by the OKLCH Chroma control.
+   */
+  readonly chromaIntervals: typeof gamutRayIntervals;
+  readonly reference: GuideReference;
 }
 
 type RgbEditor = Extract<EditorDefinition, { representationId: "srgb" | "display-p3" }>;
@@ -65,7 +86,7 @@ export type RgbGuideSupport = {
     forms: Readonly<{
       kind: "rgb";
       geometry: Extract<GeometryDefinition, { id: E["geometryId"] }>;
-      reference: typeof getPickerGuide;
+      reference: GuideReference;
     }>;
   }>;
 }[RgbEditor["id"]];
@@ -77,7 +98,7 @@ function rgbSupport<E extends RgbEditor["id"]>(editorId: E) {
   const forms = Object.freeze({
     kind: "rgb" as const,
     geometry: geometryDefinitions[editorDefinitions[editorId].geometryId],
-    reference: getPickerGuide,
+    reference: sampledReference,
   });
   // The closed core editor map supplies this literal geometry pairing.
   return Object.freeze({
@@ -89,28 +110,26 @@ function rgbSupport<E extends RgbEditor["id"]>(editorId: E) {
 }
 
 // Guide geometry and contour math predate Canvas field support; the relations are independent.
+/** Reference uses the true ray crossing; the drawn guide approximates that boundary. */
+const tracedReference: GuideReference = (color, guide) =>
+  getTracedPickerGuide(color, guide.table.gamut);
+
 const lchForms = Object.freeze({
   kind: "perceptual",
-  contour: Object.freeze({
-    build: OKLCH_LIGHTNESS_CHROMA_PLANE.buildGamutContour,
-    closed: OKLCH_LIGHTNESS_CHROMA_PLANE.gamutContourClosed,
-  }),
+  contour: Object.freeze({ build: traceLightnessChromaGuide, closed: false }),
   hueIntervals: getHueGuideIntervals,
   lightnessIntervals: getLightnessGuideIntervals,
-  chromaIntervals: "oklch-maximum-chroma",
-  reference: getPickerGuide,
+  chromaIntervals: gamutRayIntervals,
+  reference: tracedReference,
 } satisfies GuideForms);
 
 const labForms = Object.freeze({
   kind: "perceptual",
-  contour: Object.freeze({
-    build: OKLAB_AB_PLANE.buildGamutContour,
-    closed: OKLAB_AB_PLANE.gamutContourClosed,
-  }),
+  contour: Object.freeze({ build: traceOklabGuide, closed: true }),
   hueIntervals: null,
   lightnessIntervals: getLightnessGuideIntervals,
-  chromaIntervals: "oklch-maximum-chroma",
-  reference: getPickerGuide,
+  chromaIntervals: gamutRayIntervals,
+  reference: tracedReference,
 } satisfies GuideForms);
 
 /** Technical existence implies neither a guide relation nor any successful forms. */

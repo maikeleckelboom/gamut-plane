@@ -11,7 +11,15 @@ import {
   exactGamutUi,
   referenceWarningGlyphPath,
   mountPlaneGesture,
+  mountPlaneViewport,
+  applyViewportPresentation,
+  viewportPresentation,
+  viewportCopy,
+  viewportStatusCopy,
+  hasInstrumentPointer,
   type PlaneGestureBinding,
+  type PlaneViewportBinding,
+  type PlaneViewportPorts,
 } from "@gamut-plane/ui";
 import {
   definingEquals,
@@ -26,7 +34,7 @@ import {
   keyboardGeometryPoint,
 } from "@gamut-plane/core/internal/capabilities";
 import { useDevicePixelRatio, useEventListener, useResizeObserver } from "@vueuse/core";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, useId, watch } from "vue";
 
 import { PICKER_ACTIVE_MARKER_RADIUS } from "@gamut-plane/render";
 
@@ -40,6 +48,21 @@ import {
 } from "@gamut-plane/render";
 
 import { planeWarningOffset } from "@gamut-plane/render/internal/current";
+import {
+  createViewportCamera,
+  fieldToViewport,
+  FIT_VIEWPORT,
+  isFitViewport,
+  MAX_VIEWPORT_ZOOM,
+  MIN_VIEWPORT_ZOOM,
+  sampleWindow,
+  viewportDomainStyle,
+  viewportPointStyle,
+  viewportSvgViewBox,
+  viewportToField,
+  type FieldViewport,
+  type ViewportCamera,
+} from "@gamut-plane/render/internal/viewport";
 import type {
   CurrentField,
   GeneralizedGuideDisplay,
@@ -66,6 +89,16 @@ const props = withDefaults(
 
 const xEnds = computed(() => planeAxisEnds(props.plane.xAxis));
 const yEnds = computed(() => planeAxisEnds(props.plane.yAxis));
+const fitStatus = computed(() =>
+  viewportStatusCopy({
+    zoom: 1,
+    xLabel: props.plane.xAxis.label,
+    yLabel: props.plane.yAxis.label,
+    x: xEnds.value,
+    y: yEnds.value,
+    selectionHidden: false,
+  }),
+);
 
 const emit = defineEmits<{
   "update:modelValue": [color: ColorValue];
@@ -74,7 +107,9 @@ const emit = defineEmits<{
   capability: [status: CanvasColorSpaceStatus];
 }>();
 
+const planeRoot = ref<HTMLDivElement | null>(null);
 const surface = ref<HTMLDivElement | null>(null);
+const viewportId = useId();
 const canvas = ref<HTMLCanvasElement | null>(null);
 const marker = ref<HTMLSpanElement | null>(null);
 const canvasColorSpace = ref<CanvasColorSpaceStatus>("pending");
@@ -84,6 +119,8 @@ const pixelRatio = ref(1);
 let renderer: FieldRenderer | null = null;
 let fieldRaf: number | null = null;
 let gesture: PlaneGestureBinding | null = null;
+let viewport: PlaneViewportBinding | null = null;
+let camera: ViewportCamera | null = null;
 let boundsDirty = false;
 let isUnmounted = false;
 let isMounted = false;
@@ -120,8 +157,12 @@ function publishCanvasColorSpace(status: CanvasColorSpaceStatus): void {
   emit("capability", status);
 }
 
-function drawField(): void {
-  fieldRaf = null;
+/** The camera input is interpreted against: the last coherently presented pose. */
+function presentedViewport(): FieldViewport {
+  return camera?.presented ?? FIT_VIEWPORT;
+}
+
+function renderField(pose: FieldViewport): void {
   if (isUnmounted || !renderer) return;
   renderedFieldQuality.value = renderer.draw({
     plane: props.plane,
@@ -129,7 +170,13 @@ function drawField(): void {
     fixed: fixedAxis.value,
     pixelRatio: pixelRatio.value,
     interactionPreview: props.interactionPreview,
+    window: sampleWindow(pose),
   });
+}
+
+function drawField(): void {
+  fieldRaf = null;
+  renderField(presentedViewport());
 }
 
 function scheduleFieldDraw(): void {
@@ -138,12 +185,19 @@ function scheduleFieldDraw(): void {
 }
 
 function pointFromPointer(event: PointerEvent): PlanePoint | null {
+  const viewportPoint = normalizeClient(event.clientX, event.clientY);
+  if (viewportPoint === null) return null;
+  // Inverse camera first, then the existing editor-domain constraint. Never clamp to the view.
+  return props.field.geometry.constrain(viewportToField(presentedViewport(), viewportPoint));
+}
+
+function normalizeClient(clientX: number, clientY: number): PlanePoint | null {
   if (boundsDirty) measureSurface();
   if (surfaceBounds.width <= 0 || surfaceBounds.height <= 0) return null;
-  return props.field.geometry.constrain({
-    x: (event.clientX - surfaceBounds.left) / surfaceBounds.width,
-    y: (event.clientY - surfaceBounds.top) / surfaceBounds.height,
-  });
+  return {
+    x: (clientX - surfaceBounds.left) / surfaceBounds.width,
+    y: (clientY - surfaceBounds.top) / surfaceBounds.height,
+  };
 }
 
 function measureSurface(): void {
@@ -174,11 +228,50 @@ function measureSurface(): void {
 function positionActiveAnnotations(point: PlanePoint): void {
   const activeMarker = marker.value;
   if (activeMarker) {
-    Object.assign(activeMarker.style, pointStyle(point));
-    const offset = planeWarningOffset(point, surfaceLocalSize);
+    const pose = presentedViewport();
+    Object.assign(activeMarker.style, viewportPointStyle(pose, point));
+    const offset = planeWarningOffset(fieldToViewport(pose, point), surfaceLocalSize);
     activeMarker.style.setProperty("--gp-warning-offset-x", `${offset.x}px`);
     activeMarker.style.setProperty("--gp-warning-offset-y", `${offset.y}px`);
   }
+}
+
+/** Camera-dependent DOM outside the raster, from the committed facts and one pose. */
+function applyCameraOverlays(pose: FieldViewport): void {
+  const root = planeRoot.value;
+  if (!root) return;
+  const shown = fieldToViewport(pose, authoredPoint.value);
+  const hidden =
+    props.field.markerInDomain && (shown.x < 0 || shown.x > 1 || shown.y < 0 || shown.y > 1);
+  const reference = spatialReference.value;
+  applyViewportPresentation(
+    root,
+    viewportPresentation({
+      zoom: pose.zoom,
+      minZoom: MIN_VIEWPORT_ZOOM,
+      maxZoom: MAX_VIEWPORT_ZOOM,
+      window: sampleWindow(pose),
+      xAxis: props.plane.xAxis,
+      yAxis: props.plane.yAxis,
+      viewBox: viewportSvgViewBox(pose),
+      reference: reference ? viewportPointStyle(pose, reference.point) : null,
+      domain: viewportDomainStyle(pose),
+      selectionHidden: hidden,
+    }),
+  );
+}
+
+function viewportCommand(command: "in" | "out" | "fit"): void {
+  if (command === "in") viewport?.zoomIn();
+  else if (command === "out") viewport?.zoomOut();
+  else viewport?.fit();
+}
+
+/** The camera's only presentation route: raster and every spatial layer from one pose. */
+function presentCamera(pose: FieldViewport): void {
+  renderField(pose);
+  positionActiveAnnotations(authoredPoint.value);
+  applyCameraOverlays(pose);
 }
 
 function authorPoint(value: ColorValue, point: PlanePoint): ColorValue | null {
@@ -195,6 +288,8 @@ function restorePresentation(value: ColorValue): void {
 function onKeydown(event: KeyboardEvent): void {
   surface.value?.removeAttribute("data-pointer-focus");
   surface.value?.removeAttribute(gpAttribute.pointerFocus);
+  if (viewport?.handleKey(event)) return;
+  if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape" && gesture?.active) {
     event.preventDefault();
     event.stopPropagation();
@@ -212,6 +307,8 @@ function onKeydown(event: KeyboardEvent): void {
 
   event.preventDefault();
   gesture?.interrupt();
+  // A keyboard color edit acts on what is on screen, never on an unpresented camera request.
+  camera?.discardPending();
   const point = keyboardGeometryPoint(activeProjection.value, action, event.shiftKey);
   const result = authorPoint(props.modelValue, point);
   if (result === null) return;
@@ -225,6 +322,16 @@ function onBlur(): void {
 }
 
 watch([() => props.plane, () => props.field.geometry.id, fixedAxis], () => scheduleFieldDraw());
+// An accepted geometry change resets to Fit before anything of the old geometry can be projected.
+watch(
+  () => props.field.geometry.id,
+  () => {
+    viewport?.interrupt();
+    if (camera && isFitViewport(camera.presented)) camera.discardPending();
+    else camera?.fit();
+  },
+  { flush: "post" },
+);
 watch(
   () => props.semanticContextKey,
   () => gesture?.reconcile(),
@@ -246,11 +353,38 @@ watch(authoredPoint, (point) => positionActiveAnnotations(point));
 
 onMounted(() => {
   isMounted = true;
+  camera = createViewportCamera({
+    present: presentCamera,
+    schedule: (callback) => window.requestAnimationFrame(callback),
+    cancel: (handle) => window.cancelAnimationFrame(handle as number),
+  });
   if (surface.value) {
     const element = surface.value;
+    const ports: PlaneViewportPorts = {
+      presented: presentedViewport,
+      measure: () => {
+        measureSurface();
+        return surfaceBounds.width > 0 && surfaceBounds.height > 0;
+      },
+      normalize: normalizeClient,
+      extent: () =>
+        surfaceBounds.width > 0 && surfaceBounds.height > 0
+          ? { width: surfaceBounds.width, height: surfaceBounds.height }
+          : null,
+      zoomAt: (anchor, factor) => void camera?.zoomAt(anchor, factor),
+      panFrom: (origin, displacement) => void camera?.panFrom(origin, displacement),
+      panBy: (displacement) => void camera?.panBy(displacement),
+      show: (pose) => camera?.show(pose),
+      fit: () => camera?.fit(),
+      flush: () => camera?.flush(),
+      discardPending: () => void camera?.discardPending(),
+      colorGestureActive: () => hasInstrumentPointer(element),
+    };
+    viewport = mountPlaneViewport(element, ports);
     gesture = mountPlaneGesture<ColorValue, PlanePoint>(element, () => ({
       value: props.modelValue,
       viewKey: props.semanticContextKey,
+      declines: (event) => viewport?.active || (viewport?.claims(event) ?? false),
       pointFromPointer: (event) => {
         if (event.type === "pointerdown") measureSurface();
         return pointFromPointer(event);
@@ -258,6 +392,8 @@ onMounted(() => {
       authorPoint,
       definingEquals,
       onPointerStart: (event) => {
+        // The initiating pointer acts on the presented pose; an unpresented zoom is discarded.
+        camera?.discardPending();
         element.dataset.pointerFocus = "";
         element.setAttribute(gpAttribute.pointerFocus, "");
         element.focus({ preventScroll: true });
@@ -277,6 +413,8 @@ onMounted(() => {
   const device = useDevicePixelRatio();
   watch(device.pixelRatio, (value) => (pixelRatio.value = value), { immediate: true });
   useResizeObserver(surface, () => {
+    // A pan has no stable displacement across a measurement change; end it where it stands.
+    viewport?.interrupt();
     measureSurface();
     positionActiveAnnotations(authoredPoint.value);
     scheduleFieldDraw();
@@ -296,10 +434,23 @@ onMounted(() => {
   });
 });
 
+// A patch may restore declarative field-space values; reassert the presented camera over them.
+onUpdated(() => {
+  const hasPendingPreview = gesture?.active && gesture.hasPendingPoint;
+  if (hasPendingPreview) gesture?.reapplyPreview();
+  if (!camera || isFitViewport(camera.presented)) return;
+  if (!hasPendingPreview) positionActiveAnnotations(authoredPoint.value);
+  applyCameraOverlays(camera.presented);
+});
+
 onBeforeUnmount(() => {
   isUnmounted = true;
   if (fieldRaf !== null) window.cancelAnimationFrame(fieldRaf);
   fieldRaf = null;
+  viewport?.dispose();
+  viewport = null;
+  camera?.dispose();
+  camera = null;
   gesture?.dispose();
   gesture = null;
   renderer?.dispose();
@@ -309,7 +460,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    ref="planeRoot"
     class="color-plane"
+    data-gp-viewport-zoom="1"
     :data-gp-part="gpPart.plane"
     data-picker-plane
     :data-plane-id="plane.id"
@@ -329,6 +482,7 @@ onBeforeUnmount(() => {
       role="application"
       tabindex="0"
       :aria-label="planeLabel"
+      :aria-describedby="`${viewportId}-instructions ${viewportId}-status`"
       :data-render-color-space="canvasColorSpace"
       :data-outside-instrument="field.markerInDomain ? 'false' : 'true'"
       @keydown="onKeydown"
@@ -493,5 +647,47 @@ onBeforeUnmount(() => {
     <span :data-gp-part="gpPart.axisEnd" data-gp-end="x-end" aria-hidden="true">{{
       xEnds.end
     }}</span>
+    <div :data-gp-part="gpPart.viewportControls" role="group" :aria-label="viewportCopy.group">
+      <button
+        type="button"
+        :data-gp-part="gpPart.viewportButton"
+        data-gp-viewport="out"
+        :aria-label="viewportCopy.zoomOut"
+        aria-disabled="true"
+        @click="viewportCommand('out')"
+      >
+        &minus;
+      </button>
+      <span :data-gp-part="gpPart.viewportZoom" aria-hidden="true">100%</span>
+      <button
+        type="button"
+        :data-gp-part="gpPart.viewportButton"
+        data-gp-viewport="in"
+        :aria-label="viewportCopy.zoomIn"
+        @click="viewportCommand('in')"
+      >
+        +
+      </button>
+      <button
+        type="button"
+        :data-gp-part="gpPart.viewportButton"
+        data-gp-viewport="fit"
+        :aria-label="viewportCopy.fitName"
+        aria-disabled="true"
+        @click="viewportCommand('fit')"
+      >
+        {{ viewportCopy.fit }}
+      </button>
+    </div>
+    <p
+      :id="`${viewportId}-instructions`"
+      :data-gp-part="gpPart.viewportInstructions"
+      data-gp-visually-hidden
+    >
+      {{ viewportCopy.instructions }}
+    </p>
+    <p :id="`${viewportId}-status`" :data-gp-part="gpPart.viewportStatus" data-gp-visually-hidden>
+      {{ fitStatus }}
+    </p>
   </div>
 </template>

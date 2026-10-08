@@ -93,6 +93,7 @@ export async function packPrivateArtifact(
       ".",
       "./internal/capabilities",
       ...(manifest.name === "@gamut-plane/render" ? ["./internal/current"] : []),
+      ...(manifest.name === "@gamut-plane/render" ? ["./internal/viewport"] : []),
     ]);
     assert.deepEqual(manifest.exports["./internal/capabilities"], {
       types: "./dist/capabilities/index.d.ts",
@@ -102,6 +103,10 @@ export async function packPrivateArtifact(
       assert.deepEqual(manifest.exports["./internal/current"], {
         types: "./dist/current/index.d.ts",
         import: "./dist/current/index.js",
+      });
+      assert.deepEqual(manifest.exports["./internal/viewport"], {
+        types: "./dist/viewport/index.d.ts",
+        import: "./dist/viewport/index.js",
       });
       for (const old of ["boundaryPresentation", "pickerPresentation", "current/legacyTarget"])
         for (const ext of [".js", ".d.ts"])
@@ -227,6 +232,8 @@ import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequ
 import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
 import { currentField, currentOklchObservation, currentEditableDetail, generalizedGuideDisplay, generalizedEditableDetail } from "@gamut-plane/render/internal/current";
 import type { CurrentField, GeneralizedGuideDisplay } from "@gamut-plane/render/internal/current";
+import { FIT_VIEWPORT, sampleWindow, zoomViewportAt, viewportToField } from "@gamut-plane/render/internal/viewport";
+import type { FieldViewport } from "@gamut-plane/render/internal/viewport";
 const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
 if (!source.ok) throw new Error("Invalid packed capability source");
 const ids: readonly GuideId[] = Object.values(guideDefinitions).map((guide) => guide.id);
@@ -255,6 +262,11 @@ for (const row of nativeGuides) {
   void invalidChannel;
 }
 if (generalizedGuideDisplay(nativeGuides).rgbIntervals.r.length !== 2) throw new Error("Packed native channel presentation missing");
+const zoomed: FieldViewport = zoomViewportAt(FIT_VIEWPORT, { x: 0.2, y: 0.8 }, 2);
+const window2x = sampleWindow(zoomed);
+if (Math.abs(zoomed.center.x - 0.35) > 1e-12 || Math.abs(zoomed.center.y - 0.65) > 1e-12 || window2x.width !== 0.5) throw new Error("Packed viewport math changed");
+const roundTrip = viewportToField(zoomed, { x: 0.2, y: 0.8 });
+if (Math.abs(roundTrip.x - 0.2) > 1e-12 || Math.abs(roundTrip.y - 0.8) > 1e-12) throw new Error("Packed viewport inverse changed");
 // @ts-expect-error render guide identities remain distinct from gamut identities
 const wrongGuide: GuideId = "srgb-gamut";
 // @ts-expect-error core's new runtime contract is not public root API
@@ -271,11 +283,16 @@ import * as coreInternal from "@gamut-plane/core/internal/capabilities";
 import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
-assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "geometryDefinitions", "keyboardGeometryPoint", "representationDefinitions"]);
+import * as viewport from "@gamut-plane/render/internal/viewport";
+assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "representationDefinitions"]);
+for (const key of ["GUIDE_FIDELITY_BOUND", "getTracedPickerGuide", "traceLightnessChromaGuide", "traceOklabGuide"]) assert.equal(key in core, false);
 assert.deepEqual(Object.values(coreInternal.representationDefinitions).map((definition) => definition.associatedGamutId), [null, null, "srgb-gamut", "display-p3-gamut"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "referenceGuidePolicy", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
 assert.deepEqual(Object.keys(current).sort(), ["currentEditableDetail", "currentField", "currentOklchObservation", "generalizedEditableDetail", "generalizedGuideDisplay", "planeWarningOffset", "rangeWarningStyle", "referenceDisplay"]);
 assert.deepEqual(Object.keys(render).sort(), ["PICKER_ACTIVE_MARKER_RADIUS", "PICKER_GAMUT_TABLES", "PICKER_SLIDER_FIELD_INSET", "PICKER_SLIDER_THUMB_TOP", "PICKER_SLIDER_THUMB_WIDTH", "PICKER_SLIDER_TRACK_HEIGHT", "VIEWBOX_SIZE", "channelSections", "colorGradient", "createFieldRenderer", "geometryToSvgPath", "pointStyle"]);
+assert.deepEqual(Object.keys(viewport).sort(), ["FIT_SAMPLE_WINDOW", "FIT_VIEWPORT", "MAX_VIEWPORT_ZOOM", "MIN_VIEWPORT_ZOOM", "assertViewport", "constrainViewport", "createViewportCamera", "fieldToViewport", "isFitViewport", "panViewport", "sampleWindow", "viewportDomainStyle", "viewportPointStyle", "viewportSvgViewBox", "viewportToField", "viewportsEqual", "zoomViewportAt"]);
+assert.equal(viewport.zoomViewportAt(viewport.FIT_VIEWPORT, { x: 0.2, y: 0.8 }, 2).zoom, 2);
+for (const key of Object.keys(viewport)) assert.equal(key in render, false);
 for (const key of Object.keys(coreInternal)) assert.equal(key in core, false);
 for (const key of Object.keys(renderInternal)) assert.equal(key in render, false);
 for (const key of Object.keys(current)) assert.equal(key in render, false);

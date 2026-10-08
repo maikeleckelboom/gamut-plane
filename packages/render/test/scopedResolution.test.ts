@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as core from "@gamut-plane/core";
 import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
+import { getTracedPickerGuide } from "../src/perceptualGuides.js";
 import {
   resolveEditorVisualSupport,
   resolveField,
@@ -30,6 +31,10 @@ vi.mock("@gamut-plane/core/internal/capabilities", async (original) => {
       ]),
     ),
   };
+});
+vi.mock("../src/perceptualGuides.js", async (original) => {
+  const actual = await original<typeof import("../src/perceptualGuides.js")>();
+  return { ...actual, getTracedPickerGuide: vi.fn(actual.getTracedPickerGuide) };
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -222,7 +227,9 @@ describe("independent requested guide forms", () => {
         }
       }
       expect(core.analyzeGamut).not.toHaveBeenCalled();
-      expect(core.getPickerGuide).toHaveBeenCalledTimes(2);
+      // Perceptual References read the traced ray the drawn guide passes through.
+      expect(getTracedPickerGuide).toHaveBeenCalledTimes(2);
+      expect(core.getPickerGuide).not.toHaveBeenCalled();
       // Each needed representation is observed once for the whole requested collection.
       expect(vi.mocked(core.represent).mock.calls.map(([, id]) => id)).toEqual(
         editorId === "oklch-lc" ? ["oklch"] : ["oklch", "oklab"],

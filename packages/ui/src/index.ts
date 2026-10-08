@@ -9,7 +9,25 @@ export {
   type ShellSelection,
   type ShellEditor,
 } from "./selectionShell.js";
-export { planeAxisEnds, type PlaneAxisBounds, type PlaneAxisEnds } from "./planeAxisEnds.js";
+export {
+  planeAxisEnds,
+  planeAxisSpans,
+  type PlaneAxisBounds,
+  type PlaneAxisEnds,
+  type PlaneAxisSpan,
+} from "./planeAxisEnds.js";
+export {
+  applyViewportPresentation,
+  viewportPresentation,
+  type ViewportPresentation,
+  type ViewportPresentationInput,
+} from "./viewportPresentation.js";
+export {
+  formatViewportZoom,
+  viewportCopy,
+  viewportStatusCopy,
+  type ViewportStatusInput,
+} from "./viewportCopy.js";
 export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";
 export { mountGamutPopup } from "./interaction/gamutInteraction.js";
 export { mountGamutContextMenu } from "./interaction/gamutContextMenuInteraction.js";
@@ -90,8 +108,18 @@ export {
   type StateResult,
   type StateIssue,
 } from "./instrumentState.js";
+export { hasInstrumentPointer } from "./interaction/pointerOwnership.js";
 export { mountRange, type RangeInput } from "./interaction/rangeInteraction.js";
 export { mountNumericInput, type NumericInputState } from "./interaction/numericInteraction.js";
+export {
+  mountPlaneViewport,
+  claimsViewportPan,
+  wheelDeltaPixels,
+  type PlaneViewportBinding,
+  type PlaneViewportPorts,
+  type ViewportPoint,
+  type ViewportPose,
+} from "./interaction/viewportInteraction.js";
 export {
   mountPlaneGesture,
   type PlaneGestureInput,

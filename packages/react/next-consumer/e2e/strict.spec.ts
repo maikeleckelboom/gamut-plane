@@ -153,7 +153,9 @@ async function open(page: Page) {
       created: 4,
       disconnected: 2,
       active: 2,
-      handlers: 18, // Six gesture/keyboard handlers and three context-menu listeners per plane.
+      // Six gesture/keyboard, nine field-viewport (pointer pan, wheel, middle-button and blur)
+      // and three context-menu listeners per plane.
+      handlers: 36,
       menuHandlers: 4,
       controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,
@@ -265,7 +267,7 @@ test("root Strict Mode replays setup and cleans all handlers/observers on unmoun
       created: 8,
       disconnected: 6,
       active: 2,
-      handlers: 18,
+      handlers: 36,
       menuHandlers: 4,
       controlHandlers: 84, // Six ranges (8 each) and six numeric inputs (6 each).
       windowHandlers: 8,

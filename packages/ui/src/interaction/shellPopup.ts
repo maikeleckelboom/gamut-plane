@@ -7,6 +7,11 @@ export function claimShellPopup(root: Element, close: () => void): void {
   openPopups.set(root, close);
 }
 
+/** Whether an instrument-owned popup currently holds this root's keyboard and wheel input. */
+export function hasShellPopup(root: Element): boolean {
+  return openPopups.has(root);
+}
+
 export function releaseShellPopup(root: Element, close: () => void): void {
   if (openPopups.get(root) === close) openPopups.delete(root);
 }

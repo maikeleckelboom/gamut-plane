@@ -4,9 +4,17 @@ import {
   OKLCH_LIGHTNESS_CHROMA_PLANE,
   getHueGuideIntervals,
   getLightnessGuideIntervals,
-  getPickerGuide,
 } from "@gamut-plane/core";
-import { editorDefinitions, geometryDefinitions } from "@gamut-plane/core/internal/capabilities";
+import {
+  editorDefinitions,
+  gamutRayIntervals,
+  geometryDefinitions,
+} from "@gamut-plane/core/internal/capabilities";
+import {
+  getTracedPickerGuide,
+  traceLightnessChromaGuide,
+  traceOklabGuide,
+} from "../src/perceptualGuides.js";
 import { fieldSupport } from "../src/capabilities/fieldSupport.js";
 import { guideDefinitions, guideSupport } from "../src/capabilities/guideSupport.js";
 import { PICKER_GAMUT_TABLES } from "../src/generated/gamutTables.js";
@@ -70,13 +78,15 @@ describe("render-owned current visual support", () => {
     const gamut = definition.table.gamut;
     expect(row.editorId).toBe(editorId);
     expect(row.guideId).toBe(guideId);
-    expect(row.forms.contour.build).toBe(field.plane.buildGamutContour);
+    // The drawn contour, Chroma intervals and Reference share the traced, bounded-error geometry.
+    expect(row.forms.contour.build).toBe(
+      editorId === "oklch-lc" ? traceLightnessChromaGuide : traceOklabGuide,
+    );
     expect(row.forms.contour.closed).toBe(field.plane.gamutContourClosed);
     expect(row.forms.hueIntervals).toBe(hue);
     expect(row.forms.lightnessIntervals).toBe(getLightnessGuideIntervals);
-    expect(row.forms.chromaIntervals).toBe("oklch-maximum-chroma");
-    expect(row.forms.reference).toBe(getPickerGuide);
-    expect(row.forms.reference(sample, definition.table).gamut).toBe(gamut);
+    expect(row.forms.chromaIntervals).toBe(gamutRayIntervals);
+    expect(row.forms.reference(sample, definition)).toEqual(getTracedPickerGuide(sample, gamut));
     expect(row.forms.lightnessIntervals(definition.table, sample)).toEqual(
       getLightnessGuideIntervals(definition.table, sample),
     );

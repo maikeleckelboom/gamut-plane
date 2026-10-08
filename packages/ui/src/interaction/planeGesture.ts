@@ -5,6 +5,12 @@ export interface PlaneGestureInput<Value, Point> {
   value: Value;
   viewKey: string;
   pointFromPointer(event: PointerEvent): Point | null;
+  /**
+   * True when the pointerdown belongs to another interaction, such as viewport pan. Decided
+   * before any point conversion, focus, capture or preview, from the event and shared state only,
+   * so it cannot depend on listener registration order.
+   */
+  declines?(event: PointerEvent): boolean;
   authorPoint(value: Value, point: Point): Value | null;
   definingEquals(left: Value, right: Value): boolean;
   onPointerStart(event: PointerEvent): void;
@@ -19,6 +25,8 @@ export interface PlaneGestureInput<Value, Point> {
 export interface PlaneGestureBinding {
   readonly active: boolean;
   readonly hasPendingPoint: boolean;
+  /** Reassert the pending pointer preview after a framework patch rewrote its presentation. */
+  reapplyPreview(): void;
   reconcile(): void;
   rollback(): boolean;
   interrupt(): boolean;
@@ -31,6 +39,8 @@ export function mountPlaneGesture<Value, Point>(
   current: () => PlaneGestureInput<Value, Point>,
 ): PlaneGestureBinding {
   let disposed = false;
+  // This controller's own ownership claim; other controllers on the surface hold their own.
+  const owner = {};
   let pointerId: number | null = null;
   let origin: Value | null = null;
   let expected: Value | null = null;
@@ -54,7 +64,7 @@ export function mountPlaneGesture<Value, Point>(
     pending = latest = null;
     const owned = pointerId;
     pointerId = null;
-    setPointerOwnership(surface, false);
+    setPointerOwnership(surface, false, owner);
     origin = expected = null;
     if (owned !== null) current().onPointerEnd(owned);
   }
@@ -91,11 +101,12 @@ export function mountPlaneGesture<Value, Point>(
   function down(event: PointerEvent): void {
     if (disposed || pointerId !== null || (event.pointerType === "mouse" && event.button !== 0))
       return;
+    if (current().declines?.(event)) return;
     const point = current().pointFromPointer(event);
     if (point === null) return;
     event.preventDefault();
     pointerId = event.pointerId;
-    setPointerOwnership(surface, true);
+    setPointerOwnership(surface, true, owner);
     origin = current().value;
     expected = null;
     current().onPointerStart(event);
@@ -172,6 +183,9 @@ export function mountPlaneGesture<Value, Point>(
     },
     get hasPendingPoint() {
       return pending !== null;
+    },
+    reapplyPreview() {
+      if (!disposed && pointerId !== null && pending !== null) current().onPreviewPoint(pending);
     },
     reconcile() {
       if (disposed) return;

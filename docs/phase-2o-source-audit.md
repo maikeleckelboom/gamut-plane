@@ -1,0 +1,84 @@
+# Phase 2O source audit
+
+This historical audit predates the live candidate. The [independent review](phase-2o-independent-review.md) inspects the current working tree directly.
+
+Repository: `maikeleckelboom/gamut-plane`.
+Branch queried: `dev`.
+Resolved commit: `d726a65fc3a44010c2edc92f92406fbc7f9a1136`.
+Resolved tree: `59d97216aa729d2dcbc4639e5c6e79c284e19d7a`.
+Prepared: 7 October 2026.
+
+## Provenance and limitations
+
+The connected GitHub API returned the branch head above. All source reads used that immutable commit, or its associated Git tree, rather than mixing mutable `dev` and `main` files. The returned commit message was `test: regenerate Windows and Linux visual baselines`, concerning compact chrome, plane axis end labels and output-row changes.
+
+A local `git clone --branch dev --single-branch` was attempted and failed because the container could not resolve `github.com`. Archive retrieval was also unavailable. The audit therefore used the connected GitHub read tools, not a successful local checkout. It is a targeted source/design audit, not an exhaustive review of every repository file.
+
+No dependencies were installed, no repository code was changed, and no repository unit, browser, SSR, CI or performance suite was executed. No claim is made about whether the current head is green. The source snapshot contains newer changes than the previously remembered Phase 2N.3 checkpoint; implementation must recheck the live branch again.
+
+## Inspected source map
+
+All links below are pinned to the inspected commit. “Source excerpt” does not claim unread portions of a larger file were audited.
+
+| ID  | Source and inspected coverage                                                                                                                                                                                                                    | Relevant evidence                                                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S01 | [Branch snapshot commit](https://github.com/maikeleckelboom/gamut-plane/commit/d726a65fc3a44010c2edc92f92406fbc7f9a1136); root/package/docs/UI/render tree metadata                                                                              | Immutable planning baseline and actual package/document layout.                                                                                                                                                            |
+| S02 | [docs/architecture.md](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/docs/architecture.md), ownership through interaction-lifecycle sections                                                      | Four-dimensional instrument state; separate authored source; package ownership; eight editors; raw marker policy; independent checks/guides; committed adapter authority. Later tail not fully relied upon.                |
+| S03 | [docs/plane-controller-decomposition.md](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/docs/plane-controller-decomposition.md), implemented ownership, lifecycle, geometry/measurement sections   | Shared pointer state machine and adapter resource boundaries; exact-origin rollback; pending/up ordering; measurement differences; renderer-quality ownership. Historical line maps are not current line-number authority. |
+| S04 | [packages/ui/src/interaction/planeGesture.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/ui/src/interaction/planeGesture.ts), complete file                                           | Pointerdown does not veto defaultPrevented events; expected feedback, RAF, pointerup precedence and microtask accepted-presentation restore; `end()` clears the boolean ownership entry.                                   |
+| S05 | [packages/ui/src/interaction/pointerOwnership.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/ui/src/interaction/pointerOwnership.ts), complete file                                   | WeakSet per element; instrument ownership checks surfaces and native ranges. This is not a multi-owner lock.                                                                                                               |
+| S06 | [packages/vue/src/components/ColorPlane.vue](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/vue/src/components/ColorPlane.vue), script and template across three reads                    | Direct client-to-normalized constraint; separate declarative and imperative annotations; fixed SVG viewBox; fixed domain outline; nominal end labels; VueUse resources and synchronous authority watchers.                 |
+| S07 | [packages/react/src/components/ColorPlane.tsx](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/react/src/components/ColorPlane.tsx#L1-L190), source excerpt                                | Committed props bridge, layout-effect mount/reconcile, nominal labels, declarative markers/domain outline and SVG anatomy.                                                                                                 |
+| S08 | [packages/react/src/interaction/planeInteraction.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/react/src/interaction/planeInteraction.ts), complete file                             | Shared gesture integration, capture/focus, keyboard color actions and resource reconciliation.                                                                                                                             |
+| S09 | [packages/react/src/interaction/planeResources.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/react/src/interaction/planeResources.ts), complete file                                 | Border/CSS-scale input normalization, Canvas scheduling, fixed-slice key, DPR/ResizeObserver lifecycle, imperative marker restoration.                                                                                     |
+| S10 | [packages/render/src/fieldRenderer.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/render/src/fieldRenderer.ts), complete file                                                         | Whole-domain column/disc sampling; bounding-client-rect Canvas sizing; DPR; 192-column optional preview; field cache identity and bounded last-frame ownership. No camera input yet.                                       |
+| S11 | [packages/render/src/current/field.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/render/src/current/field.ts), complete file                                                         | Geometry/projection identity, fixed sampling coordinate, marker domain fact and eight-field composition.                                                                                                                   |
+| S12 | [packages/render/src/current/referenceDisplay.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/render/src/current/referenceDisplay.ts), complete file                                   | Current RGB Reference calls `nearestRgbBoundary`; no camera dependency. Exact Outside eligibility is independent of viewport clipping.                                                                                     |
+| S13 | [docs/native-rgb-guides.md](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/docs/native-rgb-guides.md), complete surfaced document                                                                  | Genuine full contours, nominal-square coverage, open degenerate geometry, nearest-slice Reference, 1e-5 curve error plus 5e-6 SVG serialization allowance and explicit numerical budgets.                                  |
+| S14 | [packages/ui/src/planeAxisEnds.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/ui/src/planeAxisEnds.ts), complete file                                                                 | Nominal min/max text, [0,1] fallback and three-decimal display-only formatting. Needs viewport-aware numeric inputs, not copied color math.                                                                                |
+| S15 | [packages/ui/src/style.css](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/ui/src/style.css#L660-L1040), source excerpt                                                                   | Square surface, overflow clipping, existing touch-action:none, separate disc outline, marker sizes, guide hit strokes, fixed axis gutters and control layout. No circular surface clip in this path.                       |
+| S16 | [packages/core/src/capabilities/types/editingDefinitions.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/core/src/capabilities/types/editingDefinitions.ts), geometry/editor contracts | Explicit axis directions, geometry binding/domain/project/constrain/contains, geometry identity and all eight editor bindings.                                                                                             |
+| S17 | [packages/core/src/picker/geometry.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/core/src/picker/geometry.ts), complete file                                                         | Normalized point terminology; OKLCH maximum C=0.4; OKLab axis limit 0.4; rectangular and radial constraints; separate raw coordinate projection.                                                                           |
+| S18 | [packages/core/src/capabilities/index.ts](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/core/src/capabilities/index.ts), complete file                                                   | Internal sibling-package contract precedent; no need for a consumer capability API.                                                                                                                                        |
+| S19 | [packages/render/package.json](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/packages/render/package.json), complete file                                                                         | Render runtime dependency on core only; existing internal/capabilities and internal/current exports.                                                                                                                       |
+| S20 | [package.json](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/package.json), complete file                                                                                                         | Node >=24, pnpm 11.9.0, actual build/test/packed commands; verify:prepush exists and root verify does not.                                                                                                                 |
+| S21 | [docs/testing.md](https://github.com/maikeleckelboom/gamut-plane/blob/d726a65fc3a44010c2edc92f92406fbc7f9a1136/docs/testing.md), complete surfaced document                                                                                      | Evidence ownership, sequential suite ports, packed and SSR gates, sparse visual policy, Windows/Linux references, pinned Noble/font conditions and limitations of prior cross-browser evidence.                            |
+
+## Findings that materially changed the initial outline
+
+The initial conceptual camera was refined to a normalized center plus zoom rather than persistent pixel offsets. This makes resize semantics explicit and separates field coordinates from displayed pixels.
+
+An internal render-owned mathematical module with UI callback ports is proposed because putting camera mathematics in UI and importing it from render would conflict with the inspected dependency direction. This placement is a design recommendation, not an already existing repository contract.
+
+Canvas sampling must be made aware of the visible region. Simply magnifying the present raster both exposes its existing sampling and risks changing its bounding-client-rect-based backing dimensions. A stable visible canvas is therefore part of the implementation contract.
+
+The domain outline, hit paths and fixed nominal axis labels are independent existing elements and all require camera-aware treatment. The OKLab outline must move, but the square surface must not suddenly become a circular clip.
+
+The current RGB Reference implementation is newer than some general architecture wording: it uses nearest-slice geometry. Camera crop must not redefine the nominal-domain nearest-point search.
+
+A second pointer listener is not sufficient for pan. The edit controller starts without a defaultPrevented guard and both controllers would otherwise share a boolean ownership entry. This is a specific integration hazard to settle before enabling pan.
+
+Exact authored-source preservation and approximate floating-point coordinate inversion are distinct requirements. Likewise, anchor invariance is conditional when camera bounds take precedence. The spec tests those distinctions explicitly.
+
+## Required implementation-time reads not claimed complete here
+
+Inspect the actual parent `GamutPlane` field mounts and accepted semantic-context derivation; `hooks/useCommitted.ts`; all range/selector/Gamuts/context-menu ownership users; render's SVG serialization and warning helpers; package export/inventory tests; current test fixture APIs; `.github/workflows/ci.yml`; and `docs/performance.md`. Their existence or architectural role was identified from metadata, imports or documentation, but a complete direct source audit of those implementations was not performed in this planning pass.
+
+These are bounded preflight tasks, not invitations to reopen the complete product roadmap. New source can supersede assumptions in this document; record that evidence before adapting the plan.
+
+## Browser documentation checked
+
+The following are primary standards or platform documentation, not guarantees that physical-device behavior has been tested here:
+
+- [W3C Pointer Events](https://www.w3.org/TR/pointerevents/), including chorded-button and pointer-capture behavior.
+- [MDN: Element wheel event](https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event), including cancelability, passive listener behavior, Ctrl-key zoom events and delta units.
+- [MDN: SVG vector-effect](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/vector-effect), for non-scaling stroke behavior.
+- [W3C UI Events](https://www.w3.org/TR/uievents/), whose retrieved 2026 document points mouse/wheel definitions to Pointer Events. Do not rely on an obsolete UI Events section anchor as the current mouse/wheel authority.
+
+These references support the input/rendering concerns. Product choices such as Alt/Option activation, camera bounds, keyboard bindings, 8x maximum and numeric sensitivity are proposed application policies, not dictated by those sources.
+
+## Independent equation check
+
+The handoff includes `evidence/check_viewport_math.py` and its recorded `viewport-math-check.json`. It uses seed 2072026 and 10,000 generated poses/points, plus known-value examples. It checks inverse projection, bounded camera windows, canonical Fit and anchored zoom when no center clamp is required.
+
+Observed maximum inverse absolute error: `8.881784197001252e-16`. Observed maximum unclamped anchor error: `4.440892098500626e-16`. There were 7,043 unclamped anchor cases and 2,957 clamped cases. This is a deterministic design-equation check, not a proof of all possible inputs and not execution of any Gamut Plane implementation or browser test. The final TypeScript implementation needs its own independent owner tests.

@@ -24,6 +24,10 @@
     "./internal/current": {
       "types": "./dist/current/index.d.ts",
       "import": "./dist/current/index.js"
+    },
+    "./internal/viewport": {
+      "types": "./dist/viewport/index.d.ts",
+      "import": "./dist/viewport/index.js"
     }
   },
   "scripts": {
@@ -37,6 +41,7 @@
     "@gamut-plane/core": "workspace:*"
   },
   "devDependencies": {
+    "@texel/color": "1.1.11",
     "@types/node": "24.13.2",
     "typescript": "catalog:",
     "vitest": "catalog:"

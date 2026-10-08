@@ -3,12 +3,14 @@ import {
   represent,
   type ColorValue,
   type ConversionError,
+  type DisplayGamut,
   type HueGuideInterval,
   type LightnessGuideInterval,
   type OklchSample,
   type PickerGuide,
 } from "@gamut-plane/core";
 import type { EditorId } from "@gamut-plane/core/internal/capabilities";
+import type { TracedGuide } from "../perceptualGuides.js";
 import type { EditorVisualSupport } from "./editorResolution.js";
 import { guideDefinitions, guideSupport, type GuideId, type GuideSupport } from "./guideSupport.js";
 
@@ -66,6 +68,27 @@ function available<T>(value: T): GuideFormResult<T> {
   return { kind: "available", value };
 }
 
+/** Chroma as a fraction of the Chroma control's 0 to 0.4 span. */
+function chromaFraction(chroma: number): number {
+  return Math.min(1, Math.max(0, chroma / OKLCH_PICKER_MAX_CHROMA));
+}
+
+/** A traced contour, or the honest failure when its bounded work could not meet the contract. */
+function tracedContour(
+  contour: Readonly<{
+    build: (gamut: DisplayGamut, fixed: number) => TracedGuide;
+    closed: boolean;
+  }>,
+  gamut: DisplayGamut,
+  fixed: GuideFormResult<number>,
+): GuideFormResult<Readonly<{ points: Float32Array; closed: boolean }>> {
+  if (fixed.kind !== "available") return fixed;
+  const traced = contour.build(gamut, fixed.value);
+  return typeof traced === "string"
+    ? { kind: "value-unavailable", reason: traced }
+    : available({ points: traced, closed: contour.closed });
+}
+
 function boundedLightness(lightness: number): GuideFormResult<number> {
   return lightness < 0 || lightness > 1
     ? { kind: "value-unavailable", reason: "lightness-out-of-range", lightness }
@@ -120,7 +143,8 @@ export function resolveRequestedGuides(
   return requested.map((guideId): GuideResolution => {
     const support = relations[editor.editor.id]?.[guideId];
     if (!support) return { guideId, kind: "no-guide-for-editor" };
-    const table = guideDefinitions[guideId].table;
+    const guide = guideDefinitions[guideId];
+    const { table } = guide;
 
     const coordinates = getSample();
     const lightness =
@@ -130,7 +154,7 @@ export function resolveRequestedGuides(
         ? coordinates
         : lightness.kind !== "available"
           ? lightness
-          : available(support.forms.reference(coordinates.value, table));
+          : available(support.forms.reference(coordinates.value, guide));
     if (support.forms.kind === "rgb") {
       const geometry = support.forms.geometry;
       const observed = represent(value, geometry.representationId);
@@ -175,13 +199,7 @@ export function resolveRequestedGuides(
       support,
       forms: {
         kind: "perceptual",
-        contour:
-          fixed.kind === "available"
-            ? available({
-                points: support.forms.contour.build(table, fixed.value),
-                closed: support.forms.contour.closed,
-              })
-            : fixed,
+        contour: tracedContour(support.forms.contour, table.gamut, fixed),
         hueIntervals: !support.forms.hueIntervals
           ? null
           : coordinates.kind !== "available"
@@ -194,17 +212,18 @@ export function resolveRequestedGuides(
             ? available(support.forms.lightnessIntervals(table, coordinates.value))
             : coordinates,
         chromaIntervals:
-          reference.kind === "available"
-            ? available([
-                {
-                  start: 0,
-                  end: Math.min(
-                    1,
-                    Math.max(0, reference.value.maximumChroma / OKLCH_PICKER_MAX_CHROMA),
-                  ),
-                },
-              ])
-            : reference,
+          reference.kind !== "available"
+            ? reference
+            : coordinates.kind !== "available"
+              ? coordinates
+              : available(
+                  support.forms
+                    .chromaIntervals(coordinates.value.l, coordinates.value.h, table.gamut)
+                    .map((interval) => ({
+                      start: chromaFraction(interval.start),
+                      end: chromaFraction(interval.end),
+                    })),
+                ),
         reference,
       },
     };

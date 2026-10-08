@@ -10,6 +10,9 @@ export {
   encodeRgbCoordinate,
   convertRgbReference,
 } from "./rgbConversion.js";
+export { gamutRayCrossings, gamutRayIntervals } from "../gamut/boundaryTrace.js";
+export type { GamutRayCrossing } from "../gamut/boundaryTrace.js";
+export { assertOklchSample } from "../color/types.js";
 export type { GamutCheckResult } from "./requestedGamuts.js";
 export type {
   EditorDefinition,

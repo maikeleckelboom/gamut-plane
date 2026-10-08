@@ -42,6 +42,8 @@ Boundary target is controlled sampled-guide reference state and defaults to sRGB
 
 ## Exact facts and interpolated guides
 
+> Superseded in part by [ADR 0004](0004-field-viewport.md) (Phase 2O review): the perceptual boundary contours, Reference endpoint and Chroma intervals are now traced with an explicit error bound instead of table interpolation. The separation of exact status from visual guides below is unchanged.
+
 Membership and guides use different calculations:
 
 1. Exact `inside | within-tolerance | outside` status comes from `analyzeGamut` on the original selected `ColorValue`.

@@ -6,6 +6,7 @@ import {
   type PlanePoint,
 } from "@gamut-plane/core";
 import { serializeNativeRgbSample, type NativeRgbFieldSampler } from "./rgbField.js";
+import { FIT_SAMPLE_WINDOW, type FieldSampleWindow } from "./viewport/math.js";
 
 /** The context actually granted by the browser, not the display hardware. */
 export type CanvasColorSpaceStatus = "pending" | "display-p3" | "srgb" | "unavailable";
@@ -17,6 +18,12 @@ export interface FieldRenderInput {
   fixed: number;
   pixelRatio: number;
   interactionPreview: boolean;
+  /**
+   * The part of the normalized field the canvas shows. The backing store stays the size of the
+   * visible viewport; magnification resamples the window, never a zoom-expanded field.
+   * Omitted means the whole field.
+   */
+  window?: FieldSampleWindow | undefined;
 }
 export interface FieldRenderer {
   draw(input: FieldRenderInput): RenderedFieldQuality;
@@ -30,7 +37,8 @@ export function fieldCacheKey(
   colorSpace: CanvasColorSpaceStatus,
   quality: RenderedFieldQuality,
 ): string {
-  return `${input.fieldId}:${input.plane.id}:${size.width}:${size.height}:${size.pixelRatio}:${input.fixed}:${colorSpace}:${quality}`;
+  const view = input.window ?? FIT_SAMPLE_WINDOW;
+  return `${input.fieldId}:${input.plane.id}:${size.width}:${size.height}:${size.pixelRatio}:${input.fixed}:${colorSpace}:${quality}:${view.left}:${view.top}:${view.width}:${view.height}`;
 }
 
 /** Create in committed lifecycle setup. Drawing is synchronous; adapters own scheduling. */
@@ -106,6 +114,7 @@ export function createFieldRenderer(
     logicalHeight: number,
     fixed: number,
     color: OklchSample,
+    view: FieldSampleWindow,
   ): void {
     const sampling = plane.fieldSampling;
     if (sampling.kind !== "column-gradient") return;
@@ -113,13 +122,14 @@ export function createFieldRenderer(
 
     for (let column = 0; column < sampleCount; column += 1) {
       const gradient = target.createLinearGradient(0, 0, 0, targetHeight);
-      const x = column / Math.max(1, sampleCount - 1);
+      // Viewport position first, then the camera window: sampling stays in field coordinates.
+      const x = view.left + (column / Math.max(1, sampleCount - 1)) * view.width;
 
       for (let index = 0; index < rowCount; index += 1) {
         const row = Math.min(index * sampling.rowStep, logicalHeight);
         gradient.addColorStop(
-          index / Math.max(1, rowCount - 1),
-          sampleCss({ x, y: row / logicalHeight }, fixed, color),
+          row / logicalHeight,
+          sampleCss({ x, y: view.top + (row / logicalHeight) * view.height }, fixed, color),
         );
       }
 
@@ -175,6 +185,7 @@ export function createFieldRenderer(
       input.pixelRatio,
     );
     const fixed = input.fixed;
+    const view = input.window ?? FIT_SAMPLE_WINDOW;
     const sampling = plane.fieldSampling;
     const usePreview =
       sampling.kind === "column-gradient" &&
@@ -210,12 +221,22 @@ export function createFieldRenderer(
           height,
           fixed,
           color,
+          view,
         );
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
         context.drawImage(columnPreviewBuffer, 0, 0, backingWidth, backingHeight);
       } else {
-        drawColumnGradientField(context, backingHeight, width, pixelRatio, height, fixed, color);
+        drawColumnGradientField(
+          context,
+          backingHeight,
+          width,
+          pixelRatio,
+          height,
+          fixed,
+          color,
+          view,
+        );
       }
     } else {
       const { rowCount, columnSamples } = sampling;
@@ -225,12 +246,15 @@ export function createFieldRenderer(
       bufferContext.clearRect(0, 0, rowCount, rowCount);
 
       for (let row = 0; row < rowCount; row += 1) {
-        const y = (row + 0.5) / rowCount;
+        const y = view.top + ((row + 0.5) / rowCount) * view.height;
         const gradient = bufferContext.createLinearGradient(0, 0, rowCount, 0);
 
         for (let column = 0; column < columnSamples; column += 1) {
           const position = column / (columnSamples - 1);
-          gradient.addColorStop(position, sampleCss({ x: position, y }, fixed, color));
+          gradient.addColorStop(
+            position,
+            sampleCss({ x: view.left + position * view.width, y }, fixed, color),
+          );
         }
 
         bufferContext.fillStyle = gradient;

@@ -410,7 +410,8 @@ test("Tab and Shift+Tab dismiss and continue in normal order from the plane", as
   const root = await ready(page);
   const before = await events(page);
   for (const [key, target] of [
-    ["Tab", root.getByLabel("Hue numeric value")],
+    // The field's own viewport buttons follow the plane in document order.
+    ["Tab", root.getByRole("button", { name: "Zoom out" })],
     ["Shift+Tab", root.getByRole("radio", { name: "Edit", exact: true })],
   ] as const) {
     await plane(root).press("ContextMenu");

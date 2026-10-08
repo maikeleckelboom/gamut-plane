@@ -1,6 +1,6 @@
 import { presentationStyle } from "../model/presentationStyle.js";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import type {
   GeneralizedGuideDisplay,
   ReferenceDisplay,
@@ -14,7 +14,13 @@ import {
   gpMarker,
   gpPart,
 } from "@gamut-plane/ui";
-import { exactGamutUi, planeAxisEnds, referenceWarningGlyphPath } from "@gamut-plane/ui";
+import {
+  exactGamutUi,
+  planeAxisEnds,
+  referenceWarningGlyphPath,
+  viewportCopy,
+  viewportStatusCopy,
+} from "@gamut-plane/ui";
 import {
   pointStyle,
   VIEWBOX_SIZE,
@@ -23,6 +29,7 @@ import {
   type RenderedFieldQuality,
 } from "@gamut-plane/render";
 import { mountPlane, type PlaneBinding, type PlaneInput } from "../interaction/planeInteraction.js";
+import { spatialReferenceOf } from "../interaction/planeResources.js";
 import { useCommitted } from "../hooks/useCommitted.js";
 
 interface ColorPlaneProps extends PlaneInput {
@@ -36,6 +43,7 @@ export function ColorPlane(props: ColorPlaneProps) {
   const { plane, field, guides, markerCss } = props;
   const xEnds = planeAxisEnds(plane.xAxis);
   const yEnds = planeAxisEnds(plane.yAxis);
+  const viewportId = useId();
   const surface = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const marker = useRef<HTMLSpanElement>(null);
@@ -48,10 +56,15 @@ export function ColorPlane(props: ColorPlaneProps) {
   const x = projection.coordinates.x;
   const y = projection.coordinates.y;
   const activePoint = authoredMarkerPoint(field.geometry, projection.point);
-  const spatialReference =
-    props.reference?.showExcursion && props.reference.spatial.kind === "available"
-      ? props.reference.spatial
-      : null;
+  const spatialReference = spatialReferenceOf(props.reference);
+  const fitStatus = viewportStatusCopy({
+    zoom: 1,
+    xLabel: plane.xAxis.label,
+    yLabel: plane.yAxis.label,
+    x: xEnds,
+    y: yEnds,
+    selectionHidden: false,
+  });
   const referenceLabel = props.reference
     ? `${props.reference.kind === "rgb" ? "Nearest slice" : "Sampled"} ${exactGamutUi[props.reference.gamutId].label} Reference boundary`
     : "";
@@ -90,6 +103,7 @@ export function ColorPlane(props: ColorPlaneProps) {
       data-picker-plane=""
       data-plane-id={plane.id}
       data-geometry-id={field.geometry.id}
+      data-gp-viewport-zoom="1"
       data-field-quality={quality}
       data-field-resolution={
         plane.fieldSampling.kind === "disc-gradient"
@@ -110,6 +124,7 @@ export function ColorPlane(props: ColorPlaneProps) {
         }}
         dir="ltr"
         aria-label={`${label}${props.warning ? ` ${props.warning}.` : ""}`}
+        aria-describedby={`${viewportId}-instructions ${viewportId}-status`}
         data-render-color-space={capability}
         data-outside-instrument={String(!field.markerInDomain)}
       >
@@ -275,6 +290,54 @@ export function ColorPlane(props: ColorPlaneProps) {
           {text}
         </span>
       ))}
+      <div data-gp-part={gpPart.viewportControls} role="group" aria-label={viewportCopy.group}>
+        <button
+          type="button"
+          data-gp-part={gpPart.viewportButton}
+          data-gp-viewport="out"
+          aria-label={viewportCopy.zoomOut}
+          aria-disabled="true"
+          onClick={() => binding.current?.viewport.zoomOut()}
+        >
+          &minus;
+        </button>
+        <span data-gp-part={gpPart.viewportZoom} aria-hidden="true">
+          100%
+        </span>
+        <button
+          type="button"
+          data-gp-part={gpPart.viewportButton}
+          data-gp-viewport="in"
+          aria-label={viewportCopy.zoomIn}
+          onClick={() => binding.current?.viewport.zoomIn()}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          data-gp-part={gpPart.viewportButton}
+          data-gp-viewport="fit"
+          aria-label={viewportCopy.fitName}
+          aria-disabled="true"
+          onClick={() => binding.current?.viewport.fit()}
+        >
+          {viewportCopy.fit}
+        </button>
+      </div>
+      <p
+        id={`${viewportId}-instructions`}
+        data-gp-part={gpPart.viewportInstructions}
+        data-gp-visually-hidden=""
+      >
+        {viewportCopy.instructions}
+      </p>
+      <p
+        id={`${viewportId}-status`}
+        data-gp-part={gpPart.viewportStatus}
+        data-gp-visually-hidden=""
+      >
+        {fitStatus}
+      </p>
     </div>
   );
 }

@@ -39,9 +39,17 @@
   /* A host such as a popover supplies its own chrome: set these to transparent/0 to go flush. */
   background: var(--gamut-plane-surface, var(--gp-surface-1));
   container: gamut-plane / inline-size;
-  --picker-plane-axis-space: clamp(26px, 1.625rem, 42px);
+  /*
+   * Left gutter for the vertical axis name and end labels. It keeps growing with enlarged text so
+   * a six-character zoomed end label at the full 14px label size fits beside the field; at the
+   * default text size it is unchanged.
+   */
+  --picker-plane-axis-space: clamp(26px, 1.625rem, 56px);
   --picker-plane-axis-gap: 10px;
   --picker-plane-max-size: 420px;
+  /* Bottom gutter for the x labels, then a row of viewport controls; both stay off the field. */
+  --picker-plane-gutter: clamp(23px, 1.45rem, 40px);
+  --picker-plane-controls: clamp(34px, 2.2rem, 52px);
   inline-size: 100%;
   max-inline-size: 480px;
   min-inline-size: 0;
@@ -723,7 +731,8 @@
 [data-gp-root] [data-gp-part="plane"] {
   position: relative;
   min-width: 0;
-  padding: 0 0 clamp(23px, 1.45rem, 40px) var(--picker-plane-axis-space);
+  padding: 0 0 calc(var(--picker-plane-gutter) + var(--picker-plane-controls))
+    var(--picker-plane-axis-space);
 }
 
 [data-gp-root] [data-gp-part="surface"] {
@@ -844,7 +853,7 @@
 }
 
 [data-gp-root] [data-gp-axis="y"] {
-  top: 50%;
+  top: calc((100% - var(--picker-plane-controls)) / 2);
   /* Centre line sits one fixed gap from the plane, in the same column as the end labels. */
   left: calc(var(--picker-plane-axis-space) - var(--picker-plane-axis-gap) - 0.5em);
   transform: translate(-50%, -50%) rotate(-90deg);
@@ -852,7 +861,7 @@
 
 [data-gp-root] [data-gp-axis="x"] {
   right: 0;
-  bottom: 4px;
+  bottom: calc(var(--picker-plane-controls) + 4px);
   left: var(--picker-plane-axis-space);
   text-align: center;
 }
@@ -866,9 +875,13 @@
   pointer-events: none;
 }
 
+/*
+ * Anchored by its right edge so a longer zoomed range such as "0.234" grows away from the field,
+ * into the instrument's own padding, instead of across the field's edge.
+ */
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end^="y-"] {
-  left: 0;
-  width: calc(var(--picker-plane-axis-space) - var(--picker-plane-axis-gap));
+  right: calc(100% - var(--picker-plane-axis-space) + 4px);
+  white-space: nowrap;
   text-align: right;
 }
 
@@ -877,11 +890,11 @@
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end="y-start"] {
-  bottom: clamp(23px, 1.45rem, 40px);
+  bottom: calc(var(--picker-plane-gutter) + var(--picker-plane-controls));
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end^="x-"] {
-  bottom: 4px;
+  bottom: calc(var(--picker-plane-controls) + 4px);
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end="x-start"] {
@@ -898,7 +911,70 @@
   min-width: 0;
 }
 
+/* Viewport controls sit in their own row below the x labels, never over the colour field. */
+[data-gp-root] [data-gp-part="viewport-controls"] {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: var(--picker-plane-axis-space);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  block-size: var(--picker-plane-controls);
+  padding-block-start: 4px;
+}
+
+[data-gp-root] [data-gp-part="viewport-button"] {
+  min-inline-size: 30px;
+  min-block-size: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 5px;
+  background: var(--gp-surface-2);
+  color: var(--gp-foreground);
+  font: 0.75rem/1 var(--gp-cv-font-mono);
+  cursor: pointer;
+}
+
+[data-gp-root] [data-gp-part="viewport-button"]:hover:not([aria-disabled="true"]) {
+  border-color: oklch(0.5 0.02 255 / 0.9);
+  background: var(--gp-surface-3);
+}
+
+[data-gp-root] [data-gp-part="viewport-button"][aria-disabled="true"] {
+  color: var(--gp-quiet);
+  cursor: default;
+  opacity: 0.55;
+}
+
+[data-gp-root] [data-gp-part="viewport-zoom"] {
+  min-inline-size: 4ch;
+  color: var(--gp-quiet);
+  font: 0.6875rem/1 var(--gp-cv-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+[data-gp-root] [data-gp-part="surface"][data-gp-viewport-armed] {
+  cursor: grab;
+}
+
+[data-gp-root] [data-gp-part="surface"][data-gp-viewport-panning] {
+  cursor: grabbing;
+}
+
 @media (forced-colors: active) {
+  [data-gp-root] [data-gp-part="viewport-button"] {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+    opacity: 1;
+  }
+  [data-gp-root] [data-gp-part="viewport-button"][aria-disabled="true"] {
+    border-color: GrayText;
+    color: GrayText;
+  }
   [data-gp-root] [data-gp-part="native-range"]:focus-visible:not([data-gp-pointer-focus]) {
     outline: 2px solid Highlight;
     outline-offset: 2px;

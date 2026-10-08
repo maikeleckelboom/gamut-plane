@@ -1,9 +1,14 @@
 export type PickerPlaneId = "oklch" | "oklab";
 
+/**
+ * A point in the editor's normalized field/editor coordinates: the enclosing square of the
+ * active geometry, with its origin at the top-left. It is not a position within a presentation
+ * viewport; a movable camera maps between the two outside of core.
+ */
 export interface PlanePoint {
-  /** Normalized horizontal viewport position. Axis meaning is defined by the active plane. */
+  /** Normalized horizontal field position. Axis meaning is defined by the active plane. */
   x: number;
-  /** Normalized vertical viewport position. Axis meaning is defined by the active plane. */
+  /** Normalized vertical field position. Axis meaning is defined by the active plane. */
   y: number;
 }
 

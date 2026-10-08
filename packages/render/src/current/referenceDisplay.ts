@@ -76,7 +76,8 @@ export function referenceDisplay(
     sampled,
     showExcursion,
   };
-  if (field === null) return { ...fact, spatial: { kind: "unavailable" } };
+  if (field === null || guide.forms.contour.kind !== "available")
+    return { ...fact, spatial: { kind: "unavailable" } };
   let point: PlanePoint;
   switch (field.geometry.id) {
     case "oklch-lc-rectangle":
