@@ -87,9 +87,7 @@ it("Reference-only changes preserve a pending Hue range edit and hue reference",
   expect(definitionOf(next).channels[2]).toBe(0);
   await wrapper.setProps({ modelValue: next });
   expect(range.element.value).toBe("360");
-  expect(
-    range.element.parentElement!.style.getPropertyValue("--gp-range-warning-position"),
-  ).toContain("100.00000000%");
+  expect(wrapper.findAll('[data-gamut-warning="linear"]')).toHaveLength(0);
   await range.trigger("change");
   expect(wrapper.emitted("commit")).toHaveLength(1);
   expect(wrapper.emitted("cancel")).toBeUndefined();

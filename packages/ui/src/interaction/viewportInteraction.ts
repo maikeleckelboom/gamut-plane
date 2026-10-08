@@ -63,6 +63,8 @@ export interface PlaneViewportBinding {
   zoomIn(): void;
   zoomOut(): void;
   fit(): void;
+  /** Presents a render-resolved framing pose under the same ownership guard as Fit. */
+  show(pose: ViewportPose): void;
   /** Cancels an active pan, restoring its origin pose only. */
   cancel(): boolean;
   /** Drops unpresented work and ends an active pan at the presented pose, for lifecycle changes. */
@@ -422,6 +424,9 @@ export function mountPlaneViewport(
     zoomIn: () => command(VIEWPORT_BUTTON_ZOOM_FACTOR),
     zoomOut: () => command(1 / VIEWPORT_BUTTON_ZOOM_FACTOR),
     fit: () => command(null),
+    show(pose) {
+      if (!disposed && pointerId === null && !colorActive()) ports.show(pose);
+    },
     cancel: cancelPan,
     interrupt: stopAtPresented,
     dispose() {

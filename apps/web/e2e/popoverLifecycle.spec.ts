@@ -46,7 +46,27 @@ async function openPopup(popup: ReturnType<typeof popups>[number], input = "poin
         element.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
       else (element as HTMLButtonElement).click();
     });
-  else await trigger.click(menu ? { button: "right" } : {});
+  else if (menu) {
+    // Invoke from the field's far edge so the compact Coordinates trigger stays physically
+    // reachable during pointer replacement. A menu may legitimately cover a nearby trigger.
+    const box = (await trigger.boundingBox())!;
+    await trigger.click({ button: "right", position: { x: box.width - 8, y: box.height - 8 } });
+  } else {
+    // Compact selectors can sit beside a popup that covers the trigger's centre. Exercise a
+    // genuinely reachable pointer target rather than forcing an event through that popup.
+    await trigger.scrollIntoViewIfNeeded();
+    const position = await trigger.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const y = box.top + box.height / 2;
+      for (const x of [box.left + 8, box.right - 8, box.left + box.width / 2]) {
+        const hit = element.ownerDocument.elementFromPoint(x, y);
+        if (hit && element.contains(hit)) return { x: x - box.left, y: y - box.top };
+      }
+      return undefined;
+    });
+    expect(position, "the trigger has an uncovered pointer target").toBeDefined();
+    await trigger.click({ position });
+  }
   await expect(surface).toBeVisible();
   if (menu)
     await expect(surface.getByRole("menuitemradio", { name: "sRGB", exact: true })).toBeFocused();
@@ -152,13 +172,26 @@ test("native dismissal synchronizes all popup owners before immediate replacemen
 });
 
 for (const input of ["pointer", "programmatic"] as const)
-  test(`${input} transitions between all instrument popovers retain one owner without warnings`, async ({
-    page,
-  }) => {
-    const messages = diagnostics(page);
-    const root = await ready(page);
-    const surfaces = popups(root);
-    for (let from = 0; from < surfaces.length; from++) {
+  for (const [from, owner] of [
+    "Coordinates",
+    "Area",
+    "Gamut references",
+    "Gamut actions",
+  ].entries())
+    test(`${input} transitions from ${owner} retain one owner without warnings`, async ({
+      page,
+    }) => {
+      const messages = diagnostics(page);
+      // Leave room for the context menu below the fixture field. Viewport
+      // clamping is covered separately; this matrix needs physically reachable replacement triggers.
+      await page.setViewportSize({ width: 1440, height: 1600 });
+      const root = await ready(page);
+      await root.locator('[data-gp-part="surface"]').evaluate((element) => {
+        // The shell-only fixture's 96px square can be entirely covered by a disclosure. Give this
+        // replacement matrix an exposed field target, as a real editing field provides.
+        (element as HTMLElement).style.cssText = "width:100%;height:320px";
+      });
+      const surfaces = popups(root);
       for (let to = 0; to < surfaces.length; to++) {
         if (from === to) continue;
         await openPopup(surfaces[from]!, input);
@@ -170,11 +203,10 @@ for (const input of ["pointer", "programmatic"] as const)
         await page.keyboard.press("Escape");
         await expect(surfaces[to]!.surface).toBeHidden();
       }
-    }
-    await expect(page.locator("#events")).toHaveAttribute("data-requests", "0");
-    await expect(page.locator("#area-context")).toHaveText("oklch:test-hc");
-    expect(messages).toEqual([]);
-  });
+      await expect(page.locator("#events")).toHaveAttribute("data-requests", "0");
+      await expect(page.locator("#area-context")).toHaveText("oklch:test-hc");
+      expect(messages).toEqual([]);
+    });
 
 test("closing a native host popover synchronizes its nested selectors and references", async ({
   page,

@@ -132,6 +132,26 @@ function fixture(options: { measurable?: boolean } = {}) {
 
 const MIDDLE_DOWN = { button: 1, buttons: 4, clientX: 100, clientY: 40 };
 
+it("framing uses the existing show port and cannot move the camera during pan, color ownership or disposal", () => {
+  const ui = fixture();
+  const pose = { zoom: 4, center: { x: 0.4, y: 0.6 } };
+  ui.viewport.show(pose);
+  expect(ui.presented()).toBe(pose);
+  ui.setColorActive(true);
+  ui.viewport.show(FIT);
+  expect(ui.presented()).toBe(pose);
+  ui.setColorActive(false);
+  ui.pointer("pointerdown", MIDDLE_DOWN);
+  ui.viewport.show(FIT);
+  expect(ui.presented()).toBe(pose);
+  ui.viewport.interrupt();
+  ui.viewport.show(FIT);
+  expect(ui.presented()).toBe(FIT);
+  ui.viewport.dispose();
+  ui.viewport.show(pose);
+  expect(ui.presented()).toBe(FIT);
+});
+
 describe("V07 explicit pan intent", () => {
   it("claims middle-button and armed primary mouse presses, never touch, pen or unarmed primary", () => {
     const primary = new PointerEvent("pointerdown", { pointerType: "mouse", button: 0 });

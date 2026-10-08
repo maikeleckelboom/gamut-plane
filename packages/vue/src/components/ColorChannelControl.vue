@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { gpAttribute, gpPart, mountRange, referenceWarningGlyphPath } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-import { rangeWarningStyle } from "@gamut-plane/render/internal/current";
 import NumericInput from "./NumericInput.vue";
 import {
   PICKER_SLIDER_FIELD_INSET,
@@ -56,9 +55,6 @@ const describedBy = computed(
   () => [helpId.value, warningId.value].filter(Boolean).join(" ") || undefined,
 );
 const available = computed(() => props.min !== undefined && props.max !== undefined);
-const warningStyle = computed(() =>
-  available.value ? rangeWarningStyle(props.modelValue ?? 0, props.min!, props.max!) : null,
-);
 const boundedModelValue = computed(() => clamp(props.modelValue ?? 0));
 const isOutsideInstrument = computed(
   () =>
@@ -102,16 +98,6 @@ onMounted(() => {
       emit("commit", value);
     },
     onInteraction: (active) => emit("range-interaction", active),
-    onNativeValue: (nativeValue) => {
-      const position = available.value
-        ? rangeWarningStyle(nativeValue, props.min!, props.max!)
-        : null;
-      if (position)
-        rangeElement.value?.parentElement?.style.setProperty(
-          "--gp-range-warning-position",
-          position.left,
-        );
-    },
   }));
 });
 
@@ -219,19 +205,6 @@ onBeforeUnmount(() => {
           :data-range-end="section.end"
         />
       </span>
-      <svg
-        v-if="warning && warningStyle"
-        :data-gp-part="gpPart.referenceWarning"
-        data-gamut-warning="linear"
-        :style="{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path :d="referenceWarningGlyphPath" />
-      </svg>
       <input
         ref="rangeElement"
         :id="id"

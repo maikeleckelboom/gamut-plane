@@ -103,10 +103,17 @@ export function directCoordinateContract(mount: (value: ColorValue) => Promise<H
       expect(input(host.element, "b")).toBe(b);
       await host.dispose();
     });
-    it("keeps exact warnings on the plane and rail and controls through comparison changes", async () => {
+    it("keeps the plane warning and accessible control warnings through comparison changes", async () => {
       const host = await mount(lab());
       const a = input(host.element, "a");
-      expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(1);
+      expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
+      expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(1);
+      const rail = host.element.querySelector('[data-gp-control="rail"]')!;
+      const warning = rail.querySelector('[data-gp-visually-hidden][id$="-warning"]')!;
+      expect(warning.textContent).toContain("Outside sRGB");
+      expect(rail.querySelector('input[type="range"]')?.getAttribute("aria-describedby")).toContain(
+        warning.id,
+      );
       for (const state of [
         { ...directState, checkedGamuts: [] },
         { ...directState, referenceGamutId: null },

@@ -2,9 +2,13 @@ import { hasInstrumentPointer } from "./pointerOwnership.js";
 import { mountPopoverLifecycle } from "./popoverLifecycle.js";
 import { claimShellPopup, releaseShellPopup } from "./shellPopup.js";
 
-/** Mounted DOM mechanics for the nonmodal Gamuts surface. Its native controls stay adapter-owned
+/** Mounted DOM mechanics for compact nonmodal instrument disclosures. Native controls stay adapter-owned
  * and reflect accepted state; opening, closing or replacement requests neither state nor analysis. */
-export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) {
+export function mountGamutPopup(
+  trigger: HTMLButtonElement,
+  popup: HTMLElement,
+  options: Readonly<{ matchTriggerWidth?: boolean }> = {},
+) {
   const document = trigger.ownerDocument;
   const window = document.defaultView!;
   const root = trigger.closest("[data-gp-root]") ?? trigger.parentElement!;
@@ -22,8 +26,13 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
     if (!open) return;
     const rect = trigger.getBoundingClientRect();
     const margin = 8;
-    const width = Math.min(rect.width, window.innerWidth - margin * 2);
-    popup.style.width = `${width}px`;
+    const requestedWidth = Math.min(
+      options.matchTriggerWidth === false ? Math.max(rect.width, popup.scrollWidth) : rect.width,
+      window.innerWidth - margin * 2,
+    );
+    popup.style.width = `${requestedWidth}px`;
+    // CSS may impose a content minimum. Anchor/clamp the actual border box, including its border.
+    const width = popup.getBoundingClientRect().width || requestedWidth;
     // Measure after the width is fixed: rows reflow with the anchored instrument width.
     const height = popup.scrollHeight + popup.offsetHeight - popup.clientHeight;
     const below = window.innerHeight - rect.bottom - margin;
@@ -109,6 +118,7 @@ export function mountGamutPopup(trigger: HTMLButtonElement, popup: HTMLElement) 
   popup.addEventListener("keydown", key);
   popup.addEventListener("click", dismiss);
   return {
+    close,
     reconcile() {
       if (!disposed) place();
     },

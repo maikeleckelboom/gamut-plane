@@ -1,6 +1,7 @@
 export { gpPart, gpAttribute, gpMarker, gpAxis, gpGamut, type GpPart } from "./parts.js";
 export {
   coordinatesOptions,
+  selectorGroups,
   selectionContext,
   requestShellSelection,
   shellSelectionFacts,
@@ -26,6 +27,7 @@ export {
   formatViewportZoom,
   viewportCopy,
   viewportStatusCopy,
+  referenceBoundaryFitCopy,
   type ViewportStatusInput,
 } from "./viewportCopy.js";
 export { mountSelector, type SelectorInput } from "./interaction/selectorInteraction.js";

@@ -14,6 +14,7 @@ import {
   currentRgbEditableDetail,
 } from "./editableDetail.js";
 import { oklabCoordinateIntervals } from "./oklabCoordinateIntervals.js";
+import { nativeSelfBoundary } from "./nativeBoundary.js";
 
 type DisplayInterval = Readonly<import("../channelGeometry.js").LinearControlInterval>;
 export interface GeneralizedGuideDisplay {
@@ -71,7 +72,10 @@ export function generalizedGuideDisplay(
     const row = guides.find((candidate) => candidate.guideId === id);
     if (!row || row.kind !== "resolved") continue;
     const { forms } = row;
-    if (forms.contour.kind === "available") {
+    if (
+      forms.contour.kind === "available" &&
+      id !== nativeSelfBoundary(visual?.kind === "available" ? visual.field : null)
+    ) {
       const path = geometryToSvgPath(forms.contour.value.points, forms.contour.value.closed);
       if (id === "srgb-boundary") display.srgbPath = path || null;
       else display.displayP3Path = path || null;

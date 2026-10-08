@@ -60,9 +60,7 @@ describe("native range lifecycle", () => {
     expect(definitionOf(ui.changes.mock.calls.at(-1)![0]).channels[2]).toBe(0);
     expect(range.getAttribute("aria-label")).toBe("Hue");
     expect(range.value).toBe("360");
-    expect(range.parentElement!.style.getPropertyValue("--gp-range-warning-position")).toContain(
-      "100.00000000%",
-    );
+    expect(ui.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
 
     await event(range, "change");
     expect(range.value).toBe("360");
@@ -70,9 +68,7 @@ describe("native range lifecycle", () => {
 
     await ui.replace(color(0.62, 0.2, 180, 0.37));
     expect(range.value).toBe("180");
-    expect(range.parentElement!.style.getPropertyValue("--gp-range-warning-position")).toContain(
-      "50.00000000%",
-    );
+    expect(ui.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
   });
 
   it.each([false, true])(

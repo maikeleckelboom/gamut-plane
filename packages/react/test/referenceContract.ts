@@ -24,6 +24,50 @@ export function referenceContract(
   mount: (value: ColorValue, state: GamutPlaneState) => Promise<Host>,
 ) {
   describe("Reference adapter contract", () => {
+    it("frames a small Reference boundary without color or state requests and refreshes eligibility in place", async () => {
+      const created = createColorValue({
+        space: "oklab",
+        channels: [0.08, 0.01, 0.01],
+        alpha: 0.37,
+      });
+      if (!created.ok) throw Error("fixture");
+      const state: GamutPlaneState = {
+        ...initial,
+        selection: { representationId: "oklab", editorId: "oklab-ab" },
+        checkedGamuts: [],
+      };
+      const host = await mount(created.value, state);
+      try {
+        const before = definitionOf(created.value);
+        const plane = host.element.querySelector('[data-gp-part="plane"]')!;
+        const action = host.element.querySelector<HTMLButtonElement>(".gp-framing-action")!;
+        expect(action.getAttribute("aria-disabled")).toBeNull();
+        await host.interact(() => action.click());
+        expect(Number(plane.getAttribute("data-gp-viewport-zoom"))).toBeGreaterThan(1);
+        const pose = host.element
+          .querySelector('[data-gp-part="gamut-guides"]')!
+          .getAttribute("viewBox");
+        await host.update({ ...state, visibleGuides: ["display-p3-boundary"] });
+        expect(host.element.querySelector(".gp-framing-action")).toBe(action);
+        expect(action.getAttribute("aria-disabled")).toBe("true");
+        expect(host.element.querySelector(".gp-framing-reason")?.textContent).toContain(
+          "Request the sRGB Boundary",
+        );
+        await host.interact(() => action.click());
+        expect(
+          host.element.querySelector('[data-gp-part="gamut-guides"]')!.getAttribute("viewBox"),
+        ).toBe(pose);
+        await host.update({ ...state, referenceGamutId: null });
+        expect(host.element.querySelector(".gp-framing-reason")?.textContent).toContain(
+          "Choose a Reference",
+        );
+        expect(host.changes()).toBe(0);
+        expect(definitionOf(created.value)).toEqual(before);
+      } finally {
+        await host.dispose();
+      }
+    });
+
     it("moves the sole connector to P3 for a color outside both Reference gamuts", async () => {
       const outside = createColorValue({
         space: "oklch",
@@ -130,9 +174,7 @@ export function referenceContract(
             expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(
               show ? 1 : 0,
             );
-            expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(
-              show ? 1 : 0,
-            );
+            expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
             expect(host.changes()).toBe(0);
             expect(definitionOf(source)).toEqual(before);
           }
@@ -191,9 +233,7 @@ export function referenceContract(
           expect(host.element.querySelectorAll('[data-gamut-warning="planar"]')).toHaveLength(
             status ? 1 : 0,
           );
-          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(
-            status ? 1 : 0,
-          );
+          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
           expect(
             host.element
               .querySelector('[role="application"]')
@@ -266,7 +306,7 @@ export function referenceContract(
             selection: { representationId: "oklab", editorId: "oklab-ab" },
           });
           expect(host.element.querySelectorAll('[data-gp-marker="reference"]')).toHaveLength(1);
-          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(1);
+          expect(host.element.querySelectorAll('[data-gamut-warning="linear"]')).toHaveLength(0);
           const line = host.element.querySelector('[data-gp-part="reference-connector"]')!;
           expect(line.getAttribute("x1")).not.toBe(line.getAttribute("x2"));
           expect(line.getAttribute("y1")).not.toBe(line.getAttribute("y2"));

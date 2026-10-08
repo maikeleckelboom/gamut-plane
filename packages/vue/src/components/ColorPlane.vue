@@ -24,6 +24,7 @@ import {
 import {
   definingEquals,
   type ColorValue,
+  type GamutId,
   type PickerPlaneKeyboardAction,
   type PlanePoint,
   type PlaneEditReference,
@@ -67,7 +68,9 @@ import type {
   CurrentField,
   GeneralizedGuideDisplay,
   ReferenceDisplay,
+  ReferenceBoundaryFit,
 } from "@gamut-plane/render/internal/current";
+import FieldFraming from "./FieldFraming.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -75,6 +78,8 @@ const props = withDefaults(
     semanticContextKey: string;
     field: CurrentField;
     guides: GeneralizedGuideDisplay;
+    boundaryFit?: ReferenceBoundaryFit;
+    referenceGamutId?: GamutId | null;
     markerCss: string;
     reference?: ReferenceDisplay | null;
     warning?: string | null;
@@ -265,6 +270,9 @@ function viewportCommand(command: "in" | "out" | "fit"): void {
   if (command === "in") viewport?.zoomIn();
   else if (command === "out") viewport?.zoomOut();
   else viewport?.fit();
+}
+function frameBoundary(pose: FieldViewport): void {
+  viewport?.show(pose);
 }
 
 /** The camera's only presentation route: raster and every spatial layer from one pose. */
@@ -648,36 +656,45 @@ onBeforeUnmount(() => {
       xEnds.end
     }}</span>
     <div :data-gp-part="gpPart.viewportControls" role="group" :aria-label="viewportCopy.group">
-      <button
-        type="button"
-        :data-gp-part="gpPart.viewportButton"
-        data-gp-viewport="out"
-        :aria-label="viewportCopy.zoomOut"
-        aria-disabled="true"
-        @click="viewportCommand('out')"
-      >
-        &minus;
-      </button>
-      <span :data-gp-part="gpPart.viewportZoom" aria-hidden="true">100%</span>
-      <button
-        type="button"
-        :data-gp-part="gpPart.viewportButton"
-        data-gp-viewport="in"
-        :aria-label="viewportCopy.zoomIn"
-        @click="viewportCommand('in')"
-      >
-        +
-      </button>
-      <button
-        type="button"
-        :data-gp-part="gpPart.viewportButton"
-        data-gp-viewport="fit"
-        :aria-label="viewportCopy.fitName"
-        aria-disabled="true"
-        @click="viewportCommand('fit')"
-      >
-        {{ viewportCopy.fit }}
-      </button>
+      <div class="gp-viewport-magnification">
+        <button
+          type="button"
+          :data-gp-part="gpPart.viewportButton"
+          data-gp-viewport="out"
+          :aria-label="viewportCopy.zoomOut"
+          aria-disabled="true"
+          @click="viewportCommand('out')"
+        >
+          &minus;
+        </button>
+        <span :data-gp-part="gpPart.viewportZoom" aria-hidden="true">100%</span>
+        <button
+          type="button"
+          :data-gp-part="gpPart.viewportButton"
+          data-gp-viewport="in"
+          :aria-label="viewportCopy.zoomIn"
+          @click="viewportCommand('in')"
+        >
+          +
+        </button>
+      </div>
+      <div class="gp-viewport-framing">
+        <button
+          type="button"
+          :data-gp-part="gpPart.viewportButton"
+          data-gp-viewport="fit"
+          :aria-label="viewportCopy.fitName"
+          aria-disabled="true"
+          @click="viewportCommand('fit')"
+        >
+          {{ viewportCopy.fit }}
+        </button>
+        <FieldFraming
+          :fit="boundaryFit ?? { kind: 'unavailable', reason: 'no-reference' }"
+          :reference-gamut-id="referenceGamutId ?? null"
+          @fit="frameBoundary"
+        />
+      </div>
     </div>
     <p
       :id="`${viewportId}-instructions`"

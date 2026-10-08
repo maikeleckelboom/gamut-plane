@@ -51,12 +51,16 @@ export function mountSelector(
     if (!open) return;
     const rect = trigger.getBoundingClientRect();
     const margin = 8;
-    const width = Math.min(Math.max(rect.width, popup.scrollWidth), window.innerWidth - margin * 2);
+    const requestedWidth = Math.min(
+      Math.max(rect.width, popup.scrollWidth),
+      window.innerWidth - margin * 2,
+    );
+    popup.style.width = `${requestedWidth}px`;
+    const width = popup.getBoundingClientRect().width || requestedWidth;
     const below = window.innerHeight - rect.bottom - margin;
     const above = rect.top - margin;
     const up = below < popup.scrollHeight && above > below;
     const available = Math.max(0, (up ? above : below) - 4);
-    popup.style.width = `${width}px`;
     popup.style.maxHeight = `${available}px`;
     popup.style.left = `${Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin))}px`;
     popup.style.top = `${up ? Math.max(margin, rect.top - Math.min(popup.scrollHeight, available) - 4) : rect.bottom + 4}px`;

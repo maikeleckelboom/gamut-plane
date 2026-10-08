@@ -87,7 +87,9 @@ describe("standalone application", () => {
     expect(wrapper.findAll("[data-gp-part='exact-result']")).toHaveLength(1);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(false);
     await wrapper.get('[aria-label="sRGB Boundary"]').setValue(true);
-    expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(true);
+    expect(wrapper.find("[data-gamut-boundary='srgb']").exists()).toBe(false);
+    expect(wrapper.get('[aria-label="sRGB Boundary"]').element).toHaveProperty("checked", true);
+    expect(wrapper.find("[data-gamut-boundary='display-p3']").exists()).toBe(true);
     await wrapper.get('[role="combobox"]').trigger("click");
     await wrapper.get('[role="option"][data-value="oklab"]').trigger("click");
     await flushPromises();

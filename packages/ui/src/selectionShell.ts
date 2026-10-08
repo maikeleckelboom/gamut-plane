@@ -19,6 +19,25 @@ export interface SelectorOption {
   readonly optionLabel?: string;
   readonly description?: string;
   readonly status?: keyof typeof exactStatusCopy;
+  readonly group?: "Perceptual" | "RGB";
+  readonly coordinates?: string;
+}
+
+/** Grouped markup keeps the same flat controller order and stable option IDs. */
+export function selectorGroups(options: readonly SelectorOption[]) {
+  const groups: {
+    label: SelectorOption["group"];
+    options: { option: SelectorOption; index: number }[];
+  }[] = [];
+  for (const [index, option] of options.entries()) {
+    let group = groups.at(-1);
+    if (!group || group.label !== option.group) {
+      group = { label: option.group, options: [] };
+      groups.push(group);
+    }
+    group.options.push({ option, index });
+  }
+  return groups;
 }
 export type ShellEditor = Readonly<{
   id: string;
@@ -58,6 +77,8 @@ export function coordinatesOptions(
     return {
       value,
       label: representationUi[value].label,
+      group: value === "oklch" || value === "oklab" ? "Perceptual" : "RGB",
+      coordinates: value === "oklch" ? "L · C · H" : value === "oklab" ? "L · a · b" : "R · G · B",
       ...(check
         ? { status: check.result.ok ? check.result.value.status : ("unavailable" as const) }
         : {}),

@@ -1,5 +1,4 @@
 import type { PlanePoint } from "@gamut-plane/core";
-import { PICKER_SLIDER_THUMB_WIDTH } from "../planeInstrumentStyle.js";
 
 /** Pixel offsets from the marker center, preferring above-right with a clear gap. */
 export function planeWarningOffset(
@@ -33,16 +32,4 @@ export function planeWarningOffset(
     }
   }
   return best;
-}
-
-/** Beside the native thumb; an overflow value has no truthful slider warning position. */
-export function rangeWarningStyle(
-  value: number,
-  min: number,
-  max: number,
-): Readonly<{ left: string }> | null {
-  if (!Number.isFinite(value) || value < min || value > max || max <= min) return null;
-  const position = (value - min) / (max - min);
-  const offset = PICKER_SLIDER_THUMB_WIDTH * (0.5 - position) + (position < 0.5 ? 17 : -17);
-  return { left: `calc(${(position * 100).toFixed(8)}% + ${offset.toFixed(8)}px)` };
 }

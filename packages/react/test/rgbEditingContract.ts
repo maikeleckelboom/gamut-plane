@@ -135,7 +135,13 @@ export function rgbEditingContract(
             host.element.querySelector('[data-gp-control="rail"]')?.getAttribute("data-gp-channel"),
           ).toBe(fixed);
           if (area === "rg") expect(intervals()).toEqual(before);
-          expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(2);
+          expect(host.element.querySelectorAll("[data-gamut-boundary]")).toHaveLength(1);
+          expect(host.element.querySelector(`[data-gamut-boundary="${space}"]`)).toBeNull();
+          expect(
+            host.element.querySelector<HTMLInputElement>(
+              `[aria-label="${space === "srgb" ? "sRGB" : "Display P3"} Boundary"]`,
+            )?.checked,
+          ).toBe(true);
           expect(host.element.textContent).not.toContain("Paused");
         }
         await host.replace(rgb(space, [0.2, 0.4, -0.1]));

@@ -74,7 +74,8 @@ test("full and empty RGB slices resolve without Paused and retain independent ch
   await page.goto("/e2e/fixtures/selectionShell.html?alpha");
   const root = page.locator("#instrument [data-gp-root]");
   await coordinates(root, "srgb", [0.2, 0.4, 0.6]);
-  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveAttribute("d", /^M.+ Z$/);
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
+  await expect(root.locator('[data-gamut-boundary="display-p3"]')).toHaveAttribute("d", /^M.+ Z$/);
   await expect(root.locator('[data-gamut-range="srgb"]')).toHaveCount(1);
   await expect(root).toHaveScreenshot("native-rgb-full.png");
   const blue = root.getByLabel("Blue numeric value");

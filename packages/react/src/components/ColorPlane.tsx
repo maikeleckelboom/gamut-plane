@@ -4,7 +4,10 @@ import { useId, useLayoutEffect, useRef, useState } from "react";
 import type {
   GeneralizedGuideDisplay,
   ReferenceDisplay,
+  ReferenceBoundaryFit,
 } from "@gamut-plane/render/internal/current";
+import type { GamutId } from "@gamut-plane/core";
+import { FieldFraming } from "./FieldFraming.js";
 import {
   authoredMarkerPoint,
   currentEditorCopy,
@@ -34,6 +37,8 @@ import { useCommitted } from "../hooks/useCommitted.js";
 
 interface ColorPlaneProps extends PlaneInput {
   guides: GeneralizedGuideDisplay;
+  boundaryFit?: ReferenceBoundaryFit;
+  referenceGamutId?: GamutId | null;
   reference?: ReferenceDisplay | null;
   warning?: string | null;
   onCanvasColorSpaceChange: ((status: CanvasColorSpaceStatus) => void) | undefined;
@@ -291,38 +296,47 @@ export function ColorPlane(props: ColorPlaneProps) {
         </span>
       ))}
       <div data-gp-part={gpPart.viewportControls} role="group" aria-label={viewportCopy.group}>
-        <button
-          type="button"
-          data-gp-part={gpPart.viewportButton}
-          data-gp-viewport="out"
-          aria-label={viewportCopy.zoomOut}
-          aria-disabled="true"
-          onClick={() => binding.current?.viewport.zoomOut()}
-        >
-          &minus;
-        </button>
-        <span data-gp-part={gpPart.viewportZoom} aria-hidden="true">
-          100%
-        </span>
-        <button
-          type="button"
-          data-gp-part={gpPart.viewportButton}
-          data-gp-viewport="in"
-          aria-label={viewportCopy.zoomIn}
-          onClick={() => binding.current?.viewport.zoomIn()}
-        >
-          +
-        </button>
-        <button
-          type="button"
-          data-gp-part={gpPart.viewportButton}
-          data-gp-viewport="fit"
-          aria-label={viewportCopy.fitName}
-          aria-disabled="true"
-          onClick={() => binding.current?.viewport.fit()}
-        >
-          {viewportCopy.fit}
-        </button>
+        <div className="gp-viewport-magnification">
+          <button
+            type="button"
+            data-gp-part={gpPart.viewportButton}
+            data-gp-viewport="out"
+            aria-label={viewportCopy.zoomOut}
+            aria-disabled="true"
+            onClick={() => binding.current?.viewport.zoomOut()}
+          >
+            &minus;
+          </button>
+          <span data-gp-part={gpPart.viewportZoom} aria-hidden="true">
+            100%
+          </span>
+          <button
+            type="button"
+            data-gp-part={gpPart.viewportButton}
+            data-gp-viewport="in"
+            aria-label={viewportCopy.zoomIn}
+            onClick={() => binding.current?.viewport.zoomIn()}
+          >
+            +
+          </button>
+        </div>
+        <div className="gp-viewport-framing">
+          <button
+            type="button"
+            data-gp-part={gpPart.viewportButton}
+            data-gp-viewport="fit"
+            aria-label={viewportCopy.fitName}
+            aria-disabled="true"
+            onClick={() => binding.current?.viewport.fit()}
+          >
+            {viewportCopy.fit}
+          </button>
+          <FieldFraming
+            fit={props.boundaryFit ?? { kind: "unavailable", reason: "no-reference" }}
+            referenceGamutId={props.referenceGamutId ?? null}
+            onFit={(pose) => binding.current?.viewport.show(pose)}
+          />
+        </div>
       </div>
       <p
         id={`${viewportId}-instructions`}

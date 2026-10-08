@@ -25,6 +25,8 @@ import {
   generalizedEditableDetail,
   generalizedGuideDisplay,
   referenceDisplay,
+  nativeSelfBoundary,
+  referenceBoundaryFit,
 } from "@gamut-plane/render/internal/current";
 import {
   gpPart,
@@ -264,6 +266,12 @@ export function GamutPlane(props: GamutPlaneProps) {
                 semanticContextKey={revision.contextKey}
                 field={field}
                 guides={guides}
+                boundaryFit={referenceBoundaryFit(
+                  acceptedState.referenceGamutId,
+                  accepted.guides,
+                  field,
+                )}
+                referenceGamutId={acceptedState.referenceGamutId}
                 reference={reference}
                 warning={warning}
                 markerCss={detail.markerCss}
@@ -279,7 +287,9 @@ export function GamutPlane(props: GamutPlaneProps) {
                 id={id}
                 state={acceptedState}
                 checks={accepted.exactChecks}
-                paused={pausedGuideIds(accepted.guides, true)}
+                paused={pausedGuideIds(accepted.guides, true).filter(
+                  (id) => id !== nativeSelfBoundary(field),
+                )}
                 readOnly={readOnly}
                 request={(action) =>
                   requestState(requestGamutAction(acceptedState, action, currentGuideIds))
@@ -534,7 +544,9 @@ export function GamutPlane(props: GamutPlaneProps) {
             id={id}
             state={acceptedState}
             checks={accepted.exactChecks}
-            paused={pausedGuideIds(accepted.guides, field !== null && detail !== null)}
+            paused={pausedGuideIds(accepted.guides, field !== null && detail !== null).filter(
+              (id) => id !== nativeSelfBoundary(field),
+            )}
             readOnly={readOnly}
             request={(action) =>
               requestState(requestGamutAction(acceptedState, action, currentGuideIds))

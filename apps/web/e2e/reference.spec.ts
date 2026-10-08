@@ -18,10 +18,7 @@ test("Status, Boundary and Reference have independent observable effects", async
   await expect(warning).toHaveCount(1);
   await expect(warning).toHaveCSS("width", "12px");
   await expect(warning).toHaveCSS("height", "12px");
-  for (const sliderWarning of await root.locator('[data-gamut-warning="linear"]').all()) {
-    await expect(sliderWarning).toHaveCSS("width", "12px");
-    await expect(sliderWarning).toHaveCSS("height", "12px");
-  }
+  await expect(root.locator('[data-gamut-warning="linear"]')).toHaveCount(0);
   const selected = await root.locator('[data-gp-marker="active"]').boundingBox();
   const triangle = await warning.boundingBox();
   expect(triangle!.x).toBeGreaterThan(selected!.x + selected!.width + 2);
@@ -85,9 +82,7 @@ test("plane warning falls back inside the field at the right corners", async ({ 
   }
 });
 
-test("slider warning stays beside the native Hue thumb at both equivalent endpoints", async ({
-  page,
-}) => {
+test("Hue endpoints preserve accessible warnings without a rail triangle", async ({ page }) => {
   await page.goto("/");
   const root = page.locator("[data-gp-root]");
   await root.getByLabel("Chroma numeric value").fill("0.35");
@@ -100,11 +95,9 @@ test("slider warning stays beside the native Hue thumb at both equivalent endpoi
   ]) {
     await hue.press(key!);
     await expect(hue).toHaveValue(value!);
-    await expect(warning).toBeVisible();
-    const track = (await hue.boundingBox())!;
-    const triangle = (await warning.boundingBox())!;
-    if (key === "End") expect(triangle.x).toBeGreaterThan(track.x + track.width - 40);
-    else expect(triangle.x + triangle.width).toBeLessThan(track.x + 40);
+    await expect(warning).toHaveCount(0);
+    await expect(hue).toHaveAccessibleDescription(/Outside sRGB/);
+    await expect(root.locator('[data-gamut-warning="planar"]')).toHaveCount(1);
   }
 });
 

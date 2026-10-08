@@ -36,6 +36,11 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
     expect(html).toContain('aria-label="sRGB Boundary"');
     expect(html).toContain('data-gamut-boundary="display-p3"');
     expect(html).toContain('data-gamut-range="display-p3"');
+    expect(html).not.toContain('data-gamut-boundary="srgb"');
+    expect(html).toContain('role="group"');
+    expect(html).toContain("Perceptual");
+    expect(html).toContain("Field framing options");
+    expect(html).toContain("Fit to Reference Boundary");
     const root = page.locator("[data-gp-root]");
     await expect(root.locator("canvas")).toHaveCount(1);
     await expect(root.getByLabel("Red numeric value")).toHaveValue("1.0500");
@@ -52,6 +57,8 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
         document.querySelector("[data-gp-part='exact-result']")!,
         document.querySelector("[data-gp-part='gamut-trigger']")!,
         document.querySelector("[data-gp-part='gamut-popup']")!,
+        document.querySelector(".gp-framing-trigger")!,
+        document.querySelector(".gp-framing-popup")!,
       ];
     });
   } finally {
@@ -77,6 +84,8 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
         document.querySelector("[data-gp-part='exact-result']"),
         document.querySelector("[data-gp-part='gamut-trigger']"),
         document.querySelector("[data-gp-part='gamut-popup']"),
+        document.querySelector(".gp-framing-trigger"),
+        document.querySelector(".gp-framing-popup"),
       ];
       return now.every((node, index) => node === window.generalizedBefore[index]);
     }),
@@ -94,10 +103,19 @@ test("native RGB server HTML hydrates raw placement in place and preserves reque
       .evaluate((element) => (element as HTMLElement).style.left),
   ).toBe("105%");
   // Hydration leaves Gamuts closed and unfocused; the mounted controller then opens it on request.
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+  const framing = root.getByRole("button", { name: "Field framing options", exact: true });
+  await expect(framing).toHaveAttribute("aria-expanded", "false");
+  await framing.click();
+  const fit = root.getByRole("button", { name: "Fit to Reference Boundary", exact: true });
+  await expect(fit).toHaveAttribute("aria-disabled", "true");
+  await expect(fit).toHaveAccessibleDescription(/Choose a Reference/);
+  await framing.press("Escape");
+  await expect(framing).toBeFocused();
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
   const gamuts = root.getByRole("button", { name: "Gamut references" });
   await expect(gamuts).toHaveAttribute("aria-expanded", "false");
   await expect(root.locator("[data-gp-part='gamut-popup']")).toBeHidden();
-  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   await gamuts.click();
   await expect(root.getByRole("dialog", { name: "Gamut references" })).toBeVisible();
   await expect(root.getByRole("checkbox", { name: "sRGB Boundary" })).toBeChecked();

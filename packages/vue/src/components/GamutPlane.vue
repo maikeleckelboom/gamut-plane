@@ -48,6 +48,8 @@ import {
   generalizedEditableDetail,
   generalizedGuideDisplay,
   referenceDisplay,
+  nativeSelfBoundary,
+  referenceBoundaryFit,
 } from "@gamut-plane/render/internal/current";
 import type { GamutPlaneState } from "../model/publicState.js";
 
@@ -127,6 +129,9 @@ const view = computed(() => field.value?.projection.representationId ?? null);
 const guides = computed(() =>
   generalizedGuideDisplay(accepted.value.guides, generalizedVisual.value),
 );
+const boundaryFit = computed(() =>
+  referenceBoundaryFit(acceptedState.value.referenceGamutId, accepted.value.guides, field.value),
+);
 const reference = computed(() =>
   referenceDisplay(
     acceptedState.value.referenceGamutId,
@@ -149,7 +154,9 @@ const help = computed(() =>
     : null,
 );
 const pausedGuides = computed(() =>
-  pausedGuideIds(accepted.value.guides, field.value !== null && detail.value !== null),
+  pausedGuideIds(accepted.value.guides, field.value !== null && detail.value !== null).filter(
+    (id) => id !== nativeSelfBoundary(field.value),
+  ),
 );
 const hueRangeDragging = ref(false);
 const hueReference = ref<PlaneEditReference>();
@@ -308,6 +315,8 @@ watch(
           :semantic-context-key="revision.contextKey"
           :field="field"
           :guides="guides"
+          :boundary-fit="boundaryFit"
+          :reference-gamut-id="acceptedState.referenceGamutId"
           :reference="reference"
           :warning="warning"
           :marker-css="detail.markerCss"

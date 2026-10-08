@@ -1,5 +1,7 @@
 # @gamut-plane/vue
 
+Coordinates groups perceptual and RGB representations; native RGB retains its separate Area selector. The field toolbar keeps full-plane Fit directly accessible and offers **Fit to Reference Boundary** in the adjacent disclosure. This viewport-only action requires the selected Reference's requested, renderable, visible boundary. Native sRGB/P3 Areas suppress their redundant self-contours without changing requests, exact Status, intervals or Reference. The disclosure explains unavailable fits; it never substitutes another gamut or ordinary Fit. See [the Phase 2P contract](../../docs/phase-2p-instrument-ux.md).
+
 A Vue instrument for one authored `ColorValue`. It edits or inspects OKLCH, OKLab, sRGB and Display P3, including three native RGB Areas per encoding. Exact gamut checks and sampled guides are independent requests. All six RGB Areas support both gamut boundaries and native channel intervals. This package is private and unpublished; Vue 3.5+ is a peer dependency.
 
 ## Component API

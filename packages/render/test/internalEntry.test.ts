@@ -25,8 +25,9 @@ describe("current render entry after legacy retirement", () => {
       "currentOklchObservation",
       "generalizedEditableDetail",
       "generalizedGuideDisplay",
+      "nativeSelfBoundary",
       "planeWarningOffset",
-      "rangeWarningStyle",
+      "referenceBoundaryFit",
       "referenceDisplay",
     ]);
     for (const key of Object.keys(current)) expect(root).not.toHaveProperty(key);
@@ -46,6 +47,7 @@ describe("internal viewport entry", () => {
       "constrainViewport",
       "createViewportCamera",
       "fieldToViewport",
+      "fitBoundaryContour",
       "isFitViewport",
       "panViewport",
       "sampleWindow",

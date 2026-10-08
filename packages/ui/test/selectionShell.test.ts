@@ -6,6 +6,7 @@ import {
 } from "@gamut-plane/core/internal/capabilities";
 import {
   coordinatesOptions,
+  selectorGroups,
   requestShellSelection,
   selectionContext,
   shellSelectionFacts,
@@ -18,6 +19,32 @@ import {
 } from "../src/generalizedInstrument.js";
 
 describe("accepted Coordinates / mode / Area policy", () => {
+  it("groups Coordinates with stable flat order, channel notation and no unchecked badges", () => {
+    const options = coordinatesOptions([], [], representationDefinitions);
+    expect(
+      selectorGroups(options).map((group) => [
+        group.label,
+        group.options.map(({ option, index }) => [index, option.label, option.coordinates]),
+      ]),
+    ).toEqual([
+      [
+        "Perceptual",
+        [
+          [0, "OKLCH", "L · C · H"],
+          [1, "OKLab", "L · a · b"],
+        ],
+      ],
+      [
+        "RGB",
+        [
+          [2, "sRGB", "R · G · B"],
+          [3, "Display P3", "R · G · B"],
+        ],
+      ],
+    ]);
+    expect(options.every((option) => option.status === undefined)).toBe(true);
+    expect(selectorGroups([{ value: "a", label: "Area" }])[0]?.label).toBeUndefined();
+  });
   it("declares associated gamuts independently of RGB editing admission", () => {
     expect(
       Object.values(representationDefinitions).map((definition) => definition.associatedGamutId),

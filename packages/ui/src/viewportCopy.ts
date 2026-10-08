@@ -5,10 +5,35 @@ export const viewportCopy = {
   zoomOut: "Zoom out",
   fit: "Fit",
   fitName: "Fit editor field to view",
+  framing: "Field framing",
+  framingOptions: "Field framing options",
+  fitReference: "Fit to Reference Boundary",
   instructions:
     "Alt or Option plus mouse wheel zooms at the pointer. Hold Space and drag, or drag with the middle button, to pan. Plus and minus zoom, 0 fits the whole field. With Space held, arrow keys pan.",
   selectionHidden: "The selected color is outside the visible region. Fit shows the whole field.",
 } as const;
+
+/** Structural availability crosses from render without introducing a UI render dependency. */
+export function referenceBoundaryFitCopy(
+  target: string | null,
+  fit: Readonly<{ kind: string; reason?: string }>,
+): string {
+  if (fit.kind === "available") return `Frame the ${target} boundary in the field.`;
+  switch (fit.reason) {
+    case "no-reference":
+      return "Choose a Reference in Gamut references.";
+    case "boundary-not-requested":
+      return `Request the ${target} Boundary in Gamut references.`;
+    case "native-self-boundary":
+      return `The ${target} boundary is the native Area domain; use Fit for the full plane.`;
+    case "no-field":
+      return "Choose editable coordinates to frame a boundary.";
+    case "empty":
+      return `The ${target} boundary has no visible geometry in this field.`;
+    default:
+      return `The ${target} boundary is unavailable in this field.`;
+  }
+}
 
 /** Display only; the percentage never feeds back into camera mathematics. */
 export function formatViewportZoom(zoom: number): string {

@@ -41,10 +41,9 @@
   container: gamut-plane / inline-size;
   /*
    * Left gutter for the vertical axis name and end labels. It keeps growing with enlarged text so
-   * a six-character zoomed end label at the full 14px label size fits beside the field; at the
-   * default text size it is unchanged.
+   * a six-character signed zoomed label fits beside the field, including Linux monospace metrics.
    */
-  --picker-plane-axis-space: clamp(26px, 1.625rem, 56px);
+  --picker-plane-axis-space: clamp(28px, 1.75rem, 56px);
   --picker-plane-axis-gap: 10px;
   --picker-plane-max-size: 420px;
   /* Bottom gutter for the x labels, then a row of viewport controls; both stay off the field. */
@@ -69,8 +68,7 @@
 [data-gp-root] .gp-context-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
-  justify-content: space-between;
+  align-items: center;
   gap: 6px 8px;
 }
 
@@ -79,6 +77,9 @@
   flex: 1 1 7.5rem;
   gap: 5px;
   min-inline-size: 0;
+}
+[data-gp-root] .gp-context-row .gp-selector {
+  flex: 0 1 auto;
 }
 
 /* The control names itself ("OKLCH ▾"); its label stays in the accessibility tree. */
@@ -116,7 +117,7 @@
   gap: 12px;
   inline-size: 100%;
   min-inline-size: 0;
-  min-block-size: 38px;
+  min-block-size: 36px;
   padding: 6px 10px 6px 12px;
   border: 1px solid var(--gp-hairline);
   border-radius: 6px;
@@ -127,6 +128,16 @@
   text-align: start;
   cursor: pointer;
   transition: border-color 120ms ease;
+}
+[data-gp-root] .gp-context-row .gp-selector [role="combobox"] {
+  inline-size: auto;
+  gap: 10px;
+  padding-inline: 6px;
+  border-color: transparent;
+  background: transparent;
+}
+[data-gp-root] .gp-context-row .gp-selector [role="combobox"]:is(:hover, [aria-expanded="true"]) {
+  background: var(--gp-surface-2);
 }
 [data-gp-root] .gp-selector [role="combobox"]:hover:not(:disabled) {
   border-color: oklch(0.5 0.02 255 / 0.9);
@@ -150,8 +161,8 @@
   position: fixed;
   inset: auto;
   margin: 0;
-  min-inline-size: min(20rem, calc(100vw - 16px));
-  padding: 4px;
+  min-inline-size: min(18rem, calc(100vw - 16px));
+  padding: 6px;
   overflow: auto;
   border: 1px solid var(--gp-hairline);
   border-radius: 5px;
@@ -159,15 +170,16 @@
   color: var(--gp-foreground);
   font: inherit;
   box-shadow: 0 6px 18px oklch(0 0 0 / 0.25);
+  container: selector-popup / inline-size;
 }
 [data-gp-root] .gp-selector-popup[hidden] {
   display: none;
 }
 [data-gp-root] .gp-selector-popup [role="option"] {
   display: grid;
-  grid-template-columns: 1em minmax(7ch, 1fr) minmax(0, 8.5em);
+  grid-template-columns: 0.75em minmax(7ch, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px 10px;
   min-block-size: 44px;
   padding: 6px 8px;
   border: 1px solid transparent;
@@ -180,6 +192,43 @@
 }
 [data-gp-root] .gp-selector-check {
   color: var(--gp-user-accent);
+}
+[data-gp-root] .gp-selector-heading {
+  padding: 8px 10px 4px;
+  color: var(--gp-quiet);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+[data-gp-root] .gp-selector-popup [role="group"] + [role="group"] {
+  margin-block-start: 4px;
+}
+[data-gp-root] .gp-selector-popup [aria-selected="true"] .gp-selector-name {
+  color: var(--gp-foreground);
+}
+[data-gp-root] .gp-selector-name {
+  color: var(--gp-quiet);
+  font-weight: 560;
+}
+[data-gp-root] .gp-selector-coordinates {
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+[data-gp-root]
+  .gp-selector-popup
+  [role="option"]:has(.gp-selector-coordinates)
+  .gp-selector-status {
+  grid-column: 2 / -1;
+  text-align: start;
+  font-size: 0.6875rem;
+}
+@container selector-popup (max-width: 16em) {
+  [data-gp-root] .gp-selector-coordinates {
+    grid-column: 2 / -1;
+  }
 }
 [data-gp-root] .gp-selector-status {
   color: var(--gp-quiet);
@@ -295,6 +344,9 @@
   text-align: end;
   overflow-wrap: anywhere;
 }
+[data-gp-root] .gp-gamuts-trigger[aria-expanded="true"] .gp-gamuts-summary {
+  visibility: hidden;
+}
 [data-gp-root] .gp-gamuts-summary[data-gp-status="outside"] {
   color: var(--gp-status-outside);
 }
@@ -373,7 +425,10 @@
     "toggles toggles";
   align-items: center;
   column-gap: 12px;
-  padding-block: 4px;
+  padding-block: 8px;
+}
+[data-gp-root] .gp-gamut-row + .gp-gamut-row {
+  border-block-start: 1px solid var(--gp-hairline);
 }
 [data-gp-root] .gp-gamut-name {
   grid-area: name;
@@ -682,11 +737,13 @@
 [data-gp-root] [data-gp-part="plane"] {
   position: relative;
   min-width: 0;
-  padding: 0 0 calc(var(--picker-plane-gutter) + var(--picker-plane-controls))
-    var(--picker-plane-axis-space);
+  display: grid;
+  grid-template-columns: var(--picker-plane-axis-space) minmax(0, 1fr);
+  grid-template-rows: auto var(--picker-plane-gutter) auto;
 }
 
 [data-gp-root] [data-gp-part="surface"] {
+  grid-area: 1 / 2;
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
@@ -782,9 +839,9 @@
 }
 
 [data-gp-root] [data-gp-part="render-status"] {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  grid-area: 4 / 2;
+  justify-self: end;
+  margin-block-start: 2px;
   padding: 2px 4px;
   border: 1px solid oklch(0.85 0 0 / 0.24);
   background: oklch(0.08 0 0 / 0.78);
@@ -798,22 +855,23 @@
 [data-gp-root] [data-gp-part="axis"] {
   position: absolute;
   color: var(--gp-quiet);
-  font: clamp(10px, 0.55rem, 16px) / 1 var(--gp-cv-font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: clamp(10px, 0.6875rem, 18px);
+  line-height: 1;
 }
 
 [data-gp-root] [data-gp-axis="y"] {
-  top: calc((100% - var(--picker-plane-controls)) / 2);
+  grid-area: 1 / 1 / 2 / 2;
+  top: 50%;
   /* Centre line sits one fixed gap from the plane, in the same column as the end labels. */
-  left: calc(var(--picker-plane-axis-space) - var(--picker-plane-axis-gap) - 0.5em);
+  left: calc(100% - var(--picker-plane-axis-gap) - 0.5em);
   transform: translate(-50%, -50%) rotate(-90deg);
 }
 
 [data-gp-root] [data-gp-axis="x"] {
+  grid-area: 2 / 2 / 3 / 3;
   right: 0;
-  bottom: calc(var(--picker-plane-controls) + 4px);
-  left: var(--picker-plane-axis-space);
+  bottom: 4px;
+  left: 0;
   text-align: center;
 }
 
@@ -821,7 +879,7 @@
 [data-gp-root] [data-gp-part="axis-end"] {
   position: absolute;
   color: var(--gp-quiet);
-  font: clamp(9px, 0.5rem, 14px) / 1 var(--gp-cv-font-mono);
+  font: clamp(10px, 0.625rem, 14px) / 1 var(--gp-cv-font-mono);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
@@ -831,7 +889,8 @@
  * into the instrument's own padding, instead of across the field's edge.
  */
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end^="y-"] {
-  right: calc(100% - var(--picker-plane-axis-space) + 4px);
+  grid-area: 1 / 1 / 2 / 2;
+  right: 4px;
   white-space: nowrap;
   text-align: right;
 }
@@ -841,15 +900,16 @@
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end="y-start"] {
-  bottom: calc(var(--picker-plane-gutter) + var(--picker-plane-controls));
+  bottom: 0;
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end^="x-"] {
-  bottom: calc(var(--picker-plane-controls) + 4px);
+  grid-area: 2 / 2 / 3 / 3;
+  bottom: 4px;
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end="x-start"] {
-  left: var(--picker-plane-axis-space);
+  left: 0;
 }
 
 [data-gp-root] [data-gp-part="axis-end"][data-gp-end="x-end"] {
@@ -865,33 +925,39 @@
 
 /* Viewport controls sit in their own row below the x labels, never over the colour field. */
 [data-gp-root] [data-gp-part="viewport-controls"] {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: var(--picker-plane-axis-space);
+  grid-area: 3 / 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  block-size: var(--picker-plane-controls);
-  padding-block-start: 4px;
+  justify-content: space-between;
+  gap: 2px 8px;
+  min-block-size: var(--picker-plane-controls);
+}
+[data-gp-root] :is(.gp-viewport-magnification, .gp-viewport-framing) {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+[data-gp-root] .gp-viewport-framing {
+  margin-inline-start: auto;
 }
 
 [data-gp-root] [data-gp-part="viewport-button"] {
-  min-inline-size: 30px;
-  min-block-size: 30px;
+  min-inline-size: 32px;
+  min-block-size: 32px;
   padding: 0 8px;
-  border: 1px solid var(--gp-hairline);
-  border-radius: 5px;
-  background: var(--gp-surface-2);
-  color: var(--gp-foreground);
-  font: 0.75rem/1 var(--gp-cv-font-mono);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  line-height: 1;
   cursor: pointer;
 }
 
 [data-gp-root] [data-gp-part="viewport-button"]:hover:not([aria-disabled="true"]) {
-  border-color: oklch(0.5 0.02 255 / 0.9);
-  background: var(--gp-surface-3);
+  background: var(--gp-surface-2);
+  color: var(--gp-foreground);
 }
 
 [data-gp-root] [data-gp-part="viewport-button"][aria-disabled="true"] {
@@ -901,11 +967,74 @@
 }
 
 [data-gp-root] [data-gp-part="viewport-zoom"] {
-  min-inline-size: 4ch;
+  min-inline-size: 5ch;
   color: var(--gp-quiet);
-  font: 0.6875rem/1 var(--gp-cv-font-mono);
+  font-size: 0.6875rem;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+[data-gp-root] .gp-field-framing {
+  display: inline-flex;
+}
+[data-gp-root] .gp-framing-trigger {
+  min-inline-size: 28px;
+  padding-inline: 6px;
+}
+[data-gp-root] .gp-framing-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-inline-size: min(18rem, calc(100vw - 16px));
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--gp-hairline);
+  border-radius: 6px;
+  background: var(--gp-surface-2);
+  color: var(--gp-foreground);
+  font-size: 0.8125rem;
+  box-shadow: 0 6px 18px oklch(0 0 0 / 0.25);
+}
+[data-gp-root] .gp-framing-popup[hidden] {
+  display: none;
+}
+[data-gp-root] .gp-framing-reference {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px 6px;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+}
+[data-gp-root] .gp-framing-reference > span {
+  color: var(--gp-foreground);
+}
+[data-gp-root] .gp-framing-action {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 36px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gp-foreground);
+  text-align: start;
+  cursor: pointer;
+}
+[data-gp-root] .gp-framing-action:hover:not([aria-disabled="true"]) {
+  background: var(--gp-surface-3);
+}
+[data-gp-root] .gp-framing-action[aria-disabled="true"] {
+  color: var(--gp-quiet);
+  cursor: default;
+}
+[data-gp-root] .gp-framing-reason {
+  margin: 6px 6px 2px;
+  color: var(--gp-quiet);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 [data-gp-root] [data-gp-part="surface"][data-gp-viewport-armed] {
@@ -1207,12 +1336,6 @@
   fill: var(--gp-status-outside);
   stroke: oklch(0.08 0 0 / 0.96);
   stroke-width: 1.25;
-}
-
-[data-gp-root] [data-gamut-warning="linear"] {
-  top: 10px;
-  transform: translateX(-50%);
-  z-index: 2;
 }
 
 [data-gp-root] [data-gamut-warning="planar"] {

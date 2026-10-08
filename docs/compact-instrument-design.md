@@ -39,3 +39,5 @@ UI tests own geometry-to-control roles and selection compatibility. Shared adapt
 The supplied visual references were not present in the received conversation. Visual acceptance can compare the explicit requested composition and actual before/after browser evidence; direct fidelity to reference B requires that image to be available.
 
 The [implementation review](compact-instrument-review.md) records the final captures, visual corrections, changed files and validation outcomes.
+
+[Phase 2P](phase-2p-instrument-ux.md) refines this accepted composition with grouped Coordinates, a quiet field toolbar and Reference framing, native self-contour suppression and plane-only spatial warnings. It preserves the rail/cards, width, authorship and independent gamut contracts above.

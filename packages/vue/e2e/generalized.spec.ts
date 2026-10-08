@@ -1,4 +1,66 @@
 import { expect, test } from "@playwright/test";
+test("installed instrument groups Coordinates, suppresses native self-boundaries and frames only the selected Reference", async ({
+  page,
+}) => {
+  const warnings: string[] = [];
+  page.on("console", (message) => {
+    if (["warning", "error"].includes(message.type())) warnings.push(message.text());
+  });
+  page.on("pageerror", (error) => warnings.push(error.message));
+  await page.goto("/");
+  const root = page.locator("[data-gp-root]");
+  const selector = root.getByRole("combobox", { name: "Coordinates" });
+  await selector.press("Enter");
+  const list = root.getByRole("listbox", { name: "Coordinates" });
+  await expect(list.getByRole("group", { name: "Perceptual" }).getByRole("option")).toHaveCount(2);
+  await expect(list.getByRole("group", { name: "RGB" }).getByRole("option")).toHaveCount(2);
+  await selector.press("ArrowDown");
+  await selector.press("Enter");
+  await expect(selector).toContainText("OKLab");
+  const lightness = root.getByLabel("Lightness numeric value");
+  await lightness.fill("0.08");
+  await lightness.press("Enter");
+  const gamuts = root.getByRole("button", { name: "Gamut references", exact: true });
+  await gamuts.click();
+  await root.getByRole("checkbox", { name: "sRGB Boundary", exact: true }).check();
+  await root.getByRole("radio", { name: "sRGB", exact: true }).check();
+  await gamuts.press("Escape");
+  const definition = await page.locator("[data-definition]").getAttribute("data-definition");
+  const state = await page
+    .locator("[data-generalized-state]")
+    .getAttribute("data-generalized-state");
+  const framing = root.getByRole("button", { name: "Field framing options", exact: true });
+  await framing.click();
+  const popup = root.getByRole("dialog", { name: "Field framing", exact: true });
+  await popup.getByRole("button", { name: "Fit to Reference Boundary", exact: true }).click();
+  await expect(root.locator("[data-gp-viewport-zoom]")).toHaveAttribute(
+    "data-gp-viewport-zoom",
+    "8",
+  );
+  await expect(framing).toBeFocused();
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
+  await expect(page.locator("[data-generalized-state]")).toHaveAttribute(
+    "data-generalized-state",
+    state!,
+  );
+  await selector.click();
+  await selector.press("s");
+  await selector.press("Enter");
+  await expect(root.locator('[data-gamut-boundary="srgb"]')).toHaveCount(0);
+  await gamuts.click();
+  await expect(root.getByRole("checkbox", { name: "sRGB Boundary", exact: true })).toBeChecked();
+  await expect(
+    root.getByRole("checkbox", { name: "sRGB Boundary", exact: true }),
+  ).toHaveAccessibleDescription("");
+  await gamuts.press("Escape");
+  await framing.click();
+  await expect(
+    popup.getByRole("button", { name: "Fit to Reference Boundary", exact: true }),
+  ).toHaveAccessibleDescription(/native Area domain/);
+  await framing.press("Escape");
+  await expect(page.locator("[data-definition]")).toHaveAttribute("data-definition", definition!);
+  expect(warnings).toEqual([]);
+});
 
 test("packed Vue plane context menu reuses accepted gamut actions without authoring", async ({
   page,

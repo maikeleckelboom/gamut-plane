@@ -21,3 +21,5 @@ export type { FieldSampleWindow, FieldViewport } from "./math.js";
 export { createViewportCamera } from "./camera.js";
 export type { ViewportCamera, ViewportCameraOptions } from "./camera.js";
 export { viewportDomainStyle, viewportPointStyle, viewportSvgViewBox } from "./presentation.js";
+export { fitBoundaryContour } from "./boundaryFit.js";
+export type { BoundaryBounds, BoundaryContour, BoundaryFit } from "./boundaryFit.js";

@@ -1,8 +1,7 @@
-import { rangeWarningStyle } from "@gamut-plane/render/internal/current";
 import { presentationStyle } from "../model/presentationStyle.js";
 
 import { useLayoutEffect, useRef } from "react";
-import { gpAttribute, gpPart, mountRange, referenceWarningGlyphPath } from "@gamut-plane/ui";
+import { gpAttribute, gpPart, mountRange } from "@gamut-plane/ui";
 import {
   channelSections,
   PICKER_SLIDER_FIELD_INSET,
@@ -72,14 +71,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
     context: props.coordinateContext,
     keyboardStep: props.continuous ? props.step : undefined,
     onInteraction: props.onInteraction,
-    onNativeValue: (nativeValue: number) => {
-      const position = available ? rangeWarningStyle(nativeValue, min, max) : null;
-      if (position)
-        range.current?.parentElement?.style.setProperty(
-          "--gp-range-warning-position",
-          position.left,
-        );
-    },
   });
   const binding = useRef<ReturnType<typeof mountRange> | null>(null);
   const bounded = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, value ?? 0));
@@ -88,7 +79,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
   const helpId = help ? `${id}-help` : undefined;
   const warningId = props.warning ? `${id}-warning` : undefined;
   const describedBy = [helpId, warningId].filter(Boolean).join(" ") || undefined;
-  const warningStyle = available ? rangeWarningStyle(value ?? 0, min, max) : null;
   useLayoutEffect(() => {
     if (!range.current) return;
     const mounted = mountRange(range.current!, () => current.current!);
@@ -166,20 +156,6 @@ export function ColorChannelControl(props: ColorChannelControlProps) {
               />
             ))}
           </span>
-          {props.warning && warningStyle && (
-            <svg
-              data-gp-part={gpPart.referenceWarning}
-              data-gamut-warning="linear"
-              style={{ left: `var(--gp-range-warning-position, ${warningStyle.left})` }}
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d={referenceWarningGlyphPath} />
-            </svg>
-          )}
           <input
             ref={range}
             id={id}

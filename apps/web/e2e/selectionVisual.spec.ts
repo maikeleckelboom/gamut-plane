@@ -40,7 +40,9 @@ for (const width of [320, 390, 440, 480])
     expect(lightness.width).toBeCloseTo(chroma.width, 0);
     expect(lightness.x + lightness.width).toBeLessThan(chroma.x);
     expect(lightness.y).toBeGreaterThanOrEqual(railBox.y + railBox.height);
-    await expect(rail.locator('[data-gp-part="reference-warning"]')).toBeVisible();
+    await expect(rail.locator('[data-gp-part="reference-warning"]')).toHaveCount(0);
+    await expect(rail.getByRole("slider")).toHaveAccessibleDescription(/Outside sRGB/);
+    await expect(root.locator('[data-gamut-warning="planar"]')).toBeVisible();
     await expect(rail.locator('[data-gp-part="gamut-interval"]')).not.toHaveCount(0);
     expect(await root.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     if (width === 320) await expect(root).toHaveScreenshot("shell-rail-320.png");

@@ -170,7 +170,7 @@ export function gamutDisclosureCopy<G extends string>(
         : (summary.reference?.status ?? (summary.requested === 0 ? "off" : undefined));
   const cue =
     outside > 0
-      ? outside === 1 && summary.reference?.status === "outside"
+      ? summary.reference?.status === "outside"
         ? `Outside ${summary.reference.label}`
         : `${outside} outside`
       : status === "unavailable" || status === "off"
