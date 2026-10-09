@@ -35,7 +35,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "pnpm check:gamut-tables && vitest run",
     "check:gamut-tables": "node scripts/generateGamutTables.ts --check",
-    "generate:gamut-tables": "node scripts/generateGamutTables.ts"
+    "generate:gamut-tables": "node scripts/generateGamutTables.ts",
+    "measure:spatial": "node scripts/measureSpatialGeometry.ts"
   },
   "dependencies": {
     "@gamut-plane/core": "workspace:*"

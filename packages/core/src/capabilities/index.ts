@@ -9,7 +9,12 @@ export {
   decodeRgbCoordinate,
   encodeRgbCoordinate,
   convertRgbReference,
+  linearRgbToOklabBatch,
+  RGB_NUMERIC_REVISION,
+  MAX_RGB_BATCH_POINTS,
 } from "./rgbConversion.js";
+export type { RgbBatchError } from "./rgbConversion.js";
+export type { RgbRepresentationId } from "./types/rgbEditing.js";
 export { gamutRayCrossings, gamutRayIntervals } from "../gamut/boundaryTrace.js";
 export type { GamutRayCrossing } from "../gamut/boundaryTrace.js";
 export { assertOklchSample } from "../color/types.js";

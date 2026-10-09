@@ -85,13 +85,16 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "analyzeRequestedGamuts,assertOklchSample,authorEditorPoint,convertLinearRgb,convertRgbReference,decodeRgbCoordinate,editOperationDefinitions,editorDefinitions,encodeRgbCoordinate,gamutRayCrossings,gamutRayIntervals,geometryDefinitions,keyboardGeometryPoint,representationDefinitions") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).sort().join() !== "MAX_RGB_BATCH_POINTS,RGB_NUMERIC_REVISION,analyzeRequestedGamuts,assertOklchSample,authorEditorPoint,convertLinearRgb,convertRgbReference,decodeRgbCoordinate,editOperationDefinitions,editorDefinitions,encodeRgbCoordinate,gamutRayCrossings,gamutRayIntervals,geometryDefinitions,keyboardGeometryPoint,linearRgbToOklabBatch,representationDefinitions") throw new Error("Internal capability surface changed");
 if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
 if (capabilities.gamutRayIntervals(0.44, 264.1, "srgb").length !== 2) throw new Error("Packed numerical notch intervals failed");
 const linearRgb: readonly [number, number, number] = capabilities.convertLinearRgb([1, 0, 0], "srgb", "display-p3");
 if (!linearRgb.every(Number.isFinite) || linearRgb[0] <= 0 || linearRgb[0] >= 1) throw new Error("Packed linear RGB conversion failed");
 if (Math.abs(capabilities.encodeRgbCoordinate(capabilities.decodeRgbCoordinate(-0.2)) + 0.2) > 1e-12) throw new Error("Packed RGB transfer failed");
 if (!capabilities.convertRgbReference({ l: 0.6, c: 0.1, h: 240, alpha: 1 }, "srgb")?.every(Number.isFinite)) throw new Error("Packed Reference conversion failed");
+const batch = capabilities.linearRgbToOklabBatch(new Float64Array([8, 8, 8]), "display-p3");
+if (!batch.ok || Math.abs(batch.value[0]! - 2) > 1e-12) throw new Error("Packed extended numeric batch conversion failed");
+if (capabilities.linearRgbToOklabBatch(new Float64Array([NaN, 0, 0]), "srgb").ok) throw new Error("Packed nonfinite batch input was accepted");
 // @ts-expect-error the bridge only accepts the two native RGB encodings
 const invalidBridgeSpace: Parameters<typeof capabilities.convertLinearRgb>[2] = "oklab";
 void invalidBridgeSpace;

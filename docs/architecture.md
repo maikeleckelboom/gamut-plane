@@ -16,6 +16,8 @@ The adapter-local accepted revision composes one authored source and one validat
 
 The render `internal/current` entry and UI current-editor helpers integrate the eight shipped editors. They have live generalized responsibilities; they do not implement another public product route. Internal capability entries are sibling-package contracts, not application imports.
 
+Render also contains an unexported scientific spatial boundary foundation for the two built-in RGB gamuts. Core owns its numeric batch conversion; render owns cube-face sampling, shared topology and approximation evidence. It does not introduce a renderer or change instrument state. See [Phase 3A spatial geometry](phase-3a-spatial-geometry.md) for its reference-only qualification, resource budgets and verification limits.
+
 ## Editor selection and geometry
 
 The relationship is:

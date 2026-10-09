@@ -1,0 +1,1334 @@
+{
+  "schema": 1,
+  "generator": "rgb-cube-grid-v1",
+  "definition": "texel-1.1.11-linear-oklab-v1",
+  "environment": {
+    "node": "v24.16.0",
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics     "
+  },
+  "timing": "one initial generation then seven repeats per case; quality measured separately; no GC isolation or performance acceptance claim",
+  "rows": [
+    {
+      "space": "srgb",
+      "distribution": "linear",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.126583006301881e-8,
+      "float32Rms": 1.7287080880214213e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 5.279700000000005,
+          "min": 0.5951999999999913,
+          "median": 1.2081999999999908,
+          "max": 2.0137,
+          "repeats": 7
+        },
+        "qualityMs": 24.006500000000003
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.015392698193709049,
+          "rms": 0.0005340180850038099,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.14938720755137253,
+          "rms": 0.00384926512910817,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.0074736232667801826,
+          "rms": 0.000547817580136634,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0103042283532525, 0.0014793662774436136, 0.015392698193709049, 0.00011595109420045632,
+          0.00949644715020303, 0.0049103225383929985
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.015625, 0, 0.0625]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "linear",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.259557118988854e-8,
+      "float32Rms": 1.729110910428885e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 1.419700000000006,
+          "min": 1.3796999999999997,
+          "median": 1.4479000000000042,
+          "max": 3.6631,
+          "repeats": 7
+        },
+        "qualityMs": 66.91540000000002
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.012217192652661262,
+          "rms": 0.0002158227057710044,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.1185687052088203,
+          "rms": 0.0015310169976368115,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.005666673129989645,
+          "rms": 0.0004052782626331654,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.00817847146383679, 0.00047412732426186163, 0.012217192652661262,
+          0.000030596705383688515, 0.007537335098096456, 0.0017374792634728437
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0078125, 0, 0.03125]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "linear",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.28721158148975e-8,
+      "float32Rms": 1.729828711330213e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 5.3489999999999895,
+          "min": 3.509999999999991,
+          "median": 3.755200000000002,
+          "max": 5.3925000000000125,
+          "repeats": 7
+        },
+        "qualityMs": 144.771
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.009696792234466404,
+          "rms": 0.00008629262549676665,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.09410804368949433,
+          "rms": 0.0006081403202187215,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.0056666731299896645,
+          "rms": 0.0003130101639389729,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.006491257102593192, 0.0001360796311527896, 0.009696792234466404,
+          0.000007866369467604183, 0.005982386831877506, 0.0005306274357311655
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00390625, 0, 0.015625]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "linear",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.340456755545206e-8,
+      "float32Rms": 1.7304234041894937e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 19.229300000000023,
+          "min": 15.020399999999995,
+          "median": 15.834600000000023,
+          "max": 16.630100000000027,
+          "repeats": 7
+        },
+        "qualityMs": 570.8472000000002
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.007696349096854524,
+          "rms": 0.00003434765523795552,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.07469360377568626,
+          "rms": 0.0002414288345792495,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.0034689486301715026,
+          "rms": 0.0002184301571512628,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.00515211417662625, 0.000036602548424775, 0.007696349096854524, 0.000001994842473936338,
+          0.004748223575101515, 0.00014788272801650082
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.001953125, 0, 0.0078125]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "encoded",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.217138749711686e-8,
+      "float32Rms": 1.5970158059650258e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 0.7509000000000015,
+          "min": 0.2781999999999698,
+          "median": 0.3061000000000149,
+          "max": 0.4435000000000855,
+          "repeats": 7
+        },
+        "qualityMs": 13.046499999999924
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.006700641878694202,
+          "rms": 0.00020930397529413727,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.06503019590607009,
+          "rms": 0.0017371421476797997,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.0028244644366535497,
+          "rms": 0.00019042608118636248,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.004818732360427069, 0.00022601981081196747, 0.006700641878694202,
+          0.00009954620462676994, 0.00439370966440087, 0.00048675901733260564
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0012889170997581502, 0, 0.005155668399032601]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "encoded",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.223630960654371e-8,
+      "float32Rms": 1.6373443344656008e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 0.9911999999999352,
+          "min": 0.8611000000000786,
+          "median": 0.9722999999999047,
+          "max": 1.047800000000052,
+          "repeats": 7
+        },
+        "qualityMs": 54.20710000000008
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.005206556486075385,
+          "rms": 0.00008256240667327132,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.05052999315813101,
+          "rms": 0.0006574022319923764,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.002630236672389325,
+          "rms": 0.00015050687522400418,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0035335615882842006, 0.00005672142619839875, 0.005206556486075385,
+          0.00002502891483320525, 0.0032654028980310785, 0.00012313756663894233
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0006046826625386997, 0, 0.002418730650154799]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "encoded",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.253421856673715e-8,
+      "float32Rms": 1.631171648780876e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 4.681600000000117,
+          "min": 3.6046000000001186,
+          "median": 3.8772999999998774,
+          "max": 5.061699999999973,
+          "repeats": 7
+        },
+        "qualityMs": 176.6063999999999
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.00413244662156397,
+          "rms": 0.00003431725128665092,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.040105682147581534,
+          "rms": 0.000259118469837016,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.0026302366723893436,
+          "rms": 0.00012528897925372315,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0027663553920407075, 0.000014223065375358788, 0.00413244662156397,
+          0.000006274207935919209, 0.0025494920025623535, 0.000030832307892113916
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00030234133126934987, 0, 0.0012093653250773995]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "encoded",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.309933886549203e-8,
+      "float32Rms": 1.6326313379400904e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 14.976400000000012,
+          "min": 15.21979999999985,
+          "median": 15.529200000000174,
+          "max": 16.956699999999955,
+          "repeats": 7
+        },
+        "qualityMs": 486.05730000000017
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.003279925057136547,
+          "rms": 0.000014123152730830341,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.03183190101548659,
+          "rms": 0.00010279070984295886,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.0016101433226180602,
+          "rms": 0.00008205492259306848,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0021956577297216396, 0.00000355805307257605, 0.003279925057136547,
+          0.0000015705134828602226, 0.0020235331434260433, 0.000007713073594899735
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00015117066563467493, 0, 0.0006046826625386997]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "cubic",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.24021910091727e-8,
+      "float32Rms": 1.5630368120733916e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 0.3686999999999898,
+          "min": 0.24689999999986867,
+          "median": 0.3450000000000273,
+          "max": 0.5343000000000302,
+          "repeats": 7
+        },
+        "qualityMs": 9.1721
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.002424198058616601,
+          "rms": 0.0001563909583751826,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.02352701092237358,
+          "rms": 0.001157173686690059,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.0005388405375363975,
+          "rms": 0.00007419036562865088,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0018031034892891915, 0.0002965426604935753, 0.002424198058616601, 0.0001679835809178974,
+          0.0015502806479772374, 0.000550388382310823
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00006103515625, 0, 0.000244140625]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "cubic",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.303982632937169e-8,
+      "float32Rms": 1.569247872578227e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 0.8305000000000291,
+          "min": 0.8123000000000502,
+          "median": 0.8994999999999891,
+          "max": 0.9822999999998956,
+          "repeats": 7
+        },
+        "qualityMs": 32.14720000000011
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0012120990293083005,
+          "rms": 0.00004336276863534775,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.01176350546118679,
+          "rms": 0.0003163799606368881,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.00041474155632003745,
+          "rms": 0.000026042060869954255,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0009015517446445958, 0.00007450715835694858, 0.0012120990293083005,
+          0.000042475870373443324, 0.0007751403239886187, 0.00013840148804371906
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00000762939453125, 0, 0.000030517578125]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "cubic",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.303982632937169e-8,
+      "float32Rms": 1.5828066620779177e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 3.639799999999923,
+          "min": 3.3256000000001222,
+          "median": 3.5458000000003267,
+          "max": 4.488100000000031,
+          "repeats": 7
+        },
+        "qualityMs": 120.72770000000037
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0006060495146541502,
+          "rms": 0.00001180999782377114,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.005881752730593395,
+          "rms": 0.00008533205776894259,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.00005446345838900357,
+          "rms": 0.000005088422112431076,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0004507758723222979, 0.0000186704966963926, 0.0006060495146541502,
+          0.000010671662922945572, 0.00038757016199430936, 0.00003470897272417563
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [9.5367431640625e-7, 0, 0.000003814697265625]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "srgb",
+      "distribution": "cubic",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.3691079812671635e-8,
+      "float32Rms": 1.5839091604673646e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 15.972199999999702,
+          "min": 14.983999999999924,
+          "median": 15.29509999999982,
+          "max": 15.83680000000004,
+          "repeats": 7
+        },
+        "qualityMs": 484.2577000000001
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0003030247573270751,
+          "rms": 0.000003176587828769241,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.0029408763652966977,
+          "rms": 0.00002278589285141953,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.00001507842933267243,
+          "rms": 0.0000013618201422181072,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.00022538793616114894, 0.000004668657706299148, 0.0003030247573270751,
+          0.0000026740491843699487, 0.00019378508099715468, 0.000008682139794352868
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [1.1920928955078125e-7, 0, 4.76837158203125e-7]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "linear",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.319553292343503e-8,
+      "float32Rms": 1.7475592818245718e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 1.6650000000004184,
+          "min": 0.3892000000000735,
+          "median": 0.6129000000000815,
+          "max": 0.9349999999999454,
+          "repeats": 7
+        },
+        "qualityMs": 10.608400000000074
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.016429557598878774,
+          "rms": 0.0005081094428010844,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.1500929828876932,
+          "rms": 0.003935034269915702,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.007938388808786298,
+          "rms": 0.0005003718607646992,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.009014888668066203, 0.0017558636716380172, 0.016429557598878774, 0.00018765846001435557,
+          0.009541721988250247, 0.004471013258909331
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.015625, 0, 0.0625]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "linear",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.319553292343503e-8,
+      "float32Rms": 1.7458411849120965e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 1.3535999999999149,
+          "min": 1.3420000000000982,
+          "median": 1.4659999999998945,
+          "max": 1.7125999999998385,
+          "repeats": 7
+        },
+        "qualityMs": 33.303499999999985
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.013040148507916086,
+          "rms": 0.00020375874533757587,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.11912887946448461,
+          "rms": 0.0015652428050707,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.006089840081578675,
+          "rms": 0.0003711465489379117,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.00715512187753243, 0.000560884426496998, 0.013040148507916086, 0.000050517937703830854,
+          0.0075732697608681026, 0.0015401174582331078
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0078125, 0, 0.03125]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "linear",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.319553292343503e-8,
+      "float32Rms": 1.7462280445429674e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 3.688799999999901,
+          "min": 3.5563999999999396,
+          "median": 3.7350000000001273,
+          "max": 4.246599999999944,
+          "repeats": 7
+        },
+        "qualityMs": 162.1801999999998
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.010349972729643789,
+          "rms": 0.00008120310853270718,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.09455265429085781,
+          "rms": 0.0006217499472454333,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.006089840081578681,
+          "rms": 0.0002978915607969765,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.005679023997677825, 0.0001606120609874127, 0.010349972729643789,
+          0.000013129719383710746, 0.006010908192620614, 0.0004622559361584137
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00390625, 0, 0.015625]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "linear",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.3485543962997657e-8,
+      "float32Rms": 1.7562814479473386e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 33.08380000000034,
+          "min": 25.773599999999988,
+          "median": 36.70789999999988,
+          "max": 45.30110000000013,
+          "repeats": 7
+        },
+        "qualityMs": 1026.4575000000004
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.008214778799439387,
+          "rms": 0.000032279557829224504,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.0750464914438466,
+          "rms": 0.00024683394907981714,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.0037087104099501745,
+          "rms": 0.00020344985491099282,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.004507444334033102, 0.00004314419527190319, 0.008214778799439387,
+          0.0000033484805931756874, 0.004770860994125123, 0.00012753520953042572
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.001953125, 0, 0.0078125]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "encoded",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.247874477248269e-8,
+      "float32Rms": 1.6647291343751977e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 1.084100000000035,
+          "min": 0.4853000000002794,
+          "median": 0.5572000000001935,
+          "max": 0.7105000000001382,
+          "repeats": 7
+        },
+        "qualityMs": 15.646600000000035
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.007152000273769963,
+          "rms": 0.00021210581269144344,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.06533742909650793,
+          "rms": 0.0017742036575441654,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.002826653372114301,
+          "rms": 0.00017666905244715264,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.004243281540876321, 0.0002592003693458711, 0.007152000273769963, 0.00012223025901935964,
+          0.004596125929813051, 0.0004708486570811559
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0012889170997581502, 0, 0.005155668399032601]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "encoded",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.3196621295470554e-8,
+      "float32Rms": 1.6660953869691427e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 2.5252000000000407,
+          "min": 1.5657000000001062,
+          "median": 1.9484999999995125,
+          "max": 2.5676000000003114,
+          "repeats": 7
+        },
+        "qualityMs": 73.44590000000062
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.005557272584916431,
+          "rms": 0.00008203839361382284,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.05076872057997665,
+          "rms": 0.0006717173315086932,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.002826653372114292,
+          "rms": 0.0001405973501869332,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.003099169036320396, 0.0000654790259395073, 0.005557272584916431, 0.00003075814849378596,
+          0.0033128670678559797, 0.00011913741521769205
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.0006046826625386997, 0, 0.002418730650154799]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "encoded",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.3196621295470554e-8,
+      "float32Rms": 1.668816898308409e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 7.337000000000444,
+          "min": 5.5034999999998035,
+          "median": 5.798300000000381,
+          "max": 7.1216999999996915,
+          "repeats": 7
+        },
+        "qualityMs": 230.67119999999977
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.004410810173685161,
+          "rms": 0.0000333775703940687,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.04029516022786726,
+          "rms": 0.0002648772409805663,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.0028266533721143,
+          "rms": 0.00012084345799265362,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0024202089686492854, 0.000016388687704957986, 0.004410810173685161,
+          0.000007710448242837532, 0.002561646846968121, 0.000029850947900785978
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00030234133126934987, 0, 0.0012093653250773995]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "encoded",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.371509279295987e-8,
+      "float32Rms": 1.6710835461686707e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 27.84360000000015,
+          "min": 25.21939999999995,
+          "median": 27.61620000000039,
+          "max": 32.39959999999974,
+          "repeats": 7
+        },
+        "qualityMs": 1011.9649
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0035008623548699546,
+          "rms": 0.000013509564303948339,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.03198228986747182,
+          "rms": 0.00010509201209612468,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.0017102740232610093,
+          "rms": 0.00007504435846358954,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0019209211314083414, 0.00000409841624680301, 0.0035008623548699546,
+          0.0000019299551212020935, 0.0020331804498241227, 0.000007469109890656758
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00015117066563467493, 0, 0.0006046826625386997]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "cubic",
+      "subdivisions": 16,
+      "vertices": 1538,
+      "triangles": 3072,
+      "bufferBytes": 113896,
+      "uploadPositionBytes": 18456,
+      "float32Max": 3.2703173368873e-8,
+      "float32Rms": 1.614940750452001e-8,
+      "work": {
+        "vertexConversions": 1538,
+        "trianglesChecked": 3072,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 113896,
+        "generationMs": {
+          "initial": 0.5447999999996682,
+          "min": 0.4139999999997599,
+          "median": 0.5453000000006796,
+          "max": 1.0631000000003041,
+          "repeats": 7
+        },
+        "qualityMs": 17.46230000000014
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.002587493182410947,
+          "rms": 0.00016245671401525263,
+          "samples": 39936
+        },
+        "pairedCorrespondence": {
+          "max": 0.023638163572714452,
+          "rms": 0.0011880341781256778,
+          "samples": 39936
+        },
+        "commonFaceProbes": {
+          "max": 0.0005336218130874245,
+          "rms": 0.00007430184193065026,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0019655774019265524, 0.0003357437370909134, 0.002587493182410947,
+          0.00020071175695550146, 0.0019025079635717613, 0.0005449665330723916
+        ],
+        "worst": {
+          "triangle": 1056,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00006103515625, 0, 0.000244140625]
+        },
+        "conversions": 40800,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "cubic",
+      "subdivisions": 32,
+      "vertices": 6146,
+      "triangles": 12288,
+      "bufferBytes": 455016,
+      "uploadPositionBytes": 73752,
+      "float32Max": 3.311419811724416e-8,
+      "float32Rms": 1.6123964967980915e-8,
+      "work": {
+        "vertexConversions": 6146,
+        "trianglesChecked": 12288,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 455016,
+        "generationMs": {
+          "initial": 1.1754999999993743,
+          "min": 1.1772000000000844,
+          "median": 1.630699999999706,
+          "max": 1.9318999999995867,
+          "repeats": 7
+        },
+        "qualityMs": 62.360499999999774
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0012937465912054736,
+          "rms": 0.000045058779296276376,
+          "samples": 159744
+        },
+        "pairedCorrespondence": {
+          "max": 0.011819081786357226,
+          "rms": 0.00032485871778261554,
+          "samples": 159744
+        },
+        "commonFaceProbes": {
+          "max": 0.00042629430477185686,
+          "rms": 0.000024376522452278568,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0009827887009632762, 0.00008493444244391564, 0.0012937465912054736,
+          0.000050719593632796464, 0.0009512539817858807, 0.00013719778680596807
+        ],
+        "worst": {
+          "triangle": 4160,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [0.00000762939453125, 0, 0.000030517578125]
+        },
+        "conversions": 160608,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "cubic",
+      "subdivisions": 64,
+      "vertices": 24578,
+      "triangles": 49152,
+      "bufferBytes": 1819240,
+      "uploadPositionBytes": 294936,
+      "float32Max": 3.331129812937194e-8,
+      "float32Rms": 1.6197146527273665e-8,
+      "work": {
+        "vertexConversions": 24578,
+        "trianglesChecked": 49152,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 1819240,
+        "generationMs": {
+          "initial": 10.339399999999841,
+          "min": 6.186299999999392,
+          "median": 8.839399999999841,
+          "max": 10.734699999999975,
+          "repeats": 7
+        },
+        "qualityMs": 235.70319999999992
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0006468732956027368,
+          "rms": 0.000012275202029186178,
+          "samples": 638976
+        },
+        "pairedCorrespondence": {
+          "max": 0.005909540893178613,
+          "rms": 0.00008762679807148936,
+          "samples": 638976
+        },
+        "commonFaceProbes": {
+          "max": 0.00004901526082727872,
+          "rms": 0.00000475350870356432,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.0004913943504816381, 0.00002127950406422005, 0.0006468732956027368,
+          0.000012738241919606906, 0.00047562699089294033, 0.000034370594562362686
+        ],
+        "worst": {
+          "triangle": 16512,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [9.5367431640625e-7, 0, 0.000003814697265625]
+        },
+        "conversions": 639840,
+        "maxConversionBatchPoints": 3328
+      }
+    },
+    {
+      "space": "display-p3",
+      "distribution": "cubic",
+      "subdivisions": 128,
+      "vertices": 98306,
+      "triangles": 196608,
+      "bufferBytes": 7275624,
+      "uploadPositionBytes": 1179672,
+      "float32Max": 3.378594847381972e-8,
+      "float32Rms": 1.620255818620377e-8,
+      "work": {
+        "vertexConversions": 98306,
+        "trianglesChecked": 196608,
+        "retainedNumericAllocations": 5,
+        "retainedNumericBytes": 7275624,
+        "generationMs": {
+          "initial": 26.329800000000432,
+          "min": 25.438200000000506,
+          "median": 28.721700000000055,
+          "max": 36.007400000000416,
+          "repeats": 7
+        },
+        "qualityMs": 1010.4230000000007
+      },
+      "quality": {
+        "metricRevision": "linear-barycentric-13-face-144-v1",
+        "surfaceToTriangle": {
+          "max": 0.0003234366478013684,
+          "rms": 0.000003302396405833622,
+          "samples": 2555904
+        },
+        "pairedCorrespondence": {
+          "max": 0.0029547704465893066,
+          "rms": 0.000023400232122045583,
+          "samples": 2555904
+        },
+        "commonFaceProbes": {
+          "max": 0.000008525434481948683,
+          "rms": 0.0000012750187877931355,
+          "samples": 864
+        },
+        "faceMaxima": [
+          0.00024569717524081905, 0.000005322687573730577, 0.0003234366478013684,
+          0.000003191661779544743, 0.00023781349544647017, 0.000008598098078960052
+        ],
+        "worst": {
+          "triangle": 65792,
+          "face": 2,
+          "weights": [0.75, 0, 0.25],
+          "linearRgb": [1.1920928955078125e-7, 0, 4.76837158203125e-7]
+        },
+        "conversions": 2556768,
+        "maxConversionBatchPoints": 3328
+      }
+    }
+  ]
+}
