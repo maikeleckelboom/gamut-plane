@@ -1,5 +1,43 @@
 import { expect, test, type Page } from "@playwright/test";
 
+test("spatial production chunk is lazy and renders only on its standalone route", async ({
+  page,
+  request,
+}) => {
+  const scripts: string[] = [],
+    errors: string[] = [];
+  page.on("request", (request) => {
+    if (request.resourceType() === "script") scripts.push(request.url());
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+  await openProductionInstrument(page);
+  expect(scripts.some((url) => /spatialApp-/.test(url))).toBe(false);
+  const response = await page.goto("/spatial");
+  expect(response?.status()).toBe(200);
+  expect(response?.headers()["cache-control"]).toBe("no-cache");
+  await expect(page.locator("[data-spatial-status]")).toHaveAttribute(
+    "data-spatial-status",
+    "ready",
+  );
+  await expect(page.locator("[data-spatial-frames]")).not.toHaveAttribute(
+    "data-spatial-frames",
+    "0",
+  );
+  expect(scripts.some((url) => /spatialApp-/.test(url))).toBe(true);
+  await page.getByRole("button", { name: "Color", exact: true }).click();
+  await page.getByRole("button", { name: "Focus Display P3" }).click();
+  await expect(page.locator(".spatial-stage-caption strong")).toHaveText("Display P3");
+  await page.goto("/spatial/");
+  await expect(page).toHaveURL(/\/spatial$/);
+  await expect(page.locator("[data-spatial-status]")).toHaveAttribute(
+    "data-spatial-status",
+    "ready",
+  );
+  expect((await request.get("/spatial/missing")).status()).toBe(404);
+  expect((await request.get("/_redirects")).status()).toBe(404);
+  expect(errors).toEqual([]);
+});
+
 async function openProductionInstrument(page: Page): Promise<string[]> {
   const errors: string[] = [];
   page.on("console", (message) => {

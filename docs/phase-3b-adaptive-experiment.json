@@ -1,0 +1,181 @@
+{
+  "schema": 1,
+  "status": "offline-experiment-only",
+  "method": "global-shared-edge-midpoints-with-scientific-centroid-fans-v1",
+  "budget": {
+    "maxTriangles": 150000,
+    "maxRounds": 10
+  },
+  "conditions": {
+    "stageHeight": 1080,
+    "homeHeight": 1.42,
+    "zoom": 12,
+    "targetCssPixels": 0.5,
+    "trainingThresholdCssPixels": 0.35
+  },
+  "metric": "Independent held-out 3D distance times orthographic CSS scale: conservative projection estimate at samples, not a continuous bound or actual silhouette metric",
+  "rows": [
+    {
+      "space": "srgb",
+      "status": "training-target-reached",
+      "rounds": [
+        {
+          "round": 0,
+          "vertices": 6146,
+          "triangles": 12288,
+          "trainingSpatialResidualInCssPixels": 10.127078090467544,
+          "markedEdges": 11546
+        },
+        {
+          "round": 1,
+          "vertices": 25591,
+          "triangles": 51178,
+          "trainingSpatialResidualInCssPixels": 6.433351036838291,
+          "markedEdges": 9212
+        },
+        {
+          "round": 2,
+          "vertices": 44252,
+          "triangles": 88500,
+          "trainingSpatialResidualInCssPixels": 4.491203425376797,
+          "markedEdges": 2842
+        },
+        {
+          "round": 3,
+          "vertices": 49967,
+          "triangles": 99930,
+          "trainingSpatialResidualInCssPixels": 3.077182251673938,
+          "markedEdges": 1206
+        },
+        {
+          "round": 4,
+          "vertices": 52403,
+          "triangles": 104802,
+          "trainingSpatialResidualInCssPixels": 1.776756993498511,
+          "markedEdges": 743
+        },
+        {
+          "round": 5,
+          "vertices": 53911,
+          "triangles": 107818,
+          "trainingSpatialResidualInCssPixels": 0.8955615043078334,
+          "markedEdges": 349
+        },
+        {
+          "round": 6,
+          "vertices": 54627,
+          "triangles": 109250,
+          "trainingSpatialResidualInCssPixels": 0.39777070834702916,
+          "markedEdges": 15
+        },
+        {
+          "round": 7,
+          "vertices": 54662,
+          "triangles": 109320,
+          "trainingSpatialResidualInCssPixels": 0.3499201911382852,
+          "markedEdges": 0
+        }
+      ],
+      "final": {
+        "vertices": 54662,
+        "triangles": 109320,
+        "edges": 163980,
+        "euler": 2,
+        "oppositePairedEdgeIncidence": true,
+        "minimumArea2": 8.689847840517686e-11,
+        "scientificNumericBytesEstimate": 4044936
+      },
+      "heldOut": {
+        "probesPerTriangle": 12,
+        "samples": 1311840,
+        "oklabMax": 0.00003766750265907954,
+        "oklabRms": 0.0000041891943220442905,
+        "nearBlackOklabMax": 0.00003766750265907954,
+        "projectedUpperEstimateCssPixels": 0.3437822777899091,
+        "nearBlackProjectedUpperEstimateCssPixels": 0.3437822777899091
+      },
+      "elapsedMs": 4692.8641
+    },
+    {
+      "space": "display-p3",
+      "status": "training-target-reached",
+      "rounds": [
+        {
+          "round": 0,
+          "vertices": 6146,
+          "triangles": 12288,
+          "trainingSpatialResidualInCssPixels": 10.80730393309933,
+          "markedEdges": 12096
+        },
+        {
+          "round": 1,
+          "vertices": 26517,
+          "triangles": 53030,
+          "trainingSpatialResidualInCssPixels": 7.0393341277943025,
+          "markedEdges": 11124
+        },
+        {
+          "round": 2,
+          "vertices": 49245,
+          "triangles": 98486,
+          "trainingSpatialResidualInCssPixels": 4.958868495019102,
+          "markedEdges": 3358
+        },
+        {
+          "round": 3,
+          "vertices": 56000,
+          "triangles": 111996,
+          "trainingSpatialResidualInCssPixels": 3.37967047089398,
+          "markedEdges": 1337
+        },
+        {
+          "round": 4,
+          "vertices": 58703,
+          "triangles": 117402,
+          "trainingSpatialResidualInCssPixels": 1.964003730493439,
+          "markedEdges": 782
+        },
+        {
+          "round": 5,
+          "vertices": 60291,
+          "triangles": 120578,
+          "trainingSpatialResidualInCssPixels": 0.9786653174068264,
+          "markedEdges": 350
+        },
+        {
+          "round": 6,
+          "vertices": 61008,
+          "triangles": 122012,
+          "trainingSpatialResidualInCssPixels": 0.4351012530225952,
+          "markedEdges": 31
+        },
+        {
+          "round": 7,
+          "vertices": 61079,
+          "triangles": 122154,
+          "trainingSpatialResidualInCssPixels": 0.349992828247181,
+          "markedEdges": 0
+        }
+      ],
+      "final": {
+        "vertices": 61079,
+        "triangles": 122154,
+        "edges": 183231,
+        "euler": 2,
+        "oppositePairedEdgeIncidence": true,
+        "minimumArea2": 1.5559076943365267e-10,
+        "scientificNumericBytesEstimate": 4519794
+      },
+      "heldOut": {
+        "probesPerTriangle": 12,
+        "samples": 1465848,
+        "oklabMax": 0.00003693616218423293,
+        "oklabRms": 0.000003969129585892829,
+        "nearBlackOklabMax": 0.00003693616218423293,
+        "projectedUpperEstimateCssPixels": 0.3371075083856752,
+        "nearBlackProjectedUpperEstimateCssPixels": 0.3371075083856752
+      },
+      "elapsedMs": 7740.3483
+    }
+  ]
+}

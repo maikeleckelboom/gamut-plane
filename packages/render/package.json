@@ -25,6 +25,10 @@
       "types": "./dist/current/index.d.ts",
       "import": "./dist/current/index.js"
     },
+    "./internal/spatial": {
+      "types": "./dist/spatial/index.d.ts",
+      "import": "./dist/spatial/index.js"
+    },
     "./internal/viewport": {
       "types": "./dist/viewport/index.d.ts",
       "import": "./dist/viewport/index.js"

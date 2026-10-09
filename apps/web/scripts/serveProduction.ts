@@ -62,6 +62,17 @@ function sendError(response: ServerResponse, statusCode: number, message: string
 const headerRules = parseHeaderRules(
   await readFile(resolve(distributionDirectory, "_headers"), "utf8"),
 );
+// This preview supports the repository's exact local 200/301 rules, not Cloudflare's
+// entire redirect grammar. Fail on unsupported rules instead of silently differing.
+const redirects = new Map<string, { destination: string; status: number }>();
+for (const line of (await readFile(resolve(distributionDirectory, "_redirects"), "utf8")).split(
+  /\r?\n/,
+)) {
+  if (!line.trim() || line.trimStart().startsWith("#")) continue;
+  const match = /^(\/[\w/-]+) (\/[\w/.-]+) (200|301)$/.exec(line.trim());
+  if (!match) throw new Error(`Unsupported production preview redirect: ${line}`);
+  redirects.set(match[1]!, { destination: match[2]!, status: Number(match[3]) });
+}
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -80,7 +91,14 @@ const server = createServer(async (request, response) => {
 
     const requestUrl = new URL(request.url ?? "/", `http://${host}:${port}`);
     const pathname = decodeURIComponent(requestUrl.pathname);
-    const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+    const redirect = redirects.get(pathname);
+    if (redirect && redirect.status !== 200) {
+      response.writeHead(redirect.status, { Location: redirect.destination + requestUrl.search });
+      response.end();
+      return;
+    }
+    const assetPath = redirect?.destination ?? pathname;
+    const relativePath = assetPath === "/" ? "index.html" : assetPath.replace(/^\/+/, "");
     const filePath = resolve(distributionDirectory, relativePath);
     if (
       filePath !== distributionDirectory &&
@@ -89,7 +107,7 @@ const server = createServer(async (request, response) => {
       sendError(response, 403, "Forbidden");
       return;
     }
-    if (relativePath === "_headers") {
+    if (relativePath === "_headers" || relativePath === "_redirects") {
       sendError(response, 404, "Not found");
       return;
     }

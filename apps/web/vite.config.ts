@@ -53,6 +53,7 @@ export function createViteConfig(mode: string): UserConfig {
 
   return {
     plugins: [vue(), publicMetadata(publicSiteUrl)],
+    build: { manifest: true },
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),

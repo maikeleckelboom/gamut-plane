@@ -93,6 +93,7 @@ export async function packPrivateArtifact(
       ".",
       "./internal/capabilities",
       ...(manifest.name === "@gamut-plane/render" ? ["./internal/current"] : []),
+      ...(manifest.name === "@gamut-plane/render" ? ["./internal/spatial"] : []),
       ...(manifest.name === "@gamut-plane/render" ? ["./internal/viewport"] : []),
     ]);
     assert.deepEqual(manifest.exports["./internal/capabilities"], {
@@ -100,6 +101,10 @@ export async function packPrivateArtifact(
       import: "./dist/capabilities/index.js",
     });
     if (manifest.name === "@gamut-plane/render") {
+      assert.deepEqual(manifest.exports["./internal/spatial"], {
+        types: "./dist/spatial/index.d.ts",
+        import: "./dist/spatial/index.js",
+      });
       assert.deepEqual(manifest.exports["./internal/current"], {
         types: "./dist/current/index.d.ts",
         import: "./dist/current/index.js",
@@ -298,7 +303,13 @@ import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 import * as viewport from "@gamut-plane/render/internal/viewport";
-assert.deepEqual(Object.keys(coreInternal).sort(), ["MAX_RGB_BATCH_POINTS", "RGB_NUMERIC_REVISION", "analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "linearRgbToOklabBatch", "representationDefinitions"]);
+import * as spatial from "@gamut-plane/render/internal/spatial";
+assert.deepEqual(Object.keys(spatial).sort(), ["generateBoundaryMesh", "quantizeBoundaryPositions", "spatialColorDefinition"]);
+const spatialMesh = spatial.generateBoundaryMesh({ space: "srgb", subdivisions: 2, distribution: "cubic" });
+assert.ok(spatialMesh.ok && spatialMesh.value.coordinates === "oklab-a-l-b");
+assert.equal(spatial.spatialColorDefinition("srgb").revision, coreInternal.RGB_NUMERIC_REVISION);
+for (const key of Object.keys(spatial)) assert.equal(key in render, false);
+assert.deepEqual(Object.keys(coreInternal).sort(), ["MAX_RGB_BATCH_POINTS", "RGB_NUMERIC_REVISION", "analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "linearRgbToOklabBatch", "representationDefinitions", "spatialColorDefinition"]);
 const batch = coreInternal.linearRgbToOklabBatch(new Float64Array([8, 8, 8]), "display-p3");
 assert.ok(batch.ok && Math.abs(batch.value[0] - 2) < 1e-12);
 assert.equal(coreInternal.linearRgbToOklabBatch(new Float64Array([NaN, 0, 0]), "srgb").ok, false);

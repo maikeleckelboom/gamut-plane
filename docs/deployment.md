@@ -42,11 +42,11 @@ Verify those values on the deployed page before adding the URL to the README or 
 
 ## Routing, headers, and caching
 
-The app has one page and no client router. Wrangler leaves [asset routing](https://developers.cloudflare.com/workers/static-assets/routing/) at its defaults: `html_handling: "auto-trailing-slash"` and `not_found_handling: "none"`. `/` serves `index.html`, `/index.html` redirects to `/`, and unmatched paths return 404. There is no SPA fallback, `_redirects` file, or custom `404.html`.
+The app has a compact entry at `/` and a lazy spatial experiment at `/spatial`, without a client router. Wrangler leaves [asset routing](https://developers.cloudflare.com/workers/static-assets/routing/) at its defaults: `html_handling: "auto-trailing-slash"` and `not_found_handling: "none"`. `/` serves `index.html` and `/index.html` redirects to `/`. An exact [200 proxy rule](https://developers.cloudflare.com/workers/static-assets/redirects/#proxying) in `apps/web/public/_redirects` serves that entry at `/spatial`; `/spatial/` redirects to `/spatial` with status 301. The entry loads the experiment only on these paths. Unmatched paths still return 404. There is no catch-all SPA fallback or custom `404.html`.
 
 Vite copies `apps/web/public/_headers` unchanged to the build root. Workers Static Assets [parses this file](https://developers.cloudflare.com/workers/static-assets/headers/) as configuration and does not serve it as an asset:
 
-- The served HTML at `/` uses `Cache-Control: no-cache`. The `/index.html` rule remains present, but that URL normally redirects to `/`.
+- The served HTML at `/` and `/spatial` uses `Cache-Control: no-cache`. The `/index.html` rule remains present, but that URL normally redirects to `/`.
 - Hashed `/assets/*` files use `Cache-Control: public, max-age=31556952, immutable` for browser caching.
 - The global rule sets CSP, `Permissions-Policy`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, and `X-Frame-Options: DENY`.
 
@@ -67,12 +67,12 @@ pnpm test:production
 
 The Wrangler dry run validates deployment configuration without uploading or publishing. For local Workers routing and header checks, run `pnpm exec wrangler dev --local --port 8787`, inspect the printed localhost URL, and stop it with `Ctrl+C`. Wrangler's local state is ignored under `.wrangler/`.
 
-`test:production` starts the built-output server at `http://127.0.0.1:4178`, applies the checked-in header rules, runs the browser suite, and stops the server. This helper does not emulate every Workers routing or cache detail. For interactive review, run `pnpm preview:production` and stop it with `Ctrl+C`. Keep the port free before either command.
+`test:production` starts the built-output server at `http://127.0.0.1:4178`, applies the checked-in headers and exact 200/301 route rules, runs the browser suite, and stops the server. It rejects unsupported redirect grammar and hides both configuration files. This helper does not emulate every Workers routing or cache detail. For interactive review, run `pnpm preview:production` and stop it with `Ctrl+C`. Keep the port free before either command.
 
 To exercise absolute URL metadata locally, set `VITE_PUBLIC_SITE_URL` to `https://gamut-plane.example` before building. That reserved example hostname is a test input, not a deployment URL. Remove the variable afterward with `Remove-Item Env:\VITE_PUBLIC_SITE_URL`.
 
 ## Verify the deployed site
 
-Confirm the Workers build and production deployment match the release candidate commit. Check HTTPS, page metadata, the favicon and social image, security and cache headers for HTML and hashed assets, the `/index.html` redirect, and 404 responses for unmatched paths and `/_headers`. Exercise both planes, both boundary targets, independent guide visibility, pointer and keyboard edits, clipboard success and failure, wide viewport fit, narrow layout, and 200% text. Inspect the console for errors and blocked resources.
+Confirm the Workers build and production deployment match the release candidate commit. Check HTTPS, page metadata, the favicon and social image, security and cache headers for HTML and hashed assets, the `/index.html` redirect, both spatial URLs, and 404 responses for unmatched paths, `/_headers` and `/_redirects`. Exercise both planes, both boundary targets, independent guide visibility, pointer and keyboard edits, clipboard success and failure, wide viewport fit, narrow layout, and 200% text. Check the spatial Shape/Color controls and confirm its bundle is absent from a compact-only visit. Inspect the console for errors and blocked resources.
 
 Record the URL, commit, build/deployment identifiers, and results. Repeat these checks after the README URL update and after promotion to `main`.

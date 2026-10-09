@@ -1,0 +1,2318 @@
+{
+  "schema": 1,
+  "metric": "independent-xyz-f32-projected-corresponding-triangle-v1",
+  "status": "sampled-experiment-not-a-certificate",
+  "environment": {
+    "node": "v24.16.0",
+    "platform": "win32",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics     "
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "nearBlack": "L < 0.05",
+  "zoomRule": "Orthographic distances scale linearly with zoom and CSS height. Matrices stored at zoom=1; no viewport crop excludes a probe.",
+  "cameras": [
+    {
+      "name": "home",
+      "projection": [
+        0.8802816901408451, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0, 0,
+        0, -1.0010005002501252, 1
+      ],
+      "view": [
+        0.773957299203321, -0.22247562286855072, 0.5928698813729294, 0, 0, 0.9362515795718175,
+        0.35133030007284705, 0, -0.6332377902572628, -0.271914650172673, 0.724618743900247, 0,
+        2.3592239273284576e-16, -0.4681257897859089, -3.175665150036423, 1
+      ]
+    },
+    {
+      "name": "blue",
+      "projection": [
+        0.8802816901408451, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0, 0,
+        0, -1.0010005002501252, 1
+      ],
+      "view": [
+        -0.9805806756909202, 0.009603848456923175, -0.1958808427497568, 0, 0, 0.9988002395200094,
+        0.04897021068743921, 0, 0.1961161351381841, 0.04801924228461586, -0.9794042137487837, 0,
+        1.1188966420050408e-16, -0.4994001197600046, -3.0244851053437203, 1
+      ]
+    },
+    {
+      "name": "side",
+      "projection": [
+        0.8802816901408451, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0, 0,
+        0, -1.0010005002501252, 1
+      ],
+      "view": [
+        0.049937616943891816, -0.04981323912449921, 0.9975093361076328, 0, -2.125036258071588e-17,
+        0.9987554444462093, 0.04987546680538163, 0, -0.9987523388778446, -0.0024906619562249563,
+        0.04987546680538127, 0, 1.2613608074696357e-15, -0.49937772222310467, -3.0249377334026906, 1
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "space": "srgb",
+      "subdivisions": 32,
+      "scientificBytes": 455016,
+      "oklab": {
+        "max": 0.001212099254085661,
+        "rms": 0.00004336281708806003,
+        "samples": 159744
+      },
+      "nearBlackOklab": {
+        "max": 0.001212099254085661,
+        "rms": 0.00036759482889424117,
+        "samples": 427
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.7534574991466788,
+                "rms": 0.016478181596744107,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7534574991466788,
+                "rms": 0.14137810056426267,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.4018259362758015,
+                "rms": 0.023628827965367617,
+                "samples": 1659
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.4018259362758015,
+                "rms": 0.13737732756933413,
+                "samples": 32
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.5069149982933576,
+                "rms": 0.032956363193488214,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5069149982933576,
+                "rms": 0.28275620112852534,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.803651872551603,
+                "rms": 0.047257655930735235,
+                "samples": 1659
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.803651872551603,
+                "rms": 0.27475465513866826,
+                "samples": 32
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 3.0138299965867152,
+                "rms": 0.06591272638697643,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 3.0138299965867152,
+                "rms": 0.5655124022570507,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.607303745103206,
+                "rms": 0.09451531186147047,
+                "samples": 1659
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 1.607303745103206,
+                "rms": 0.5495093102773365,
+                "samples": 32
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 6.0276599931734305,
+                "rms": 0.13182545277395286,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 6.0276599931734305,
+                "rms": 1.1310248045141014,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 3.214607490206412,
+                "rms": 0.18903062372294094,
+                "samples": 1659
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 3.214607490206412,
+                "rms": 1.099018620554673,
+                "samples": 32
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 9.041489989760146,
+                "rms": 0.19773817916092928,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 9.041489989760146,
+                "rms": 1.696537206771152,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 4.821911235309618,
+                "rms": 0.28354593558441143,
+                "samples": 1659
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 4.821911235309618,
+                "rms": 1.6485279308320095,
+                "samples": 32
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.7469040975471987,
+                "rms": 0.01709374354374745,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7469040975471987,
+                "rms": 0.13294901248122099,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.08864659073427687,
+                "rms": 0.008432728424832786,
+                "samples": 1127
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000013938189749081082,
+                "rms": 0.0000010583986060386126,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.4938081950943973,
+                "rms": 0.0341874870874949,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.4938081950943973,
+                "rms": 0.26589802496244197,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.17729318146855375,
+                "rms": 0.01686545684966557,
+                "samples": 1127
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000027876379498162163,
+                "rms": 0.000002116797212077225,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 2.9876163901887947,
+                "rms": 0.0683749741749898,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 2.9876163901887947,
+                "rms": 0.5317960499248839,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.3545863629371075,
+                "rms": 0.03373091369933114,
+                "samples": 1127
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000005575275899632433,
+                "rms": 0.00000423359442415445,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 5.975232780377589,
+                "rms": 0.1367499483499796,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 5.975232780377589,
+                "rms": 1.0635920998497679,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.709172725874215,
+                "rms": 0.06746182739866229,
+                "samples": 1127
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000011150551799264865,
+                "rms": 0.0000084671888483089,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 8.962849170566384,
+                "rms": 0.20512492252496942,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 8.962849170566384,
+                "rms": 1.5953881497746518,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.0637590888113224,
+                "rms": 0.10119274109799342,
+                "samples": 1127
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000167258276988973,
+                "rms": 0.00001270078327246335,
+                "samples": 28
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.5075504159658838,
+                "rms": 0.011929875873051412,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5075504159658838,
+                "rms": 0.09368185677934474,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.013942028534590315,
+                "rms": 0.002758608118563523,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004211600218453476,
+                "rms": 0.0000033876942834718603,
+                "samples": 37
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.0151008319317676,
+                "rms": 0.023859751746102824,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0151008319317676,
+                "rms": 0.18736371355868947,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.02788405706918063,
+                "rms": 0.005517216237127046,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000008423200436906952,
+                "rms": 0.000006775388566943721,
+                "samples": 37
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 2.030201663863535,
+                "rms": 0.04771950349220565,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 2.030201663863535,
+                "rms": 0.37472742711737894,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.05576811413836126,
+                "rms": 0.011034432474254093,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000016846400873813905,
+                "rms": 0.000013550777133887441,
+                "samples": 37
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 4.06040332772707,
+                "rms": 0.0954390069844113,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 4.06040332772707,
+                "rms": 0.7494548542347579,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.11153622827672252,
+                "rms": 0.022068864948508186,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00003369280174762781,
+                "rms": 0.000027101554267774883,
+                "samples": 37
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 6.090604991590606,
+                "rms": 0.14315851047661693,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 6.090604991590606,
+                "rms": 1.124182281352137,
+                "samples": 427
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.1673043424150838,
+                "rms": 0.03310329742276228,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00005053920262144172,
+                "rms": 0.00004065233140166233,
+                "samples": 37
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "space": "srgb",
+      "subdivisions": 64,
+      "scientificBytes": 1819240,
+      "oklab": {
+        "max": 0.0006060496270428305,
+        "rms": 0.00001181001693936245,
+        "samples": 638976
+      },
+      "nearBlackOklab": {
+        "max": 0.0006060496270428305,
+        "rms": 0.00012327316698383482,
+        "samples": 1830
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.37672713679108133,
+                "rms": 0.004455104112169103,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.37672713679108133,
+                "rms": 0.047499323227792836,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.20091201450407678,
+                "rms": 0.008004860183283885,
+                "samples": 3535
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.20091201450407678,
+                "rms": 0.052834852170850606,
+                "samples": 62
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.7534542735821627,
+                "rms": 0.008910208224338205,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7534542735821627,
+                "rms": 0.09499864645558567,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.40182402900815356,
+                "rms": 0.01600972036656777,
+                "samples": 3535
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.40182402900815356,
+                "rms": 0.10566970434170121,
+                "samples": 62
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.5069085471643253,
+                "rms": 0.01782041644867641,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5069085471643253,
+                "rms": 0.18999729291117134,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.8036480580163071,
+                "rms": 0.03201944073313554,
+                "samples": 3535
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.8036480580163071,
+                "rms": 0.21133940868340242,
+                "samples": 62
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 3.0138170943286506,
+                "rms": 0.03564083289735282,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 3.0138170943286506,
+                "rms": 0.3799945858223427,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.6072961160326142,
+                "rms": 0.06403888146627108,
+                "samples": 3535
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 1.6072961160326142,
+                "rms": 0.42267881736680485,
+                "samples": 62
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 4.520725641492976,
+                "rms": 0.053461249346029235,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 4.520725641492976,
+                "rms": 0.5699918787335141,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 2.4109441740489213,
+                "rms": 0.09605832219940663,
+                "samples": 3535
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 2.4109441740489213,
+                "rms": 0.6340182260502073,
+                "samples": 62
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.37345300483784044,
+                "rms": 0.004630585509445395,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.37345300483784044,
+                "rms": 0.045719608173914426,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.04432382244240977,
+                "rms": 0.0026459574138317323,
+                "samples": 2261
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000001296958641181486,
+                "rms": 8.833226916792705e-7,
+                "samples": 58
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.7469060096756809,
+                "rms": 0.00926117101889079,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7469060096756809,
+                "rms": 0.09143921634782885,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.08864764488481953,
+                "rms": 0.005291914827663465,
+                "samples": 2261
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000002593917282362972,
+                "rms": 0.000001766645383358541,
+                "samples": 58
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.4938120193513618,
+                "rms": 0.01852234203778158,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.4938120193513618,
+                "rms": 0.1828784326956577,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.17729528976963907,
+                "rms": 0.01058382965532693,
+                "samples": 2261
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000005187834564725944,
+                "rms": 0.000003533290766717082,
+                "samples": 58
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 2.9876240387027235,
+                "rms": 0.03704468407556316,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 2.9876240387027235,
+                "rms": 0.3657568653913154,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.35459057953927814,
+                "rms": 0.02116765931065386,
+                "samples": 2261
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000010375669129451888,
+                "rms": 0.000007066581533434164,
+                "samples": 58
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 4.4814360580540855,
+                "rms": 0.05556702611334474,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 4.4814360580540855,
+                "rms": 0.5486352980869731,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.5318858693089172,
+                "rms": 0.03175148896598079,
+                "samples": 2261
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00001556350369417783,
+                "rms": 0.000010599872300151246,
+                "samples": 58
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.25377612874841743,
+                "rms": 0.0032701534248706123,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.25377612874841743,
+                "rms": 0.033220348314720975,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.003507008191319245,
+                "rms": 0.0006910988762188474,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004218766169150364,
+                "rms": 0.0000033443685534323496,
+                "samples": 75
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.5075522574968349,
+                "rms": 0.0065403068497412245,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5075522574968349,
+                "rms": 0.06644069662944195,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.00701401638263849,
+                "rms": 0.0013821977524376948,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000008437532338300728,
+                "rms": 0.000006688737106864699,
+                "samples": 75
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.0151045149936697,
+                "rms": 0.013080613699482449,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0151045149936697,
+                "rms": 0.1328813932588839,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.01402803276527698,
+                "rms": 0.0027643955048753895,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000016875064676601457,
+                "rms": 0.000013377474213729398,
+                "samples": 75
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 2.0302090299873394,
+                "rms": 0.026161227398964898,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 2.0302090299873394,
+                "rms": 0.2657627865177678,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.02805606553055396,
+                "rms": 0.005528791009750779,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000033750129353202913,
+                "rms": 0.000026754948427458797,
+                "samples": 75
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 3.045313544981009,
+                "rms": 0.03924184109844735,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 3.045313544981009,
+                "rms": 0.3986441797766517,
+                "samples": 1830
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.04208409829583094,
+                "rms": 0.008293186514626169,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000050625194029804373,
+                "rms": 0.000040132422641188195,
+                "samples": 75
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "space": "srgb",
+      "subdivisions": 128,
+      "scientificBytes": 7275624,
+      "oklab": {
+        "max": 0.00030302481352141526,
+        "rms": 0.0000031765864279224153,
+        "samples": 2555904
+      },
+      "nearBlackOklab": {
+        "max": 0.00030302481352141526,
+        "rms": 0.00003750025936093702,
+        "samples": 7395
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.1883619556133462,
+                "rms": 0.0011919174720482772,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.1883619556133462,
+                "rms": 0.014234718300356502,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.10045505361816263,
+                "rms": 0.0025798212050973757,
+                "samples": 8400
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.10045505361816263,
+                "rms": 0.019532840805987963,
+                "samples": 124
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.3767239112266924,
+                "rms": 0.0023838349440965544,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3767239112266924,
+                "rms": 0.028469436600713004,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.20091010723632527,
+                "rms": 0.005159642410194751,
+                "samples": 8400
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.20091010723632527,
+                "rms": 0.039065681611975926,
+                "samples": 124
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.7534478224533848,
+                "rms": 0.004767669888193109,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7534478224533848,
+                "rms": 0.05693887320142601,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.40182021447265054,
+                "rms": 0.010319284820389503,
+                "samples": 8400
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.40182021447265054,
+                "rms": 0.07813136322395185,
+                "samples": 124
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.5068956449067696,
+                "rms": 0.009535339776386218,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5068956449067696,
+                "rms": 0.11387774640285202,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.8036404289453011,
+                "rms": 0.020638569640779005,
+                "samples": 8400
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.8036404289453011,
+                "rms": 0.1562627264479037,
+                "samples": 124
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 2.2603434673601543,
+                "rms": 0.014303009664579328,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 2.2603434673601543,
+                "rms": 0.17081661960427802,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.2054606434179516,
+                "rms": 0.030957854461168506,
+                "samples": 8400
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 1.2054606434179516,
+                "rms": 0.23439408967185554,
+                "samples": 124
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.1867274584831373,
+                "rms": 0.0012404254110266952,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.1867274584831373,
+                "rms": 0.014080457958886933,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.022162438296471156,
+                "rms": 0.0008337531752591386,
+                "samples": 4837
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000013747870033072327,
+                "rms": 8.426708346548603e-7,
+                "samples": 114
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.3734549169662746,
+                "rms": 0.0024808508220533904,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3734549169662746,
+                "rms": 0.028160915917773865,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.04432487659294231,
+                "rms": 0.0016675063505182772,
+                "samples": 4837
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000027495740066144655,
+                "rms": 0.0000016853416693097206,
+                "samples": 114
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.7469098339325492,
+                "rms": 0.004961701644106781,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7469098339325492,
+                "rms": 0.05632183183554773,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.08864975318588462,
+                "rms": 0.0033350127010365544,
+                "samples": 4837
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000005499148013228931,
+                "rms": 0.0000033706833386194412,
+                "samples": 114
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.4938196678650983,
+                "rms": 0.009923403288213561,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.4938196678650983,
+                "rms": 0.11264366367109546,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.17729950637176925,
+                "rms": 0.006670025402073109,
+                "samples": 4837
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000010998296026457862,
+                "rms": 0.0000067413666772388824,
+                "samples": 114
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 2.2407295017976474,
+                "rms": 0.014885104932320342,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 2.2407295017976474,
+                "rms": 0.1689654955066432,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.26594925955765386,
+                "rms": 0.010005038103109664,
+                "samples": 4837
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000016497444039686793,
+                "rms": 0.000010112050015858325,
+                "samples": 114
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.12688898513969332,
+                "rms": 0.000883833700417738,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.12688898513969332,
+                "rms": 0.010297771078904474,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0011293356980959692,
+                "rms": 0.0002506563926858139,
+                "samples": 6076
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004358264180682292,
+                "rms": 0.0000034196514040042745,
+                "samples": 150
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.25377797027938664,
+                "rms": 0.001767667400835476,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.25377797027938664,
+                "rms": 0.020595542157808948,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0022586713961919385,
+                "rms": 0.0005013127853716278,
+                "samples": 6076
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000008716528361364584,
+                "rms": 0.000006839302808008549,
+                "samples": 150
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.5075559405587733,
+                "rms": 0.003535334801670952,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5075559405587733,
+                "rms": 0.041191084315617896,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.004517342792383877,
+                "rms": 0.0010026255707432557,
+                "samples": 6076
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00001743305672272917,
+                "rms": 0.000013678605616017098,
+                "samples": 150
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.0151118811175466,
+                "rms": 0.007070669603341904,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0151118811175466,
+                "rms": 0.08238216863123579,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.009034685584767754,
+                "rms": 0.0020052511414865113,
+                "samples": 6076
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00003486611344545834,
+                "rms": 0.000027357211232034196,
+                "samples": 150
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 1.5226678216763199,
+                "rms": 0.010606004405012855,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5226678216763199,
+                "rms": 0.12357325294685369,
+                "samples": 7395
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.01355202837715163,
+                "rms": 0.003007876712229767,
+                "samples": 6076
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000052299170168187506,
+                "rms": 0.00004103581684805129,
+                "samples": 150
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "space": "display-p3",
+      "subdivisions": 32,
+      "scientificBytes": 455016,
+      "oklab": {
+        "max": 0.0012937469285908088,
+        "rms": 0.00004505881410473415,
+        "samples": 159744
+      },
+      "nearBlackOklab": {
+        "max": 0.0012937469285908088,
+        "rms": 0.00038342785394782796,
+        "samples": 416
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.7994701764511192,
+                "rms": 0.017889936315261482,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7994701764511192,
+                "rms": 0.14594525005491857,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.3276354285988798,
+                "rms": 0.01931156739720775,
+                "samples": 1820
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000019949599411710776,
+                "rms": 0.0000017000814440918142,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.5989403529022383,
+                "rms": 0.035779872630522964,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5989403529022383,
+                "rms": 0.29189050010983714,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.6552708571977596,
+                "rms": 0.0386231347944155,
+                "samples": 1820
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000003989919882342155,
+                "rms": 0.0000034001628881836284,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 3.1978807058044767,
+                "rms": 0.07155974526104593,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 3.1978807058044767,
+                "rms": 0.5837810002196743,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.3105417143955191,
+                "rms": 0.077246269588831,
+                "samples": 1820
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00000797983976468431,
+                "rms": 0.000006800325776367257,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 6.395761411608953,
+                "rms": 0.14311949052209186,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 6.395761411608953,
+                "rms": 1.1675620004393485,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 2.6210834287910383,
+                "rms": 0.154492539177662,
+                "samples": 1820
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00001595967952936862,
+                "rms": 0.000013600651552734514,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 9.593642117413431,
+                "rms": 0.2146792357831378,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 9.593642117413431,
+                "rms": 1.751343000659023,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 3.931625143186557,
+                "rms": 0.231738808766493,
+                "samples": 1820
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00002393951929405293,
+                "rms": 0.00002040097732910177,
+                "samples": 28
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.7891187496556186,
+                "rms": 0.01831238212813344,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7891187496556186,
+                "rms": 0.14218574322922642,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.14201871528548882,
+                "rms": 0.011531349489618647,
+                "samples": 1141
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000015903093253846458,
+                "rms": 0.0000011623033766244387,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.5782374993112371,
+                "rms": 0.03662476425626688,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5782374993112371,
+                "rms": 0.28437148645845284,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.28403743057097763,
+                "rms": 0.023062698979237295,
+                "samples": 1141
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000031806186507692916,
+                "rms": 0.0000023246067532488773,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 3.1564749986224743,
+                "rms": 0.07324952851253376,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 3.1564749986224743,
+                "rms": 0.5687429729169057,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.5680748611419553,
+                "rms": 0.04612539795847459,
+                "samples": 1141
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000006361237301538583,
+                "rms": 0.000004649213506497755,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 6.3129499972449485,
+                "rms": 0.14649905702506752,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 6.3129499972449485,
+                "rms": 1.1374859458338114,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.1361497222839105,
+                "rms": 0.09225079591694918,
+                "samples": 1141
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000012722474603077166,
+                "rms": 0.00000929842701299551,
+                "samples": 28
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 9.469424995867422,
+                "rms": 0.2197485855376013,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 9.469424995867422,
+                "rms": 1.7062289187507171,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.7042245834258658,
+                "rms": 0.13837619387542377,
+                "samples": 1141
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00001908371190461575,
+                "rms": 0.000013947640519493263,
+                "samples": 28
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.5290765029707154,
+                "rms": 0.012552181414137652,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5290765029707154,
+                "rms": 0.09859913571037403,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.011976361750334272,
+                "rms": 0.002671266719290507,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004137660310661029,
+                "rms": 0.0000033644175153444913,
+                "samples": 36
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 1.0581530059414308,
+                "rms": 0.025104362828275304,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0581530059414308,
+                "rms": 0.19719827142074806,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.023952723500668543,
+                "rms": 0.005342533438581014,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000008275320621322058,
+                "rms": 0.000006728835030688983,
+                "samples": 36
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 2.1163060118828616,
+                "rms": 0.05020872565655061,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 2.1163060118828616,
+                "rms": 0.3943965428414961,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.04790544700133709,
+                "rms": 0.010685066877162029,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000016550641242644117,
+                "rms": 0.000013457670061377965,
+                "samples": 36
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 4.232612023765723,
+                "rms": 0.10041745131310122,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 4.232612023765723,
+                "rms": 0.7887930856829922,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.09581089400267417,
+                "rms": 0.021370133754324058,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000033101282485288234,
+                "rms": 0.00002691534012275593,
+                "samples": 36
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 6.348918035648585,
+                "rms": 0.15062617696965183,
+                "samples": 159744
+              },
+              "nearBlackCssPixels": {
+                "max": 6.348918035648585,
+                "rms": 1.1831896285244883,
+                "samples": 416
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.14371634100401126,
+                "rms": 0.032055200631486085,
+                "samples": 1344
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00004965192372793235,
+                "rms": 0.00004037301018413389,
+                "samples": 36
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "space": "display-p3",
+      "subdivisions": 64,
+      "scientificBytes": 1819240,
+      "oklab": {
+        "max": 0.0006468734642954044,
+        "rms": 0.000012275176797956888,
+        "samples": 638976
+      },
+      "nearBlackOklab": {
+        "max": 0.0006468734642954044,
+        "rms": 0.00012970187209223927,
+        "samples": 1756
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.3997336503386381,
+                "rms": 0.0048472991517681165,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3997336503386381,
+                "rms": 0.05145243572475601,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.16381667052276636,
+                "rms": 0.006522969578389471,
+                "samples": 3752
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.16381667052276636,
+                "rms": 0.04346792924068164,
+                "samples": 61
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.7994673006772762,
+                "rms": 0.009694598303536233,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7994673006772762,
+                "rms": 0.10290487144951202,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.3276333410455327,
+                "rms": 0.013045939156778942,
+                "samples": 3752
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.3276333410455327,
+                "rms": 0.08693585848136327,
+                "samples": 61
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.5989346013545525,
+                "rms": 0.019389196607072466,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5989346013545525,
+                "rms": 0.20580974289902404,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.6552666820910654,
+                "rms": 0.026091878313557883,
+                "samples": 3752
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.6552666820910654,
+                "rms": 0.17387171696272655,
+                "samples": 61
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 3.197869202709105,
+                "rms": 0.03877839321414493,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 3.197869202709105,
+                "rms": 0.4116194857980481,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.3105333641821308,
+                "rms": 0.05218375662711577,
+                "samples": 3752
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 1.3105333641821308,
+                "rms": 0.3477434339254531,
+                "samples": 61
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 4.796803804063657,
+                "rms": 0.0581675898212174,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 4.796803804063657,
+                "rms": 0.6174292286970722,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 1.9658000462731962,
+                "rms": 0.07827563494067365,
+                "samples": 3752
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 1.9658000462731962,
+                "rms": 0.5216151508881797,
+                "samples": 61
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.3945603756872238,
+                "rms": 0.004963761164923118,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3945603756872238,
+                "rms": 0.04974282172875688,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0710099282761176,
+                "rms": 0.0037901943533217844,
+                "samples": 2275
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000015200429891175244,
+                "rms": 0.0000010399707220226027,
+                "samples": 56
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.7891207513744476,
+                "rms": 0.009927522329846237,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7891207513744476,
+                "rms": 0.09948564345751376,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.1420198565522352,
+                "rms": 0.007580388706643569,
+                "samples": 2275
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000030400859782350488,
+                "rms": 0.0000020799414440452055,
+                "samples": 56
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.5782415027488952,
+                "rms": 0.019855044659692473,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5782415027488952,
+                "rms": 0.19897128691502752,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.2840397131044704,
+                "rms": 0.015160777413287137,
+                "samples": 2275
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0000060801719564700975,
+                "rms": 0.000004159882888090411,
+                "samples": 56
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 3.1564830054977904,
+                "rms": 0.039710089319384946,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 3.1564830054977904,
+                "rms": 0.39794257383005505,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.5680794262089408,
+                "rms": 0.030321554826574275,
+                "samples": 2275
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000012160343912940195,
+                "rms": 0.000008319765776180822,
+                "samples": 56
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 4.734724508246686,
+                "rms": 0.05956513397907742,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 4.734724508246686,
+                "rms": 0.5969138607450826,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.8521191393134112,
+                "rms": 0.04548233223986141,
+                "samples": 2275
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000018240515869410294,
+                "rms": 0.000012479648664271233,
+                "samples": 56
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.2645348823367621,
+                "rms": 0.0034418451168511392,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.2645348823367621,
+                "rms": 0.03510899293173945,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0030203219264106585,
+                "rms": 0.0006694996690669871,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004243415570141786,
+                "rms": 0.0000034898224985063556,
+                "samples": 74
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.5290697646735242,
+                "rms": 0.0068836902337022785,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5290697646735242,
+                "rms": 0.0702179858634789,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.006040643852821317,
+                "rms": 0.0013389993381339742,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000008486831140283572,
+                "rms": 0.000006979644997012711,
+                "samples": 74
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 1.0581395293470484,
+                "rms": 0.013767380467404557,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0581395293470484,
+                "rms": 0.1404359717269578,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.012081287705642634,
+                "rms": 0.0026779986762679483,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000016973662280567144,
+                "rms": 0.000013959289994025422,
+                "samples": 74
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 2.1162790586940967,
+                "rms": 0.027534760934809114,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 2.1162790586940967,
+                "rms": 0.2808719434539156,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.02416257541128527,
+                "rms": 0.005355997352535897,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00003394732456113429,
+                "rms": 0.000027918579988050844,
+                "samples": 74
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 3.174418588041145,
+                "rms": 0.04130214140221367,
+                "samples": 638976
+              },
+              "nearBlackCssPixels": {
+                "max": 3.174418588041145,
+                "rms": 0.4213079151808734,
+                "samples": 1756
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0362438631169279,
+                "rms": 0.008033996028803845,
+                "samples": 2688
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000050920986841701435,
+                "rms": 0.00004187786998207627,
+                "samples": 74
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "space": "display-p3",
+      "subdivisions": 128,
+      "scientificBytes": 7275624,
+      "oklab": {
+        "max": 0.0003234367321477022,
+        "rms": 0.000003302384590732545,
+        "samples": 2555904
+      },
+      "nearBlackOklab": {
+        "max": 0.0003234367321477022,
+        "rms": 0.000039527860754835514,
+        "samples": 7139
+      },
+      "views": [
+        {
+          "name": "home",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.1998653872823702,
+                "rms": 0.0012990685268803664,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.1998653872823702,
+                "rms": 0.015537171353459249,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.08190729148469136,
+                "rms": 0.00210627235409119,
+                "samples": 8834
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.08190729148469136,
+                "rms": 0.01557917459303449,
+                "samples": 119
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.3997307745647404,
+                "rms": 0.0025981370537607328,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3997307745647404,
+                "rms": 0.031074342706918497,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.16381458296938273,
+                "rms": 0.00421254470818238,
+                "samples": 8834
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.16381458296938273,
+                "rms": 0.03115834918606898,
+                "samples": 119
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.7994615491294808,
+                "rms": 0.0051962741075214655,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.7994615491294808,
+                "rms": 0.062148685413836995,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.32762916593876545,
+                "rms": 0.00842508941636476,
+                "samples": 8834
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.32762916593876545,
+                "rms": 0.06231669837213796,
+                "samples": 119
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.5989230982589615,
+                "rms": 0.010392548215042931,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5989230982589615,
+                "rms": 0.12429737082767399,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.6552583318775309,
+                "rms": 0.01685017883272952,
+                "samples": 8834
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.6552583318775309,
+                "rms": 0.12463339674427593,
+                "samples": 119
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 2.3983846473884425,
+                "rms": 0.015588822322564398,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 2.3983846473884425,
+                "rms": 0.18644605624151098,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.9828874978162964,
+                "rms": 0.025275268249094283,
+                "samples": 8834
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.9828874978162964,
+                "rms": 0.1869500951164139,
+                "samples": 119
+              }
+            }
+          ]
+        },
+        {
+          "name": "blue",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.19728118870298275,
+                "rms": 0.001330448198445434,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.19728118870298275,
+                "rms": 0.015457718994781473,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0355055347714,
+                "rms": 0.0012861880740669615,
+                "samples": 4550
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0355055347714,
+                "rms": 0.006860911281340897,
+                "samples": 116
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.3945623774059655,
+                "rms": 0.002660896396890868,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.3945623774059655,
+                "rms": 0.030915437989562946,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0710110695428,
+                "rms": 0.002572376148133923,
+                "samples": 4550
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.0710110695428,
+                "rms": 0.013721822562681793,
+                "samples": 116
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.789124754811931,
+                "rms": 0.005321792793781736,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.789124754811931,
+                "rms": 0.06183087597912589,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.1420221390856,
+                "rms": 0.005144752296267846,
+                "samples": 4550
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.1420221390856,
+                "rms": 0.027443645125363587,
+                "samples": 116
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.578249509623862,
+                "rms": 0.010643585587563472,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.578249509623862,
+                "rms": 0.12366175195825178,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.2840442781712,
+                "rms": 0.010289504592535692,
+                "samples": 4550
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.2840442781712,
+                "rms": 0.05488729025072717,
+                "samples": 116
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 2.367374264435793,
+                "rms": 0.015965378381345208,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 2.367374264435793,
+                "rms": 0.18549262793737767,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.42606641725679995,
+                "rms": 0.015434256888803538,
+                "samples": 4550
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.42606641725679995,
+                "rms": 0.08233093537609076,
+                "samples": 116
+              }
+            }
+          ]
+        },
+        {
+          "name": "side",
+          "zooms": [
+            {
+              "zoom": 1,
+              "cssPixels": {
+                "max": 0.13226407201980594,
+                "rms": 0.0009304072190146677,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.13226407201980594,
+                "rms": 0.010932874665327308,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0007909427549161088,
+                "rms": 0.00019309993486737426,
+                "samples": 5656
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000004697698366926228,
+                "rms": 0.0000036186666150523855,
+                "samples": 149
+              }
+            },
+            {
+              "zoom": 2,
+              "cssPixels": {
+                "max": 0.2645281440396119,
+                "rms": 0.0018608144380293354,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.2645281440396119,
+                "rms": 0.021865749330654615,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.0015818855098322176,
+                "rms": 0.0003861998697347485,
+                "samples": 5656
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000009395396733852456,
+                "rms": 0.000007237333230104771,
+                "samples": 149
+              }
+            },
+            {
+              "zoom": 4,
+              "cssPixels": {
+                "max": 0.5290562880792238,
+                "rms": 0.0037216288760586707,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 0.5290562880792238,
+                "rms": 0.04373149866130923,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.003163771019664435,
+                "rms": 0.000772399739469497,
+                "samples": 5656
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000018790793467704913,
+                "rms": 0.000014474666460209542,
+                "samples": 149
+              }
+            },
+            {
+              "zoom": 8,
+              "cssPixels": {
+                "max": 1.0581125761584476,
+                "rms": 0.0074432577521173415,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.0581125761584476,
+                "rms": 0.08746299732261846,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.00632754203932887,
+                "rms": 0.001544799478938994,
+                "samples": 5656
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.000037581586935409825,
+                "rms": 0.000028949332920419084,
+                "samples": 149
+              }
+            },
+            {
+              "zoom": 12,
+              "cssPixels": {
+                "max": 1.5871688642376713,
+                "rms": 0.011164886628176012,
+                "samples": 2555904
+              },
+              "nearBlackCssPixels": {
+                "max": 1.5871688642376713,
+                "rms": 0.13119449598392768,
+                "samples": 7139
+              },
+              "silhouetteEdgeCssPixels": {
+                "max": 0.009491313058993305,
+                "rms": 0.002317199218408491,
+                "samples": 5656
+              },
+              "nearBlackSilhouetteCssPixels": {
+                "max": 0.00005637238040311474,
+                "rms": 0.00004342399938062863,
+                "samples": 149
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

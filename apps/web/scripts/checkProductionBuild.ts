@@ -44,14 +44,57 @@ async function readPngDimensions(path: string): Promise<{ width: number; height:
 
 const files = await listFiles(distributionDirectory);
 const paths = new Set(files.map((file) => file.path));
-for (const requiredPath of ["_headers", "favicon.svg", "index.html", "og/gamut-plane.png"]) {
+for (const requiredPath of [
+  "_headers",
+  "_redirects",
+  "favicon.svg",
+  "index.html",
+  "og/gamut-plane.png",
+]) {
   requireCondition(paths.has(requiredPath), `Production build is missing ${requiredPath}`);
 }
 
 const javascriptFiles = files.filter((file) => /^assets\/.+-[A-Za-z0-9_-]{8}\.js$/.test(file.path));
 const cssFiles = files.filter((file) => /^assets\/.+-[A-Za-z0-9_-]{8}\.css$/.test(file.path));
-requireCondition(javascriptFiles.length === 1, "Expected one hashed application JavaScript asset");
-requireCondition(cssFiles.length === 1, "Expected one hashed application CSS asset");
+requireCondition(
+  javascriptFiles.length >= 2,
+  "Expected compact and lazy spatial JavaScript assets",
+);
+requireCondition(cssFiles.length >= 2, "Expected compact and lazy spatial CSS assets");
+const manifest = JSON.parse(
+  await readFile(join(distributionDirectory, ".vite/manifest.json"), "utf8"),
+) as Record<
+  string,
+  { file: string; imports?: string[]; dynamicImports?: string[]; css?: string[] }
+>;
+const entry = manifest["index.html"];
+const spatial = manifest["src/spatial/spatialApp.vue"];
+requireCondition(entry && spatial, "Missing main or lazy spatial entry");
+const eager = new Set<string>();
+function visit(key: string) {
+  if (eager.has(key)) return;
+  eager.add(key);
+  for (const dependency of manifest[key]?.imports ?? []) visit(dependency);
+}
+visit("index.html");
+requireCondition(!eager.has("src/spatial/spatialApp.vue"), "Spatial renderer is eager");
+requireCondition(
+  entry.dynamicImports?.includes("src/spatial/spatialApp.vue"),
+  "Spatial renderer must be a dynamic import",
+);
+for (const key of eager) {
+  const chunk = await readFile(join(distributionDirectory, manifest[key]!.file), "utf8");
+  requireCondition(
+    !/WebGLRenderer|OrbitControls|rgb-cube-grid-v1/.test(chunk),
+    "Compact graph contains spatial implementation",
+  );
+  for (const css of manifest[key]!.css ?? []) {
+    requireCondition(
+      !(await readFile(join(distributionDirectory, css), "utf8")).includes(".spatial-stage"),
+      "Spatial CSS is eager",
+    );
+  }
+}
 
 const forbiddenOutput = files.filter(
   (file) =>
@@ -91,6 +134,11 @@ for (const file of files.filter((candidate) =>
 }
 
 const headers = await readFile(join(distributionDirectory, "_headers"), "utf8");
+const rewrites = await readFile(join(distributionDirectory, "_redirects"), "utf8");
+requireCondition(
+  rewrites.trim().replaceAll("\r\n", "\n") === "/spatial /index.html 200\n/spatial/ /spatial 301",
+  "Standalone spatial routes must resolve explicitly without a catch-all fallback",
+);
 for (const expectedHeader of [
   "Content-Security-Policy:",
   "Permissions-Policy:",
@@ -112,8 +160,10 @@ requireCondition(
 );
 requireCondition(socialImage.size <= 1_000_000, "Open Graph image exceeds 1 MB");
 
-const javascriptContents = await readFile(join(distributionDirectory, javascriptFiles[0]!.path));
-const cssContents = await readFile(join(distributionDirectory, cssFiles[0]!.path));
+const mainJs = javascriptFiles.find((file) => file.path === entry.file)!;
+const mainCss = cssFiles.find((file) => file.path === entry.css?.[0])!;
+const javascriptContents = await readFile(join(distributionDirectory, mainJs.path));
+const cssContents = await readFile(join(distributionDirectory, mainCss.path));
 const totalSize = files.reduce((total, file) => total + file.size, 0);
 const largestFile = files.reduce((largest, file) => (file.size > largest.size ? file : largest));
 
@@ -123,16 +173,18 @@ console.log(
       fileCount: files.length,
       totalBytes: totalSize,
       mainJavaScript: {
-        bytes: javascriptFiles[0]!.size,
+        bytes: mainJs.size,
         gzipBytes: gzipSync(javascriptContents).byteLength,
       },
       mainCss: {
-        bytes: cssFiles[0]!.size,
+        bytes: mainCss.size,
         gzipBytes: gzipSync(cssContents).byteLength,
       },
       openGraphImageBytes: socialImage.size,
       largestFile,
       sourceMaps: 0,
+      eagerJavaScriptFiles: [...eager].map((key) => manifest[key]!.file),
+      lazySpatialJavaScript: spatial.file,
     },
     null,
     2,

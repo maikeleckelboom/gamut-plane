@@ -85,7 +85,7 @@ const wrongCheck: GamutCheckResult = { ...checked, gamutId: "srgb" };
 type RootCheck = import("@gamut-plane/core").GamutCheckResult;
 void wrongCheck;
 
-if (Object.keys(capabilities).sort().join() !== "MAX_RGB_BATCH_POINTS,RGB_NUMERIC_REVISION,analyzeRequestedGamuts,assertOklchSample,authorEditorPoint,convertLinearRgb,convertRgbReference,decodeRgbCoordinate,editOperationDefinitions,editorDefinitions,encodeRgbCoordinate,gamutRayCrossings,gamutRayIntervals,geometryDefinitions,keyboardGeometryPoint,linearRgbToOklabBatch,representationDefinitions") throw new Error("Internal capability surface changed");
+if (Object.keys(capabilities).sort().join() !== "MAX_RGB_BATCH_POINTS,RGB_NUMERIC_REVISION,analyzeRequestedGamuts,assertOklchSample,authorEditorPoint,convertLinearRgb,convertRgbReference,decodeRgbCoordinate,editOperationDefinitions,editorDefinitions,encodeRgbCoordinate,gamutRayCrossings,gamutRayIntervals,geometryDefinitions,keyboardGeometryPoint,linearRgbToOklabBatch,representationDefinitions,spatialColorDefinition") throw new Error("Internal capability surface changed");
 if (Object.keys(capabilities).some((key) => key in root)) throw new Error("Internal capabilities leaked into root");
 if (capabilities.gamutRayIntervals(0.44, 264.1, "srgb").length !== 2) throw new Error("Packed numerical notch intervals failed");
 const linearRgb: readonly [number, number, number] = capabilities.convertLinearRgb([1, 0, 0], "srgb", "display-p3");
