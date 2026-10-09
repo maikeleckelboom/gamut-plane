@@ -227,7 +227,7 @@ async function verifyInstalledCapabilities(consumer: string) {
     join(consumer, "capabilitiesContract.mts"),
     `
 import { createColorValue, represent } from "@gamut-plane/core";
-import { analyzeRequestedGamuts } from "@gamut-plane/core/internal/capabilities";
+import { analyzeRequestedGamuts, linearRgbToOklabBatch } from "@gamut-plane/core/internal/capabilities";
 import { guideDefinitions, resolveEditorVisualSupport, resolveField, resolveRequestedGuides } from "@gamut-plane/render/internal/capabilities";
 import type { EditorVisualSupport, FieldResolution, GuideId, GuideResolution } from "@gamut-plane/render/internal/capabilities";
 import { currentField, currentOklchObservation, currentEditableDetail, generalizedGuideDisplay, generalizedEditableDetail, referenceBoundaryFit, nativeSelfBoundary } from "@gamut-plane/render/internal/current";
@@ -235,6 +235,8 @@ import type { CurrentField, GeneralizedGuideDisplay, ReferenceBoundaryFit } from
 import { FIT_VIEWPORT, sampleWindow, zoomViewportAt, viewportToField, fitBoundaryContour } from "@gamut-plane/render/internal/viewport";
 import type { FieldViewport, BoundaryFit } from "@gamut-plane/render/internal/viewport";
 const source = createColorValue({ space: "srgb", channels: [0.5, 0.5, 0.5], alpha: 0.37 });
+const numericBatch = linearRgbToOklabBatch(new Float64Array([8, 8, 8]), "display-p3");
+if (!numericBatch.ok || Math.abs(numericBatch.value[0]! - 2) > 1e-12) throw new Error("Packed extended spatial conversion failed");
 if (!source.ok) throw new Error("Invalid packed capability source");
 const ids: readonly GuideId[] = Object.values(guideDefinitions).map((guide) => guide.id);
 const observation = represent(source.value, "oklch");
@@ -296,7 +298,10 @@ import * as render from "@gamut-plane/render";
 import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 import * as viewport from "@gamut-plane/render/internal/viewport";
-assert.deepEqual(Object.keys(coreInternal).sort(), ["analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "representationDefinitions"]);
+assert.deepEqual(Object.keys(coreInternal).sort(), ["MAX_RGB_BATCH_POINTS", "RGB_NUMERIC_REVISION", "analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "linearRgbToOklabBatch", "representationDefinitions"]);
+const batch = coreInternal.linearRgbToOklabBatch(new Float64Array([8, 8, 8]), "display-p3");
+assert.ok(batch.ok && Math.abs(batch.value[0] - 2) < 1e-12);
+assert.equal(coreInternal.linearRgbToOklabBatch(new Float64Array([NaN, 0, 0]), "srgb").ok, false);
 for (const key of ["GUIDE_FIDELITY_BOUND", "getTracedPickerGuide", "traceLightnessChromaGuide", "traceOklabGuide"]) assert.equal(key in core, false);
 assert.deepEqual(Object.values(coreInternal.representationDefinitions).map((definition) => definition.associatedGamutId), [null, null, "srgb-gamut", "display-p3-gamut"]);
 assert.deepEqual(Object.keys(renderInternal).sort(), ["guideDefinitions", "referenceGuidePolicy", "resolveEditorVisualSupport", "resolveField", "resolveRequestedGuides"]);
