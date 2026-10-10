@@ -304,7 +304,7 @@ import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 import * as viewport from "@gamut-plane/render/internal/viewport";
 import * as spatial from "@gamut-plane/render/internal/spatial";
-assert.deepEqual(Object.keys(spatial).sort(), ["MAX_RADIAL_SUBDIVISIONS", "SPATIAL_RADIAL_GENERATOR_REVISION", "generateBoundaryMesh", "generateRadialBoundaryMesh", "quantizeBoundaryPositions", "spatialColorDefinition"]);
+assert.deepEqual(Object.keys(spatial).sort(), ["DEFAULT_SECTION_CHORD_TOLERANCE", "DEFAULT_SECTION_LIMITS", "LIGHTNESS_SECTION_REVISION", "MAX_RADIAL_SUBDIVISIONS", "SPATIAL_RADIAL_GENERATOR_REVISION", "cubeEdgeId", "generateBoundaryMesh", "generateLightnessSection", "generateRadialBoundaryMesh", "lightnessMonotonicityMargin", "quantizeBoundaryPositions", "spatialColorDefinition"]);
 const spatialMesh = spatial.generateBoundaryMesh({ space: "srgb", subdivisions: 2, distribution: "cubic" });
 assert.ok(spatialMesh.ok && spatialMesh.value.coordinates === "oklab-a-l-b" && spatialMesh.value.topology === "cube-grid-v1");
 // The radial generator: V = 3n^2+3n+2 vertices and F = 6n^2+6n triangles, black as the last vertex.
@@ -312,6 +312,15 @@ const radialMesh = spatial.generateRadialBoundaryMesh({ space: "display-p3", sub
 assert.ok(radialMesh.ok && radialMesh.value.topology === "radial-hybrid-v1" && radialMesh.value.positions.length === 3 * 20 && radialMesh.value.faces.length === 36);
 assert.equal(spatial.SPATIAL_RADIAL_GENERATOR_REVISION, "rgb-radial-hybrid-v1");
 assert.equal(spatial.generateRadialBoundaryMesh({ space: "srgb", subdivisions: spatial.MAX_RADIAL_SUBDIVISIONS + 1 }).ok, false);
+// The constant-lightness section: exact cube-face contours at one lightness, built on core's batch conversion.
+const section = spatial.generateLightnessSection({ space: "srgb", lightness: 0.5 });
+assert.ok(section.ok && section.value.kind === "region" && section.value.loops.length === 1 && section.value.generatorRevision === spatial.LIGHTNESS_SECTION_REVISION);
+assert.ok(section.value.loops[0].positions.every((value, index) => index % 3 !== 1 || value === 0.5));
+assert.equal(spatial.generateLightnessSection({ space: "display-p3", lightness: 0 }).value.kind, "point");
+assert.equal(spatial.generateLightnessSection({ space: "srgb", lightness: 2 }).value.kind, "empty");
+assert.equal(spatial.generateLightnessSection({ space: "srgb", lightness: Number.NaN }).ok, false);
+assert.equal(spatial.generateLightnessSection({ space: "srgb", lightness: 0.5, limits: { maxConversions: 100 } }).error, "resource-budget");
+assert.ok(spatial.lightnessMonotonicityMargin("srgb") > 10 && spatial.lightnessMonotonicityMargin("display-p3") > 10);
 assert.equal(spatial.spatialColorDefinition("srgb").revision, coreInternal.RGB_NUMERIC_REVISION);
 for (const key of Object.keys(spatial)) assert.equal(key in render, false);
 assert.deepEqual(Object.keys(coreInternal).sort(), ["MAX_RGB_BATCH_POINTS", "RGB_NUMERIC_REVISION", "analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "linearRgbToOklabBatch", "representationDefinitions", "spatialColorDefinition"]);
