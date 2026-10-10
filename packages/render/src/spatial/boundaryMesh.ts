@@ -15,6 +15,12 @@ export interface BoundaryMesh {
   readonly space: RgbRepresentationId;
   readonly gamut: "srgb-gamut" | "display-p3-gamut";
   readonly coordinates: "oklab-a-l-b";
+  /**
+   * Which construction produced the mesh. `cube-grid-v1`: six n x n grids. `radial-hybrid-v1`: three
+   * upper-face grids plus three fans from black (see radialBoundaryMesh.ts). Consumers that shade
+   * the surface must honor it: a fan's apex needs a per-triangle normal.
+   */
+  readonly topology: "cube-grid-v1" | "radial-hybrid-v1";
   readonly definitionRevision: string;
   readonly generatorRevision: string;
   readonly subdivisions: number;
@@ -169,6 +175,7 @@ export function generateBoundaryMesh(
       space,
       gamut,
       coordinates: "oklab-a-l-b",
+      topology: "cube-grid-v1",
       definitionRevision: RGB_NUMERIC_REVISION,
       generatorRevision: SPATIAL_GENERATOR_REVISION,
       subdivisions: n,
