@@ -304,7 +304,13 @@ import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 import * as viewport from "@gamut-plane/render/internal/viewport";
 import * as spatial from "@gamut-plane/render/internal/spatial";
-assert.deepEqual(Object.keys(spatial).sort(), ["DEFAULT_SECTION_CHORD_TOLERANCE", "DEFAULT_SECTION_LIMITS", "LIGHTNESS_SECTION_REVISION", "MAX_RADIAL_SUBDIVISIONS", "SPATIAL_RADIAL_GENERATOR_REVISION", "cubeEdgeId", "generateBoundaryMesh", "generateLightnessSection", "generateRadialBoundaryMesh", "lightnessMonotonicityMargin", "quantizeBoundaryPositions", "spatialColorDefinition"]);
+assert.deepEqual(Object.keys(spatial).sort(), ["DEFAULT_HUE_SECTION_LIMITS", "DEFAULT_SECTION_CHORD_TOLERANCE", "DEFAULT_SECTION_LIMITS", "HUE_SECTION_REVISION", "LIGHTNESS_SECTION_REVISION", "MAX_RADIAL_SUBDIVISIONS", "SPATIAL_RADIAL_GENERATOR_REVISION", "cubeEdgeId", "generateBoundaryMesh", "generateHueSection", "generateLightnessSection", "generateRadialBoundaryMesh", "lightnessMonotonicityMargin", "quantizeBoundaryPositions", "spatialColorDefinition"]);
+const hueSection = spatial.generateHueSection({ space: "srgb", hue: 264.1 });
+assert.ok(hueSection.ok && hueSection.value.loops.length === 2);
+assert.equal(hueSection.value.arcs.filter((arc) => arc.kind === "domain-neutral").length, 1);
+assert.ok(hueSection.value.positions instanceof Float64Array);
+assert.equal(spatial.generateHueSection({ space: "display-p3", hue: 264.1 }).value.loops.length, 1);
+assert.equal(spatial.generateHueSection({ space: "srgb", hue: NaN }).error, "invalid-options");
 const spatialMesh = spatial.generateBoundaryMesh({ space: "srgb", subdivisions: 2, distribution: "cubic" });
 assert.ok(spatialMesh.ok && spatialMesh.value.coordinates === "oklab-a-l-b" && spatialMesh.value.topology === "cube-grid-v1");
 // The radial generator: V = 3n^2+3n+2 vertices and F = 6n^2+6n triangles, black as the last vertex.

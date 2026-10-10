@@ -1,4 +1,17 @@
 /** Unsupported internal standalone-experiment route. No GPU or browser allocation. */
+export {
+  generateHueSection,
+  HUE_SECTION_REVISION,
+  DEFAULT_HUE_SECTION_LIMITS,
+} from "./hueSection.js";
+export type {
+  HueSection,
+  HueSectionOptions,
+  HueSectionResult,
+  HueSectionLimits,
+  HueSectionArc,
+  HueSectionVertex,
+} from "./hueSection.js";
 export { generateBoundaryMesh, quantizeBoundaryPositions } from "./boundaryMesh.js";
 export type { BoundaryMesh, KnotDistribution } from "./boundaryMesh.js";
 export {

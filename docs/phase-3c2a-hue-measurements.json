@@ -1,0 +1,2652 @@
+{
+  "generatorRevision": "hue-section-projective-v1",
+  "sourceDigests": {
+    "../src/spatial/hueSection.ts": "98e8b2dd0737780282a99eaa0363c9ea8cb3fc7ef6783474e08070f3421bee86",
+    "../src/spatial/huePolynomial.ts": "7ccd24448aab49957e34a33baa4575011db520dec6b1774b5c354cf5f22bfb6d",
+    "../experiments/spatial/hueSectionOracle.ts": "5d07aca76a5a469092890e66de929e367fcbf4b04a7b30c67ebd181e061b7d26",
+    "../experiments/spatial/oracle.ts": "324bae15564bc06fb563e5b57c70bf91ca615af75ce7728b5bcceaa9446c9354",
+    "./qualifyHueSection.ts": "cd97d0c10067a92f50d909f050f5737fb2292da6f46e85e427c894aed0545199"
+  },
+  "environment": {
+    "node": "v24.16.0",
+    "platform": "win32",
+    "architecture": "x64",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics     "
+  },
+  "method": {
+    "accuracy": "sampled bidirectional (L,C) distance, independent CSS XYZ contour with 16384 direction scan intervals; reverse uses eight samples per production chord against reference polyline",
+    "topology": "production derivative root partition; independent sign scans cannot exclude sub-grid pairs",
+    "timing": "100 warmups then one measured call per hue; repeated call for byte repeatability; Node CPU only",
+    "memory": "exact retained typed buffers; JS object storage engine-dependent; temporary point-record bound is structural, no heap-byte measurement",
+    "coreDisputes": "all count mismatches retained with independent raw-bound scan; near-zero scans may miss narrow intervals; no dispute automatically waived"
+  },
+  "passed": true,
+  "reports": [
+    {
+      "space": "srgb",
+      "generationCases": 3439,
+      "timingMilliseconds": {
+        "min": 0.03260000000000218,
+        "median": 0.08899999999994179,
+        "p95": 0.22800000000006548,
+        "p99": 0.3712000000000444,
+        "max": 1.1059000000000196
+      },
+      "worstTime": {
+        "hue": 354.75,
+        "milliseconds": 1.1059000000000196
+      },
+      "vertices": {
+        "min": 9,
+        "median": 52,
+        "p95": 66,
+        "p99": 67,
+        "max": 70
+      },
+      "evaluations": {
+        "min": 1133,
+        "median": 1733,
+        "p95": 1941,
+        "p99": 2305,
+        "max": 2330
+      },
+      "conversions": {
+        "min": 51,
+        "median": 308,
+        "p95": 389,
+        "p99": 397,
+        "max": 413
+      },
+      "retainedTypedBufferBytes": {
+        "min": 432,
+        "median": 2496,
+        "p95": 3168,
+        "p99": 3216,
+        "max": 3360
+      },
+      "refinementDepth": {
+        "min": 3,
+        "median": 6,
+        "p95": 6,
+        "p99": 6,
+        "max": 6
+      },
+      "maxTemporaryRecords": 23,
+      "sectorRanges": [
+        {
+          "hue": 0,
+          "sectors": 1
+        },
+        {
+          "hue": 264.05219999999997,
+          "sectors": 2
+        },
+        {
+          "hue": 264.20799999999997,
+          "sectors": 1
+        }
+      ],
+      "determinismFailures": 0,
+      "maxIndependentResidual": 4.3298697960381105e-15,
+      "maxSourceResidual": 8.174572130315028e-13,
+      "maxPlaneResidual": 2.7755575615628914e-17,
+      "outsideVertices": 0,
+      "independent": [
+        {
+          "hue": 0,
+          "sectors": 1,
+          "forward": 0.0000072957428269261225,
+          "reverse": 0.000007294920915585732,
+          "worstForward": [0.9956355010405357, 0.0022530733115448],
+          "worstReverse": [0.9956685977104064, 0.0022441424255923593],
+          "referenceSectors": 1,
+          "referenceSegments": 4729
+        },
+        {
+          "hue": 5,
+          "sectors": 1,
+          "forward": 0.0000074270157471046,
+          "reverse": 0.000007426667519938999,
+          "worstForward": [0.9954978946160111, 0.0022528421192862134],
+          "worstReverse": [0.9955610544801419, 0.0022294316081722127],
+          "referenceSectors": 1,
+          "referenceSegments": 4699
+        },
+        {
+          "hue": 10,
+          "sectors": 1,
+          "forward": 0.000007519825296126622,
+          "reverse": 0.000007519551152670877,
+          "worstForward": [0.995518042353539, 0.002191930166278455],
+          "worstReverse": [0.9954749074262428, 0.0022214833273206547],
+          "referenceSectors": 1,
+          "referenceSegments": 4683
+        },
+        {
+          "hue": 15,
+          "sectors": 1,
+          "forward": 0.000007580481867204057,
+          "reverse": 0.000007580169714798163,
+          "worstForward": [0.9954511219733336, 0.0021918106998273608],
+          "worstReverse": [0.9954087248737536, 0.002220738267771524],
+          "referenceSectors": 1,
+          "referenceSegments": 4682
+        },
+        {
+          "hue": 20,
+          "sectors": 1,
+          "forward": 0.000007613547384649737,
+          "reverse": 0.000007613314464771579,
+          "worstForward": [0.9952921883868174, 0.0022524344994439734],
+          "worstReverse": [0.9953614096733789, 0.0022276376503792606],
+          "referenceSectors": 1,
+          "referenceSegments": 4697
+        },
+        {
+          "hue": 25,
+          "sectors": 1,
+          "forward": 0.00000762306585854983,
+          "reverse": 0.000007622187851673377,
+          "worstForward": [0.9952944570277709, 0.0022523383047761414],
+          "worstReverse": [0.9953322118524514, 0.0022426561201329574],
+          "referenceSectors": 1,
+          "referenceSegments": 4729
+        },
+        {
+          "hue": 30,
+          "sectors": 1,
+          "forward": 0.0000073367706116781625,
+          "reverse": 0.000007336749275472529,
+          "worstForward": [0.9953311469827473, 0.0022528387671492873],
+          "worstReverse": [0.9954038997451549, 0.0022257585113325323],
+          "referenceSectors": 1,
+          "referenceSegments": 4692
+        },
+        {
+          "hue": 35,
+          "sectors": 1,
+          "forward": 0.000005843814940621959,
+          "reverse": 0.000005843477829931061,
+          "worstForward": [0.995898286522819, 0.0020098903973993975],
+          "worstReverse": [0.9958901409001617, 0.0020204065639603773],
+          "referenceSectors": 1,
+          "referenceSegments": 4257
+        },
+        {
+          "hue": 40,
+          "sectors": 1,
+          "forward": 0.000009863774077277686,
+          "reverse": 0.000009863712945281928,
+          "worstForward": [0.7147142706182233, 0.18457765101642137],
+          "worstReverse": [0.7146912937089627, 0.1846098273492341],
+          "referenceSectors": 1,
+          "referenceSegments": 3916
+        },
+        {
+          "hue": 45,
+          "sectors": 1,
+          "forward": 0.000009894859699585935,
+          "reverse": 0.000009894646926703947,
+          "worstForward": [0.8048802323895031, 0.1187094517205245],
+          "worstReverse": [0.8048916372909849, 0.11871344061761625],
+          "referenceSectors": 1,
+          "referenceSegments": 3645
+        },
+        {
+          "hue": 50,
+          "sectors": 1,
+          "forward": 0.00000988782098335609,
+          "reverse": 0.00000988760138448872,
+          "worstForward": [0.8885589035642001, 0.0654430730204177],
+          "worstReverse": [0.8885699099614969, 0.06544776123903223],
+          "referenceSectors": 1,
+          "referenceSegments": 3428
+        },
+        {
+          "hue": 55,
+          "sectors": 1,
+          "forward": 0.00000985944970681493,
+          "reverse": 0.000009858910554003965,
+          "worstForward": [0.97346539307037, 0.015327349651754772],
+          "worstReverse": [0.9734890198494008, 0.015324879815714416],
+          "referenceSectors": 1,
+          "referenceSegments": 3254
+        },
+        {
+          "hue": 60,
+          "sectors": 1,
+          "forward": 0.000008432056787693305,
+          "reverse": 0.00000843202139055139,
+          "worstForward": [0.9951669732653742, 0.0029235025024196464],
+          "worstReverse": [0.9951283286588166, 0.002956821157637323],
+          "referenceSectors": 1,
+          "referenceSegments": 3115
+        },
+        {
+          "hue": 65,
+          "sectors": 1,
+          "forward": 0.000006784317850635254,
+          "reverse": 0.0000067838640175646955,
+          "worstForward": [0.995602312104768, 0.002863586009160719],
+          "worstReverse": [0.995628585445716, 0.002854532196614364],
+          "referenceSectors": 1,
+          "referenceSegments": 3005
+        },
+        {
+          "hue": 70,
+          "sectors": 1,
+          "forward": 0.000005314528710181076,
+          "reverse": 0.0000053145064761089715,
+          "worstForward": [0.9960565283077006, 0.0028037020990403045],
+          "worstReverse": [0.9961047224272096, 0.002775883550460361],
+          "referenceSectors": 1,
+          "referenceSegments": 2920
+        },
+        {
+          "hue": 75,
+          "sectors": 1,
+          "forward": 0.000003971340146787497,
+          "reverse": 0.000003971233836035803,
+          "worstForward": [0.9965248752731858, 0.002743851544151815],
+          "worstReverse": [0.9965638125935237, 0.002718114709358374],
+          "referenceSectors": 1,
+          "referenceSegments": 2857
+        },
+        {
+          "hue": 80,
+          "sectors": 1,
+          "forward": 0.0000029381167730109234,
+          "reverse": 0.0000029380533522648258,
+          "worstForward": [0.8277645060399007, 0.16821828159492266],
+          "worstReverse": [0.8277638306000907, 0.16822332075653784],
+          "referenceSectors": 1,
+          "referenceSegments": 2814
+        },
+        {
+          "hue": 85,
+          "sectors": 1,
+          "forward": 0.0000087094817654279,
+          "reverse": 0.000008709372664469636,
+          "worstForward": [0.848480556738278, 0.1673938990116335],
+          "worstReverse": [0.8484914719307682, 0.16739448754103925],
+          "referenceSectors": 1,
+          "referenceSegments": 2789
+        },
+        {
+          "hue": 90,
+          "sectors": 1,
+          "forward": 0.000008373434663955239,
+          "reverse": 0.00000837132891626235,
+          "worstForward": [0.9745144891461704, 0.03224932683549564],
+          "worstReverse": [0.9746791965550251, 0.032053725739091384],
+          "referenceSectors": 1,
+          "referenceSegments": 2783
+        },
+        {
+          "hue": 95,
+          "sectors": 1,
+          "forward": 0.000008711360489518726,
+          "reverse": 0.000008707950987073797,
+          "worstForward": [0.9799355606470065, 0.03217318853541875],
+          "worstReverse": [0.9798000706573731, 0.03237296771535424],
+          "referenceSectors": 1,
+          "referenceSegments": 2794
+        },
+        {
+          "hue": 100,
+          "sectors": 1,
+          "forward": 0.000006451508718866166,
+          "reverse": 0.0000064512259190484035,
+          "worstForward": [0.9976062580917221, 0.005387081911440423],
+          "worstReverse": [0.997588580077392, 0.005410900148574005],
+          "referenceSectors": 1,
+          "referenceSegments": 2822
+        },
+        {
+          "hue": 105,
+          "sectors": 1,
+          "forward": 0.000009404874528247164,
+          "reverse": 0.000009404563979152023,
+          "worstForward": [0.9822871192983254, 0.06289381070801996],
+          "worstReverse": [0.9822728264284004, 0.06290873059169066],
+          "referenceSectors": 1,
+          "referenceSegments": 2870
+        },
+        {
+          "hue": 110,
+          "sectors": 1,
+          "forward": 0.000005536682222810389,
+          "reverse": 0.000005536263454580831,
+          "worstForward": [0.9676180237478444, 0.20722553500227736],
+          "worstReverse": [0.9676218944424408, 0.20724969550268463],
+          "referenceSectors": 1,
+          "referenceSegments": 2938
+        },
+        {
+          "hue": 115,
+          "sectors": 1,
+          "forward": 0.000005450981935176127,
+          "reverse": 0.000005450774974913261,
+          "worstForward": [0.9540835351773932, 0.21209185877309075],
+          "worstReverse": [0.9540905962985892, 0.2120798695859928],
+          "referenceSectors": 1,
+          "referenceSegments": 3029
+        },
+        {
+          "hue": 120,
+          "sectors": 1,
+          "forward": 0.000005548811954963384,
+          "reverse": 0.000005548762062285893,
+          "worstForward": [0.940327561127271, 0.21895983969921598],
+          "worstReverse": [0.9403327109002262, 0.21896250166973075],
+          "referenceSectors": 1,
+          "referenceSegments": 3146
+        },
+        {
+          "hue": 125,
+          "sectors": 1,
+          "forward": 0.000005845872495441343,
+          "reverse": 0.00000584568617155044,
+          "worstForward": [0.9261034381154104, 0.22825753160391113],
+          "worstReverse": [0.9261144771289793, 0.22823600095911292],
+          "referenceSectors": 1,
+          "referenceSegments": 3293
+        },
+        {
+          "hue": 130,
+          "sectors": 1,
+          "forward": 0.000006377194624096389,
+          "reverse": 0.000006377019139326918,
+          "worstForward": [0.9111601149559014, 0.24041303364470082],
+          "worstReverse": [0.9111695424625046, 0.24040280379514287],
+          "referenceSectors": 1,
+          "referenceSegments": 3477
+        },
+        {
+          "hue": 135,
+          "sectors": 1,
+          "forward": 0.0000072034313278888384,
+          "reverse": 0.000007203071561843542,
+          "worstForward": [0.8951771380929382, 0.25618122595722],
+          "worstReverse": [0.8951765888716698, 0.2562074729260251],
+          "referenceSectors": 1,
+          "referenceSegments": 3706
+        },
+        {
+          "hue": 140,
+          "sectors": 1,
+          "forward": 0.00000842987354612853,
+          "reverse": 0.000008429698524302857,
+          "worstForward": [0.8777148187021037, 0.2767836448553729],
+          "worstReverse": [0.8777271813960512, 0.2767731668375484],
+          "referenceSectors": 1,
+          "referenceSegments": 3992
+        },
+        {
+          "hue": 145,
+          "sectors": 1,
+          "forward": 0.000008089221405659606,
+          "reverse": 0.000008089078543076199,
+          "worstForward": [0.8709569320172501, 0.2683559098412154],
+          "worstReverse": [0.8709675714725738, 0.2683504547149397],
+          "referenceSectors": 1,
+          "referenceSegments": 3923
+        },
+        {
+          "hue": 150,
+          "sectors": 1,
+          "forward": 0.000006458237512063946,
+          "reverse": 0.000006458034630778078,
+          "worstForward": [0.8757832456352866, 0.23642664614480577],
+          "worstReverse": [0.8757946625598073, 0.23641612838378973],
+          "referenceSectors": 1,
+          "referenceSegments": 3540
+        },
+        {
+          "hue": 155,
+          "sectors": 1,
+          "forward": 0.000005393847908281199,
+          "reverse": 0.000005393568747087488,
+          "worstForward": [0.8801098715856784, 0.2133361465461553],
+          "worstReverse": [0.8801033763628775, 0.2133631605974291],
+          "referenceSectors": 1,
+          "referenceSegments": 3250
+        },
+        {
+          "hue": 160,
+          "sectors": 1,
+          "forward": 0.000004673733337562106,
+          "reverse": 0.000004673514687885015,
+          "worstForward": [0.8840063478576303, 0.19617896730260465],
+          "worstReverse": [0.8840167028208974, 0.19616851843721972],
+          "referenceSectors": 1,
+          "referenceSegments": 3025
+        },
+        {
+          "hue": 165,
+          "sectors": 1,
+          "forward": 0.000004177110452157456,
+          "reverse": 0.000004177028642467147,
+          "worstForward": [0.8876146451021523, 0.1831327893629575],
+          "worstReverse": [0.8876343804812892, 0.18310369853780106],
+          "referenceSectors": 1,
+          "referenceSegments": 2849
+        },
+        {
+          "hue": 170,
+          "sectors": 1,
+          "forward": 0.000003836248809866253,
+          "reverse": 0.000003836003087407142,
+          "worstForward": [0.8910231377176563, 0.17312584142111034],
+          "worstReverse": [0.8910367294861608, 0.17310852163854842],
+          "referenceSectors": 1,
+          "referenceSegments": 2710
+        },
+        {
+          "hue": 175,
+          "sectors": 1,
+          "forward": 0.000003609161902548934,
+          "reverse": 0.0000036089726722906065,
+          "worstForward": [0.8943023256496938, 0.16547096974771366],
+          "worstReverse": [0.8942899956813932, 0.16550121733520679],
+          "referenceSectors": 1,
+          "referenceSegments": 2602
+        },
+        {
+          "hue": 180,
+          "sectors": 1,
+          "forward": 0.0000034719023623104004,
+          "reverse": 0.000003471650257794353,
+          "worstForward": [0.8974367226702092, 0.1598496389263215],
+          "worstReverse": [0.89745100178336, 0.15983073980008733],
+          "referenceSectors": 1,
+          "referenceSegments": 2519
+        },
+        {
+          "hue": 185,
+          "sectors": 1,
+          "forward": 0.0000034096818001071397,
+          "reverse": 0.0000034094415585618722,
+          "worstForward": [0.9005555983112955, 0.15581741798580573],
+          "worstReverse": [0.9005709627081401, 0.15579623391924294],
+          "referenceSectors": 1,
+          "referenceSegments": 2457
+        },
+        {
+          "hue": 190,
+          "sectors": 1,
+          "forward": 0.000003415644350063992,
+          "reverse": 0.0000034153528003595484,
+          "worstForward": [0.9037077157740614, 0.1531770012098509],
+          "worstReverse": [0.9036987427474589, 0.15320116212923296],
+          "referenceSectors": 1,
+          "referenceSegments": 2415
+        },
+        {
+          "hue": 195,
+          "sectors": 1,
+          "forward": 0.000005305662406322937,
+          "reverse": 0.000005305649174470833,
+          "worstForward": [0.9090435535342475, 0.14652005305304588],
+          "worstReverse": [0.909063462086549, 0.14649740848165205],
+          "referenceSectors": 1,
+          "referenceSegments": 2391
+        },
+        {
+          "hue": 200,
+          "sectors": 1,
+          "forward": 0.0000032457601962822927,
+          "reverse": 0.000003245712105042405,
+          "worstForward": [0.8858258787142469, 0.14514804057350847],
+          "worstReverse": [0.8858454563103886, 0.14512764528357774],
+          "referenceSectors": 1,
+          "referenceSegments": 2383
+        },
+        {
+          "hue": 205,
+          "sectors": 1,
+          "forward": 0.000004608485782788969,
+          "reverse": 0.000004608412632208783,
+          "worstForward": [0.9954926247827286, 0.004577433076626541],
+          "worstReverse": [0.9955174725999031, 0.0045587358345591114],
+          "referenceSectors": 1,
+          "referenceSegments": 2392
+        },
+        {
+          "hue": 210,
+          "sectors": 1,
+          "forward": 0.000006100011171768369,
+          "reverse": 0.000006099902629596603,
+          "worstForward": [0.9947483321885333, 0.004574112829364202],
+          "worstReverse": [0.9947261836777544, 0.004601533510683307],
+          "referenceSectors": 1,
+          "referenceSegments": 2418
+        },
+        {
+          "hue": 215,
+          "sectors": 1,
+          "forward": 0.00000773180411031487,
+          "reverse": 0.00000773165931937738,
+          "worstForward": [0.9938869982096894, 0.004692659937084421],
+          "worstReverse": [0.9939180386685185, 0.004678536899646612],
+          "referenceSectors": 1,
+          "referenceSegments": 2462
+        },
+        {
+          "hue": 220,
+          "sectors": 1,
+          "forward": 0.00000954901123862765,
+          "reverse": 0.00000954889732203658,
+          "worstForward": [0.9930381232149772, 0.0048105761735416745],
+          "worstReverse": [0.9930804896168766, 0.00479284677696559],
+          "referenceSectors": 1,
+          "referenceSegments": 2526
+        },
+        {
+          "hue": 225,
+          "sectors": 1,
+          "forward": 0.000009814690925378142,
+          "reverse": 0.000009814548647542985,
+          "worstForward": [0.9181550733273571, 0.053174038216732354],
+          "worstReverse": [0.9181720285550705, 0.05317450544010974],
+          "referenceSectors": 1,
+          "referenceSegments": 2612
+        },
+        {
+          "hue": 230,
+          "sectors": 1,
+          "forward": 0.000009911732785199843,
+          "reverse": 0.000009911631329439648,
+          "worstForward": [0.8497625339617746, 0.09296321072710173],
+          "worstReverse": [0.8497313412914604, 0.092995414184779],
+          "referenceSectors": 1,
+          "referenceSegments": 2725
+        },
+        {
+          "hue": 235,
+          "sectors": 1,
+          "forward": 0.000009662064529502276,
+          "reverse": 0.00000966202855955411,
+          "worstForward": [0.7755221929728348, 0.13429993562388973],
+          "worstReverse": [0.775486360295967, 0.13433467082214834],
+          "referenceSectors": 1,
+          "referenceSegments": 2870
+        },
+        {
+          "hue": 240,
+          "sectors": 1,
+          "forward": 0.00000994554254670196,
+          "reverse": 0.00000994539471987969,
+          "worstForward": [0.7247207787581008, 0.1596373631821055],
+          "worstReverse": [0.7247132186318475, 0.15965400110319905],
+          "referenceSectors": 1,
+          "referenceSegments": 3056
+        },
+        {
+          "hue": 245,
+          "sectors": 1,
+          "forward": 0.000006468252230966304,
+          "reverse": 0.000006467974690316435,
+          "worstForward": [0.9938308625848408, 0.0031029546516815475],
+          "worstReverse": [0.9938059487087096, 0.003122758878053228],
+          "referenceSectors": 1,
+          "referenceSegments": 3297
+        },
+        {
+          "hue": 250,
+          "sectors": 1,
+          "forward": 0.000008149042433908004,
+          "reverse": 0.00000814878839689495,
+          "worstForward": [0.9930090297830573, 0.003405237890962025],
+          "worstReverse": [0.9929925897124403, 0.00342233600980715],
+          "referenceSectors": 1,
+          "referenceSegments": 3617
+        },
+        {
+          "hue": 255,
+          "sectors": 1,
+          "forward": 0.000009722448714045659,
+          "reverse": 0.000009722109707732695,
+          "worstForward": [0.9606381277216336, 0.01895197131272414],
+          "worstReverse": [0.9606764731718803, 0.018944051388810675],
+          "referenceSectors": 1,
+          "referenceSegments": 4061
+        },
+        {
+          "hue": 260,
+          "sectors": 1,
+          "forward": 0.00000999529423770591,
+          "reverse": 0.00000999529201334882,
+          "worstForward": [0.8556337602873176, 0.07128138241685696],
+          "worstReverse": [0.8555881385338442, 0.07131645975293464],
+          "referenceSectors": 1,
+          "referenceSegments": 4749
+        },
+        {
+          "hue": 265,
+          "sectors": 1,
+          "forward": 0.000009917364109220237,
+          "reverse": 0.000009917363797378715,
+          "worstForward": [0.6346221434511271, 0.19523077487816135],
+          "worstReverse": [0.6345825018585762, 0.1952665290847389],
+          "referenceSectors": 1,
+          "referenceSegments": 6672
+        },
+        {
+          "hue": 270,
+          "sectors": 1,
+          "forward": 0.000009708669944318748,
+          "reverse": 0.000009708600696243118,
+          "worstForward": [0.6423835230114837, 0.19065299447364775],
+          "worstReverse": [0.6424002298286915, 0.19065421127382404],
+          "referenceSectors": 1,
+          "referenceSegments": 6489
+        },
+        {
+          "hue": 275,
+          "sectors": 1,
+          "forward": 0.000009545918700888914,
+          "reverse": 0.000009545866879949162,
+          "worstForward": [0.6510719053146341, 0.18694730253711067],
+          "worstReverse": [0.6510733630354, 0.18695759194140082],
+          "referenceSectors": 1,
+          "referenceSegments": 6325
+        },
+        {
+          "hue": 280,
+          "sectors": 1,
+          "forward": 0.000009866543630107832,
+          "reverse": 0.000009866467130609274,
+          "worstForward": [0.6750435019376474, 0.17525455510134375],
+          "worstReverse": [0.6750434031992424, 0.17526616878107126],
+          "referenceSectors": 1,
+          "referenceSegments": 6178
+        },
+        {
+          "hue": 285,
+          "sectors": 1,
+          "forward": 0.000009740354059698946,
+          "reverse": 0.00000974018030181172,
+          "worstForward": [0.6853548649719063, 0.17310364027525382],
+          "worstReverse": [0.6853327313491631, 0.17312882784360653],
+          "referenceSectors": 1,
+          "referenceSegments": 6045
+        },
+        {
+          "hue": 290,
+          "sectors": 1,
+          "forward": 0.00000962635580654874,
+          "reverse": 0.000009626283513767683,
+          "worstForward": [0.6966697814721179, 0.1715859266475516],
+          "worstReverse": [0.6966993104851809, 0.1715785549668382],
+          "referenceSectors": 1,
+          "referenceSegments": 5923
+        },
+        {
+          "hue": 295,
+          "sectors": 1,
+          "forward": 0.000009893030974512226,
+          "reverse": 0.000009892870970914702,
+          "worstForward": [0.7228583457241904, 0.16162778125408442],
+          "worstReverse": [0.7228337509332673, 0.1616555846357352],
+          "referenceSectors": 1,
+          "referenceSegments": 5810
+        },
+        {
+          "hue": 300,
+          "sectors": 1,
+          "forward": 0.000009721494952746508,
+          "reverse": 0.000009721376450586092,
+          "worstForward": [0.7361964511717694, 0.1609942599532395],
+          "worstReverse": [0.7362183204554342, 0.16099117170524213],
+          "referenceSectors": 1,
+          "referenceSegments": 5704
+        },
+        {
+          "hue": 305,
+          "sectors": 1,
+          "forward": 0.000009824883276984558,
+          "reverse": 0.000009824768808008136,
+          "worstForward": [0.7637490398352551, 0.1515620114775156],
+          "worstReverse": [0.7637769117026392, 0.1515543442770757],
+          "referenceSectors": 1,
+          "referenceSegments": 5603
+        },
+        {
+          "hue": 310,
+          "sectors": 1,
+          "forward": 0.000009776067069889401,
+          "reverse": 0.00000977593061341396,
+          "worstForward": [0.7916992470848453, 0.142122250242241],
+          "worstReverse": [0.7917231450330487, 0.14211664604440427],
+          "referenceSectors": 1,
+          "referenceSegments": 5506
+        },
+        {
+          "hue": 315,
+          "sectors": 1,
+          "forward": 0.000009769551380184888,
+          "reverse": 0.000009769357199080324,
+          "worstForward": [0.831803536684124, 0.12306996801978828],
+          "worstReverse": [0.8317892247096419, 0.12309365440154788],
+          "referenceSectors": 1,
+          "referenceSegments": 5410
+        },
+        {
+          "hue": 320,
+          "sectors": 1,
+          "forward": 0.000009813245662359769,
+          "reverse": 0.000009813153049751914,
+          "worstForward": [0.8934015459971143, 0.08418740238266385],
+          "worstReverse": [0.8934026409864735, 0.08419923515047179],
+          "referenceSectors": 1,
+          "referenceSegments": 5315
+        },
+        {
+          "hue": 325,
+          "sectors": 1,
+          "forward": 0.000009865360897713132,
+          "reverse": 0.000009865238173569464,
+          "worstForward": [0.9942169424492026, 0.004938811461897716],
+          "worstReverse": [0.9941957359062878, 0.004969957549718449],
+          "referenceSectors": 1,
+          "referenceSegments": 5223
+        },
+        {
+          "hue": 330,
+          "sectors": 1,
+          "forward": 0.000004997406807628094,
+          "reverse": 0.000004997363209694446,
+          "worstForward": [0.9968672640277443, 0.0024396290718030206],
+          "worstReverse": [0.9968714076880347, 0.0024427340324591528],
+          "referenceSectors": 1,
+          "referenceSegments": 5132
+        },
+        {
+          "hue": 335,
+          "sectors": 1,
+          "forward": 0.000005636172354220437,
+          "reverse": 0.000005635802437281566,
+          "worstForward": [0.9966164968591864, 0.002377658743184814],
+          "worstReverse": [0.9965945671462255, 0.002400009145352756],
+          "referenceSectors": 1,
+          "referenceSegments": 5046
+        },
+        {
+          "hue": 340,
+          "sectors": 1,
+          "forward": 0.000006150643136674201,
+          "reverse": 0.000006150112819389181,
+          "worstForward": [0.996313343844866, 0.0023768946276776916],
+          "worstReverse": [0.9963506631051394, 0.0023600844635890557],
+          "referenceSectors": 1,
+          "referenceSegments": 4965
+        },
+        {
+          "hue": 345,
+          "sectors": 1,
+          "forward": 0.000006557715787346332,
+          "reverse": 0.000006557551647698166,
+          "worstForward": [0.9961392847739157, 0.0023154499688614032],
+          "worstReverse": [0.9961381560011515, 0.0023237825677843026],
+          "referenceSectors": 1,
+          "referenceSegments": 4891
+        },
+        {
+          "hue": 350,
+          "sectors": 1,
+          "forward": 0.000006872883480165714,
+          "reverse": 0.0000068725422842372306,
+          "worstForward": [0.9959005519453565, 0.002314893056769183],
+          "worstReverse": [0.9959550792827476, 0.0022918967414717437],
+          "referenceSectors": 1,
+          "referenceSegments": 4826
+        },
+        {
+          "hue": 355,
+          "sectors": 1,
+          "forward": 0.000007115026378884132,
+          "reverse": 0.00000711471713338437,
+          "worstForward": [0.9958052688126674, 0.0022538276029400828],
+          "worstReverse": [0.9957992757141599, 0.0022651427554931805],
+          "referenceSectors": 1,
+          "referenceSegments": 4771
+        },
+        {
+          "hue": 264,
+          "sectors": 1,
+          "forward": 0.00000970516518301211,
+          "reverse": 0.000009705101822622846,
+          "worstForward": [0.6915325550028957, 0.1613700265687077],
+          "worstReverse": [0.6914966973115604, 0.16140228232769005],
+          "referenceSectors": 1,
+          "referenceSegments": 6016
+        },
+        {
+          "hue": 264.005,
+          "sectors": 1,
+          "forward": 0.000009714290569515654,
+          "reverse": 0.000009714187905182456,
+          "worstForward": [0.6913159183600633, 0.16149617676306866],
+          "worstReverse": [0.6913131690669514, 0.1615090467044369],
+          "referenceSectors": 1,
+          "referenceSegments": 6021
+        },
+        {
+          "hue": 264.01,
+          "sectors": 1,
+          "forward": 0.0000097232999341132,
+          "reverse": 0.000009723153882819866,
+          "worstForward": [0.6911350299041197, 0.16160139771037585],
+          "worstReverse": [0.6911274243727286, 0.1616171244765101],
+          "referenceSectors": 1,
+          "referenceSegments": 6025
+        },
+        {
+          "hue": 264.015,
+          "sectors": 1,
+          "forward": 0.000009732310395588428,
+          "reverse": 0.000009732217457401266,
+          "worstForward": [0.6909139040549184, 0.16173021538588],
+          "worstReverse": [0.6909393789416514, 0.16172656554863984],
+          "referenceSectors": 1,
+          "referenceSegments": 6030
+        },
+        {
+          "hue": 264.02,
+          "sectors": 1,
+          "forward": 0.000009741618627077926,
+          "reverse": 0.000009741438137147292,
+          "worstForward": [0.69076868290257, 0.1618145604362981],
+          "worstReverse": [0.6907489429885568, 0.16183742308060095],
+          "referenceSectors": 1,
+          "referenceSegments": 6035
+        },
+        {
+          "hue": 264.025,
+          "sectors": 1,
+          "forward": 0.00000975094797952645,
+          "reverse": 0.000009750783176408675,
+          "worstForward": [0.6905806099111818, 0.1619240355636373],
+          "worstReverse": [0.6905560207145336, 0.161949753792602],
+          "referenceSectors": 1,
+          "referenceSegments": 6039
+        },
+        {
+          "hue": 264.03,
+          "sectors": 1,
+          "forward": 0.000009760522657009114,
+          "reverse": 0.000009760485243406987,
+          "worstForward": [0.6903520384972531, 0.16205727065185174],
+          "worstReverse": [0.6903605097272342, 0.1620636183084852],
+          "referenceSectors": 1,
+          "referenceSegments": 6044
+        },
+        {
+          "hue": 264.035,
+          "sectors": 1,
+          "forward": 0.000009769935060474898,
+          "reverse": 0.000009769883195491409,
+          "worstForward": [0.6901990035161493, 0.16214623299605366],
+          "worstReverse": [0.6901623003871988, 0.16217908154272898],
+          "referenceSectors": 1,
+          "referenceSegments": 6049
+        },
+        {
+          "hue": 264.04,
+          "sectors": 1,
+          "forward": 0.00000977992116091733,
+          "reverse": 0.000009779808702395452,
+          "worstForward": [0.6899649336586731, 0.16228272964655407],
+          "worstReverse": [0.6899612750684905, 0.16229621313818146],
+          "referenceSectors": 1,
+          "referenceSegments": 6054
+        },
+        {
+          "hue": 264.045,
+          "sectors": 1,
+          "forward": 0.000009789659722136862,
+          "reverse": 0.000009789584406012114,
+          "worstForward": [0.6897279424010769, 0.1624209628736702],
+          "worstReverse": [0.6897573073193137, 0.16241508796300774],
+          "referenceSectors": 1,
+          "referenceSegments": 6059
+        },
+        {
+          "hue": 264.05,
+          "sectors": 1,
+          "forward": 0.00000979984035346376,
+          "reverse": 0.000009799659352859851,
+          "worstForward": [0.6895660345079554, 0.1625151714170605],
+          "worstReverse": [0.6895502609058031, 0.16253578667680424],
+          "referenceSectors": 1,
+          "referenceSegments": 6064
+        },
+        {
+          "hue": 264.055,
+          "sectors": 2,
+          "forward": 0.00000981002864995871,
+          "reverse": 0.000009809937724630864,
+          "worstForward": [0.6893227530033993, 0.16265713519108993],
+          "worstReverse": [0.6893399887181579, 0.16265839637821017],
+          "referenceSectors": 2,
+          "referenceSegments": 6087
+        },
+        {
+          "hue": 264.06,
+          "sectors": 2,
+          "forward": 0.000009820441590847894,
+          "reverse": 0.000009820391670144857,
+          "worstForward": [0.6891163702257928, 0.16277747037577367],
+          "worstReverse": [0.6891263315144476, 0.162783011348622],
+          "referenceSectors": 2,
+          "referenceSegments": 6093
+        },
+        {
+          "hue": 264.065,
+          "sectors": 2,
+          "forward": 0.000009830804624442445,
+          "reverse": 0.000009830732310990877,
+          "worstForward": [0.6889442451149747, 0.1628777177550627],
+          "worstReverse": [0.6889091164713019, 0.1629097339102402],
+          "referenceSectors": 2,
+          "referenceSegments": 6098
+        },
+        {
+          "hue": 264.07,
+          "sectors": 2,
+          "forward": 0.000009841498909790032,
+          "reverse": 0.000009841474633788159,
+          "worstForward": [0.6886524943050407, 0.1630481966781371],
+          "worstReverse": [0.6886881555041928, 0.16303867542052564],
+          "referenceSectors": 2,
+          "referenceSegments": 6107
+        },
+        {
+          "hue": 264.075,
+          "sectors": 2,
+          "forward": 0.000009852651048397298,
+          "reverse": 0.0000098524927193208,
+          "worstForward": [0.6884726465434434, 0.16315301177339717],
+          "worstReverse": [0.6884632433106467, 0.16316995743068996],
+          "referenceSectors": 2,
+          "referenceSegments": 6117
+        },
+        {
+          "hue": 264.08,
+          "sectors": 2,
+          "forward": 0.000009863745381122148,
+          "reverse": 0.000009863563395320314,
+          "worstForward": [0.688250811548187, 0.16328249422250848],
+          "worstReverse": [0.6882341550786208, 0.1633037130424208],
+          "referenceSectors": 2,
+          "referenceSegments": 6128
+        },
+        {
+          "hue": 264.085,
+          "sectors": 2,
+          "forward": 0.000009875036048781567,
+          "reverse": 0.000009874868056623278,
+          "worstForward": [0.6880245479288674, 0.1634145981623035],
+          "worstReverse": [0.6880006437869861, 0.1634400885060937],
+          "referenceSectors": 2,
+          "referenceSegments": 6140
+        },
+        {
+          "hue": 264.09,
+          "sectors": 2,
+          "forward": 0.000009886536323358903,
+          "reverse": 0.000009886419878963016,
+          "worstForward": [0.687793583524545, 0.16354948467029679],
+          "worstReverse": [0.6877624370059623, 0.1635792451150291],
+          "referenceSectors": 2,
+          "referenceSegments": 6151
+        },
+        {
+          "hue": 264.095,
+          "sectors": 2,
+          "forward": 0.000009898260892946853,
+          "reverse": 0.000009898233459052734,
+          "worstForward": [0.6875576169679751, 0.16368733210990022],
+          "worstReverse": [0.6875192330791179, 0.1637213614658822],
+          "referenceSectors": 2,
+          "referenceSegments": 6163
+        },
+        {
+          "hue": 264.1,
+          "sectors": 2,
+          "forward": 0.000009910378271295404,
+          "reverse": 0.000009910325037671818,
+          "worstForward": [0.6872384350615087, 0.1638740976017267],
+          "worstReverse": [0.687270696534557, 0.1638666361753822],
+          "referenceSectors": 2,
+          "referenceSegments": 6175
+        },
+        {
+          "hue": 264.105,
+          "sectors": 2,
+          "forward": 0.0000099228034511495,
+          "reverse": 0.000009922712769851402,
+          "worstForward": [0.686991443545766, 0.16401847889114535],
+          "worstReverse": [0.6870164525257556, 0.16401529117154756],
+          "referenceSectors": 2,
+          "referenceSegments": 6187
+        },
+        {
+          "hue": 264.11,
+          "sectors": 2,
+          "forward": 0.000009935507674303848,
+          "reverse": 0.000009935417054424718,
+          "worstForward": [0.6867383182935016, 0.1641664910275743],
+          "worstReverse": [0.6867560800390607, 0.16416757571507803],
+          "referenceSectors": 2,
+          "referenceSegments": 6199
+        },
+        {
+          "hue": 264.115,
+          "sectors": 2,
+          "forward": 0.000009948395287317857,
+          "reverse": 0.00000994826460713162,
+          "worstForward": [0.68651869195069, 0.16429483643023904],
+          "worstReverse": [0.6864891035158753, 0.16432377135930384],
+          "referenceSectors": 2,
+          "referenceSegments": 6212
+        },
+        {
+          "hue": 264.12,
+          "sectors": 2,
+          "forward": 0.00000996185181798711,
+          "reverse": 0.000009961790478046799,
+          "worstForward": [0.6862141183758953, 0.16447314981375813],
+          "worstReverse": [0.6862149824122286, 0.16448419813126575],
+          "referenceSectors": 2,
+          "referenceSegments": 6226
+        },
+        {
+          "hue": 264.125,
+          "sectors": 2,
+          "forward": 0.000009975354099219542,
+          "reverse": 0.000009975295043660492,
+          "worstForward": [0.6859018079897057, 0.1646560518809206],
+          "worstReverse": [0.6859330980391427, 0.1646492223226504],
+          "referenceSectors": 2,
+          "referenceSegments": 6240
+        },
+        {
+          "hue": 264.13,
+          "sectors": 2,
+          "forward": 0.000009989607745248883,
+          "reverse": 0.000009989426038979471,
+          "worstForward": [0.6856587404234347, 0.16479826278539256],
+          "worstReverse": [0.6856427367642468, 0.16481926643497907],
+          "referenceSectors": 2,
+          "referenceSegments": 6254
+        },
+        {
+          "hue": 264.135,
+          "sectors": 2,
+          "forward": 0.00000953169699322418,
+          "reverse": 0.000009531573076384159,
+          "worstForward": [0.6705420156484834, 0.17373689335330453],
+          "worstReverse": [0.6705368276116925, 0.17375106640611437],
+          "referenceSectors": 2,
+          "referenceSegments": 6269
+        },
+        {
+          "hue": 264.14,
+          "sectors": 2,
+          "forward": 0.000009545593017002182,
+          "reverse": 0.000009545562411149122,
+          "worstForward": [0.6702071913293465, 0.173935179129681],
+          "worstReverse": [0.6702151242822882, 0.17394156768630076],
+          "referenceSectors": 2,
+          "referenceSegments": 6283
+        },
+        {
+          "hue": 264.145,
+          "sectors": 2,
+          "forward": 0.000009559971900441076,
+          "reverse": 0.0000095597973083714,
+          "worstForward": [0.6699020270641546, 0.1741158708377638],
+          "worstReverse": [0.6698815475081612, 0.1741391741686356],
+          "referenceSectors": 2,
+          "referenceSegments": 6299
+        },
+        {
+          "hue": 264.15,
+          "sectors": 2,
+          "forward": 0.000009575003252913835,
+          "reverse": 0.00000957482868557933,
+          "worstForward": [0.6695491123810238, 0.17432500694184352],
+          "worstReverse": [0.6695346494743978, 0.17434475207128547],
+          "referenceSectors": 2,
+          "referenceSegments": 6316
+        },
+        {
+          "hue": 264.155,
+          "sectors": 2,
+          "forward": 0.000009590463251287736,
+          "reverse": 0.00000959043337088943,
+          "worstForward": [0.6691396366677376, 0.17456785086304571],
+          "worstReverse": [0.669172661437257, 0.1745593596196085],
+          "referenceSectors": 2,
+          "referenceSegments": 6332
+        },
+        {
+          "hue": 264.16,
+          "sectors": 2,
+          "forward": 0.000009607074548152907,
+          "reverse": 0.000009606976759420364,
+          "worstForward": [0.668795833661283, 0.17477167464517443],
+          "worstReverse": [0.6687933842945561, 0.17478431251604887],
+          "referenceSectors": 2,
+          "referenceSegments": 6351
+        },
+        {
+          "hue": 264.165,
+          "sectors": 2,
+          "forward": 0.000009624329727833576,
+          "reverse": 0.000009624308550660714,
+          "worstForward": [0.6683904766564318, 0.17501219345783564],
+          "worstReverse": [0.6683940259240555, 0.17502128125776245],
+          "referenceSectors": 2,
+          "referenceSegments": 6369
+        },
+        {
+          "hue": 264.17,
+          "sectors": 2,
+          "forward": 0.000009642459772173914,
+          "reverse": 0.00000964235556576045,
+          "worstForward": [0.6680028158912101, 0.17524224134751348],
+          "worstReverse": [0.6679709497391153, 0.17527244157128596],
+          "referenceSectors": 2,
+          "referenceSegments": 6389
+        },
+        {
+          "hue": 264.175,
+          "sectors": 2,
+          "forward": 0.000009661965339369894,
+          "reverse": 0.000009661872491112188,
+          "worstForward": [0.6675522013646538, 0.17550985224711355],
+          "worstReverse": [0.6675192668993781, 0.17554071838542484],
+          "referenceSectors": 2,
+          "referenceSegments": 6411
+        },
+        {
+          "hue": 264.18,
+          "sectors": 2,
+          "forward": 0.000009683179632895847,
+          "reverse": 0.000009683112989802173,
+          "worstForward": [0.6670318573292405, 0.1758190987387556],
+          "worstReverse": [0.6670321338697146, 0.17583020608854272],
+          "referenceSectors": 2,
+          "referenceSegments": 6434
+        },
+        {
+          "hue": 264.185,
+          "sectors": 2,
+          "forward": 0.000009706184028681372,
+          "reverse": 0.000009706038315775377,
+          "worstForward": [0.6665073227004493, 0.17613095454544353],
+          "worstReverse": [0.6664994439403517, 0.1761469513668576],
+          "referenceSectors": 2,
+          "referenceSegments": 6460
+        },
+        {
+          "hue": 264.19,
+          "sectors": 2,
+          "forward": 0.000009731783806432963,
+          "reverse": 0.000009731701882752143,
+          "worstForward": [0.6658869160352269, 0.1765000983390014],
+          "worstReverse": [0.665905116613646, 0.17650057491078566],
+          "referenceSectors": 2,
+          "referenceSegments": 6488
+        },
+        {
+          "hue": 264.195,
+          "sectors": 2,
+          "forward": 0.00000976141309793118,
+          "reverse": 0.000009761298053576396,
+          "worstForward": [0.6652246131239891, 0.17689439748670566],
+          "worstReverse": [0.6652205459162628, 0.17690819115707074],
+          "referenceSectors": 2,
+          "referenceSegments": 6521
+        },
+        {
+          "hue": 264.2,
+          "sectors": 2,
+          "forward": 0.00000979750934809583,
+          "reverse": 0.000009797448711986061,
+          "worstForward": [0.6643834348813791, 0.17739565945272642],
+          "worstReverse": [0.664384250035635, 0.177406583488586],
+          "referenceSectors": 2,
+          "referenceSegments": 6561
+        }
+      ],
+      "core": {
+        "rays": 20384,
+        "maxDistance": 0.000009904490722779266,
+        "countDisputes": []
+      },
+      "cornerContacts": [
+        {
+          "rgb": [1, 0, 0],
+          "hue": 29.23388027962788,
+          "lightness": 0.6279553639214311,
+          "chroma": 0.2576833038053606,
+          "core": [
+            {
+              "chroma": 0.25768330380536064,
+              "exit": true,
+              "binding": 1
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 0
+          }
+        },
+        {
+          "rgb": [0, 1, 0],
+          "hue": 142.49534504144387,
+          "lightness": 0.8664396175234368,
+          "chroma": 0.2948272245426958,
+          "core": [
+            {
+              "chroma": 0.29482722454269433,
+              "exit": true,
+              "binding": 3
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 4.742874840267547e-16
+          }
+        },
+        {
+          "rgb": [0, 0, 1],
+          "hue": -95.94797738363005,
+          "lightness": 0.4520137181744236,
+          "chroma": 0.31321438863448486,
+          "core": [
+            {
+              "chroma": 0.2655916254066095,
+              "exit": true,
+              "binding": 0
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 1,
+            "distance": 1.1102230246251565e-16
+          }
+        },
+        {
+          "rgb": [1, 1, 0],
+          "hue": 109.76923612816614,
+          "lightness": 0.9679827267927991,
+          "chroma": 0.2110058737497979,
+          "core": [
+            {
+              "chroma": 0.21100587374979277,
+              "exit": true,
+              "binding": 3
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 3.30476222462382e-16
+          }
+        },
+        {
+          "rgb": [1, 0, 1],
+          "hue": -31.636584825009813,
+          "lightness": 0.7016738591017412,
+          "chroma": 0.3224909877053724,
+          "core": [
+            {
+              "chroma": 0.3224909877053723,
+              "exit": true,
+              "binding": 5
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 6.193452420912511e-17
+          }
+        },
+        {
+          "rgb": [0, 1, 1],
+          "hue": -165.23104010201817,
+          "lightness": 0.9053992360133608,
+          "chroma": 0.1545500236044062,
+          "core": [
+            {
+              "chroma": 0.15455002360440523,
+              "exit": true,
+              "binding": 3
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 6.753223014464258e-16
+          }
+        }
+      ]
+    },
+    {
+      "space": "display-p3",
+      "generationCases": 3439,
+      "timingMilliseconds": {
+        "min": 0.065799999999399,
+        "median": 0.18289999999979045,
+        "p95": 0.519800000000032,
+        "p99": 0.7857000000003609,
+        "max": 1.4939000000013039
+      },
+      "worstTime": {
+        "hue": 264.2964,
+        "milliseconds": 1.4939000000013039
+      },
+      "vertices": {
+        "min": 10,
+        "median": 49,
+        "p95": 68,
+        "p99": 68,
+        "max": 70
+      },
+      "evaluations": {
+        "min": 1021,
+        "median": 1582,
+        "p95": 1986,
+        "p99": 2387,
+        "max": 2397
+      },
+      "conversions": {
+        "min": 57,
+        "median": 290,
+        "p95": 402,
+        "p99": 403,
+        "max": 413
+      },
+      "retainedTypedBufferBytes": {
+        "min": 480,
+        "median": 2352,
+        "p95": 3264,
+        "p99": 3264,
+        "max": 3360
+      },
+      "refinementDepth": {
+        "min": 3,
+        "median": 6,
+        "p95": 6,
+        "p99": 6,
+        "max": 6
+      },
+      "maxTemporaryRecords": 23,
+      "sectorRanges": [
+        {
+          "hue": 0,
+          "sectors": 1
+        }
+      ],
+      "determinismFailures": 0,
+      "maxIndependentResidual": 5.10702591327572e-15,
+      "maxSourceResidual": 2.349231920106831e-13,
+      "maxPlaneResidual": 2.7755575615628914e-17,
+      "outsideVertices": 0,
+      "independent": [
+        {
+          "hue": 0,
+          "sectors": 1,
+          "forward": 0.000005643192330530183,
+          "reverse": 0.000005643178256853535,
+          "worstForward": [0.9964344946155717, 0.0024383722981897323],
+          "worstReverse": [0.9964380228828786, 0.002442795368844727],
+          "referenceSectors": 1,
+          "referenceSegments": 5137
+        },
+        {
+          "hue": 5,
+          "sectors": 1,
+          "forward": 0.000005799021775866828,
+          "reverse": 0.000005798515478803305,
+          "worstForward": [0.9963104082292332, 0.0024382125935200416],
+          "worstReverse": [0.9963340178162909, 0.002429522917679766],
+          "referenceSectors": 1,
+          "referenceSegments": 5110
+        },
+        {
+          "hue": 10,
+          "sectors": 1,
+          "forward": 0.000005912489288322566,
+          "reverse": 0.000005911987254125456,
+          "worstForward": [0.9962146792763819, 0.002437829078201998],
+          "worstReverse": [0.9962496646827312, 0.0024222711625490026],
+          "referenceSectors": 1,
+          "referenceSegments": 5096
+        },
+        {
+          "hue": 15,
+          "sectors": 1,
+          "forward": 0.000005990156214915567,
+          "reverse": 0.000005989658283965087,
+          "worstForward": [0.9961469787573461, 0.002437897177283085],
+          "worstReverse": [0.996183677157453, 0.002421704075001994],
+          "referenceSectors": 1,
+          "referenceSegments": 5095
+        },
+        {
+          "hue": 20,
+          "sectors": 1,
+          "forward": 0.000006036793673141868,
+          "reverse": 0.0000060362537160956245,
+          "worstForward": [0.996109056000299, 0.0024376148554296623],
+          "worstReverse": [0.9961349990850628, 0.0024284438929824486],
+          "referenceSectors": 1,
+          "referenceSegments": 5110
+        },
+        {
+          "hue": 25,
+          "sectors": 1,
+          "forward": 0.000006055097121560909,
+          "reverse": 0.000006055076159534972,
+          "worstForward": [0.9961002166384497, 0.002437602926680809],
+          "worstReverse": [0.9961028384801117, 0.0024431058535048047],
+          "referenceSectors": 1,
+          "referenceSegments": 5141
+        },
+        {
+          "hue": 30,
+          "sectors": 1,
+          "forward": 0.0000057779028579248175,
+          "reverse": 0.0000057778363689457154,
+          "worstForward": [0.9961206840007572, 0.002437762205630637],
+          "worstReverse": [0.9961738720085795, 0.002411074653042992],
+          "referenceSectors": 1,
+          "referenceSegments": 5073
+        },
+        {
+          "hue": 35,
+          "sectors": 1,
+          "forward": 0.000004678923547788951,
+          "reverse": 0.000004678656614226046,
+          "worstForward": [0.9965521817829932, 0.00219437522227959],
+          "worstReverse": [0.9965450501493452, 0.002204475900009025],
+          "referenceSectors": 1,
+          "referenceSegments": 4637
+        },
+        {
+          "hue": 40,
+          "sectors": 1,
+          "forward": 0.000009940799904542988,
+          "reverse": 0.000009940556033718846,
+          "worstForward": [0.7585164954520573, 0.1901289390787731],
+          "worstReverse": [0.7585426470106373, 0.19011765635406358],
+          "referenceSectors": 1,
+          "referenceSegments": 4291
+        },
+        {
+          "hue": 45,
+          "sectors": 1,
+          "forward": 0.000009902419983076797,
+          "reverse": 0.000009902280439184051,
+          "worstForward": [0.8651018186614761, 0.09960634377034255],
+          "worstReverse": [0.865079623990729, 0.09963728674888435],
+          "referenceSectors": 1,
+          "referenceSegments": 4014
+        },
+        {
+          "hue": 50,
+          "sectors": 1,
+          "forward": 0.000009868910598183114,
+          "reverse": 0.00000986870353728388,
+          "worstForward": [0.9648057842577337, 0.025008672129115013],
+          "worstReverse": [0.9648027873026079, 0.025023063153956488],
+          "referenceSectors": 1,
+          "referenceSegments": 3790
+        },
+        {
+          "hue": 55,
+          "sectors": 1,
+          "forward": 0.000008630257061215749,
+          "reverse": 0.000008629985697014198,
+          "worstForward": [0.9953208579735163, 0.0034131382116668967],
+          "worstReverse": [0.9953101159564496, 0.003431692304804363],
+          "referenceSectors": 1,
+          "referenceSegments": 3610
+        },
+        {
+          "hue": 60,
+          "sectors": 1,
+          "forward": 0.000007090668486600777,
+          "reverse": 0.000007090622402111085,
+          "worstForward": [0.9957391997996438, 0.003291896609335187],
+          "worstReverse": [0.9957449846609675, 0.003296384582779142],
+          "referenceSectors": 1,
+          "referenceSegments": 3466
+        },
+        {
+          "hue": 65,
+          "sectors": 1,
+          "forward": 0.000005742533628912053,
+          "reverse": 0.000005742301382087248,
+          "worstForward": [0.9961700331278595, 0.0031709292661039135],
+          "worstReverse": [0.9961562635624229, 0.0031898186800734516],
+          "referenceSectors": 1,
+          "referenceSegments": 3352
+        },
+        {
+          "hue": 70,
+          "sectors": 1,
+          "forward": 0.000004535978048320127,
+          "reverse": 0.0000045358261637047255,
+          "worstForward": [0.9965402391879163, 0.0031111696127546096],
+          "worstReverse": [0.9965502857289574, 0.003108223186710581],
+          "referenceSectors": 1,
+          "referenceSegments": 3264
+        },
+        {
+          "hue": 75,
+          "sectors": 1,
+          "forward": 0.0000036141225461474867,
+          "reverse": 0.0000036140725561789567,
+          "worstForward": [0.8218665404161769, 0.19540237782434428],
+          "worstReverse": [0.8218672978402426, 0.19540715795807262],
+          "referenceSectors": 1,
+          "referenceSegments": 3200
+        },
+        {
+          "hue": 80,
+          "sectors": 1,
+          "forward": 0.000009935915696354041,
+          "reverse": 0.000009935840285053289,
+          "worstForward": [0.9626932585940174, 0.04231372001080049],
+          "worstReverse": [0.962693320257531, 0.0423288205476393],
+          "referenceSectors": 1,
+          "referenceSegments": 3157
+        },
+        {
+          "hue": 85,
+          "sectors": 1,
+          "forward": 0.000009030279346700966,
+          "reverse": 0.000009030247545882435,
+          "worstForward": [0.8569559819164807, 0.1946996001353359],
+          "worstReverse": [0.8569505527298196, 0.19472338887739188],
+          "referenceSectors": 1,
+          "referenceSegments": 3134
+        },
+        {
+          "hue": 90,
+          "sectors": 1,
+          "forward": 0.00000940687741823906,
+          "reverse": 0.000009405852460130479,
+          "worstForward": [0.9920984507539428, 0.012135078224317026],
+          "worstReverse": [0.9921768400715827, 0.012031774718443397],
+          "referenceSectors": 1,
+          "referenceSegments": 3130
+        },
+        {
+          "hue": 95,
+          "sectors": 1,
+          "forward": 0.00000981675133466425,
+          "reverse": 0.00000981275159764963,
+          "worstForward": [0.8969324615675316, 0.1971647127797183],
+          "worstReverse": [0.8971035600436137, 0.19685571661532691],
+          "referenceSectors": 1,
+          "referenceSegments": 3146
+        },
+        {
+          "hue": 100,
+          "sectors": 1,
+          "forward": 0.000009508570428418406,
+          "reverse": 0.000009504215724831798,
+          "worstForward": [0.9419418785815045, 0.1447966997751532],
+          "worstReverse": [0.9418107538287266, 0.14509047519714116],
+          "referenceSectors": 1,
+          "referenceSegments": 3181
+        },
+        {
+          "hue": 105,
+          "sectors": 1,
+          "forward": 0.000006174820609618368,
+          "reverse": 0.000006174669314397571,
+          "worstForward": [0.9849797519774263, 0.05791209785056221],
+          "worstReverse": [0.9849627705679252, 0.05795160583305989],
+          "referenceSectors": 1,
+          "referenceSegments": 3238
+        },
+        {
+          "hue": 110,
+          "sectors": 1,
+          "forward": 0.000007622401982315877,
+          "reverse": 0.0000076220910771350755,
+          "worstForward": [0.9648582981526981, 0.23603106337925195],
+          "worstReverse": [0.9648441345183842, 0.23606645080711308],
+          "referenceSectors": 1,
+          "referenceSegments": 3317
+        },
+        {
+          "hue": 115,
+          "sectors": 1,
+          "forward": 0.000006823073388346225,
+          "reverse": 0.000006822879618527301,
+          "worstForward": [0.9518270129433198, 0.24603763980505527],
+          "worstReverse": [0.9518358873436623, 0.2460186661106074],
+          "referenceSectors": 1,
+          "referenceSegments": 3421
+        },
+        {
+          "hue": 120,
+          "sectors": 1,
+          "forward": 0.000006921283772030486,
+          "reverse": 0.000006921134175444228,
+          "worstForward": [0.9377635720899001, 0.2543716727541271],
+          "worstReverse": [0.9377742842768702, 0.2543476989244363],
+          "referenceSectors": 1,
+          "referenceSegments": 3553
+        },
+        {
+          "hue": 125,
+          "sectors": 1,
+          "forward": 0.000007257748615298272,
+          "reverse": 0.00000725750741680461,
+          "worstForward": [0.9232257621649034, 0.2654974258533292],
+          "worstReverse": [0.9232308846157333, 0.2655089541212825],
+          "referenceSectors": 1,
+          "referenceSegments": 3720
+        },
+        {
+          "hue": 130,
+          "sectors": 1,
+          "forward": 0.000007875584644768495,
+          "reverse": 0.00000787545707910458,
+          "worstForward": [0.9079233731767509, 0.2801230267657775],
+          "worstReverse": [0.9079332599841653, 0.28011531990290295],
+          "referenceSectors": 1,
+          "referenceSegments": 3927
+        },
+        {
+          "hue": 135,
+          "sectors": 1,
+          "forward": 0.00000885328424411639,
+          "reverse": 0.000008853177887342541,
+          "worstForward": [0.8915419116618306, 0.29908097451714416],
+          "worstReverse": [0.8915524831109616, 0.2990755657987497],
+          "referenceSectors": 1,
+          "referenceSegments": 4183
+        },
+        {
+          "hue": 140,
+          "sectors": 1,
+          "forward": 0.000009923691168637194,
+          "reverse": 0.000009923389558519279,
+          "worstForward": [0.8882848111117103, 0.2744243304817413],
+          "worstReverse": [0.8882828211216054, 0.2744642223032786],
+          "referenceSectors": 1,
+          "referenceSegments": 4502
+        },
+        {
+          "hue": 145,
+          "sectors": 1,
+          "forward": 0.000009925985521008526,
+          "reverse": 0.000009925944742605514,
+          "worstForward": [0.9573657884652671, 0.08264632594590297],
+          "worstReverse": [0.9573756363549768, 0.0826487429161712],
+          "referenceSectors": 1,
+          "referenceSegments": 4903
+        },
+        {
+          "hue": 150,
+          "sectors": 1,
+          "forward": 0.00000999878591624151,
+          "reverse": 0.000009998686155166058,
+          "worstForward": [0.8726482093439275, 0.27342892057848106],
+          "worstReverse": [0.8726677506359745, 0.27340455343986625],
+          "referenceSectors": 1,
+          "referenceSegments": 4550
+        },
+        {
+          "hue": 155,
+          "sectors": 1,
+          "forward": 0.000008552722889820412,
+          "reverse": 0.00000855257289164688,
+          "worstForward": [0.8608515898995966, 0.2886596266441846],
+          "worstReverse": [0.8608634378145074, 0.2886523964386223],
+          "referenceSectors": 1,
+          "referenceSegments": 4182
+        },
+        {
+          "hue": 160,
+          "sectors": 1,
+          "forward": 0.000007273159533695258,
+          "reverse": 0.000007272868435181156,
+          "worstForward": [0.8657042728972938, 0.26417788659604435],
+          "worstReverse": [0.8657001059040055, 0.2642075165904224],
+          "referenceSectors": 1,
+          "referenceSegments": 3894
+        },
+        {
+          "hue": 165,
+          "sectors": 1,
+          "forward": 0.000006393548137416964,
+          "reverse": 0.000006393374000262414,
+          "worstForward": [0.8702762896278529, 0.24576103298471488],
+          "worstReverse": [0.8702869842686118, 0.24575229310849134],
+          "referenceSectors": 1,
+          "referenceSegments": 3667
+        },
+        {
+          "hue": 170,
+          "sectors": 1,
+          "forward": 0.00000579025469390396,
+          "reverse": 0.000005790120565688653,
+          "worstForward": [0.8746706339821666, 0.23170953308956177],
+          "worstReverse": [0.8746883064951707, 0.23168393356121061],
+          "referenceSectors": 1,
+          "referenceSegments": 3488
+        },
+        {
+          "hue": 175,
+          "sectors": 1,
+          "forward": 0.000005390639638230167,
+          "reverse": 0.000005390448608369943,
+          "worstForward": [0.8789568826605841, 0.22099606724237666],
+          "worstReverse": [0.8789672001261724, 0.2209862986584893],
+          "referenceSectors": 1,
+          "referenceSegments": 3346
+        },
+        {
+          "hue": 180,
+          "sectors": 1,
+          "forward": 0.000005149571612825102,
+          "reverse": 0.0000051495383539178814,
+          "worstForward": [0.8831647194209147, 0.21302504743130302],
+          "worstReverse": [0.8831845556036021, 0.21299365525138186],
+          "referenceSectors": 1,
+          "referenceSegments": 3236
+        },
+        {
+          "hue": 185,
+          "sectors": 1,
+          "forward": 0.000005043329055384671,
+          "reverse": 0.000005043118226058447,
+          "worstForward": [0.887390108609726, 0.207274900812366],
+          "worstReverse": [0.8874003847535904, 0.20726424673803945],
+          "referenceSectors": 1,
+          "referenceSegments": 3154
+        },
+        {
+          "hue": 190,
+          "sectors": 1,
+          "forward": 0.000005058858899219839,
+          "reverse": 0.000005058620742307635,
+          "worstForward": [0.8916635179650243, 0.2035258778621359],
+          "worstReverse": [0.8916762478498532, 0.20350924913122737],
+          "referenceSectors": 1,
+          "referenceSegments": 3095
+        },
+        {
+          "hue": 195,
+          "sectors": 1,
+          "forward": 0.000008137443003267247,
+          "reverse": 0.00000813725929634817,
+          "worstForward": [0.9649476571366153, 0.05911238854702813],
+          "worstReverse": [0.9649404580311387, 0.059141984318782787],
+          "referenceSectors": 1,
+          "referenceSegments": 3059
+        },
+        {
+          "hue": 200,
+          "sectors": 1,
+          "forward": 0.00000448521289119174,
+          "reverse": 0.000004485158337817255,
+          "worstForward": [0.8623770719412885, 0.18900981725124924],
+          "worstReverse": [0.8623750367186555, 0.1890205301021158],
+          "referenceSectors": 1,
+          "referenceSegments": 3043
+        },
+        {
+          "hue": 205,
+          "sectors": 1,
+          "forward": 0.000005967341785106704,
+          "reverse": 0.000005967266844059918,
+          "worstForward": [0.9947226996610204, 0.005801038061372071],
+          "worstReverse": [0.9947192345958347, 0.005813728016710837],
+          "referenceSectors": 1,
+          "referenceSegments": 3047
+        },
+        {
+          "hue": 210,
+          "sectors": 1,
+          "forward": 0.00000773902893015778,
+          "reverse": 0.000007738942027360958,
+          "worstForward": [0.9938114250996739, 0.005856950366110668],
+          "worstReverse": [0.9938285999394354, 0.005851330874509243],
+          "referenceSectors": 1,
+          "referenceSegments": 3072
+        },
+        {
+          "hue": 215,
+          "sectors": 1,
+          "forward": 0.00000965646911516173,
+          "reverse": 0.000009656343833744774,
+          "worstForward": [0.992933014386679, 0.005911792791468327],
+          "worstReverse": [0.9929265369100556, 0.005929823773712788],
+          "referenceSectors": 1,
+          "referenceSegments": 3119
+        },
+        {
+          "hue": 220,
+          "sectors": 1,
+          "forward": 0.000009915374246783868,
+          "reverse": 0.00000991532184948519,
+          "worstForward": [0.9005162582285174, 0.07720833548341778],
+          "worstReverse": [0.9005186086875754, 0.07721915151690373],
+          "referenceSectors": 1,
+          "referenceSegments": 3188
+        },
+        {
+          "hue": 225,
+          "sectors": 1,
+          "forward": 0.000009707759401473925,
+          "reverse": 0.000009707719199510163,
+          "worstForward": [0.8131012606627221, 0.13668800062224334],
+          "worstReverse": [0.8131115617995549, 0.13669230755858364],
+          "referenceSectors": 1,
+          "referenceSegments": 3283
+        },
+        {
+          "hue": 230,
+          "sectors": 1,
+          "forward": 0.000009653097251024676,
+          "reverse": 0.00000965294095889617,
+          "worstForward": [0.7493793602885739, 0.17392065800365644],
+          "worstReverse": [0.7493651921034417, 0.17394328772431442],
+          "referenceSectors": 1,
+          "referenceSegments": 3409
+        },
+        {
+          "hue": 235,
+          "sectors": 1,
+          "forward": 0.0000050884308391347935,
+          "reverse": 0.000005088343596146353,
+          "worstForward": [0.9943673450800966, 0.003409820720508146],
+          "worstReverse": [0.9944144560168189, 0.003387202523796869],
+          "referenceSectors": 1,
+          "referenceSegments": 3570
+        },
+        {
+          "hue": 240,
+          "sectors": 1,
+          "forward": 0.000006100643477942743,
+          "reverse": 0.0000061004190816456044,
+          "worstForward": [0.9937654785929404, 0.003591149374480446],
+          "worstReverse": [0.9937972065255201, 0.0035798816837383633],
+          "referenceSectors": 1,
+          "referenceSegments": 3776
+        },
+        {
+          "hue": 245,
+          "sectors": 1,
+          "forward": 0.000007384836577499914,
+          "reverse": 0.0000073846100363898494,
+          "worstForward": [0.9930744034309933, 0.0038327174010242683],
+          "worstReverse": [0.9930988399602285, 0.003827608745622767],
+          "referenceSectors": 1,
+          "referenceSegments": 4041
+        },
+        {
+          "hue": 250,
+          "sectors": 1,
+          "forward": 0.000009089843852539729,
+          "reverse": 0.000009089657569836553,
+          "worstForward": [0.9922918902170261, 0.004135221605270561],
+          "worstReverse": [0.9922804787218693, 0.004151679946244888],
+          "referenceSectors": 1,
+          "referenceSegments": 4387
+        },
+        {
+          "hue": 255,
+          "sectors": 1,
+          "forward": 0.000009594898596965858,
+          "reverse": 0.000009594838726941667,
+          "worstForward": [0.9250329201878598, 0.040174250427214384],
+          "worstReverse": [0.9249895698570321, 0.04020899511361596],
+          "referenceSectors": 1,
+          "referenceSegments": 4858
+        },
+        {
+          "hue": 260,
+          "sectors": 1,
+          "forward": 0.000009793327282207826,
+          "reverse": 0.000009793223235368089,
+          "worstForward": [0.8294925638717997, 0.09288809843827897],
+          "worstReverse": [0.829507967548961, 0.09289053775775714],
+          "referenceSectors": 1,
+          "referenceSegments": 5561
+        },
+        {
+          "hue": 265,
+          "sectors": 1,
+          "forward": 0.000009591119300868985,
+          "reverse": 0.00000959095356996081,
+          "worstForward": [0.6968995741846231, 0.17118592498509144],
+          "worstReverse": [0.6968831488359281, 0.17120737589844906],
+          "referenceSectors": 1,
+          "referenceSegments": 6674
+        },
+        {
+          "hue": 270,
+          "sectors": 1,
+          "forward": 0.000009823413296927124,
+          "reverse": 0.00000982331179090854,
+          "worstForward": [0.7190962738761296, 0.15769557290542485],
+          "worstReverse": [0.7190928901343441, 0.15770916294262327],
+          "referenceSectors": 1,
+          "referenceSegments": 6507
+        },
+        {
+          "hue": 275,
+          "sectors": 1,
+          "forward": 0.000009604110875454046,
+          "reverse": 0.000009604037137110764,
+          "worstForward": [0.7259856902210396, 0.1548254539930091],
+          "worstReverse": [0.7259497418068643, 0.15485885645053832],
+          "referenceSectors": 1,
+          "referenceSegments": 6360
+        },
+        {
+          "hue": 280,
+          "sectors": 1,
+          "forward": 0.000009853545683058136,
+          "reverse": 0.000009853459805138112,
+          "worstForward": [0.7490155473145241, 0.1430799998257518],
+          "worstReverse": [0.7490334651995327, 0.14308051824777362],
+          "referenceSectors": 1,
+          "referenceSegments": 6232
+        },
+        {
+          "hue": 285,
+          "sectors": 1,
+          "forward": 0.000009648260498021735,
+          "reverse": 0.000009648224791095385,
+          "worstForward": [0.7570731593280932, 0.14153675207779445],
+          "worstReverse": [0.7571085307299641, 0.14152587542220335],
+          "referenceSectors": 1,
+          "referenceSegments": 6120
+        },
+        {
+          "hue": 290,
+          "sectors": 1,
+          "forward": 0.000009847546897054013,
+          "reverse": 0.000009847442004900572,
+          "worstForward": [0.7809771400500916, 0.1308185920002856],
+          "worstReverse": [0.7810002174252351, 0.13081548632009532],
+          "referenceSectors": 1,
+          "referenceSegments": 6021
+        },
+        {
+          "hue": 295,
+          "sectors": 1,
+          "forward": 0.000009979239953278195,
+          "reverse": 0.000009979148270198357,
+          "worstForward": [0.8051324989237139, 0.12036756269606622],
+          "worstReverse": [0.8051312978218281, 0.12038030556297297],
+          "referenceSectors": 1,
+          "referenceSegments": 5933
+        },
+        {
+          "hue": 300,
+          "sectors": 1,
+          "forward": 0.00000965473129028616,
+          "reverse": 0.000009654620368424089,
+          "worstForward": [0.8148779787119709, 0.11999751230498852],
+          "worstReverse": [0.8149040631974633, 0.11999124662686955],
+          "referenceSectors": 1,
+          "referenceSegments": 5854
+        },
+        {
+          "hue": 305,
+          "sectors": 1,
+          "forward": 0.000009893831906757027,
+          "reverse": 0.000009893767065883105,
+          "worstForward": [0.8533612538877662, 0.0998168109945146],
+          "worstReverse": [0.853372378576063, 0.09982101464735255],
+          "referenceSectors": 1,
+          "referenceSegments": 5783
+        },
+        {
+          "hue": 310,
+          "sectors": 1,
+          "forward": 0.000009873968970488014,
+          "reverse": 0.000009873840668766308,
+          "worstForward": [0.8905016530351435, 0.07925047920723244],
+          "worstReverse": [0.8905295000690415, 0.07924189005975843],
+          "referenceSectors": 1,
+          "referenceSegments": 5715
+        },
+        {
+          "hue": 315,
+          "sectors": 1,
+          "forward": 0.000009757211345700262,
+          "reverse": 0.000009757195040376309,
+          "worstForward": [0.9385039544333286, 0.04779788331331127],
+          "worstReverse": [0.9385090681896922, 0.047806282397445304],
+          "referenceSectors": 1,
+          "referenceSegments": 5650
+        },
+        {
+          "hue": 320,
+          "sectors": 1,
+          "forward": 0.000009316531087086547,
+          "reverse": 0.000009316458067612861,
+          "worstForward": [0.993732737372285, 0.005304232781183941],
+          "worstReverse": [0.9937339386153867, 0.005315430854430648],
+          "referenceSectors": 1,
+          "referenceSegments": 5587
+        },
+        {
+          "hue": 325,
+          "sectors": 1,
+          "forward": 0.000007789042153510684,
+          "reverse": 0.000007788923190865175,
+          "worstForward": [0.9945327362431395, 0.00524747887762813],
+          "worstReverse": [0.9945282075054641, 0.0052626414078567755],
+          "referenceSectors": 1,
+          "referenceSegments": 5523
+        },
+        {
+          "hue": 330,
+          "sectors": 1,
+          "forward": 0.000009398037085346393,
+          "reverse": 0.000009397822926981357,
+          "worstForward": [0.9959217027322274, 0.0043343945427274525],
+          "worstReverse": [0.995913587455194, 0.004356784309923619],
+          "referenceSectors": 1,
+          "referenceSegments": 5459
+        },
+        {
+          "hue": 335,
+          "sectors": 1,
+          "forward": 0.0000039383703580301,
+          "reverse": 0.000003938213181958601,
+          "worstForward": [0.9973060957486415, 0.0025627541356646895],
+          "worstReverse": [0.997303127903689, 0.002571024784731317],
+          "referenceSectors": 1,
+          "referenceSegments": 5396
+        },
+        {
+          "hue": 340,
+          "sectors": 1,
+          "forward": 0.0000044302903415690776,
+          "reverse": 0.000004430070990011366,
+          "worstForward": [0.9970479635843635, 0.0025620600427770034],
+          "worstReverse": [0.9970799006174389, 0.0025401504304327005],
+          "referenceSectors": 1,
+          "referenceSegments": 5334
+        },
+        {
+          "hue": 345,
+          "sectors": 1,
+          "forward": 0.000004839833481304705,
+          "reverse": 0.0000048396048141664124,
+          "worstForward": [0.9968879364530544, 0.002500558220029328],
+          "worstReverse": [0.9968827395510664, 0.0025109590142798027],
+          "referenceSectors": 1,
+          "referenceSegments": 5275
+        },
+        {
+          "hue": 350,
+          "sectors": 1,
+          "forward": 0.000005172260372278758,
+          "reverse": 0.000005171853515167806,
+          "worstForward": [0.9966814098288014, 0.0025001606163473533],
+          "worstReverse": [0.9967108881970811, 0.0024843765304389137],
+          "referenceSectors": 1,
+          "referenceSegments": 5221
+        },
+        {
+          "hue": 355,
+          "sectors": 1,
+          "forward": 0.000005436898270308176,
+          "reverse": 0.000005436554642708212,
+          "worstForward": [0.9965850295029757, 0.0024389875118193682],
+          "worstReverse": [0.9965631364296794, 0.0024613538776892116],
+          "referenceSectors": 1,
+          "referenceSegments": 5174
+        },
+        {
+          "hue": 264,
+          "sectors": 1,
+          "forward": 0.00000958698598088715,
+          "reverse": 0.00000958693993825289,
+          "worstForward": [0.6968157102230599, 0.17135694091454357],
+          "worstReverse": [0.6968433850573178, 0.1713510731253735],
+          "referenceSectors": 1,
+          "referenceSegments": 6679
+        },
+        {
+          "hue": 264.005,
+          "sectors": 1,
+          "forward": 0.000009592120330114244,
+          "reverse": 0.000009591994006507304,
+          "worstForward": [0.6967470563486318, 0.17139874999199278],
+          "worstReverse": [0.6967401936476572, 0.17141428588233187],
+          "referenceSectors": 1,
+          "referenceSegments": 6682
+        },
+        {
+          "hue": 264.01,
+          "sectors": 1,
+          "forward": 0.000009596916286102405,
+          "reverse": 0.000009596909312853814,
+          "worstForward": [0.6966779302725993, 0.1714408543294045],
+          "worstReverse": [0.6966365398819478, 0.1714777897943425],
+          "referenceSectors": 1,
+          "referenceSegments": 6685
+        },
+        {
+          "hue": 264.015,
+          "sectors": 1,
+          "forward": 0.000009601974514134516,
+          "reverse": 0.000009601935776959032,
+          "worstForward": [0.6965714042135144, 0.17150613516860783],
+          "worstReverse": [0.6965324172173424, 0.1715415889654975],
+          "referenceSectors": 1,
+          "referenceSegments": 6687
+        },
+        {
+          "hue": 264.02,
+          "sectors": 1,
+          "forward": 0.000009607210624188263,
+          "reverse": 0.000009607179294298776,
+          "worstForward": [0.696425077439801, 0.17159608419717148],
+          "worstReverse": [0.6964278189541069, 0.17160568759827283],
+          "referenceSectors": 1,
+          "referenceSegments": 6690
+        },
+        {
+          "hue": 264.025,
+          "sectors": 1,
+          "forward": 0.000009612176618441635,
+          "reverse": 0.000009612063802712817,
+          "worstForward": [0.696354513924873, 0.17163909001734276],
+          "worstReverse": [0.6963227382302954, 0.17167008999686778],
+          "referenceSectors": 1,
+          "referenceSegments": 6693
+        },
+        {
+          "hue": 264.03,
+          "sectors": 1,
+          "forward": 0.000009617368738573842,
+          "reverse": 0.000009617332777986438,
+          "worstForward": [0.6962072300180672, 0.17172964504176894],
+          "worstReverse": [0.6962171680161928, 0.17173480057068924],
+          "referenceSectors": 1,
+          "referenceSegments": 6696
+        },
+        {
+          "hue": 264.035,
+          "sectors": 1,
+          "forward": 0.000009622458034946441,
+          "reverse": 0.000009622302625308632,
+          "worstForward": [0.6961356701804418, 0.17177327567419406],
+          "worstReverse": [0.6961111011085097, 0.17179982383799275],
+          "referenceSectors": 1,
+          "referenceSegments": 6699
+        },
+        {
+          "hue": 264.04,
+          "sectors": 1,
+          "forward": 0.000009627607695011231,
+          "reverse": 0.000009627545038618394,
+          "worstForward": [0.6959874000302533, 0.1718644549825484],
+          "worstReverse": [0.6960045301243261, 0.17186516442967936],
+          "referenceSectors": 1,
+          "referenceSegments": 6702
+        },
+        {
+          "hue": 264.045,
+          "sectors": 1,
+          "forward": 0.00000963282161537762,
+          "reverse": 0.000009632655028236208,
+          "worstForward": [0.6959148144944435, 0.17190872883379024],
+          "worstReverse": [0.6958974474947198, 0.171930827093291],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.05,
+          "sectors": 1,
+          "forward": 0.000009638031319057516,
+          "reverse": 0.00000963786793621682,
+          "worstForward": [0.6958048116339249, 0.1719761997407874],
+          "worstReverse": [0.6957898454581792, 0.17199681669714206],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.055,
+          "sectors": 1,
+          "forward": 0.000009639993022234305,
+          "reverse": 0.000009639836400510788,
+          "worstForward": [0.695762267531512, 0.17200185745745164],
+          "worstReverse": [0.695749699761672, 0.17202099019116257],
+          "referenceSectors": 1,
+          "referenceSegments": 6709
+        },
+        {
+          "hue": 264.06,
+          "sectors": 1,
+          "forward": 0.000009639621900843574,
+          "reverse": 0.000009639563944444466,
+          "worstForward": [0.695731307323227, 0.17202033599606603],
+          "worstReverse": [0.6957556303488163, 0.17201659974119013],
+          "referenceSectors": 1,
+          "referenceSegments": 6708
+        },
+        {
+          "hue": 264.065,
+          "sectors": 1,
+          "forward": 0.000009639359033803373,
+          "reverse": 0.000009639301076083525,
+          "worstForward": [0.6957372392339926, 0.1720159463083437],
+          "worstReverse": [0.6957615616422874, 0.17201221020895907],
+          "referenceSectors": 1,
+          "referenceSegments": 6708
+        },
+        {
+          "hue": 264.07,
+          "sectors": 1,
+          "forward": 0.00000963909621395102,
+          "reverse": 0.000009639038254945288,
+          "worstForward": [0.6957431718515, 0.1720115575380377],
+          "worstReverse": [0.6957674936421017, 0.17200782159435707],
+          "referenceSectors": 1,
+          "referenceSegments": 6708
+        },
+        {
+          "hue": 264.075,
+          "sectors": 1,
+          "forward": 0.000009638833441599021,
+          "reverse": 0.000009638775481252286,
+          "worstForward": [0.6957491051757667, 0.17200716968503452],
+          "worstReverse": [0.6957734263482767, 0.17200343389727069],
+          "referenceSectors": 1,
+          "referenceSegments": 6708
+        },
+        {
+          "hue": 264.08,
+          "sectors": 1,
+          "forward": 0.0000096385707162655,
+          "reverse": 0.000009638512754703827,
+          "worstForward": [0.6957550392068088, 0.17200278274922198],
+          "worstReverse": [0.695779359760828, 0.17199904711758768],
+          "referenceSectors": 1,
+          "referenceSegments": 6708
+        },
+        {
+          "hue": 264.085,
+          "sectors": 1,
+          "forward": 0.000009638408971575382,
+          "reverse": 0.000009638245585716815,
+          "worstForward": [0.69580025819552, 0.17197404527674223],
+          "worstReverse": [0.6957852938797735, 0.17199466125519491],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.09,
+          "sectors": 1,
+          "forward": 0.00000963814633175713,
+          "reverse": 0.000009637982952725741,
+          "worstForward": [0.6958061929470585, 0.17196966077135895],
+          "worstReverse": [0.6957912287051299, 0.17199027630997946],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.095,
+          "sectors": 1,
+          "forward": 0.000009637883738998643,
+          "reverse": 0.000009637720366876653,
+          "worstForward": [0.6958121284054068, 0.17196527718265636],
+          "worstReverse": [0.6957971642369134, 0.17198589228182887],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.1,
+          "sectors": 1,
+          "forward": 0.000009637621193672169,
+          "reverse": 0.000009637457828406543,
+          "worstForward": [0.6958180645705807, 0.17196089451052216],
+          "worstReverse": [0.695803100475141, 0.1719815091706305],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.105,
+          "sectors": 1,
+          "forward": 0.000009637358695721714,
+          "reverse": 0.000009637195337269734,
+          "worstForward": [0.6958240014425977, 0.17195651275484344],
+          "worstReverse": [0.69580903741983, 0.17197712697627135],
+          "referenceSectors": 1,
+          "referenceSegments": 6707
+        },
+        {
+          "hue": 264.11,
+          "sectors": 1,
+          "forward": 0.000009637014805187483,
+          "reverse": 0.000009636951797164235,
+          "worstForward": [0.6957930440082667, 0.17197500153566497],
+          "worstReverse": [0.6958149750709978, 0.1719727456986385],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.115,
+          "sectors": 1,
+          "forward": 0.000009636752410043523,
+          "reverse": 0.000009636689401335686,
+          "worstForward": [0.6957989829451069, 0.17197062105319944],
+          "worstReverse": [0.6958209134286598, 0.17196836533762],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.12,
+          "sectors": 1,
+          "forward": 0.00000963649006225454,
+          "reverse": 0.000009636427052864294,
+          "worstForward": [0.695804922588856, 0.1719662414870124],
+          "worstReverse": [0.6958268524928336, 0.1719639858931029],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.125,
+          "sectors": 1,
+          "forward": 0.000009636227761767671,
+          "reverse": 0.000009636164751688275,
+          "worstForward": [0.6958108629395311, 0.17196186283699122],
+          "worstReverse": [0.6958327922635371, 0.17195960736497407],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.13,
+          "sectors": 1,
+          "forward": 0.000009635965508266316,
+          "reverse": 0.000009635902497504994,
+          "worstForward": [0.6958168039971497, 0.17195748510302342],
+          "worstReverse": [0.6958387327407856, 0.17195522975312189],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.135,
+          "sectors": 1,
+          "forward": 0.000009635703302090228,
+          "reverse": 0.000009635640290634264,
+          "worstForward": [0.695822745761728, 0.1719531082849965],
+          "worstReverse": [0.6958446739245976, 0.17195085305743285],
+          "referenceSectors": 1,
+          "referenceSegments": 6706
+        },
+        {
+          "hue": 264.14,
+          "sectors": 1,
+          "forward": 0.000009635513567336087,
+          "reverse": 0.000009635346920859687,
+          "worstForward": [0.695867977055028, 0.17192437995391927],
+          "worstReverse": [0.6958506158149891, 0.1719464772777951],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.145,
+          "sectors": 1,
+          "forward": 0.000009635251446951646,
+          "reverse": 0.000009635084807853648,
+          "worstForward": [0.6958739195400734, 0.17192000556212444],
+          "worstReverse": [0.6958565584119779, 0.17194210241409547],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.15,
+          "sectors": 1,
+          "forward": 0.00000963498937378811,
+          "reverse": 0.000009634822742194897,
+          "worstForward": [0.6958798627321128, 0.17191563208576197],
+          "worstReverse": [0.6958625017155801, 0.1719377284662222],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.155,
+          "sectors": 1,
+          "forward": 0.000009634727347933472,
+          "reverse": 0.00000963456072368637,
+          "worstForward": [0.6958858066311631, 0.17191125952471936],
+          "worstReverse": [0.6958684457258137, 0.1719333554340621],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.16,
+          "sectors": 1,
+          "forward": 0.000009634465369128549,
+          "reverse": 0.000009634298752364604,
+          "worstForward": [0.6958917512372422, 0.17190688787888386],
+          "worstReverse": [0.6958743904426954, 0.17192898331750306],
+          "referenceSectors": 1,
+          "referenceSegments": 6705
+        },
+        {
+          "hue": 264.165,
+          "sectors": 1,
+          "forward": 0.000009634148780900267,
+          "reverse": 0.000009634084194308028,
+          "worstForward": [0.6958607979360855, 0.17192538726431894],
+          "worstReverse": [0.6958803358662419, 0.17192461211643273],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.17,
+          "sectors": 1,
+          "forward": 0.000009633886904198614,
+          "reverse": 0.000009633822317474546,
+          "worstForward": [0.6958667446077221, 0.171921016890806],
+          "worstReverse": [0.6958862819964713, 0.17192024183073826],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.175,
+          "sectors": 1,
+          "forward": 0.000009633625074547141,
+          "reverse": 0.000009633560487618691,
+          "worstForward": [0.6958726919864536, 0.17191664743232415],
+          "worstReverse": [0.6958922288333991, 0.17191587246030798],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.18,
+          "sectors": 1,
+          "forward": 0.000009633363292122452,
+          "reverse": 0.000009633298705094336,
+          "worstForward": [0.695878640072298, 0.17191227888876054],
+          "worstReverse": [0.6958981763770447, 0.17191150400502858],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.185,
+          "sectors": 1,
+          "forward": 0.00000963310155688422,
+          "reverse": 0.000009633036969698162,
+          "worstForward": [0.6958845888652717, 0.17190791126000318],
+          "worstReverse": [0.6959041246274233, 0.17190713646478858],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.19,
+          "sectors": 1,
+          "forward": 0.000009632839868800693,
+          "reverse": 0.000009632775281433782,
+          "worstForward": [0.6958905383653922, 0.17190354454593967],
+          "worstReverse": [0.6959100735845534, 0.17190276983947506],
+          "referenceSectors": 1,
+          "referenceSegments": 6704
+        },
+        {
+          "hue": 264.195,
+          "sectors": 1,
+          "forward": 0.000009632622124659586,
+          "reverse": 0.000009632455693392929,
+          "worstForward": [0.6959357819660819, 0.17187482532114523],
+          "worstReverse": [0.695916023248451, 0.17189840412897633],
+          "referenceSectors": 1,
+          "referenceSegments": 6703
+        },
+        {
+          "hue": 264.2,
+          "sectors": 1,
+          "forward": 0.000009632360522714047,
+          "reverse": 0.000009632194099389173,
+          "worstForward": [0.6959417321866426, 0.17187046102912404],
+          "worstReverse": [0.695921973619135, 0.1718940393331791],
+          "referenceSectors": 1,
+          "referenceSegments": 6703
+        }
+      ],
+      "core": {
+        "rays": 20384,
+        "maxDistance": 0.000009973851381511395,
+        "countDisputes": []
+      },
+      "cornerContacts": [
+        {
+          "rgb": [1, 0, 0],
+          "hue": 28.958132730803953,
+          "lightness": 0.6485740751442981,
+          "chroma": 0.2994852863383699,
+          "core": [
+            {
+              "chroma": 0.29948528633836957,
+              "exit": true,
+              "binding": 4
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 0
+          }
+        },
+        {
+          "rgb": [0, 1, 0],
+          "hue": 145.64495558662838,
+          "lightness": 0.8488292928532465,
+          "chroma": 0.3685277976813828,
+          "core": [
+            {
+              "chroma": 0.36852779768138194,
+              "exit": true,
+              "binding": 0
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 4.0029660424867215e-16
+          }
+        },
+        {
+          "rgb": [0, 0, 1],
+          "hue": -95.94797738363008,
+          "lightness": 0.4663605403954785,
+          "chroma": 0.32315574875285474,
+          "core": [
+            {
+              "chroma": 0.3231557487528509,
+              "exit": true,
+              "binding": 0
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 6.3996956157e-17
+          }
+        },
+        {
+          "rgb": [1, 1, 0],
+          "hue": 110.22980955562501,
+          "lightness": 0.9647641197096956,
+          "chroma": 0.24503143904054142,
+          "core": [
+            {
+              "chroma": 0.24503143904053448,
+              "exit": true,
+              "binding": 3
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 4.47545209131181e-16
+          }
+        },
+        {
+          "rgb": [1, 0, 1],
+          "hue": -28.535564304235763,
+          "lightness": 0.7249795669971161,
+          "chroma": 0.3601764993945889,
+          "core": [
+            {
+              "chroma": 0.36017649939458907,
+              "exit": true,
+              "binding": 5
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 2.736740508125074e-16
+          }
+        },
+        {
+          "rgb": [0, 1, 1],
+          "hue": -166.86231224861714,
+          "lightness": 0.892901616194442,
+          "chroma": 0.20566745905825448,
+          "core": [
+            {
+              "chroma": 0.2056674590582533,
+              "exit": true,
+              "binding": 3
+            }
+          ],
+          "generated": {
+            "sectors": 1,
+            "contactRays": 0,
+            "distance": 9.964986097963504e-16
+          }
+        }
+      ]
+    }
+  ]
+}
