@@ -304,9 +304,14 @@ import * as renderInternal from "@gamut-plane/render/internal/capabilities";
 import * as current from "@gamut-plane/render/internal/current";
 import * as viewport from "@gamut-plane/render/internal/viewport";
 import * as spatial from "@gamut-plane/render/internal/spatial";
-assert.deepEqual(Object.keys(spatial).sort(), ["generateBoundaryMesh", "quantizeBoundaryPositions", "spatialColorDefinition"]);
+assert.deepEqual(Object.keys(spatial).sort(), ["MAX_RADIAL_SUBDIVISIONS", "SPATIAL_RADIAL_GENERATOR_REVISION", "generateBoundaryMesh", "generateRadialBoundaryMesh", "quantizeBoundaryPositions", "spatialColorDefinition"]);
 const spatialMesh = spatial.generateBoundaryMesh({ space: "srgb", subdivisions: 2, distribution: "cubic" });
-assert.ok(spatialMesh.ok && spatialMesh.value.coordinates === "oklab-a-l-b");
+assert.ok(spatialMesh.ok && spatialMesh.value.coordinates === "oklab-a-l-b" && spatialMesh.value.topology === "cube-grid-v1");
+// The radial generator: V = 3n^2+3n+2 vertices and F = 6n^2+6n triangles, black as the last vertex.
+const radialMesh = spatial.generateRadialBoundaryMesh({ space: "display-p3", subdivisions: 2 });
+assert.ok(radialMesh.ok && radialMesh.value.topology === "radial-hybrid-v1" && radialMesh.value.positions.length === 3 * 20 && radialMesh.value.faces.length === 36);
+assert.equal(spatial.SPATIAL_RADIAL_GENERATOR_REVISION, "rgb-radial-hybrid-v1");
+assert.equal(spatial.generateRadialBoundaryMesh({ space: "srgb", subdivisions: spatial.MAX_RADIAL_SUBDIVISIONS + 1 }).ok, false);
 assert.equal(spatial.spatialColorDefinition("srgb").revision, coreInternal.RGB_NUMERIC_REVISION);
 for (const key of Object.keys(spatial)) assert.equal(key in render, false);
 assert.deepEqual(Object.keys(coreInternal).sort(), ["MAX_RGB_BATCH_POINTS", "RGB_NUMERIC_REVISION", "analyzeRequestedGamuts", "assertOklchSample", "authorEditorPoint", "convertLinearRgb", "convertRgbReference", "decodeRgbCoordinate", "editOperationDefinitions", "editorDefinitions", "encodeRgbCoordinate", "gamutRayCrossings", "gamutRayIntervals", "geometryDefinitions", "keyboardGeometryPoint", "linearRgbToOklabBatch", "representationDefinitions", "spatialColorDefinition"]);
