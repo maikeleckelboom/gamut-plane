@@ -1,0 +1,995 @@
+﻿{
+  "schema": "phase-3c1-section-measurements-v1",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "win32 x64",
+    "cpu": "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics     ",
+    "note": "Timings are single local observations with JIT and GC variability, not a controlled benchmark."
+  },
+  "declaredEnvelope": {
+    "stageHeightCssPx": 900,
+    "unitsAtZoom1": 1.42,
+    "pixelsPerUnitAtZoom1": 633.8028169014085,
+    "proposedTargetCssPx": 0.5,
+    "note": "The 0.5 px figure is a proposed target, not an adopted gate."
+  },
+  "generator": {
+    "chordTolerance": 0.00001,
+    "limits": {
+      "maxConversions": 300000,
+      "maxVertices": 16384,
+      "maxRefinementRounds": 16,
+      "maxSolverIterations": 100,
+      "initialSamplesPerArc": 24
+    }
+  },
+  "monotonicity": {
+    "srgb": {
+      "analyticMargin": 18.4518001482758,
+      "finiteDifferences": {
+        "total": 1080000,
+        "nonIncreasing": 0,
+        "method": "central differences, half-width 1e-6 relative, mixed linear and log-uniform points"
+      }
+    },
+    "display-p3": {
+      "analyticMargin": 16.285675318071117,
+      "finiteDifferences": {
+        "total": 1080000,
+        "nonIncreasing": 0,
+        "method": "central differences, half-width 1e-6 relative, mixed linear and log-uniform points"
+      }
+    }
+  },
+  "lightnessSweep": {
+    "srgb": {
+      "levels": 410,
+      "failures": [],
+      "loopCountHistogram": {
+        "1": 410
+      },
+      "timeMs": {
+        "median": 0.43050000000005184,
+        "p95": 0.9766999999999371,
+        "max": 5.965099999999893,
+        "note": "first call per level, Node JIT warm after the first few"
+      },
+      "vertices": {
+        "min": 75,
+        "median": 151,
+        "max": 261
+      },
+      "conversions": {
+        "min": 990,
+        "median": 2045,
+        "max": 3373
+      },
+      "refinementRounds": {
+        "max": 5
+      },
+      "maxObservedChordDeviation": 0.000009999386915641091,
+      "maxLightnessResidual": 1.6653345369377348e-15,
+      "limits": {
+        "maxConversions": 300000,
+        "maxVertices": 16384,
+        "maxRefinementRounds": 16,
+        "maxSolverIterations": 100,
+        "initialSamplesPerArc": 24
+      },
+      "declaredChordTolerance": 0.00001
+    },
+    "display-p3": {
+      "levels": 410,
+      "failures": [],
+      "loopCountHistogram": {
+        "1": 410
+      },
+      "timeMs": {
+        "median": 0.3669999999999618,
+        "p95": 0.8066999999998643,
+        "max": 1.3431000000000495,
+        "note": "first call per level, Node JIT warm after the first few"
+      },
+      "vertices": {
+        "min": 75,
+        "median": 154,
+        "max": 260
+      },
+      "conversions": {
+        "min": 990,
+        "median": 2100,
+        "max": 3415
+      },
+      "refinementRounds": {
+        "max": 5
+      },
+      "maxObservedChordDeviation": 0.000009999069986506027,
+      "maxLightnessResidual": 1.6653345369377348e-15,
+      "limits": {
+        "maxConversions": 300000,
+        "maxVertices": 16384,
+        "maxRefinementRounds": 16,
+        "maxSolverIterations": 100,
+        "initialSamplesPerArc": 24
+      },
+      "declaredChordTolerance": 0.00001
+    }
+  },
+  "coreCorrespondence": {
+    "srgb": {
+      "method": "1440 hue rays per lightness from the neutral axis; core gamutRayCrossings is the authority; plane distance is from each exact crossing point to the nearest point of the section polyline",
+      "levels": 17,
+      "rays": 24480,
+      "countMismatches": 0,
+      "ambiguousRays": 0,
+      "planeDistance": {
+        "count": 24498,
+        "max": 0.000009993128055431546,
+        "rms": 0.0000027734476922990803,
+        "p50": 4.7533104845251703e-7,
+        "p99": 0.000008640796597920604,
+        "p999": 0.000009642975844201905
+      },
+      "planeDistanceScreenPx": {
+        "zoom1": 0.006333672711189009,
+        "zoom4": 0.025334690844756036,
+        "zoom12": 0.07600407253426811
+      },
+      "chromaAlongRayError": {
+        "count": 24498,
+        "max": 0.00011788756899877573,
+        "rms": 0.000004181138718274154,
+        "p50": 5.839879991254016e-7,
+        "p99": 0.000013414129880678916,
+        "p999": 0.00003477308782018351
+      },
+      "note": "Ray-parameterized chroma error is larger than plane distance where the plane grazes the surface (the 13 to 14 times amplification recorded in Phase 3B-R); only the plane distance is gated.",
+      "perLevel": [
+        {
+          "lightness": 0.002,
+          "maxPlaneDistance": 0.0000027422259419535365,
+          "maxChromaError": 0.0000027537278545537334,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.006,
+          "maxPlaneDistance": 0.000008226677825861924,
+          "maxChromaError": 0.000008261183563662393,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.02,
+          "maxPlaneDistance": 0.000009271320282360402,
+          "maxChromaError": 0.000014979584017315445,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.05,
+          "maxPlaneDistance": 0.000009726615873930033,
+          "maxChromaError": 0.000037448960043359736,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.1,
+          "maxPlaneDistance": 0.000009800628268700081,
+          "maxChromaError": 0.00007489792008658763,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.2,
+          "maxPlaneDistance": 0.000009923702056182984,
+          "maxChromaError": 0.00005216264114892011,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.3,
+          "maxPlaneDistance": 0.000009858756226420742,
+          "maxChromaError": 0.00007824396172503856,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.44,
+          "maxPlaneDistance": 0.000009993128055431546,
+          "maxChromaError": 0.00011475781052999734,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.452,
+          "maxPlaneDistance": 0.000009822776892804044,
+          "maxChromaError": 0.00011788756899877573,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.5,
+          "maxPlaneDistance": 0.000009991138793174849,
+          "maxChromaError": 0.00004434287163973538,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.6,
+          "maxPlaneDistance": 0.000009786822844660787,
+          "maxChromaError": 0.000016011336915006114,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.68,
+          "maxPlaneDistance": 0.000009866631730893349,
+          "maxChromaError": 0.000014802677673314557,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.8,
+          "maxPlaneDistance": 0.000009675818487008277,
+          "maxChromaError": 0.000016465404453352983,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.9,
+          "maxPlaneDistance": 0.000009957733442616343,
+          "maxChromaError": 0.000020501084674523495,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.95,
+          "maxPlaneDistance": 0.000009795224543224712,
+          "maxChromaError": 0.000033501631577059765,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.99,
+          "maxPlaneDistance": 9.684313619076977e-7,
+          "maxChromaError": 0.000004147237457716169,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.999,
+          "maxPlaneDistance": 8.230945805921816e-9,
+          "maxChromaError": 2.9042671101375817e-8,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        }
+      ]
+    },
+    "display-p3": {
+      "method": "1440 hue rays per lightness from the neutral axis; core gamutRayCrossings is the authority; plane distance is from each exact crossing point to the nearest point of the section polyline",
+      "levels": 17,
+      "rays": 24480,
+      "countMismatches": 0,
+      "ambiguousRays": 0,
+      "planeDistance": {
+        "count": 24480,
+        "max": 0.000009982970855828616,
+        "rms": 0.00000275536490262518,
+        "p50": 6.710377694532976e-7,
+        "p99": 0.000008735158547298857,
+        "p999": 0.000009701074166603247
+      },
+      "planeDistanceScreenPx": {
+        "zoom1": 0.006327235049468842,
+        "zoom4": 0.025308940197875367,
+        "zoom12": 0.0759268205936261
+      },
+      "chromaAlongRayError": {
+        "count": 24480,
+        "max": 0.0000417848542517002,
+        "rms": 0.0000035735742774634013,
+        "p50": 7.826634185192916e-7,
+        "p99": 0.000012389858616512761,
+        "p999": 0.000022590914303843856
+      },
+      "note": "Ray-parameterized chroma error is larger than plane distance where the plane grazes the surface (the 13 to 14 times amplification recorded in Phase 3B-R); only the plane distance is gated.",
+      "perLevel": [
+        {
+          "lightness": 0.002,
+          "maxPlaneDistance": 0.0000032362948428370117,
+          "maxChromaError": 0.000003248032737006106,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.006,
+          "maxPlaneDistance": 0.000009708884528512295,
+          "maxChromaError": 0.000009744098211020378,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.02,
+          "maxPlaneDistance": 0.000009199396700900495,
+          "maxChromaError": 0.000012540308625843752,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.05,
+          "maxPlaneDistance": 0.000009668024856470314,
+          "maxChromaError": 0.00001044621356292158,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.1,
+          "maxPlaneDistance": 0.000009825843435094031,
+          "maxChromaError": 0.000020892427125759894,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.2,
+          "maxPlaneDistance": 0.000009917064185908945,
+          "maxChromaError": 0.0000417848542517002,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.3,
+          "maxPlaneDistance": 0.000009722075927473746,
+          "maxChromaError": 0.000019229841691031924,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.44,
+          "maxPlaneDistance": 0.000009851988642319062,
+          "maxChromaError": 0.000028203767813705927,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.452,
+          "maxPlaneDistance": 0.000009759142672193224,
+          "maxChromaError": 0.00002897296148207662,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.5,
+          "maxPlaneDistance": 0.000009918657084550618,
+          "maxChromaError": 0.00001773097946433655,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.6,
+          "maxPlaneDistance": 0.000009982970855828616,
+          "maxChromaError": 0.00001621311564589667,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.68,
+          "maxPlaneDistance": 0.000009895680737119275,
+          "maxChromaError": 0.000015292754607820758,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.8,
+          "maxPlaneDistance": 0.000009964388757297668,
+          "maxChromaError": 0.000014243014632209228,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.9,
+          "maxPlaneDistance": 0.000009961247593185785,
+          "maxChromaError": 0.000019686354346071244,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.95,
+          "maxPlaneDistance": 0.0000073780450510611545,
+          "maxChromaError": 0.000038482950661000714,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.99,
+          "maxPlaneDistance": 0.0000010436760325098142,
+          "maxChromaError": 0.000003804587917828617,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        },
+        {
+          "lightness": 0.999,
+          "maxPlaneDistance": 8.93430943006171e-9,
+          "maxChromaError": 2.7309936414740554e-8,
+          "countMismatches": 0,
+          "ambiguousRays": 0
+        }
+      ]
+    }
+  },
+  "vertexProvenance": {
+    "srgb": {
+      "levels": 199,
+      "faceVertices": 31205,
+      "edgeCrossingVertices": 723,
+      "edgeCrossingsWhereCoreReportsNoCrossing": 94,
+      "bindingMismatches": 0,
+      "maxRelativeChromaDifference": 6.339934549807132e-13,
+      "method": "chroma and binding at each face vertex's hue from core gamutRayCrossings; edge crossings bind two channels and may be touching points, which core's interval logic does not report"
+    },
+    "display-p3": {
+      "levels": 199,
+      "faceVertices": 31668,
+      "edgeCrossingVertices": 720,
+      "edgeCrossingsWhereCoreReportsNoCrossing": 0,
+      "bindingMismatches": 0,
+      "maxRelativeChromaDifference": 4.4371223900716717e-13,
+      "method": "chroma and binding at each face vertex's hue from core gamutRayCrossings; edge crossings bind two channels and may be touching points, which core's interval logic does not report"
+    }
+  },
+  "membership": {
+    "srgb": {
+      "probes": 44800,
+      "checked": 44567,
+      "skippedWithinFourTolerances": 233,
+      "mismatches": 0,
+      "method": "even-odd polygon membership of the section against core analyzeGamut of the OKLab color"
+    },
+    "display-p3": {
+      "probes": 44800,
+      "checked": 44592,
+      "skippedWithinFourTolerances": 208,
+      "mismatches": 0,
+      "method": "even-odd polygon membership of the section against core analyzeGamut of the OKLab color"
+    }
+  },
+  "denseTrueCurve": {
+    "srgb": {
+      "method": "per face, 5000 cubic-spaced knots in each free channel, the other channel solved by 70 bisection steps on the converted lightness; independent of the generator's tau chords",
+      "samples": 108176,
+      "distanceToPolyline": {
+        "count": 108176,
+        "max": 0.000009991683356725332,
+        "rms": 0.000003077306865719135,
+        "p50": 0.000001072844206081422,
+        "p99": 0.000008920901860440746,
+        "p999": 0.000009768274161466563
+      },
+      "screenPx": {
+        "zoom1": 0.006332757057079436,
+        "zoom4": 0.025331028228317745,
+        "zoom12": 0.07599308468495324
+      },
+      "declaredChordTolerance": 0.00001,
+      "perLevel": [
+        {
+          "lightness": 0.006,
+          "samples": 300,
+          "maxDistance": 0.000008181088524605857,
+          "p99": 0.00000783004063158501
+        },
+        {
+          "lightness": 0.05,
+          "samples": 2482,
+          "maxDistance": 0.000009741339550945107,
+          "p99": 0.000008717535460677317
+        },
+        {
+          "lightness": 0.2,
+          "samples": 9918,
+          "maxDistance": 0.00000994524739849466,
+          "p99": 0.000008782660277894427
+        },
+        {
+          "lightness": 0.44,
+          "samples": 21818,
+          "maxDistance": 0.000009991683356725332,
+          "p99": 0.000008936532493727584
+        },
+        {
+          "lightness": 0.452,
+          "samples": 22412,
+          "maxDistance": 0.00000998608378370784,
+          "p99": 0.000009023980544682918
+        },
+        {
+          "lightness": 0.68,
+          "samples": 27848,
+          "maxDistance": 0.00000987074980700354,
+          "p99": 0.000008619285929177757
+        },
+        {
+          "lightness": 0.9,
+          "samples": 21638,
+          "maxDistance": 0.00000995773909472821,
+          "p99": 0.000009384681528705163
+        },
+        {
+          "lightness": 0.99,
+          "samples": 1760,
+          "maxDistance": 9.819336754400588e-7,
+          "p99": 9.52493641547775e-7
+        }
+      ]
+    },
+    "display-p3": {
+      "method": "per face, 5000 cubic-spaced knots in each free channel, the other channel solved by 70 bisection steps on the converted lightness; independent of the generator's tau chords",
+      "samples": 103352,
+      "distanceToPolyline": {
+        "count": 103352,
+        "max": 0.000009998133568834083,
+        "rms": 0.000003025287677605552,
+        "p50": 0.0000010448808242255505,
+        "p99": 0.000008694345371972193,
+        "p999": 0.000009738781836079995
+      },
+      "screenPx": {
+        "zoom1": 0.006336845219683574,
+        "zoom4": 0.025347380878734296,
+        "zoom12": 0.07604214263620289
+      },
+      "declaredChordTolerance": 0.00001,
+      "perLevel": [
+        {
+          "lightness": 0.006,
+          "samples": 296,
+          "maxDistance": 0.000009704906974662287,
+          "p99": 0.000009460968761089951
+        },
+        {
+          "lightness": 0.05,
+          "samples": 2434,
+          "maxDistance": 0.000009667789079989132,
+          "p99": 0.000008675379574099502
+        },
+        {
+          "lightness": 0.2,
+          "samples": 9728,
+          "maxDistance": 0.000009936734204353833,
+          "p99": 0.0000091655487609648
+        },
+        {
+          "lightness": 0.44,
+          "samples": 21402,
+          "maxDistance": 0.000009988536674518173,
+          "p99": 0.000008859419192202915
+        },
+        {
+          "lightness": 0.452,
+          "samples": 21984,
+          "maxDistance": 0.000009804601681719426,
+          "p99": 0.000008729886597736513
+        },
+        {
+          "lightness": 0.68,
+          "samples": 28010,
+          "maxDistance": 0.000009916549950324027,
+          "p99": 0.000007804560999030567
+        },
+        {
+          "lightness": 0.9,
+          "samples": 17892,
+          "maxDistance": 0.000009998133568834083,
+          "p99": 0.000008877271636138084
+        },
+        {
+          "lightness": 0.99,
+          "samples": 1606,
+          "maxDistance": 0.0000010727911190589338,
+          "p99": 0.0000010411706832624082
+        }
+      ]
+    }
+  },
+  "meshContrast": {
+    "srgb": {
+      "method": "distance in the section plane between the exact contour (four points per segment) and the polyline of the triangle mesh cut by the same plane, in both directions",
+      "radialHybridM64": {
+        "worst": 0.000018000137910739686,
+        "screenPx": {
+          "zoom1": 0.011408538112440646,
+          "zoom4": 0.045634152449762586,
+          "zoom12": 0.13690245734928774
+        },
+        "perLevel": [
+          {
+            "lightness": 0.002,
+            "exactToMesh": 0.0000027324228502128246,
+            "meshToExact": 0.0000027414803527722164
+          },
+          {
+            "lightness": 0.006,
+            "exactToMesh": 0.000008197268550630392,
+            "meshToExact": 0.000008224441058317093
+          },
+          {
+            "lightness": 0.02,
+            "exactToMesh": 0.00000902923256082571,
+            "meshToExact": 0.00000909170199967677
+          },
+          {
+            "lightness": 0.05,
+            "exactToMesh": 0.000009509423414516893,
+            "meshToExact": 0.000009654792374616986
+          },
+          {
+            "lightness": 0.1,
+            "exactToMesh": 0.000008923768587971686,
+            "meshToExact": 0.00000956101907608379
+          },
+          {
+            "lightness": 0.2,
+            "exactToMesh": 0.00000907829699884961,
+            "meshToExact": 0.000009826297986635166
+          },
+          {
+            "lightness": 0.3,
+            "exactToMesh": 0.000009675527884957541,
+            "meshToExact": 0.000009826028759560326
+          },
+          {
+            "lightness": 0.44,
+            "exactToMesh": 0.000013221506579334905,
+            "meshToExact": 0.00001278230321046102
+          },
+          {
+            "lightness": 0.5,
+            "exactToMesh": 0.000014614654354153044,
+            "meshToExact": 0.000013873279777952847
+          },
+          {
+            "lightness": 0.68,
+            "exactToMesh": 0.000014342634034755055,
+            "meshToExact": 0.00001465441966768156
+          },
+          {
+            "lightness": 0.8,
+            "exactToMesh": 0.000017627779943317375,
+            "meshToExact": 0.000018000137910739686
+          },
+          {
+            "lightness": 0.9,
+            "exactToMesh": 0.000014955974501139592,
+            "meshToExact": 0.000014990673954895115
+          },
+          {
+            "lightness": 0.99,
+            "exactToMesh": 0.000008654143350713509,
+            "meshToExact": 0.000007837235385378382
+          }
+        ]
+      },
+      "fixedGridCubicN64": {
+        "worst": 0.000599179549392337,
+        "screenPx": {
+          "zoom1": 0.37976168623457984,
+          "zoom4": 1.5190467449383194,
+          "zoom12": 4.557140234814958
+        },
+        "perLevel": [
+          {
+            "lightness": 0.002,
+            "exactToMesh": 0.00014747855163572244,
+            "meshToExact": 0.0001450417659265293
+          },
+          {
+            "lightness": 0.006,
+            "exactToMesh": 0.00044243565490716705,
+            "meshToExact": 0.00043512529777959023
+          },
+          {
+            "lightness": 0.02,
+            "exactToMesh": 0.000599179549392337,
+            "meshToExact": 0.0005410137183920977
+          },
+          {
+            "lightness": 0.05,
+            "exactToMesh": 0.0002302945466993025,
+            "meshToExact": 0.00021672944827451184
+          },
+          {
+            "lightness": 0.1,
+            "exactToMesh": 0.00011283916715308382,
+            "meshToExact": 0.0001026777221236143
+          },
+          {
+            "lightness": 0.2,
+            "exactToMesh": 0.00006159341489372631,
+            "meshToExact": 0.00006159530174117531
+          },
+          {
+            "lightness": 0.3,
+            "exactToMesh": 0.00003927958806102328,
+            "meshToExact": 0.00003747376398297494
+          },
+          {
+            "lightness": 0.44,
+            "exactToMesh": 0.0000275825092995934,
+            "meshToExact": 0.00002350175903753575
+          },
+          {
+            "lightness": 0.5,
+            "exactToMesh": 0.000025342755859281834,
+            "meshToExact": 0.000025169592818575153
+          },
+          {
+            "lightness": 0.68,
+            "exactToMesh": 0.000014967974505475753,
+            "meshToExact": 0.000014869441847152717
+          },
+          {
+            "lightness": 0.8,
+            "exactToMesh": 0.000023027048713891046,
+            "meshToExact": 0.00002345573834826157
+          },
+          {
+            "lightness": 0.9,
+            "exactToMesh": 0.000020460697548576993,
+            "meshToExact": 0.000020553880899598855
+          },
+          {
+            "lightness": 0.99,
+            "exactToMesh": 0.000014892055460812721,
+            "meshToExact": 0.000015348992464802316
+          }
+        ]
+      }
+    },
+    "display-p3": {
+      "method": "distance in the section plane between the exact contour (four points per segment) and the polyline of the triangle mesh cut by the same plane, in both directions",
+      "radialHybridM64": {
+        "worst": 0.000017684108344707953,
+        "screenPx": {
+          "zoom1": 0.011208237683265605,
+          "zoom4": 0.04483295073306242,
+          "zoom12": 0.13449885219918725
+        },
+        "perLevel": [
+          {
+            "lightness": 0.002,
+            "exactToMesh": 0.0000032237803996432653,
+            "meshToExact": 0.000003234418329724713
+          },
+          {
+            "lightness": 0.006,
+            "exactToMesh": 0.000009671341198955441,
+            "meshToExact": 0.000009703254989176214
+          },
+          {
+            "lightness": 0.02,
+            "exactToMesh": 0.000009199312128367404,
+            "meshToExact": 0.000009200141761235041
+          },
+          {
+            "lightness": 0.05,
+            "exactToMesh": 0.00000938055529186455,
+            "meshToExact": 0.000009639801668401003
+          },
+          {
+            "lightness": 0.1,
+            "exactToMesh": 0.00000951648535330003,
+            "meshToExact": 0.000009637092571999948
+          },
+          {
+            "lightness": 0.2,
+            "exactToMesh": 0.000009895598856538299,
+            "meshToExact": 0.000009918700408030035
+          },
+          {
+            "lightness": 0.3,
+            "exactToMesh": 0.000009592788119635199,
+            "meshToExact": 0.000009687922271274044
+          },
+          {
+            "lightness": 0.44,
+            "exactToMesh": 0.000013458456659964372,
+            "meshToExact": 0.000013019288964314184
+          },
+          {
+            "lightness": 0.5,
+            "exactToMesh": 0.00001550164385433469,
+            "meshToExact": 0.000014729510279989923
+          },
+          {
+            "lightness": 0.68,
+            "exactToMesh": 0.00001144502691106964,
+            "meshToExact": 0.00001040780080701942
+          },
+          {
+            "lightness": 0.8,
+            "exactToMesh": 0.000017040627037192835,
+            "meshToExact": 0.000017684108344707953
+          },
+          {
+            "lightness": 0.9,
+            "exactToMesh": 0.000015830089653763884,
+            "meshToExact": 0.00001590431683704887
+          },
+          {
+            "lightness": 0.99,
+            "exactToMesh": 0.000011667157972044244,
+            "meshToExact": 0.000011553238059913062
+          }
+        ]
+      },
+      "fixedGridCubicN64": {
+        "worst": 0.0006951316018492554,
+        "screenPx": {
+          "zoom1": 0.44057636736924644,
+          "zoom4": 1.7623054694769857,
+          "zoom12": 5.286916408430957
+        },
+        "perLevel": [
+          {
+            "lightness": 0.002,
+            "exactToMesh": 0.000154014873723658,
+            "meshToExact": 0.000150856986030975
+          },
+          {
+            "lightness": 0.006,
+            "exactToMesh": 0.00046204462117096937,
+            "meshToExact": 0.000452570958092925
+          },
+          {
+            "lightness": 0.02,
+            "exactToMesh": 0.0006951316018492554,
+            "meshToExact": 0.0006863718460124325
+          },
+          {
+            "lightness": 0.05,
+            "exactToMesh": 0.0002448807264672678,
+            "meshToExact": 0.0002354255133340015
+          },
+          {
+            "lightness": 0.1,
+            "exactToMesh": 0.00013387557463014814,
+            "meshToExact": 0.00013474210583409862
+          },
+          {
+            "lightness": 0.2,
+            "exactToMesh": 0.00006757943236973566,
+            "meshToExact": 0.00006841789246162273
+          },
+          {
+            "lightness": 0.3,
+            "exactToMesh": 0.00004598919235090278,
+            "meshToExact": 0.000043738145759333206
+          },
+          {
+            "lightness": 0.44,
+            "exactToMesh": 0.000032051260188421225,
+            "meshToExact": 0.000029822059129236907
+          },
+          {
+            "lightness": 0.5,
+            "exactToMesh": 0.00002775715126523789,
+            "meshToExact": 0.00002470658375605985
+          },
+          {
+            "lightness": 0.68,
+            "exactToMesh": 0.00001834009124542779,
+            "meshToExact": 0.00001545844887515729
+          },
+          {
+            "lightness": 0.8,
+            "exactToMesh": 0.000022079548689381748,
+            "meshToExact": 0.00002239098396911087
+          },
+          {
+            "lightness": 0.9,
+            "exactToMesh": 0.000021500175571908395,
+            "meshToExact": 0.00002160765088543566
+          },
+          {
+            "lightness": 0.99,
+            "exactToMesh": 0.000020123718866872517,
+            "meshToExact": 0.0000188463684146886
+          }
+        ]
+      }
+    }
+  },
+  "multiCrossing": {
+    "srgb L=0.44 h=264.1": {
+      "coreCrossings": [
+        {
+          "chroma": 0.2622313696872526,
+          "exit": true,
+          "binding": 0
+        },
+        {
+          "chroma": 0.3008046110453045,
+          "exit": false,
+          "binding": 0
+        },
+        {
+          "chroma": 0.30474417289568767,
+          "exit": true,
+          "binding": 2
+        }
+      ],
+      "polylineCrossings": [0.2622839826591745, 0.30080222431357967, 0.30474317042855753],
+      "planeDistanceOfEachCoreCrossing": [
+        0.000002563259781664095, 1.192475142510856e-7, 8.695858971973056e-7
+      ]
+    },
+    "srgb L=0.006 h=264.125": {
+      "coreCrossings": [
+        {
+          "chroma": 0.0036069818085510933,
+          "exit": true,
+          "binding": 0
+        },
+        {
+          "chroma": 0.004068034743530852,
+          "exit": false,
+          "binding": 0
+        },
+        {
+          "chroma": 0.004154569394389988,
+          "exit": true,
+          "binding": 2
+        }
+      ],
+      "polylineCrossings": [0.003614551778381641, 0.004064148651405378, 0.004154481065957046],
+      "planeDistanceOfEachCoreCrossing": [
+        3.1959982609078963e-7, 2.19894504274236e-7, 7.6211779459106e-8
+      ]
+    },
+    "fold sweep sRGB L=0.44, hue 262 to 266 degrees, 4001 rays": {
+      "raysWhereCountsDiffer": 0,
+      "hueRangeOfDifferences": null,
+      "note": "Counts can differ only within the chordal tolerance of a fold (tangency), where two exact crossings are closer than the polyline's resolution."
+    }
+  },
+  "failureSemantics": {
+    "lightnessZero": {
+      "ok": true,
+      "kind": "point"
+    },
+    "lightnessOne": {
+      "ok": true,
+      "kind": "point"
+    },
+    "belowRange": {
+      "ok": true,
+      "kind": "empty"
+    },
+    "aboveRange": {
+      "ok": true,
+      "kind": "empty"
+    },
+    "nan": {
+      "ok": false,
+      "error": "invalid-options"
+    },
+    "conversionBudget600": {
+      "ok": false,
+      "error": "resource-budget"
+    },
+    "vertexBudget40": {
+      "ok": false,
+      "error": "resource-budget"
+    },
+    "roundBudget1": {
+      "ok": false,
+      "error": "resource-budget"
+    },
+    "toleranceOneE13": {
+      "ok": false,
+      "error": "resource-budget"
+    },
+    "repeatable": true
+  },
+  "reportGenerationSeconds": 13.4345309
+}

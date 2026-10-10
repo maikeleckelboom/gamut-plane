@@ -1,0 +1,9 @@
+{
+  "probes": 35,
+  "filledInside": 35,
+  "outwardReachedStage": 35,
+  "distanceToStagePx": {
+    "median": 3,
+    "max": 4
+  }
+}

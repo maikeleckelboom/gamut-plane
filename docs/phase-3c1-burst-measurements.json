@@ -1,0 +1,14 @@
+{
+  "framesDuringBurst": 91,
+  "requestsInSingleTaskBurst": 1,
+  "computesInSingleTaskBurst": 1,
+  "meanComputeMsPerFrameDrag": [1.570000000546376, 2.163333332538605, 2.2566666670143603],
+  "maxComputeMs": 5.5,
+  "store": {
+    "hits": 0,
+    "misses": 184,
+    "builds": 184,
+    "evictions": 160,
+    "size": 24
+  }
+}
