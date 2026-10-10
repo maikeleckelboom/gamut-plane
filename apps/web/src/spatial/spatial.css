@@ -1,7 +1,7 @@
 .spatial-app {
   max-width: 1920px;
   margin: 0 auto;
-  padding: 28px 44px 20px;
+  padding: 20px 44px 16px;
   color: #e4e8ec;
   font-size: 14px;
 }
@@ -40,7 +40,7 @@
   color: #a3adb8;
 }
 .spatial-header {
-  padding-bottom: 24px;
+  padding-bottom: 16px;
   border-bottom: 1px solid #343b44;
 }
 .spatial-brand {
@@ -60,7 +60,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 32px;
-  padding: 30px 0 24px;
+  padding: 20px 0 16px;
 }
 .spatial-eyebrow {
   font-size: 10px;
@@ -69,7 +69,7 @@
   margin: 0 0 10px;
 }
 .spatial-intro h1 {
-  font-size: clamp(25px, 2.5vw, 37px);
+  font-size: clamp(24px, 2.2vw, 33px);
   font-weight: 450;
   line-height: 1.2;
   letter-spacing: -0.035em;
@@ -91,10 +91,10 @@
   padding: 14px 18px;
   background: #20252b;
 }
-.spatial-toolbar fieldset {
+.spatial-group {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   border: 0;
   padding: 0;
   margin: 0;
@@ -107,30 +107,48 @@
   font-size: 12px;
   padding: 0;
 }
-.spatial-gamut {
-  display: flex;
-  align-items: center;
+/* Native radios, presented as a segmented control; the input keeps keyboard and AT semantics. */
+.spatial-choice {
+  position: relative;
+  display: inline-flex;
 }
-.spatial-gamut input {
+.spatial-choice input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.spatial-choice span {
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 9px 13px;
+  pointer-events: none;
+}
+.spatial-choice:hover span {
+  background: #303943;
+}
+.spatial-choice input:checked + span {
+  background: #3b4651;
+  border-color: #536473;
+}
+.spatial-choice input:focus-visible + span,
+.spatial-compare input:focus-visible {
+  outline: 2px solid #b0d1e6;
+  outline-offset: 4px;
+}
+.spatial-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+.spatial-compare input {
   accent-color: #bdd8e6;
   width: 15px;
   height: 15px;
-  margin: 0 2px 0 0;
+  margin: 0;
   cursor: pointer;
-}
-.spatial-gamut button {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.spatial-gamut button span {
-  color: #b4bfca;
-  font-size: 10px;
-  min-width: 38px;
-}
-.spatial-app button[aria-pressed="true"] {
-  background: #3b4651;
-  border-color: #536473;
 }
 .spatial-camera {
   display: flex;
@@ -142,7 +160,8 @@
 }
 .spatial-stage {
   position: relative;
-  height: clamp(430px, 66vh, 1000px);
+  /* The whole stage fits common laptop viewports; the page scrolls only for the notes below it. */
+  height: clamp(430px, calc(100dvh - 330px), 1000px);
   min-width: 0;
   border: 1px solid #343b44;
   background: #191d22;
@@ -155,19 +174,24 @@
   touch-action: none;
   outline-offset: -5px;
 }
-.spatial-stage-caption {
+.spatial-viewport {
   position: absolute;
+  inset: 0;
+}
+.spatial-caption {
+  position: absolute;
+  z-index: 1;
   left: 24px;
   top: 22px;
   display: grid;
   gap: 7px;
   pointer-events: none;
 }
-.spatial-stage-caption strong {
+.spatial-caption strong {
   font-size: 14px;
   font-weight: 500;
 }
-.spatial-stage-caption span {
+.spatial-caption span {
   font-size: 12px;
   color: #a3adb8;
 }
@@ -176,11 +200,29 @@
   color: #b0bbc5;
   font-size: 12px;
   font-family: var(--cv-font-mono);
+  white-space: nowrap;
   pointer-events: none;
   transform: translate(-50%, -50%);
+  text-shadow:
+    0 0 3px #191d22,
+    0 0 3px #191d22;
+}
+.spatial-axis-far {
+  opacity: 0.78;
+}
+.spatial-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.spatial-legend i {
+  width: 18px;
+  height: 0;
+  border-top: 2px solid #a9cadc;
 }
 .spatial-scale {
   position: absolute;
+  z-index: 1;
   bottom: 22px;
   left: 24px;
   color: #b0bbc5;
@@ -253,6 +295,27 @@
   color: #b3bdc7;
   pointer-events: none;
 }
+/* On a narrow stage the caption and ruler leave the canvas so they never cover the scene. */
+@media (max-width: 760px) {
+  .spatial-stage {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+  .spatial-viewport {
+    position: relative;
+    inset: auto;
+    height: clamp(360px, 62vh, 480px);
+  }
+  .spatial-caption,
+  .spatial-scale {
+    position: static;
+    padding: 14px 16px 0;
+  }
+  .spatial-scale {
+    padding: 0 16px 14px;
+  }
+}
 @media (max-width: 850px) {
   .spatial-app {
     padding: 20px;
@@ -266,9 +329,6 @@
   }
   .spatial-toolbar legend {
     margin-right: 10px;
-  }
-  .spatial-gamuts {
-    flex-basis: 100%;
   }
   .spatial-camera {
     margin-left: auto;
@@ -287,12 +347,8 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  .spatial-gamut button {
-    padding: 8px;
-    gap: 5px;
-  }
-  .spatial-gamut button span {
-    display: none;
+  .spatial-choice span {
+    padding: 8px 10px;
   }
   .spatial-toolbar legend {
     font-size: 11px;
@@ -303,11 +359,9 @@
   .spatial-modes legend {
     display: none;
   }
-  .spatial-stage {
-    height: 440px;
-  }
-  .spatial-stage-caption {
-    left: 18px;
-    top: 14px;
+  .spatial-caption,
+  .spatial-scale {
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }

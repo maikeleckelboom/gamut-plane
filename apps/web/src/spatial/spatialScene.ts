@@ -1,13 +1,8 @@
 import {
   AmbientLight,
   Box3,
-  BufferAttribute,
   BufferGeometry,
   DirectionalLight,
-  GreaterDepth,
-  LineBasicMaterial,
-  LineDashedMaterial,
-  LineSegments,
   Mesh,
   MeshLambertMaterial,
   NoToneMapping,
@@ -22,29 +17,52 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { generateBoundaryMesh } from "@gamut-plane/render/internal/spatial";
 import { createBoundaryUpload } from "./uploadGeometry";
 import { createColorMaterial } from "./colorMaterial";
+import { createLineLayer, type LineLayer } from "./lineLayer";
+import { createBodyProbe, isOccluded } from "./occlusion";
+import { createSilhouetteTopology, extractSilhouette, type SilhouetteTopology } from "./silhouette";
 import { backingSize, fitCamera, homeCamera, setCameraAspect } from "./spatialCamera";
 
 export type SpatialGamut = "srgb" | "display-p3";
 export type SpatialMode = "shape" | "color";
+/** One opaque surface; the other gamut is an optional reference outline. */
 export interface SpatialState {
   active: SpatialGamut;
-  visible: readonly SpatialGamut[];
+  compare: boolean;
   mode: SpatialMode;
 }
 export type SpatialStatus = "ready" | "lost" | "unavailable" | "disposed";
+export interface SpatialLabel {
+  id: "L" | "+a" | "-a" | "+b" | "-b" | "black";
+  x: number;
+  y: number;
+  /** Farther from the viewer than the scene center; presentation depth cue only. */
+  far: boolean;
+  /** False when the focused body hides the anchor from the viewer. */
+  shown: boolean;
+}
 export const SPATIAL_SUBDIVISIONS = 64;
 const gamuts = ["srgb", "display-p3"] as const;
-const axisPoints = [new Vector3(0, 1.07, 0), new Vector3(0.47, 0, 0), new Vector3(0, 0, 0.47)];
+const AXIS_REACH = 0.47;
+const labelAnchors = [
+  { id: "L", point: new Vector3(0, 1.04, 0) },
+  { id: "+a", point: new Vector3(AXIS_REACH, 0, 0) },
+  { id: "-a", point: new Vector3(-AXIS_REACH, 0, 0) },
+  { id: "+b", point: new Vector3(0, 0, AXIS_REACH) },
+  { id: "-b", point: new Vector3(0, 0, -AXIS_REACH) },
+  { id: "black", point: new Vector3(0, 0, 0) },
+] as const;
+/** Silhouette capacity per reference mesh; excess edges are dropped and reported. */
+const SILHOUETTE_CAPACITY = 16384;
+// CSS-pixel widths and solid colors. Hierarchy: surface > outline > stippled outline behind it.
+const outlineStyle = { color: 0xa9cadc, width: 1.75 };
+const hiddenOutlineStyle = { color: 0x8aa4b5, width: 1.25, dash: { on: 5, off: 4 } };
+const axisStyle = { color: 0x697582, width: 1.25 };
 
 /** Explicit mounted ownership. Importing this module allocates no browser/GPU resources. */
 export function createSpatialScene(
   canvas: HTMLCanvasElement,
   onStatus: (status: SpatialStatus) => void,
-  onFrame: (
-    labels: readonly { x: number; y: number }[],
-    scale: number,
-    frames: number,
-  ) => void = () => {},
+  onFrame: (labels: readonly SpatialLabel[], scale: number, frames: number) => void = () => {},
 ) {
   const cleanups: (() => void)[] = [];
   const own = <T extends { dispose(): void }>(resource: T): T => {
@@ -100,21 +118,18 @@ export function createSpatialScene(
 
     const shape = own(new MeshLambertMaterial({ color: 0xa8b0b8 }));
     const color = own(createColorMaterial());
-    const cageMaterial = own(new LineBasicMaterial({ color: 0x90b6ca, depthWrite: false }));
-    const hiddenMaterial = own(
-      new LineDashedMaterial({
-        color: 0x56616e,
-        dashSize: 0.009,
-        gapSize: 0.012,
-        depthFunc: GreaterDepth,
-        depthWrite: false,
-      }),
-    );
     scene.add(new AmbientLight(0xffffff, 0.85));
     const key = new DirectionalLight(0xffffff, 1.65);
     key.position.set(-1, 2, 3);
     scene.add(key);
 
+    const lineLayers: LineLayer[] = [];
+    const addLayer = (layer: LineLayer) => {
+      lineLayers.push(layer);
+      own(layer);
+      scene.add(...layer.objects);
+      return layer;
+    };
     const resources = gamuts.map((space) => {
       const before = performance.now();
       const generated = generateBoundaryMesh({
@@ -128,39 +143,38 @@ export function createSpatialScene(
       const uploadStart = performance.now();
       const upload = own(createBoundaryUpload(scientific));
       const surface = new Mesh<BufferGeometry, Material>(upload.geometry, shape);
-      const cage = new LineSegments(upload.cageGeometry, cageMaterial);
-      const hidden = new LineSegments(upload.cageGeometry, hiddenMaterial);
-      // Shared lineDistance attribute; GPU bytes below account for it once.
-      hidden.computeLineDistances();
-      cage.renderOrder = 1;
-      hidden.renderOrder = 2;
-      scene.add(surface, cage, hidden);
+      scene.add(surface);
+      const silhouette = addLayer(
+        createLineLayer({
+          capacity: SILHOUETTE_CAPACITY,
+          visible: outlineStyle,
+          hidden: hiddenOutlineStyle,
+          renderOrder: 3,
+        }),
+      );
       return {
         space,
         scientific,
         upload,
         surface,
-        cage,
-        hidden,
+        probe: createBodyProbe(space),
+        silhouette,
+        topology: null as SilhouetteTopology | null,
+        silhouetteTruncated: false,
         generationMs,
         uploadMs: performance.now() - uploadStart,
       };
     });
-    const axisGeometry = own(new BufferGeometry());
-    axisGeometry.setAttribute(
-      "position",
-      new BufferAttribute(
-        new Float32Array([
-          -0.45, 0, 0, 0.45, 0, 0, 0, 0, -0.45, 0, 0, 0.45, 0, 0, 0, 0, 1.04, 0, -0.01, 0.25, 0,
-          0.01, 0.25, 0, -0.01, 0.5, 0, 0.01, 0.5, 0, -0.01, 0.75, 0, 0.01, 0.75, 0, -0.01, 1, 0,
-          0.01, 1, 0,
-        ]),
-        3,
-      ),
+    const axes = addLayer(
+      createLineLayer({ capacity: 7, visible: axisStyle, hidden: null, renderOrder: 5 }),
     );
-    const axisMaterial = own(new LineBasicMaterial({ color: 0x697582 }));
-    scene.add(new LineSegments(axisGeometry, axisMaterial));
-    let state: SpatialState = { active: "srgb", visible: [...gamuts], mode: "shape" };
+    axes.buffer.set([
+      -0.45, 0, 0, 0.45, 0, 0, 0, 0, -0.45, 0, 0, 0.45, 0, 0, 0, 0, 1.04, 0, -0.01, 0.25, 0, 0.01,
+      0.25, 0, -0.01, 0.5, 0, 0.01, 0.5, 0, -0.01, 0.75, 0, 0.01, 0.75, 0, -0.01, 1, 0, 0.01, 1, 0,
+    ]);
+    axes.commit(7);
+    axes.setEnabled(true);
+    let state: SpatialState = { active: "srgb", compare: true, mode: "shape" };
     let width = 0,
       height = 0,
       frame: number | null = null,
@@ -171,6 +185,9 @@ export function createSpatialScene(
     let renderCpuMs = 0;
     let backing = backingSize(0, 0, 1);
     let shaderFailed = false;
+    const viewDirection = new Vector3();
+    const silhouetteView = new Vector3(NaN, NaN, NaN);
+    let silhouetteDirty = true;
     renderer.debug.onShaderError = () => {
       shaderFailed = true;
     };
@@ -182,11 +199,32 @@ export function createSpatialScene(
       if (frame === null && !disposed && !lost && visible && width > 0 && height > 0)
         frame = requestAnimationFrame(render);
     };
+    const referenceResource = () =>
+      state.compare ? resources.find((item) => item.space !== state.active) : undefined;
+    /** Outline of the reference mesh for the current view direction; orthographic, so one vector. */
+    function refreshSilhouette() {
+      const item = referenceResource();
+      if (!item) return;
+      camera.getWorldDirection(viewDirection).negate();
+      if (!silhouetteDirty && viewDirection.equals(silhouetteView)) return;
+      silhouetteView.copy(viewDirection);
+      silhouetteDirty = false;
+      item.topology ??= createSilhouetteTopology(item.scientific);
+      const result = extractSilhouette(
+        item.topology,
+        item.scientific.positions,
+        [viewDirection.x, viewDirection.y, viewDirection.z],
+        item.silhouette.buffer,
+      );
+      item.silhouetteTruncated = result.truncated;
+      item.silhouette.commit(result.segments);
+    }
     function render() {
       frame = null;
       if (disposed || lost || !visible || width <= 0 || height <= 0) return;
       const before = performance.now();
       try {
+        refreshSilhouette();
         renderer.render(scene, camera);
       } catch {
         shaderFailed = true;
@@ -198,25 +236,45 @@ export function createSpatialScene(
       }
       renderCpuMs = performance.now() - before;
       frames++;
-      const labels = axisPoints.map((point, index) => {
+      const origin = new Vector3().project(camera);
+      const center = controls.target.clone().project(camera);
+      camera.getWorldDirection(viewDirection).negate();
+      const toViewer = [viewDirection.x, viewDirection.y, viewDirection.z] as const;
+      const body = resources.find((item) => item.space === state.active)!.probe;
+      const labels = labelAnchors.map(({ id, point }) => {
         const p = point.clone().project(camera);
-        return {
-          x: ((p.x + 1) * width) / 2 + 12,
-          y: ((1 - p.y) * height) / 2 + (index === 0 ? 8 : -12),
-        };
+        let x = ((p.x + 1) * width) / 2;
+        let y = ((1 - p.y) * height) / 2;
+        // Offset beyond the tip, away from the origin on screen. Black sits below its point.
+        let dx = 0,
+          dy = 0;
+        if (id === "black") dy = 34;
+        else {
+          dx = ((p.x - origin.x) * width) / 2;
+          dy = (-(p.y - origin.y) * height) / 2;
+          const length = Math.hypot(dx, dy) || 1;
+          dx = (dx / length) * 15;
+          dy = (dy / length) * 15;
+        }
+        x += dx;
+        y += dy;
+        // Opponent-axis ends can sit behind the focused body; never label through the color field.
+        const axisEnd = id !== "L" && id !== "black";
+        const shown = !axisEnd || !isOccluded(body, [point.x, point.y, point.z], toViewer);
+        return { id, x, y, far: p.z > center.z, shown };
       });
       onFrame(labels, (0.1 * height * camera.zoom) / (camera.top - camera.bottom), frames);
     }
     const update = (next: SpatialState) => {
       if (disposed) return;
-      state = { active: next.active, visible: [...next.visible], mode: next.mode };
+      state = { active: next.active, compare: next.compare, mode: next.mode };
       resources.forEach((item) => {
-        const shown = state.visible.includes(item.space);
-        item.surface.visible = shown && state.active === item.space;
+        const active = state.active === item.space;
+        item.surface.visible = active;
         item.surface.material = state.mode === "shape" ? shape : color;
-        item.cage.visible = shown && state.active !== item.space;
-        item.hidden.visible = item.cage.visible;
+        item.silhouette.setEnabled(state.compare && !active);
       });
+      silhouetteDirty = true;
       invalidate();
     };
     controls.addEventListener("change", invalidate);
@@ -297,7 +355,7 @@ export function createSpatialScene(
         if (disposed) return;
         const bounds = new Box3();
         resources
-          .filter((item) => state.visible.includes(item.space))
+          .filter((item) => item.space === state.active || state.compare)
           .forEach((item) => bounds.union(item.upload.geometry.boundingBox!));
         fitCamera(camera, controls.target, bounds);
         controls.update();
@@ -315,6 +373,10 @@ export function createSpatialScene(
         renderer.setPixelRatio(1);
         renderer.setSize(backing.width, backing.height, false);
         setCameraAspect(camera, width / height);
+        // Line widths are CSS pixels; the drawing buffer may be denser.
+        lineLayers.forEach((layer) =>
+          layer.setViewport(backing.width, backing.height, backing.ratio),
+        );
         invalidate();
       },
       setVisible(value: boolean) {
@@ -327,6 +389,7 @@ export function createSpatialScene(
         if (!disposed && lost) contextLoss?.restoreContext();
       },
       inspect() {
+        const reference = referenceResource();
         return {
           frames,
           pendingFrame: frame !== null,
@@ -355,14 +418,20 @@ export function createSpatialScene(
           framebufferBytesEstimate:
             backing.width * backing.height * (8 * Math.max(samples, 1) + (samples > 1 ? 4 : 0)),
           drawingBufferColorSpace: "srgb",
+          reference: reference
+            ? {
+                space: reference.space,
+                silhouetteSegments: reference.silhouette.segments,
+                silhouetteTruncated: reference.silhouetteTruncated,
+              }
+            : null,
           resources: resources.map((item) => ({
             space: item.space,
             generationMs: item.generationMs,
             uploadMs: item.uploadMs,
             scientificBytes: item.scientific.quality.bufferBytes,
-            gpuBufferBytes:
-              item.upload.bufferBytes +
-              item.upload.cageGeometry.getAttribute("lineDistance").array.byteLength,
+            gpuBufferBytes: item.upload.bufferBytes,
+            lineBufferBytes: SILHOUETTE_CAPACITY * 24,
             mappingBytes: item.upload.mappingBytes,
             logicalVertices: item.scientific.positions.length / 3,
             uploadVertices: item.upload.logicalVertices.length,

@@ -24,9 +24,9 @@ test("spatial production chunk is lazy and renders only on its standalone route"
     "0",
   );
   expect(scripts.some((url) => /spatialApp-/.test(url))).toBe(true);
-  await page.getByRole("button", { name: "Color", exact: true }).click();
-  await page.getByRole("button", { name: "Focus Display P3" }).click();
-  await expect(page.locator(".spatial-stage-caption strong")).toHaveText("Display P3");
+  await page.getByRole("radio", { name: "Color", exact: true }).check();
+  await page.getByRole("radio", { name: "Display P3", exact: true }).check();
+  await expect(page.locator(".spatial-caption strong")).toHaveText("Display P3");
   await page.goto("/spatial/");
   await expect(page).toHaveURL(/\/spatial$/);
   await expect(page.locator("[data-spatial-status]")).toHaveAttribute(
