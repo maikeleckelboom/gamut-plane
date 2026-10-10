@@ -20,6 +20,8 @@ Render also contains a scientific spatial boundary foundation for the two built-
 
 Phase 3C.2A adds a separate renderer-independent hue half-plane generator in the same internal spatial entry. It uses core's homogeneous inverse numeric definitions to partition admissible directions, preserving multiple sectors, shared black identity, isolated source-edge contacts, and the neutral domain edge. Its polylines carry sampled quality rather than exact-membership authority. See [hue half-plane geometry and topology](phase-3c2a-hue-half-plane.md); no host controls or authoring semantics change.
 
+[Phase 3C.2B](phase-3c2b-interactive-hue.md) links that geometry to the same authored color. Lightness and hue preserve separate follow/inspect intent while sharing cache and latest-wins scheduling mechanics. Missing or powerless hue retains an explicitly disclosed viewing direction outside `ColorValue`. The application renders independent sector fans, separate contact rays and neutral edges, with explicit C-right/L-up alignment and a world-normal cut. Camera, inspection and marker recovery never author color. Numerical hardening isolates simple cubic roots past uncertain stationary clusters and preserves canonical source identity through idempotent hue normalization.
+
 ## Editor selection and geometry
 
 The relationship is:
