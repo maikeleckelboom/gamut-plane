@@ -3,8 +3,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { writeFile, mkdir } from "node:fs/promises";
 import type { mountHarness, colorProbes } from "./spatialHarness";
 
-// Fixed cubic grid, n = 64: six faces of 2 n^2 triangles.
-const SURFACE_TRIANGLES = 12 * 64 * 64;
+// Radial boundary at m = 64: three 2 m^2 upper grids plus three fans of 2 m triangles, 6 m^2 + 6 m.
+const SURFACE_TRIANGLES = 6 * 64 * 64 + 6 * 64;
 
 declare global {
   interface Window {

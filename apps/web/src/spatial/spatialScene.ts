@@ -14,7 +14,7 @@ import {
   type Material,
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { generateBoundaryMesh } from "@gamut-plane/render/internal/spatial";
+import { generateRadialBoundaryMesh } from "@gamut-plane/render/internal/spatial";
 import { createBoundaryUpload } from "./uploadGeometry";
 import { createColorMaterial } from "./colorMaterial";
 import { createLineLayer, type LineLayer } from "./lineLayer";
@@ -132,10 +132,10 @@ export function createSpatialScene(
     };
     const resources = gamuts.map((space) => {
       const before = performance.now();
-      const generated = generateBoundaryMesh({
+      const generated = generateRadialBoundaryMesh({
         space,
         subdivisions: SPATIAL_SUBDIVISIONS,
-        distribution: "cubic",
+        upperKnots: "encoded",
       });
       if (!generated.ok) throw new Error(`Spatial geometry: ${generated.error}`);
       const scientific = generated.value;

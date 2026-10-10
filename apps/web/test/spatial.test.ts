@@ -2,7 +2,11 @@
 import { describe, expect, it } from "vitest";
 import { createSpatialScene } from "../src/spatial/spatialScene";
 import { Box3, OrthographicCamera, Vector3 } from "three";
-import { generateBoundaryMesh, spatialColorDefinition } from "@gamut-plane/render/internal/spatial";
+import {
+  generateBoundaryMesh,
+  generateRadialBoundaryMesh,
+  spatialColorDefinition,
+} from "@gamut-plane/render/internal/spatial";
 import { createBoundaryUpload } from "../src/spatial/uploadGeometry";
 import {
   backingSize,
@@ -11,7 +15,13 @@ import {
   setCameraAspect,
   screenRuler,
 } from "../src/spatial/spatialCamera";
-import { multiply, referenceLinear, referenceEncode } from "./spatialReference";
+import {
+  multiply,
+  referenceLab,
+  referenceLinear,
+  referenceEncode,
+  type Triple,
+} from "./spatialReference";
 
 describe("spatial upload", () => {
   it("imports the renderer without browser globals or GPU allocation", () => {
@@ -64,6 +74,116 @@ describe("spatial upload", () => {
       upload.dispose();
     },
   );
+});
+
+describe("radial boundary upload", () => {
+  const radial = (space: "srgb" | "display-p3", subdivisions: number) => {
+    const result = generateRadialBoundaryMesh({ space, subdivisions, upperKnots: "encoded" });
+    if (!result.ok) throw new Error(result.error);
+    return result.value;
+  };
+  it.each(["srgb", "display-p3"] as const)(
+    "keeps provenance, winding and creases, and splits only fan apexes, for %s",
+    (space) => {
+      const mesh = radial(space, 8);
+      const upload = createBoundaryUpload(mesh);
+      const triangleCount = mesh.faces.length;
+      const position = upload.geometry.getAttribute("position"),
+        normal = upload.geometry.getAttribute("normal");
+      const fanCorners = mesh.faces.reduce((sum, face) => sum + ((face & 1) === 0 ? 1 : 0), 0);
+      expect(fanCorners).toBe(6 * 8); // the fans: 2m triangles on each of three lower faces
+      // Shared per (face, vertex) except each fan triangle's own apex corner.
+      const shared = new Set<number>();
+      mesh.triangles.forEach((id, corner) => {
+        const face = mesh.faces[Math.floor(corner / 3)]!;
+        const isApex =
+          (face & 1) === 0 &&
+          mesh.linearRgb[3 * id] === 0 &&
+          mesh.linearRgb[3 * id + 1] === 0 &&
+          mesh.linearRgb[3 * id + 2] === 0;
+        if (!isApex) shared.add(face * (mesh.positions.length / 3) + id);
+      });
+      expect(upload.logicalVertices.length).toBe(shared.size + fanCorners);
+      const cross = new Vector3(),
+        ab = new Vector3(),
+        ac = new Vector3();
+      for (let t = 0; t < triangleCount; t++) {
+        const ids = [0, 1, 2].map((c) => upload.geometry.index!.array[3 * t + c]!);
+        ids.forEach((id, c) => {
+          expect(upload.logicalVertices[id]).toBe(mesh.triangles[3 * t + c]);
+          expect(upload.vertexFaces[id]).toBe(mesh.faces[t]);
+          for (let axis = 0; axis < 3; axis++)
+            expect(position.array[id * 3 + axis]).toBe(
+              Math.fround(mesh.positions[3 * mesh.triangles[3 * t + c]! + axis]!),
+            );
+        });
+        const [a, b, c] = ids.map((id) => new Vector3().fromBufferAttribute(position, id));
+        cross.crossVectors(ab.subVectors(b!, a!), ac.subVectors(c!, a!));
+        expect(cross.length()).toBeGreaterThan(0);
+        for (const id of ids) {
+          const n = new Vector3().fromBufferAttribute(normal, id);
+          expect(n.length()).toBeCloseTo(1, 6);
+          expect(cross.dot(n)).toBeGreaterThan(0); // outward by the scientific winding
+        }
+      }
+      upload.dispose();
+    },
+  );
+
+  it("matches an independent cone normal on the fan faces to within a degree", () => {
+    // A face through black is a cone over its rim, so its normal is r(s) x r'(s) for the rim point
+    // r(s) = F(Q(s)); evaluated here with the independent XYZ oracle and a central difference.
+    for (const space of ["srgb", "display-p3"] as const) {
+      const mesh = radial(space, 32);
+      const upload = createBoundaryUpload(mesh);
+      const position = upload.geometry.getAttribute("position"),
+        normal = upload.geometry.getAttribute("normal");
+      const rim: Record<number, (s: number) => Triple> = {
+        0: (s) => (s <= 1 ? [0, 1, s] : [0, 2 - s, 1]),
+        2: (s) => (s <= 1 ? [1, 0, s] : [2 - s, 0, 1]),
+        4: (s) => (s <= 1 ? [1, s, 0] : [2 - s, 1, 0]),
+      };
+      const scene = (q: Triple): Triple => {
+        const [l, a, b] = referenceLab(q, space);
+        return [a, l, b];
+      };
+      let worst = 0;
+      for (let t = 0; t < mesh.faces.length; t++) {
+        const face = mesh.faces[t]!;
+        if (face & 1) continue;
+        const ids = [0, 1, 2].map((c) => upload.geometry.index!.array[3 * t + c]!);
+        const centroid = new Vector3();
+        for (const id of ids) centroid.add(new Vector3().fromBufferAttribute(position, id));
+        centroid.divideScalar(3);
+        // Interpolated normal at the centroid (equal barycentric weights).
+        const n = new Vector3();
+        for (const id of ids) n.add(new Vector3().fromBufferAttribute(normal, id));
+        n.normalize();
+        // Locate the generator nearest the centroid and form r x r' there.
+        let best = Infinity,
+          bestS = 0;
+        for (let i = 1; i < 2000; i++) {
+          const s = (2 * i) / 2000;
+          const r = new Vector3(...scene(rim[face]!(s)));
+          const t2 = Math.max(0, Math.min(1, centroid.dot(r) / r.lengthSq()));
+          const d = centroid.distanceTo(r.clone().multiplyScalar(t2));
+          if (d < best) {
+            best = d;
+            bestS = s;
+          }
+        }
+        const h = 1e-4;
+        const r0 = new Vector3(...scene(rim[face]!(bestS)));
+        const dr = new Vector3(...scene(rim[face]!(bestS + h))).sub(
+          new Vector3(...scene(rim[face]!(bestS - h))),
+        );
+        const truth = r0.clone().cross(dr).normalize();
+        worst = Math.max(worst, (Math.acos(Math.min(1, Math.abs(n.dot(truth)))) * 180) / Math.PI);
+      }
+      expect(worst).toBeLessThan(1);
+      upload.dispose();
+    }
+  });
 });
 
 describe("spatial color definitions", () => {

@@ -196,7 +196,7 @@ onBeforeUnmount(() => scene?.dispose());
       </div>
     </section>
     <footer class="spatial-footer">
-      <span>Cubic boundary samples · n = 64 · Experimental quality</span
+      <span>Radial boundary samples · m = 64 · Experimental quality</span
       ><span>Sampled surfaces are not exact gamut membership.</span>
     </footer>
   </main>
