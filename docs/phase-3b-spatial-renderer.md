@@ -1,5 +1,7 @@
 # Phase 3B: Spatial rendering experiment
 
+> Updated by [Phase 3B-R](phase-3b-refinement.md): the comparison cage described below is replaced by an outline of the other gamut, the scene now uses the radial boundary generator at m = 64 (24,960 triangles per gamut), and the fixed-grid figures below remain the record of the original construction.
+
 ## Decision and scope
 
 The standalone application now serves a real orthographic gamut scene at `/spatial`. The default `/` compact instrument retains its composition, state and exact-analysis behavior. Start with `pnpm dev`, then open the spatial path. An exact static-host proxy rule admits `/spatial`, and `/spatial/` redirects there, preserving 404s for unknown paths; see [deployment routing](deployment.md#routing-headers-and-caching). This is the surface-rendering foundation for the section-led product, not the finished Spatial Explorer.
