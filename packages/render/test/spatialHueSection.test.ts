@@ -15,9 +15,22 @@ import {
 } from "../experiments/spatial/hueSectionOracle.ts";
 import { inverseScene, scene } from "../experiments/spatial/oracle.ts";
 import { SegmentIndex } from "../experiments/spatial/silhouette.ts";
+import { qualifyHueMembership, inHueLoops } from "../experiments/spatial/hueMembership.ts";
 
 vi.setConfig({ testTimeout: 60_000 });
 const spaces = ["srgb", "display-p3"] as const;
+it("qualifies filled regions independently of contour vertices", () => {
+  for (const space of spaces)
+    for (const hue of [0, 30, 90, 180, 264.1, 264.125, 300]) {
+      const report = qualifyHueMembership(section(space, hue));
+      expect(report.disputes).toEqual([]);
+      expect(report.inside).toBeGreaterThan(100);
+      expect(report.outside).toBeGreaterThan(100);
+    }
+  const s = section("srgb", 264.1);
+  expect(inHueLoops(s, 0.3, (0.3 * 0.39) / 0.61)).toBe(false);
+  expect(inHueLoops(s, 0.3, (0.3 * 0.407) / 0.593)).toBe(true);
+});
 function section(space: (typeof spaces)[number], hue: number, extra = {}): HueSection {
   const result = generateHueSection({ space, hue, ...extra });
   if (!result.ok) throw new Error(`${space} ${hue}: ${result.error}: ${result.detail}`);

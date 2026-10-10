@@ -18,6 +18,7 @@ import {
 } from "../experiments/spatial/hueSectionOracle.ts";
 import { inverseScene } from "../experiments/spatial/oracle.ts";
 import { SegmentIndex } from "../experiments/spatial/silhouette.ts";
+import { qualifyHueMembership } from "../experiments/spatial/hueMembership.ts";
 
 const spaces = ["srgb", "display-p3"] as const;
 const quantiles = (values: number[]) => {
@@ -185,6 +186,9 @@ const reports = spaces.map((space) => {
   });
   return {
     space,
+    membership: [
+      ...new Set([0, 30, 90, 180, 264.1, 264.125, 300, ...cornerContacts.map((c) => c.hue)]),
+    ].map((hue) => qualifyHueMembership(section(space, hue))),
     generationCases: hues.length,
     timingMilliseconds: quantiles(times),
     worstTime,
@@ -207,6 +211,7 @@ const reports = spaces.map((space) => {
 });
 const passed = reports.every(
   (r) =>
+    r.membership.every((m) => m.disputes.length === 0) &&
     r.determinismFailures === 0 &&
     r.outsideVertices === 0 &&
     r.maxIndependentResidual < 2e-7 &&
@@ -226,6 +231,7 @@ console.log(
           "../src/spatial/hueSection.ts",
           "../src/spatial/huePolynomial.ts",
           "../experiments/spatial/hueSectionOracle.ts",
+          "../experiments/spatial/hueMembership.ts",
           "../experiments/spatial/oracle.ts",
           "./qualifyHueSection.ts",
         ].map((path) => [
