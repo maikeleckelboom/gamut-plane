@@ -462,6 +462,30 @@
   justify-content: space-between;
   gap: 12px;
 }
+.spatial-section-head > fieldset {
+  flex-wrap: wrap;
+}
+.spatial-hue-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #b3bdc7;
+}
+.spatial-hue-input input {
+  min-width: 0;
+  width: 10ch;
+  color: #e4e8ec;
+  background: #191d22;
+  border: 1px solid #536473;
+  border-radius: 3px;
+  padding: 6px;
+  font: inherit;
+}
+.spatial-key-neutral {
+  width: 24px;
+  border-top: 2px dotted #9aa8b4;
+}
 .spatial-section h2 {
   margin: 0;
   font-size: 14px;

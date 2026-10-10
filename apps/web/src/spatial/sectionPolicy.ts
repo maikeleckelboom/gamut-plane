@@ -3,6 +3,8 @@
  * decides gamut membership, and none of it touches the authored color.
  */
 type Vector = readonly [number, number, number];
+const vertical: Vector = [0, 1, 0];
+const dot = (a: Vector, b: Vector) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 /**
  * Explicit removed half-space: `1` above the plane, `-1` below it, `0` none.
@@ -10,8 +12,13 @@ type Vector = readonly [number, number, number];
  */
 export type CutSide = -1 | 0 | 1;
 /** Whether `point` survives the cut. `side` 0 keeps everything. */
-export function isKept(point: Vector, side: CutSide, level: number): boolean {
-  return side === 0 || (point[1] - level) * side <= 0;
+export function isKept(
+  point: Vector,
+  side: CutSide,
+  level: number,
+  normal: Vector = vertical,
+): boolean {
+  return side === 0 || (dot(point, normal) - level) * side <= 0;
 }
 
 /**
@@ -26,6 +33,7 @@ export function clipSegmentsToRemoved(
   side: CutSide,
   level: number,
   out: Float32Array,
+  normal: Vector = vertical,
 ): number {
   if (side === 0) return 0;
   const capacity = Math.floor(out.length / 6);
@@ -33,8 +41,8 @@ export function clipSegmentsToRemoved(
   for (let i = 0; i < count && written < capacity; i++) {
     const o = 6 * i;
     // Signed distance beyond the plane, positive on the removed side.
-    const d0 = (source[o + 1]! - level) * side;
-    const d1 = (source[o + 4]! - level) * side;
+    const d0 = (dot([source[o]!, source[o + 1]!, source[o + 2]!], normal) - level) * side;
+    const d1 = (dot([source[o + 3]!, source[o + 4]!, source[o + 5]!], normal) - level) * side;
     if (d0 < 0 && d1 < 0) continue;
     const w = 6 * written;
     for (let k = 0; k < 6; k++) out[w + k] = source[o + k]!;
@@ -44,7 +52,6 @@ export function clipSegmentsToRemoved(
       const crossing = [0, 1, 2].map(
         (k) => source[o + k]! + t * (source[o + 3 + k]! - source[o + k]!),
       );
-      crossing[1] = level;
       const replace = d0 < 0 ? 0 : 3;
       for (let k = 0; k < 3; k++) out[w + replace + k] = crossing[k]!;
     }
@@ -90,12 +97,18 @@ export function isHiddenByCap(
   side: CutSide,
   level: number,
   margin = 1e-4,
+  normal: Vector = vertical,
 ): boolean {
-  if (side === 0 || Math.abs(toViewer[1]) < 1e-9) return false;
-  if ((point[1] - level) * side >= -margin) return false; // on the plane or on the removed side
-  const t = (level - point[1]) / toViewer[1];
+  const direction = dot(toViewer, normal);
+  if (side === 0 || Math.abs(direction) < 1e-9) return false;
+  if ((dot(point, normal) - level) * side >= -margin) return false;
+  const t = (level - dot(point, normal)) / direction;
   if (t <= 0) return false;
-  return inside([point[0] + toViewer[0] * t, level, point[2] + toViewer[2] * t]);
+  return inside([
+    point[0] + toViewer[0] * t,
+    point[1] + toViewer[1] * t,
+    point[2] + toViewer[2] * t,
+  ]);
 }
 
 /** The drawn body: inside the focused gamut, on the side of the plane that the cut keeps. */
@@ -103,6 +116,7 @@ export function drawnSolid(
   inside: (point: Vector) => boolean,
   side: CutSide,
   level: number,
+  normal: Vector = vertical,
 ): (point: Vector) => boolean {
-  return (point) => isKept(point, side, level) && inside(point);
+  return (point) => isKept(point, side, level, normal) && inside(point);
 }

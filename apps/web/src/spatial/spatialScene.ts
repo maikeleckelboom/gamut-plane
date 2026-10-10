@@ -25,6 +25,7 @@ import {
   backingSize,
   fitCamera,
   homeCamera,
+  hueSectionCamera,
   orbitCamera,
   sectionCamera,
   setCameraAspect,
@@ -38,6 +39,7 @@ import {
   writeContour,
   writeFootprint,
   writeStem,
+  writeHueArcs,
 } from "./sectionLayers";
 import {
   clipSegmentsToRemoved,
@@ -47,6 +49,7 @@ import {
   type CutSide,
 } from "./sectionPolicy";
 import type { SectionGamut, SectionOutcomes } from "./sectionModel";
+import { hueBasis, hueRelationship, type HueOutcomes } from "./hueModel";
 
 export type SpatialGamut = "srgb" | "display-p3";
 export type SpatialMode = "shape" | "color";
@@ -61,10 +64,18 @@ export interface SpatialState {
 export type SpatialStateInput = Pick<SpatialState, "active" | "compare" | "mode"> &
   Partial<Pick<SpatialState, "cut">>;
 /** The active section, as computed by the host. The scene draws it; it never computes or edits one. */
-export interface SpatialSection {
-  readonly lightness: number | null;
-  readonly outcomes: SectionOutcomes | null;
-}
+export type SpatialSection =
+  | {
+      readonly type?: "lightness";
+      readonly lightness: number | null;
+      readonly outcomes: SectionOutcomes | null;
+    }
+  | {
+      readonly type: "hue";
+      readonly hue: number;
+      readonly lightness: null;
+      readonly outcomes: HueOutcomes | null;
+    };
 /** Scene coordinates of the selected color: [a, L, b]. */
 export type SpatialMarker = readonly [number, number, number] | null;
 export type SpatialStatus = "ready" | "lost" | "unavailable" | "disposed";
@@ -245,6 +256,9 @@ export function createSpatialScene(
     scene.add(...marker.objects);
     let state: SpatialState = { active: "srgb", compare: true, mode: "shape", cut: true };
     let section: SpatialSection = noSection;
+    const sectionLevel = () => (section.type === "hue" ? 0 : section.lightness);
+    const sectionNormal = () =>
+      section.type === "hue" ? hueBasis(section.hue).normal : ([0, 1, 0] as const);
     // Changes only when new geometry is written, so equal results are never uploaded twice.
     const written: Record<SectionGamut, object | null> = { srgb: null, "display-p3": null };
     const uploads = { contours: 0, footprint: 0, marker: 0 };
@@ -311,32 +325,62 @@ export function createSpatialScene(
     }
     /** Writes the lines and fill for the current section. Runs when the section result changes. */
     function applySection() {
-      const level = section.lightness;
-      const outcomeOf = (space: SectionGamut) => {
-        const outcome = section.outcomes?.[space];
-        return outcome?.status === "ready" ? outcome.section : null;
-      };
+      const level = sectionLevel();
       for (const space of gamuts) {
-        const next = outcomeOf(space);
+        const outcome = section.outcomes?.[space];
+        const next = outcome?.status === "ready" ? outcome.section : null;
         if (written[space] === next) continue;
         written[space] = next;
-        writeContour(sectionLines.contours[space], next);
+        if (next && "hue" in next) {
+          writeHueArcs(sectionLines.contours[space], next, "surface");
+          writeHueArcs(sectionLines.contacts[space], next, "contact");
+        } else {
+          writeContour(sectionLines.contours[space], next);
+          sectionLines.contacts[space].commit(0);
+        }
         uploads.contours++;
       }
       const planeLevel = level !== null && section.outcomes !== null ? level : null;
-      if (planeLevel !== footprintLevel) {
+      if (section.type === "hue") {
+        footprintLevel = null;
+        const { radial } = hueBasis(section.hue);
+        const corners = [
+          [0, 0],
+          [0.45, 0],
+          [0.45, 1],
+          [0, 1],
+        ] as const;
+        corners.forEach(([c, l], i) => {
+          const [nc, nl] = corners[(i + 1) % 4]!;
+          sectionLines.footprint.buffer.set(
+            [c * radial[0], l, c * radial[2], nc * radial[0], nl, nc * radial[2]],
+            i * 6,
+          );
+        });
+        sectionLines.footprint.commit(4);
+        uploads.footprint++;
+      } else if (planeLevel !== footprintLevel) {
         footprintLevel = planeLevel;
         writeFootprint(sectionLines.footprint, planeLevel);
         uploads.footprint++;
       }
-      if (level !== null) cap.setLevel(level);
+      if (section.type !== "hue" && level !== null) cap.setLevel(level);
       applyVisibility();
     }
     /** Enabled flags only: no geometry is written. */
     function applyVisibility() {
-      for (const space of gamuts)
+      for (const space of gamuts) {
         sectionLines.contours[space].setEnabled(space === state.active || state.compare);
-      sectionLines.footprint.setEnabled(section.lightness !== null && section.outcomes !== null);
+        sectionLines.contacts[space].setEnabled(
+          section.type === "hue" && (space === state.active || state.compare),
+        );
+      }
+      const hueOutcome = section.type === "hue" ? section.outcomes?.[state.active] : null;
+      const hueSection = hueOutcome?.status === "ready" ? hueOutcome.section : null;
+      if (hueSection) cap.setHue(hueSection);
+      writeHueArcs(sectionLines.neutral, hueSection, "neutral");
+      sectionLines.neutral.setEnabled(section.type === "hue");
+      sectionLines.footprint.setEnabled(sectionLevel() !== null && section.outcomes !== null);
       cap.setGamut(state.active);
       cap.setColor(state.mode === "color");
       cap.mesh.visible = focusedRegion();
@@ -346,6 +390,23 @@ export function createSpatialScene(
     let markerPoint: SpatialMarker = null;
     /** Drop line from the marker to the plane when the section is at another lightness. */
     function applyStem() {
+      if (section.type === "hue") {
+        const relation = markerPoint ? hueRelationship(markerPoint, section.hue) : null;
+        if (markerPoint && relation && !relation.onHalfPlane && section.outcomes !== null) {
+          const { radial } = hueBasis(section.hue);
+          // Closest half-plane point, not a selected-color surrogate; no endpoint marker.
+          const c = Math.max(0, relation.radius);
+          sectionLines.stem.buffer.set([
+            ...markerPoint,
+            c * radial[0],
+            markerPoint[1],
+            c * radial[2],
+          ]);
+          sectionLines.stem.commit(1);
+        } else sectionLines.stem.commit(0);
+        sectionLines.stem.setEnabled(true);
+        return;
+      }
       writeStem(
         sectionLines.stem,
         markerPoint,
@@ -355,21 +416,22 @@ export function createSpatialScene(
     }
     /** Cut uniforms and the ghost outline of the removed part. Depends on view, level and policy. */
     function refreshCut() {
-      const level = section.lightness;
+      const level = sectionLevel();
+      const normal = sectionNormal();
       const side: CutSide = level !== null && focusedRegion() && state.cut ? cutIntent : 0;
       currentCut = side;
       color.uniforms.clipSide!.value = side;
       color.uniforms.clipLevel!.value = level ?? 0.5;
+      color.uniforms.clipNormal!.value.set(...normal);
       if (side === 0) cutPlane.set(new Vector3(0, 1, 0), 10);
-      else if (side === 1) cutPlane.set(new Vector3(0, -1, 0), level!);
-      else cutPlane.set(new Vector3(0, 1, 0), -level!);
+      else cutPlane.set(new Vector3(...normal).multiplyScalar(-side), side * level!);
       // Only an explicit camera command owns the flat composition. Orbit never changes cut intent.
       sectionOnly = aligned;
       const item = focusedResource();
       item.surface.visible = !sectionOnly && !revealed;
       cap.mesh.visible = focusedRegion() && !revealed;
       sectionLines.footprint.setEnabled(
-        !sectionOnly && section.lightness !== null && section.outcomes !== null,
+        !sectionOnly && level !== null && section.outcomes !== null,
       );
       resources.forEach((resource) =>
         resource.silhouette.setEnabled(
@@ -399,7 +461,7 @@ export function createSpatialScene(
         ghostRawKey = viewKey;
         ghostClipKey = "";
       }
-      const clipKey = revealed ? "whole" : `${side}|${level}`;
+      const clipKey = revealed ? "whole" : `${side}|${level}|${normal.join()}`;
       if (ghostClipKey !== clipKey) {
         ghostClipKey = clipKey;
         if (revealed) {
@@ -413,6 +475,7 @@ export function createSpatialScene(
             side,
             level,
             sectionLines.ghost.buffer,
+            normal,
           );
         sectionLines.ghost.commit(ghostSegments);
       }
@@ -440,10 +503,11 @@ export function createSpatialScene(
       const origin = new Vector3().project(camera);
       const center = controls.target.clone().project(camera);
       const toViewer = [viewDirection.x, viewDirection.y, viewDirection.z] as const;
-      const level = section.lightness;
+      const level = sectionLevel();
+      const normal = sectionNormal();
       const inside = focusedResource().probe;
       const solid =
-        revealed || sectionOnly ? () => false : drawnSolid(inside, currentCut, level ?? 0);
+        revealed || sectionOnly ? () => false : drawnSolid(inside, currentCut, level ?? 0, normal);
       const endOn = sectionOnly;
       const labels = labelAnchors.map(({ id, point }) => {
         const p = point.clone().project(camera);
@@ -480,7 +544,14 @@ export function createSpatialScene(
           [SECTION_FOOTPRINT, SECTION_FOOTPRINT],
           [-SECTION_FOOTPRINT, SECTION_FOOTPRINT],
         ] as const) {
-          const p = new Vector3(cx, level, cz).project(camera);
+          const p =
+            section.type === "hue"
+              ? new Vector3(
+                  0.45 * hueBasis(section.hue).radial[0],
+                  cz < 0 ? 0 : 1,
+                  0.45 * hueBasis(section.hue).radial[2],
+                ).project(camera)
+              : new Vector3(cx, level, cz).project(camera);
           if (p.x > best) {
             best = p.x;
             // Keep the tag inside the stage when the footprint is partly out of view.
@@ -498,11 +569,15 @@ export function createSpatialScene(
           ? false
           : sectionOnly && focusedRegion()
             ? isHiddenByCap(
-                inside,
+                (point) =>
+                  inside(point) &&
+                  (section.type !== "hue" || !hueRelationship(point, section.hue).opposite),
                 markerPoint,
                 toViewer,
-                viewDirection.y >= 0 ? 1 : -1,
+                viewDirection.dot(new Vector3(...normal)) >= 0 ? 1 : -1,
                 level ?? 0,
+                1e-4,
+                normal,
               )
             : isPointHidden(solid, markerPoint, toViewer);
         const p = new Vector3(...markerPoint).project(camera);
@@ -638,6 +713,12 @@ export function createSpatialScene(
       /** Draw this section. Only a changed result writes line geometry. */
       setSection(next: SpatialSection) {
         if (disposed) return;
+        // Camera stays put. A changed hue releases flat composition, making its rotation visible.
+        if (
+          next.type !== section.type ||
+          (next.type === "hue" && section.type === "hue" && next.hue !== section.hue)
+        )
+          aligned = false;
         section = next;
         applySection();
         ghostClipKey = "";
@@ -660,8 +741,9 @@ export function createSpatialScene(
       viewSection() {
         if (disposed) return;
         revealed = false;
-        cutIntent = -1;
-        sectionCamera(camera, controls.target, section.lightness ?? 0.5, null);
+        cutIntent = section.type === "hue" ? 1 : -1;
+        if (section.type === "hue") hueSectionCamera(camera, controls.target, section.hue);
+        else sectionCamera(camera, controls.target, section.lightness ?? 0.5, null);
         camera.getWorldDirection(alignedDirection);
         aligned = true;
         controls.update();
@@ -670,6 +752,21 @@ export function createSpatialScene(
       fitSection() {
         if (disposed) return;
         const extent = sectionExtent();
+        if (section.type === "hue") {
+          const bounds = new Box3();
+          for (const space of gamuts) {
+            if (space !== state.active && !state.compare) continue;
+            const result = section.outcomes?.[space];
+            if (result?.status !== "ready") continue;
+            const p = result.section.positions;
+            for (let i = 0; i < p.length; i += 3)
+              bounds.expandByPoint(new Vector3(p[i]!, p[i + 1]!, p[i + 2]!));
+          }
+          if (!bounds.isEmpty()) fitCamera(camera, controls.target, bounds.expandByScalar(0.005));
+          controls.update();
+          invalidate();
+          return;
+        }
         if (!extent || section.lightness === null) return;
         const level = section.lightness;
         const bounds = new Box3(
@@ -782,6 +879,14 @@ export function createSpatialScene(
               }
             : null,
           section: {
+            type: section.type ?? "lightness",
+            hue: section.type === "hue" ? section.hue : null,
+            normal: sectionNormal(),
+            contacts: {
+              srgb: sectionLines.contacts.srgb.segments,
+              "display-p3": sectionLines.contacts["display-p3"].segments,
+            },
+            neutralSegments: sectionLines.neutral.segments,
             lightness: section.lightness,
             sectionOnly,
             revealed,

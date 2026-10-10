@@ -12,6 +12,7 @@ import {
   type SpatialMode,
   type SpatialScene,
   type SpatialStatus,
+  type SpatialSection,
 } from "./spatialScene";
 import {
   createSectionScheduler,
@@ -38,6 +39,16 @@ import {
 } from "./sectionSummary";
 import "./spatial.css";
 import { screenRuler } from "./spatialCamera";
+import {
+  acceptHue,
+  createHueStore,
+  hueRelationship,
+  initialHueSelection,
+  inspectHue,
+  observeHue,
+  viewedHue,
+  type HueOutcomes,
+} from "./hueModel";
 
 // One authoritative authored color. The compact instrument edits it; this view only observes it.
 const initial = createColorValue({ space: "oklch", channels: [0.68, 0.15, 252], alpha: 1 });
@@ -86,7 +97,7 @@ const previewNote = computed(() => {
     return "Surfaces are hidden. Outlines retain the gamut shape and inspected section.";
   if (frameInfo.value?.sectionOnly)
     return mode.value === "shape"
-      ? "The fill is the focused gamut at the inspected lightness; the lines are current-lightness boundaries."
+      ? "The fill shows the focused gamut at this section; the lines show available gamut boundaries."
       : "Section colors use an sRGB preview; colors outside sRGB are clipped for display. P3 reproduction is not qualified.";
   return mode.value === "shape"
     ? "Opaque surface; the other gamut is an outline, dashed where the surface hides it."
@@ -102,26 +113,82 @@ const membership = computed(() => ({
   "display-p3": selectedMembership(selectedColor.value, "display-p3"),
 }));
 const selection = ref<SectionSelection>(initialSectionSelection);
+const sectionType = ref<"lightness" | "hue">("lightness");
+const hueSelection = ref(initialHueSelection);
+const selectedHue = computed(() => observeHue(selectedColor.value));
+watch(
+  selectedHue,
+  (h) => {
+    hueSelection.value = acceptHue(hueSelection.value, h);
+  },
+  { immediate: true },
+);
+const hue = computed(() => viewedHue(hueSelection.value, selectedHue.value));
+const hueOutcomes = shallowRef<HueOutcomes | null>(null);
+const hueStore = createHueStore();
+const pending = ref(false);
+const directionNote = computed(() =>
+  sectionType.value === "hue" && selectedHue.value === null
+    ? hueSelection.value.mode === "inspect"
+      ? "The selected color has no meaningful hue. This direction is inspected independently."
+      : hueSelection.value.retainedHue === null
+        ? "The selected color has no meaningful hue. H 0° is the initial viewing direction."
+        : `The selected color has no meaningful hue. Retaining H ${hue.value.toFixed(1)}° for viewing.`
+    : null,
+);
 const lightness = computed(() => sectionLightness(selection.value, observation.value));
 const slider = computed(() => sliderValue(selection.value, observation.value));
 const outcomes = shallowRef<SectionOutcomes | null>(null);
 const shownLightness = ref<number | null>(null);
 const store = createSectionStore();
-let scheduler: ReturnType<typeof createSectionScheduler> | null = null;
+type SectionRequest = { type: "lightness" | "hue"; value: number | null };
+const request = computed<SectionRequest>((previous) => {
+  const value = sectionType.value === "hue" ? hue.value : lightness.value;
+  return previous?.type === sectionType.value && previous.value === value
+    ? previous
+    : { type: sectionType.value, value };
+});
+let scheduler: ReturnType<typeof createSectionScheduler<SectionRequest, SpatialSection>> | null =
+  null;
 const marker = computed(() =>
   observation.value.status === "ok"
     ? ([observation.value.a, observation.value.l, observation.value.b] as const)
     : null,
 );
-const sectionText = computed(() =>
-  describeSection(selection.value.mode, shownLightness.value, outcomes.value, observation.value),
-);
+const sectionText = computed(() => {
+  if (sectionType.value === "lightness")
+    return describeSection(
+      selection.value.mode,
+      shownLightness.value,
+      outcomes.value,
+      observation.value,
+    );
+  if (pending.value) return `Computing H ${hue.value.toFixed(1)}° section.`;
+  return (
+    `H ${hue.value.toFixed(1)}° · ` +
+    gamuts
+      .map((space) => {
+        const result = hueOutcomes.value?.[space];
+        return result?.status === "ready"
+          ? `${names[space]}: ${result.section.loops.length} area sector${result.section.loops.length === 1 ? "" : "s"}${result.section.contacts.length ? `, ${result.section.contacts.length} isolated contact ray` : ""}`
+          : `${names[space]} section unavailable at this hue`;
+      })
+      .join(". ")
+  );
+});
 const selectedText = computed(() => describeSelectedColor(observation.value, membership.value));
 const markerNote = computed(() =>
   describeMarker(frameInfo.value?.markerHidden ?? null, frameInfo.value?.markerInView ?? null),
 );
 const sectionExceptional = computed(
   () =>
+    (sectionType.value === "hue" &&
+      (pending.value ||
+        directionNote.value !== null ||
+        Object.values(hueOutcomes.value ?? {}).some(
+          (o) =>
+            o.status !== "ready" || o.section.loops.length > 1 || o.section.contacts.length > 0,
+        ))) ||
     observation.value.status !== "ok" ||
     (outcomes.value !== null &&
       Object.values(outcomes.value).some(
@@ -131,13 +198,15 @@ const sectionExceptional = computed(
 const announcement = ref("");
 let announceTimer: ReturnType<typeof setTimeout> | undefined;
 const settledAnnouncement = computed(() =>
-  announceSection(
-    selection.value.mode,
-    shownLightness.value,
-    outcomes.value,
-    observation.value,
-    membership.value,
-  ),
+  sectionType.value === "hue"
+    ? `${sectionText.value} ${directionNote.value ?? ""}`
+    : announceSection(
+        selection.value.mode,
+        shownLightness.value,
+        outcomes.value,
+        observation.value,
+        membership.value,
+      ),
 );
 // Meaningful settled changes only: wait until the color and section stop changing.
 watch(settledAnnouncement, (text) => {
@@ -146,15 +215,45 @@ watch(settledAnnouncement, (text) => {
     announcement.value = text;
   }, 600);
 });
-const followActive = computed(() => selection.value.mode === "follow");
+const followActive = computed(
+  () => (sectionType.value === "hue" ? hueSelection.value : selection.value).mode === "follow",
+);
 function chooseFollow() {
+  if (sectionType.value === "hue") {
+    hueSelection.value = acceptHue({ ...hueSelection.value, mode: "follow" }, selectedHue.value);
+    return;
+  }
   selection.value = followSection(selection.value);
 }
 function chooseInspect() {
+  if (sectionType.value === "hue") {
+    hueSelection.value = inspectHue(hueSelection.value, hue.value);
+    return;
+  }
   selection.value = inspectSection(selection.value, observation.value);
 }
 function scrub(event: Event) {
+  if (sectionType.value === "hue") {
+    hueSelection.value = inspectHue(
+      hueSelection.value,
+      Number((event.target as HTMLInputElement).value),
+    );
+    return;
+  }
   selection.value = scrubSection(selection.value, Number((event.target as HTMLInputElement).value));
+}
+function stepHue(event: KeyboardEvent) {
+  if (
+    sectionType.value !== "hue" ||
+    !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+  )
+    return;
+  event.preventDefault();
+  hueSelection.value = inspectHue(
+    hueSelection.value,
+    hue.value +
+      (["ArrowLeft", "ArrowDown"].includes(event.key) ? -1 : 1) * (event.shiftKey ? 10 : 1),
+  );
 }
 
 let scene: SpatialScene | null = null;
@@ -187,19 +286,40 @@ watch([active, compare, mode, cut], () =>
     cut: cut.value,
   }),
 );
-watch(marker, (point) => scene?.setMarker(point));
 // Development-only counters for browser tests and the evidence report.
 const metrics = { requests: 0, computes: 0, lastComputeMs: 0, maxComputeMs: 0, totalComputeMs: 0 };
-watch(lightness, (value) => {
-  metrics.requests++;
-  scheduler?.request(value);
+watch([request, marker], ([value, point], [previous]) => {
+  if (value !== previous) {
+    metrics.requests++;
+    pending.value = true;
+    // Compute before either scene mutation requests a render. Synchronous results arrive in
+    // the same frame; asynchronous work would still show explicit pending without stale lines.
+    scheduler?.request(value);
+    scene?.setSection(
+      value.type === "hue"
+        ? { type: "hue", hue: value.value!, lightness: null, outcomes: null }
+        : { lightness: value.value, outcomes: null },
+    );
+  }
+  scene?.setMarker(point);
 });
 onMounted(() => {
   useEventListener(window, "resize", resize);
-  scheduler = createSectionScheduler({
+  scheduler = createSectionScheduler<SectionRequest, SpatialSection>({
     compute: (value) => {
       const before = performance.now();
-      const result = store.outcomes(value);
+      const result: SpatialSection =
+        value.type === "hue"
+          ? {
+              type: "hue",
+              hue: value.value!,
+              lightness: null,
+              outcomes: hueStore.outcomes(value.value!),
+            }
+          : {
+              lightness: value.value,
+              outcomes: value.value === null ? null : store.outcomes(value.value),
+            };
       const elapsed = performance.now() - before;
       metrics.computes++;
       metrics.lastComputeMs = elapsed;
@@ -210,9 +330,15 @@ onMounted(() => {
     schedule: (flush) => requestAnimationFrame(flush),
     cancel: (handle) => cancelAnimationFrame(handle as number),
     onUpdate: (update) => {
-      outcomes.value = update.outcomes;
-      shownLightness.value = update.lightness;
-      scene?.setSection({ lightness: update.lightness, outcomes: update.outcomes });
+      const result = update.outcomes;
+      if (!result) return;
+      pending.value = false;
+      if (result.type === "hue") hueOutcomes.value = result.outcomes;
+      else {
+        outcomes.value = result.outcomes;
+        shownLightness.value = result.lightness;
+      }
+      scene?.setSection(result);
     },
   });
   try {
@@ -239,7 +365,11 @@ onMounted(() => {
         configurable: true,
       });
       Object.defineProperty(stage.value, "spatialMetrics", {
-        value: () => ({ ...metrics, store: { ...store.stats, size: store.size } }),
+        value: () => ({
+          ...metrics,
+          store: { ...store.stats, size: store.size },
+          hueStore: { ...hueStore.stats, size: hueStore.size },
+        }),
         configurable: true,
       });
     }
@@ -248,7 +378,7 @@ onMounted(() => {
     status.value = "unavailable";
   }
   // Compute the first section for the initial color without waiting for a change.
-  scheduler.request(lightness.value);
+  scheduler.request(request.value);
 });
 onBeforeUnmount(() => {
   clearTimeout(announceTimer);
@@ -269,12 +399,24 @@ const visibleSectionGamuts = computed(() =>
   SECTION_GAMUTS.filter((space) => space === active.value || compare.value),
 );
 const relationship = computed(() => {
+  if (sectionType.value === "hue") {
+    if (!marker.value) return null;
+    const relation = hueRelationship(marker.value, hue.value);
+    if (relation.onHalfPlane) return "Selected color lies on the viewed hue half-plane.";
+    return `${relation.opposite ? "Selected color is on the opposite radial side" : "Selected color is away from the viewed half-plane"} · plane displacement ${relation.displacement.toFixed(3)} · radial projection ${relation.radius.toFixed(3)}.`;
+  }
   if (observation.value.status !== "ok" || shownLightness.value === null) return null;
   const delta = observation.value.l - shownLightness.value;
   return `Selected L ${formatLightness(observation.value.l)} · Section L ${formatLightness(shownLightness.value)} · ΔL ${delta >= 0 ? "+" : "−"}${formatLightness(Math.abs(delta))}`;
 });
 const correspondence = computed(() => {
   const id = instrumentState.value.selection.representationId;
+  if (sectionType.value === "hue")
+    return id === "oklch"
+      ? followActive.value
+        ? "L/C field and section share the selected hue. View section aligns Chroma right, Lightness up."
+        : "L/C field stays at the selected hue; the spatial hue is inspected separately."
+      : "Choose OKLCH in Coordinates to edit the matching L/C field. Both views observe the same selected color.";
   if (id === "oklab")
     return followActive.value
       ? "a/b field and section share the selected lightness. View section aligns +a right, +b up."
@@ -292,7 +434,7 @@ const correspondence = computed(() => {
         <a href="/" class="spatial-brand">Gamut Plane</a><span class="spatial-divider">/</span
         ><span>Spatial study</span>
       </div>
-      <span class="spatial-experiment">Experiment · Phase 3C.1-R</span>
+      <span class="spatial-experiment">Experiment · Phase 3C.2B</span>
     </header>
     <section
       class="spatial-workspace"
@@ -307,7 +449,7 @@ const correspondence = computed(() => {
         </div>
         <p>
           Edit a color, then see where it sits in the gamut and how the gamut cuts through its
-          lightness.
+          lightness or hue.
         </p>
       </div>
       <div class="spatial-columns">
@@ -351,7 +493,9 @@ const correspondence = computed(() => {
             <div class="spatial-caption">
               <strong>{{
                 frameInfo?.sectionOnly
-                  ? `${names[active]} a/b section · +a right · +b up`
+                  ? sectionType === "hue"
+                    ? `${names[active]} L/C section · C right · L up`
+                    : `${names[active]} a/b section · +a right · +b up`
                   : names[active]
               }}</strong
               ><span>{{
@@ -388,7 +532,11 @@ const correspondence = computed(() => {
                 class="spatial-plane-tag"
                 aria-hidden="true"
                 :style="{ left: `${frameInfo.plane.x}px`, top: `${frameInfo.plane.y}px` }"
-                >L {{ formatLightness(shownLightness) }}</span
+                >{{
+                  sectionType === "hue"
+                    ? `H ${hue.toFixed(1)}°`
+                    : `L ${formatLightness(shownLightness)}`
+                }}</span
               >
               <div v-if="status === 'unavailable'" class="spatial-message" role="status">
                 <strong>3D rendering is unavailable</strong>
@@ -414,13 +562,46 @@ const correspondence = computed(() => {
           </div>
           <section class="spatial-section" aria-labelledby="spatial-section-title">
             <div class="spatial-section-head">
-              <h2 id="spatial-section-title">Lightness section</h2>
-              <span class="spatial-section-value" data-section-lightness>{{
-                shownLightness === null ? "None" : `L ${formatLightness(shownLightness)}`
-              }}</span>
+              <fieldset class="spatial-group">
+                <legend class="sr-only" id="spatial-section-title">Section type</legend>
+                <label class="spatial-choice"
+                  ><input
+                    v-model="sectionType"
+                    type="radio"
+                    name="section-type"
+                    value="lightness"
+                  /><span>Lightness section</span></label
+                >
+                <label class="spatial-choice"
+                  ><input v-model="sectionType" type="radio" name="section-type" value="hue" /><span
+                    >Hue section</span
+                  ></label
+                >
+              </fieldset>
+              <span
+                v-if="sectionType === 'lightness'"
+                class="spatial-section-value"
+                data-section-lightness
+                >{{
+                  shownLightness === null ? "None" : `L ${formatLightness(shownLightness)}`
+                }}</span
+              >
+              <label v-if="sectionType === 'hue'" class="spatial-hue-input">
+                <span>H°</span
+                ><input
+                  type="number"
+                  step="any"
+                  :value="hue"
+                  aria-label="Inspected hue in degrees"
+                  @change="scrub"
+                  @keydown.enter="scrub"
+                  @keydown="stepHue"
+                />
+              </label>
             </div>
+
             <fieldset class="spatial-group spatial-section-mode">
-              <legend class="sr-only">Section lightness source</legend>
+              <legend class="sr-only">Section value source</legend>
               <label class="spatial-choice">
                 <input
                   type="radio"
@@ -439,34 +620,41 @@ const correspondence = computed(() => {
                   :checked="!followActive"
                   @change="chooseInspect"
                 />
-                <span>Inspect lightness</span>
+                <span>{{ sectionType === "hue" ? "Inspect hue" : "Inspect lightness" }}</span>
               </label>
             </fieldset>
             <label class="spatial-slider">
-              <span class="spatial-slider-label">Lightness (OKLab L)</span>
+              <span class="spatial-slider-label">{{
+                sectionType === "hue" ? "Hue (OKLCH H)" : "Lightness (OKLab L)"
+              }}</span>
               <input
                 type="range"
                 min="0"
-                max="1"
-                step="0.001"
-                :value="slider"
-                :aria-valuetext="`L ${formatLightness(slider)}${followActive ? ', following the selected color' : ', inspected separately'}`"
+                :max="sectionType === 'hue' ? 360 : 1"
+                :step="sectionType === 'hue' ? 0.1 : 0.001"
+                :value="sectionType === 'hue' ? hue : slider"
+                :aria-valuetext="`${sectionType === 'hue' ? `H ${hue.toFixed(1)}°` : `L ${formatLightness(slider)}`}${followActive ? ', following the selected color' : ', inspected separately'}`"
                 data-section-slider
                 @input="scrub"
+                @keydown="stepHue"
               />
             </label>
             <p class="spatial-hint">
               {{
-                followActive
-                  ? "Moving the slider inspects another lightness. The color is not changed."
-                  : "Inspecting. The selected color keeps its own lightness."
+                sectionType === "hue"
+                  ? "Inspecting changes the viewing direction. Arrow keys wrap around 0° / 360°."
+                  : followActive
+                    ? "Moving the slider inspects another lightness. The color is not changed."
+                    : "Inspecting. The selected color keeps its own lightness."
               }}
             </p>
 
             <div class="spatial-section-actions">
               <button
                 type="button"
-                :disabled="status !== 'ready' || shownLightness === null"
+                :disabled="
+                  status !== 'ready' || (sectionType === 'lightness' && shownLightness === null)
+                "
                 @click="viewSection"
               >
                 View section
@@ -498,7 +686,16 @@ const correspondence = computed(() => {
                 v-if="
                   cut && frameInfo?.cutSide !== 0 && !frameInfo?.sectionOnly && !frameInfo?.revealed
                 "
-                >{{ frameInfo?.cutSide === -1 ? "Lower" : "Upper" }} half removed</span
+                >{{
+                  sectionType === "hue"
+                    ? frameInfo?.cutSide === -1
+                      ? "−normal"
+                      : "+normal"
+                    : frameInfo?.cutSide === -1
+                      ? "Lower"
+                      : "Upper"
+                }}
+                half removed</span
               >
             </div>
           </section>
@@ -512,6 +709,10 @@ const correspondence = computed(() => {
               <i aria-hidden="true" :class="`spatial-key-line spatial-key-${item.id}`"></i
               >{{ item.label }}
             </li>
+            <li v-if="sectionType === 'hue'">
+              <i aria-hidden="true" class="spatial-key-neutral"></i>Neutral edge · dotted contacts
+              have no area
+            </li>
             <li v-if="marker" data-section-key="selected">
               <i aria-hidden="true" class="spatial-key-marker"></i>Selected color
             </li>
@@ -524,8 +725,9 @@ const correspondence = computed(() => {
           </ul>
           <div id="spatial-summary" class="spatial-summary" data-section-summary>
             <p v-if="sectionExceptional">{{ sectionText }}</p>
+            <p v-if="directionNote" data-hue-direction>{{ directionNote }}</p>
             <p
-              v-if="!followActive && relationship"
+              v-if="relationship && (!followActive || sectionType === 'hue')"
               class="spatial-relationship"
               data-section-relationship
             >
@@ -570,7 +772,7 @@ const correspondence = computed(() => {
       </div>
     </section>
     <footer class="spatial-footer">
-      <span>Radial boundary samples · m = 64 · Section contours: exact cube-face solutions</span
+      <span>Radial boundary samples · m = 64 · Section contours: numerical RGB constraints</span
       ><span
         >Drawn surfaces and fills are not exact gamut membership; exact checks are in core.</span
       >

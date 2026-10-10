@@ -1,4 +1,4 @@
-import { GLSL3, Matrix3, NoBlending, RawShaderMaterial } from "three";
+import { GLSL3, Matrix3, NoBlending, RawShaderMaterial, Vector3 } from "three";
 import { spatialColorDefinition } from "@gamut-plane/render/internal/spatial";
 
 const matrix = (rows: readonly (readonly number[])[]) =>
@@ -28,6 +28,7 @@ export function createColorMaterial(output: "srgb" | "display-p3" = "srgb") {
       // Presentation cut: +1 removes fragments above `clipLevel`, -1 below it, 0 draws everything.
       clipSide: { value: 0 },
       clipLevel: { value: 0.5 },
+      clipNormal: { value: new Vector3(0, 1, 0) },
     },
     vertexShader: `precision highp float;
       uniform mat4 modelViewMatrix;
@@ -43,6 +44,7 @@ export function createColorMaterial(output: "srgb" | "display-p3" = "srgb") {
       uniform mat3 lmsToRgb;
       uniform float clipSide;
       uniform float clipLevel;
+      uniform vec3 clipNormal;
       in vec3 lab;
       out vec4 outputColor;
       vec3 encode(vec3 linearRgb) {
@@ -52,7 +54,7 @@ export function createColorMaterial(output: "srgb" | "display-p3" = "srgb") {
         return sign(linearRgb) * mix(power, low, lessThanEqual(magnitude, vec3(${transfer.threshold})));
       }
       void main() {
-        if (clipSide != 0.0 && (lab.x - clipLevel) * clipSide > 0.0) discard;
+        if (clipSide != 0.0 && (dot(lab.yxz, clipNormal) - clipLevel) * clipSide > 0.0) discard;
         vec3 lmsPrime = labToLms * lab;
         vec3 linearRgb = lmsToRgb * (lmsPrime * lmsPrime * lmsPrime);
         // Output attachment saturation only. No clipping of coordinates or intermediate LMS/RGB.

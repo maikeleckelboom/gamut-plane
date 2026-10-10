@@ -14,7 +14,7 @@ import {
   type Scene,
 } from "three";
 import { spatialColorDefinition } from "@gamut-plane/render/internal/spatial";
-import type { LightnessSection } from "@gamut-plane/render/internal/spatial";
+import type { LightnessSection, HueSection } from "@gamut-plane/render/internal/spatial";
 import { createLineLayer, type LineLayer, type LineStyle } from "./lineLayer";
 import { SECTION_FOOTPRINT } from "./spatialCamera";
 
@@ -33,8 +33,9 @@ const matrix = (rows: readonly (readonly number[])[]) =>
 const srgbVector = (hex: number) =>
   new Vector3(((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255);
 
-/** Section capacity in line segments. The generator's vertex limit is set to fit it. */
-export const SECTION_CAPACITY = 4096;
+/** Vertex budget plus loop closures: nine cubic lower roots allow at most ten intervals.
+ * Shared black consumes one vertex but each independent loop adds a closing segment. */
+export const SECTION_CAPACITY = 4096 + 16;
 /**
  * Section line identity. sRGB is a solid mint line; Display P3 is a dashed amber line. Color is never
  * the only cue: weight and dash differ, and both differ from the gamut outline (pale blue, 1.75 px).
@@ -62,12 +63,11 @@ const ghostStyle = { color: 0x7b8a97, width: 1.25, dash: { on: 5, off: 4 } } sat
 
 // --- Section cap -----------------------------------------------------------------------------------
 /**
- * A quad on the plane L = level whose fragments exist only where the FOCUSED gamut contains the
- * color (L, a, b). Membership is evaluated per fragment with the same core-owned OKLab to linear RGB
- * definition the surface shader uses, so the fill is the in-gamut region itself (any number of
- * components, notches included), not a polygon built from the contour. The contour lines are drawn
- * from the exact generator and sit over its edge. Color mode shows the real preview color of each
- * fragment, which is the a/b color field of the OKLab editor at this lightness; Shape mode a flat tone.
+ * Lightness uses a quad with inverse-RGB fragment discard. Hue uses independent sampled sector
+ * fans with the same mask as an additional GPU guard: no triangle spans a gap or contact ray.
+ * Both use core-owned matrices but remain GPU approximations, never exact membership authority.
+ * Scientific contour lines sit over the cap edge. Color mode previews each fragment in unlit sRGB
+ * (a/b at fixed L or L/C at fixed H); Shape mode uses a flat neutral tone.
  */
 export function createSectionCap() {
   const display = spatialColorDefinition("srgb");
@@ -89,6 +89,7 @@ export function createSectionCap() {
     side: DoubleSide,
     uniforms: {
       level: { value: 0.5 },
+      hueMode: { value: 0 },
       labToLms: { value: matrix(display.oklabToLmsPrime) },
       member: { value: matrix(spatialColorDefinition("srgb").lmsToLinearRgb) },
       display: { value: matrix(display.lmsToLinearRgb) },
@@ -99,11 +100,13 @@ export function createSectionCap() {
       uniform mat4 modelViewMatrix;
       uniform mat4 projectionMatrix;
       uniform float level;
+      uniform float hueMode;
       in vec3 position;
       out vec3 lab;
       void main() {
-        lab = vec3(level, position.x, position.z);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position.x, level, position.z, 1.0);
+        vec3 world = hueMode > 0.5 ? position : vec3(position.x, level, position.z);
+        lab = world.yxz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(world, 1.0);
       }`,
     fragmentShader: `precision highp float;
       uniform mat3 labToLms;
@@ -132,10 +135,37 @@ export function createSectionCap() {
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.renderOrder = 1;
+  let hueSection: HueSection | null = null;
   return {
     mesh,
     setLevel(level: number) {
+      if (hueSection) {
+        geometry.dispose();
+        geometry.setAttribute(
+          "position",
+          new BufferAttribute(
+            new Float32Array([-half, 0, -half, half, 0, -half, half, 0, half, -half, 0, half]),
+            3,
+          ),
+        );
+        geometry.setIndex([0, 1, 2, 0, 2, 3]);
+        hueSection = null;
+      }
+      material.uniforms.hueMode!.value = 0;
       material.uniforms.level!.value = level;
+    },
+    setHue(section: HueSection) {
+      if (hueSection === section) return;
+      hueSection = section;
+      // Each sector is star-shaped about black. A separate radial fan per loop preserves
+      // gaps exactly in the sampled polygon; isolated contacts never enter these indices.
+      geometry.dispose();
+      geometry.setAttribute(
+        "position",
+        new BufferAttribute(Float32Array.from(section.positions), 3),
+      );
+      geometry.setIndex(hueTriangles(section));
+      material.uniforms.hueMode!.value = 1;
     },
     /** The gamut whose membership defines the filled region (the focused surface's gamut). */
     setGamut(space: "srgb" | "display-p3") {
@@ -151,6 +181,18 @@ export function createSectionCap() {
   };
 }
 export type SectionCap = ReturnType<typeof createSectionCap>;
+
+export function hueTriangles(section: HueSection): number[] {
+  return section.loops.flatMap((loop) =>
+    loop.flatMap((id) => {
+      const vertices = section.arcs[id]!.vertices;
+      return vertices.slice(1).flatMap((b, i) => {
+        const a = vertices[i]!;
+        return a !== 0 && b !== 0 ? [0, a, b] : [];
+      });
+    }),
+  );
+}
 
 // --- Selected-color marker ---------------------------------------------------------------------------
 const MARKER_CORE = 4.5;
@@ -299,7 +341,55 @@ export function createSectionLayers(hooks: { scene: Scene; add: (layer: LineLaye
   const stem = hooks.add(
     createLineLayer({ capacity: 1, visible: stemStyle, hidden: null, renderOrder: 2 }),
   );
-  return { contours, footprint, ghost, stem };
+  const neutral = hooks.add(
+    createLineLayer({
+      capacity: 2,
+      visible: { color: 0x9aa8b4, width: 1.25, dash: { on: 2, off: 4 } },
+      hidden: null,
+      renderOrder: 4,
+    }),
+  );
+  const contacts = Object.fromEntries(
+    (["srgb", "display-p3"] as const).map((space) => [
+      space,
+      hooks.add(
+        createLineLayer({
+          capacity: 16,
+          visible: { ...sectionStyles[space].visible, width: 3, dash: { on: 2, off: 4 } },
+          hidden: sectionStyles[space].hidden,
+          casing,
+          renderOrder: 5,
+        }),
+      ),
+    ]),
+  ) as Record<"srgb" | "display-p3", LineLayer>;
+  return { contours, footprint, ghost, stem, neutral, contacts };
+}
+
+export function writeHueArcs(
+  layer: LineLayer,
+  section: HueSection | null,
+  kind: "surface" | "contact" | "neutral",
+) {
+  let count = 0;
+  section?.arcs.forEach((arc, id) => {
+    if (
+      kind === "contact"
+        ? section.contacts.includes(id)
+        : kind === "neutral"
+          ? arc.kind === "domain-neutral"
+          : arc.kind === "gamut-surface" && !section.contacts.includes(id)
+    )
+      for (let i = 1; i < arc.vertices.length; i++) {
+        for (const [end, vertex] of [arc.vertices[i - 1]!, arc.vertices[i]!].entries())
+          layer.buffer.set(
+            section.positions.subarray(vertex * 3, vertex * 3 + 3),
+            count * 6 + end * 3,
+          );
+        count++;
+      }
+  });
+  layer.commit(count);
 }
 
 /**

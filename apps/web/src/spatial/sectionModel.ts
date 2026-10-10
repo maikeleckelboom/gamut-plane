@@ -114,9 +114,22 @@ export function createSectionStore(
 ) {
   const capacity = options.capacity ?? 24;
   const generate = options.generate ?? generateLightnessSection;
-  const cache = new Map<string, SectionOutcome>();
+  return createSectionCache((space, lightness): SectionOutcome => {
+    const result = generate({ space, lightness, limits: SECTION_LIMITS });
+    return result.ok
+      ? { status: "ready", section: result.value }
+      : { status: "unavailable", error: result.error, detail: result.detail };
+  }, capacity);
+}
+
+/** Shared bounded cache mechanics; each section generator owns its numerical contract. */
+export function createSectionCache<T>(
+  generate: (space: SectionGamut, value: number) => T,
+  capacity = 24,
+) {
+  const cache = new Map<string, T>();
   const stats: SectionStats = { hits: 0, misses: 0, builds: 0, evictions: 0 };
-  function get(space: SectionGamut, lightness: number): SectionOutcome {
+  function get(space: SectionGamut, lightness: number): T {
     const key = `${space}:${lightness}`;
     const cached = cache.get(key);
     if (cached) {
@@ -127,10 +140,7 @@ export function createSectionStore(
     }
     stats.misses++;
     stats.builds++;
-    const result = generate({ space, lightness, limits: SECTION_LIMITS });
-    const outcome: SectionOutcome = result.ok
-      ? { status: "ready", section: result.value }
-      : { status: "unavailable", error: result.error, detail: result.detail };
+    const outcome = generate(space, lightness);
     cache.set(key, outcome);
     while (cache.size > capacity) {
       cache.delete(cache.keys().next().value!);
@@ -140,7 +150,7 @@ export function createSectionStore(
   }
   return {
     get,
-    outcomes(lightness: number): SectionOutcomes {
+    outcomes(lightness: number): Readonly<Record<SectionGamut, T>> {
       return { srgb: get("srgb", lightness), "display-p3": get("display-p3", lightness) };
     },
     stats,
@@ -151,11 +161,11 @@ export function createSectionStore(
 }
 export type SectionStore = ReturnType<typeof createSectionStore>;
 
-export interface SectionUpdate {
+export interface SectionUpdate<T = number, O = SectionOutcomes> {
   /** Increases with every request; a result for an older request is never delivered. */
   readonly revision: number;
-  readonly lightness: number | null;
-  readonly outcomes: SectionOutcomes | null;
+  readonly lightness: T | null;
+  readonly outcomes: O | null;
 }
 
 /**
@@ -163,13 +173,13 @@ export interface SectionUpdate {
  * flush on its next frame, so a burst of accepted edits builds at most once per frame. If a result
  * ever completes later than a newer request (an asynchronous generator), it is dropped.
  */
-export function createSectionScheduler(options: {
-  compute: (lightness: number) => SectionOutcomes | Promise<SectionOutcomes>;
+export function createSectionScheduler<T = number, O = SectionOutcomes>(options: {
+  compute: (lightness: T) => O | Promise<O>;
   schedule: (flush: () => void) => unknown;
   cancel?: (handle: unknown) => void;
-  onUpdate: (update: SectionUpdate) => void;
+  onUpdate: (update: SectionUpdate<T, O>) => void;
 }) {
-  let wanted: number | null = null;
+  let wanted: T | null = null;
   let revision = 0;
   let handle: unknown = null;
   let disposed = false;
@@ -184,7 +194,7 @@ export function createSectionScheduler(options: {
       options.onUpdate({ revision: current, lightness: null, outcomes: null });
       return;
     }
-    const deliver = (outcomes: SectionOutcomes) => {
+    const deliver = (outcomes: O) => {
       if (disposed || current !== revision || current <= delivered) return;
       delivered = current;
       options.onUpdate({ revision: current, lightness, outcomes });
@@ -194,7 +204,7 @@ export function createSectionScheduler(options: {
     else deliver(result);
   };
   return {
-    request(lightness: number | null) {
+    request(lightness: T | null) {
       if (disposed) return;
       wanted = lightness;
       revision++;

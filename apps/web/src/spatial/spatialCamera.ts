@@ -62,6 +62,23 @@ export const SECTION_VIEW_TILT = 1e-4;
 export const SECTION_VIEW_DISTANCE = 3;
 export const SECTION_FOOTPRINT = 0.45;
 
+/** Fixed comparison frame: C increases right, L up, equal scientific units. */
+export function hueSectionCamera(camera: OrthographicCamera, target: Vector3, hue: number) {
+  const angle = (hue * Math.PI) / 180;
+  target.set(0.225 * Math.cos(angle), 0.5, 0.225 * Math.sin(angle));
+  camera.position
+    .copy(target)
+    .add(new Vector3(-Math.sin(angle), 0, Math.cos(angle)).multiplyScalar(3));
+  camera.up.set(0, 1, 0);
+  camera.lookAt(target);
+  camera.zoom = Math.min(
+    12,
+    Math.max(0.25, Math.min(camera.right / 0.225, camera.top / 0.5) / 1.25),
+  );
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld(true);
+}
+
 /**
  * Scene coordinates are X = a, Y = L, Z = b, a left-handed arrangement of the right-handed OKLab
  * (L, a, b) frame. Seen from above (+Y) with a to the right, +b points toward the viewer, which is
