@@ -6,7 +6,18 @@ import SpatialApp from "../src/spatial/spatialApp.vue";
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
-  controller: { resize: vi.fn(), setVisible: vi.fn(), dispose: vi.fn(), update: vi.fn() },
+  controller: {
+    resize: vi.fn(),
+    setVisible: vi.fn(),
+    dispose: vi.fn(),
+    update: vi.fn(),
+    setSection: vi.fn(),
+    setMarker: vi.fn(),
+    viewSection: vi.fn(),
+    home: vi.fn(),
+    fit: vi.fn(),
+    restore: vi.fn(),
+  },
 }));
 vi.mock("../src/spatial/spatialScene", () => ({ createSpatialScene: mocks.create }));
 afterEach(() => {

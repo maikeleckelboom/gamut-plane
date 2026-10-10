@@ -11,12 +11,19 @@ import {
 } from "three";
 import { createColorMaterial } from "../src/spatial/colorMaterial";
 import { createSpatialScene } from "../src/spatial/spatialScene";
+import { createSectionStore } from "../src/spatial/sectionModel";
 import {
   referenceBytes,
   referenceLab,
   referenceLinear,
   type Triple,
 } from "../test/spatialReference";
+
+/** A real section for a mounted scene: exactly what the host computes and hands over. */
+export function sectionInput(lightness: number) {
+  const store = createSectionStore();
+  return { lightness, outcomes: store.outcomes(lightness) };
+}
 
 export function mountHarness() {
   const canvas = document.createElement("canvas");

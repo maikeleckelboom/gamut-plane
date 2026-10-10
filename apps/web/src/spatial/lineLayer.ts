@@ -89,6 +89,8 @@ export function createLineLayer(options: {
   visible: LineStyle | null;
   hidden: LineStyle | null;
   renderOrder: number;
+  /** Optional solid backing drawn under the visible line, `extra` CSS px wider, for legibility over color. */
+  casing?: { readonly color: number; readonly extra: number };
 }) {
   const geometry = new InstancedBufferGeometry();
   geometry.setAttribute("corner", new Float32BufferAttribute([-1, -1, 1, -1, 1, 1, -1, 1], 2));
@@ -126,15 +128,25 @@ export function createLineLayer(options: {
   };
   const front = options.visible ? make(options.visible, LessEqualDepth) : null;
   const back = options.hidden ? make(options.hidden, GreaterDepth) : null;
+  const casing =
+    front && options.visible && options.casing
+      ? make(
+          { color: options.casing.color, width: options.visible.width + options.casing.extra },
+          LessEqualDepth,
+        )
+      : null;
+  if (casing) casing.line.renderOrder = options.renderOrder - 0.5;
   if (front) front.line.renderOrder = options.renderOrder;
   if (back) back.line.renderOrder = options.renderOrder + 1;
   const objects: Mesh[] = [];
+  if (casing) objects.push(casing.line);
   if (front) objects.push(front.line);
   if (back) objects.push(back.line);
   let count = 0;
   let enabled = false;
   const apply = () => {
     const shown = enabled && count > 0;
+    if (casing) casing.line.visible = shown;
     if (front) front.line.visible = shown;
     if (back) back.line.visible = shown;
   };
@@ -156,7 +168,7 @@ export function createLineLayer(options: {
     /** `backingWidth`/`backingHeight` are drawing-buffer pixels; `ratio` is buffer px per CSS px. */
     setViewport(backingWidth: number, backingHeight: number, ratio: number) {
       resolution.set(backingWidth, backingHeight);
-      for (const item of [front, back]) {
+      for (const item of [casing, front, back]) {
         if (!item) continue;
         item.material.uniforms.halfWidth!.value = (item.style.width * ratio) / 2;
         (item.material.uniforms.dash!.value as Vector2).set(
@@ -170,6 +182,7 @@ export function createLineLayer(options: {
     },
     dispose() {
       geometry.dispose();
+      casing?.material.dispose();
       front?.material.dispose();
       back?.material.dispose();
     },

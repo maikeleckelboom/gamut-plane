@@ -5,30 +5,45 @@
   color: #e4e8ec;
   font-size: 14px;
 }
-.spatial-app button,
-.spatial-app a,
-.spatial-app input {
+/* The study's own chrome. The compact instrument keeps its own styles: nothing below reaches it. */
+.spatial-header button,
+.spatial-header a,
+.spatial-scene-column button,
+.spatial-scene-column a,
+.spatial-scene-column input,
+.spatial-section button,
+.spatial-section input,
+.spatial-notes a {
   touch-action: manipulation;
 }
-.spatial-app button {
+.spatial-scene-column button,
+.spatial-section button {
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
   border-radius: 5px;
   padding: 9px 13px;
   cursor: pointer;
+  font: inherit;
 }
-.spatial-app button:hover {
+.spatial-scene-column button:hover,
+.spatial-section button:hover {
   background: #303943;
 }
-.spatial-app button:disabled {
+.spatial-scene-column button:disabled,
+.spatial-section button:disabled {
   cursor: default;
 }
-.spatial-app a {
+.spatial-header a,
+.spatial-scene-column a,
+.spatial-notes a {
   color: inherit;
   text-underline-offset: 4px;
 }
-.spatial-app :focus-visible {
+.spatial-header :focus-visible,
+.spatial-scene-column :focus-visible,
+.spatial-section :focus-visible,
+.spatial-notes :focus-visible {
   outline: 2px solid #b0d1e6;
   outline-offset: 4px;
 }
@@ -364,4 +379,199 @@
     padding-left: 12px;
     padding-right: 12px;
   }
+}
+
+/* --- Phase 3C.1: scene, section controls and the compact instrument ------------------------------ */
+.spatial-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.spatial-scene-column,
+.spatial-instrument-column {
+  min-width: 0;
+}
+.spatial-instrument-column {
+  display: grid;
+  gap: 20px;
+  max-width: 480px;
+  width: 100%;
+}
+@media (min-width: 1100px) {
+  .spatial-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    gap: 28px;
+  }
+}
+.spatial-section {
+  border: 1px solid #343b44;
+  background: #20252b;
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 12px;
+}
+.spatial-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.spatial-section h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.spatial-section-value {
+  font-family: var(--cv-font-mono);
+  font-size: 13px;
+  color: #cfe6dd;
+}
+.spatial-section-mode {
+  flex-wrap: wrap;
+}
+.spatial-slider {
+  display: grid;
+  gap: 6px;
+}
+.spatial-slider-label {
+  font-size: 12px;
+  color: #a3adb8;
+}
+.spatial-slider input[type="range"] {
+  width: 100%;
+  margin: 0;
+  min-height: 24px;
+  accent-color: #bdd8e6;
+}
+.spatial-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a3adb8;
+}
+.spatial-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+.spatial-section-actions button {
+  border-color: #536473;
+  background: #2a313a;
+}
+.spatial-section-actions .spatial-recover {
+  border-color: #6ee7c8;
+}
+.spatial-summary {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b3bdc7;
+}
+.spatial-summary p {
+  margin: 0;
+}
+.spatial-marker-note {
+  color: #e4e8ec;
+}
+.spatial-scene-column .spatial-inline {
+  display: inline;
+  border: 0;
+  padding: 2px 4px;
+  margin-left: 6px;
+  color: #bdd8e6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 24px;
+}
+.spatial-keys {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.spatial-keys li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #a3adb8;
+}
+/* Key swatches repeat the drawn identity: weight and dash as well as color. */
+.spatial-key-line {
+  display: block;
+  width: 22px;
+  height: 0;
+  border-top: 3px solid #6ee7c8;
+}
+.spatial-key-display-p3 {
+  border-top: 3px dashed #f7b955;
+}
+.spatial-key-marker {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 6px;
+  border-radius: 50%;
+  background: #f5f7fa;
+  box-shadow: 0 0 0 2px #0b0e12;
+}
+.spatial-plane-tag {
+  position: absolute;
+  transform: translate(10px, -50%);
+  color: #cfe6dd;
+  font-size: 12px;
+  font-family: var(--cv-font-mono);
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 0 3px #191d22,
+    0 0 3px #191d22;
+}
+.spatial-live {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .spatial-keys {
+    grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
+    gap: 4px 16px;
+  }
+}
+@media (max-width: 850px) {
+  .spatial-intro > p {
+    display: block;
+    font-size: 12px;
+  }
+}
+/* The key sits under the stage so it never covers the scene, including the section view. */
+.spatial-scene-column .spatial-keys {
+  grid-template-columns: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 10px 0 0;
+}
+.spatial-key-ring {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 6px;
+  border-radius: 50%;
+  border: 1.5px solid #c9d6e0;
+}
+.spatial-key-plane {
+  display: block;
+  width: 22px;
+  height: 0;
+  border-top: 1.5px solid #7e8b97;
+}
+/* Outlines can pass behind the caption in some views; keep its text legible. */
+.spatial-caption {
+  text-shadow:
+    0 0 3px #191d22,
+    0 0 3px #191d22;
 }
