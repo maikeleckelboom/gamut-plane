@@ -358,6 +358,15 @@
   .spatial-app {
     padding: 16px 12px;
   }
+  .spatial-intro {
+    flex-direction: column;
+    align-items: start;
+    gap: 12px;
+  }
+  .spatial-viewport {
+    height: auto;
+    aspect-ratio: 1;
+  }
   .spatial-header {
     flex-wrap: wrap;
     gap: 12px;
@@ -400,8 +409,44 @@
 }
 @media (min-width: 1100px) {
   .spatial-columns {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
     gap: 28px;
+  }
+}
+
+/* The host keeps color editing beside its result without altering instrument anatomy. */
+.spatial-correspondence {
+  min-block-size: 3lh;
+}
+.spatial-instrument-column {
+  gap: 10px;
+}
+.spatial-section {
+  margin-top: 10px;
+}
+.spatial-summary summary {
+  cursor: pointer;
+  color: #bdd8e6;
+}
+.spatial-relationship {
+  font-variant-numeric: tabular-nums;
+  color: #e4e8ec;
+}
+@media (min-width: 1100px) and (min-height: 760px) {
+  .spatial-scene-column:not(:has(details[open])) {
+    position: sticky;
+    top: 16px;
+  }
+  .spatial-stage {
+    height: clamp(280px, calc(100dvh - 420px), 680px);
+  }
+  .spatial-section {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 18px;
+  }
+  .spatial-section-head,
+  .spatial-section-actions {
+    grid-column: 1 / -1;
   }
 }
 .spatial-section {
@@ -460,9 +505,7 @@
   border-color: #536473;
   background: #2a313a;
 }
-.spatial-section-actions .spatial-recover {
-  border-color: #6ee7c8;
-}
+
 .spatial-summary {
   display: grid;
   gap: 4px;
@@ -477,16 +520,7 @@
 .spatial-marker-note {
   color: #e4e8ec;
 }
-.spatial-scene-column .spatial-inline {
-  display: inline;
-  border: 0;
-  padding: 2px 4px;
-  margin-left: 6px;
-  color: #bdd8e6;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  min-height: 24px;
-}
+
 .spatial-keys {
   list-style: none;
   margin: 3px 0 0;

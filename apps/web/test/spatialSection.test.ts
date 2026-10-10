@@ -17,11 +17,8 @@ import {
   type SectionOutcomes,
 } from "../src/spatial/sectionModel";
 import {
-  FACE_ON_COSINE,
   clipSegmentsToRemoved,
-  cutSide,
   drawnSolid,
-  isFaceOn,
   isHiddenByCap,
   isKept,
   isPointHidden,
@@ -29,6 +26,7 @@ import {
 import {
   SECTION_VIEW_TILT,
   homeCamera,
+  orbitCamera,
   sectionCamera,
   setCameraAspect,
 } from "../src/spatial/spatialCamera";
@@ -256,11 +254,7 @@ describe("requests are latest-wins and never deliver a stale result", () => {
 });
 
 describe("the cut is a presentation policy", () => {
-  it("removes the half-space on the viewer's side of the plane", () => {
-    expect(cutSide(0.7, true)).toBe(1);
-    expect(cutSide(-0.7, true)).toBe(-1);
-    expect(cutSide(0, true)).toBe(1);
-    expect(cutSide(0.7, false)).toBe(0);
+  it("removes the explicit half-space independently of the viewer", () => {
     expect(isKept([0, 0.3, 0], 1, 0.5)).toBe(true);
     expect(isKept([0, 0.7, 0], 1, 0.5)).toBe(false);
     expect(isKept([0, 0.5, 0], 1, 0.5)).toBe(true); // the plane itself belongs to the cap
@@ -321,17 +315,24 @@ describe("the cut is a presentation policy", () => {
     expect(isHiddenByCap(region, [0, 0.8, 0], [0, -1, 0], -1, 0.5)).toBe(true);
     expect(isHiddenByCap(region, [0, 0.2, 0], up, 0, 0.5)).toBe(false);
   });
-  it("presents the section on its own within 20 degrees of its normal", () => {
-    expect(FACE_ON_COSINE).toBeCloseTo(Math.cos((20 * Math.PI) / 180), 15);
-    expect(isFaceOn(1)).toBe(true);
-    expect(isFaceOn(-1)).toBe(true);
-    expect(isFaceOn(Math.cos((19.9 * Math.PI) / 180))).toBe(true);
-    expect(isFaceOn(Math.cos((20.1 * Math.PI) / 180))).toBe(false);
-    expect(isFaceOn(0.5)).toBe(false);
-  });
 });
 
 describe("the section camera shows +a to the right and +b up, unmirrored", () => {
+  it("keyboard orbit leaves the aligned pole without an azimuth flip and clamps reversals", () => {
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0.01, 20);
+    const target = new Vector3();
+    sectionCamera(camera, target, 0.5, null);
+    orbitCamera(camera, target, 0, 1);
+    expect(camera.position.z).toBeGreaterThan(0.3);
+    expect(camera.position.x).toBe(0);
+    for (let i = 0; i < 40; i++) orbitCamera(camera, target, 0, -1);
+    expect(camera.position.z).toBeGreaterThan(0);
+    expect(camera.position.x).toBe(0);
+    expect(camera.position.distanceTo(target)).toBeCloseTo(3, 12);
+    for (let i = 0; i < 40; i++) orbitCamera(camera, target, 0, 1);
+    expect(camera.position.z).toBeGreaterThan(0);
+    expect(camera.position.y).toBeGreaterThan(target.y);
+  });
   function projected(camera: OrthographicCamera, point: readonly [number, number, number]) {
     const p = new Vector3(...point).project(camera);
     return { x: p.x, y: p.y, depth: p.z };
@@ -373,7 +374,6 @@ describe("the section camera shows +a to the right and +b up, unmirrored", () =>
     // It looks along +L, from below the plane.
     const toViewer = camera.getWorldDirection(new Vector3()).negate();
     expect(toViewer.y).toBeLessThan(-1 + 1e-6);
-    expect(isFaceOn(toViewer.y)).toBe(true);
     expect(Math.acos(-toViewer.y)).toBeCloseTo(SECTION_VIEW_TILT, 6);
   });
   it("looking from above would mirror the picture, which is why the view is from below", () => {

@@ -1,4 +1,4 @@
-import { Box3, OrthographicCamera, Vector3 } from "three";
+import { Box3, OrthographicCamera, Spherical, Vector3 } from "three";
 
 export const HOME_DIRECTION = [1.35, 0.8, 1.65] as const;
 export const HOME_TARGET = [0, 0.5, 0] as const;
@@ -42,6 +42,14 @@ export function homeCamera(camera: OrthographicCamera, target: Vector3) {
   camera.lookAt(target);
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
+}
+
+/** Keyboard orbit uses the same Y-up polar bounds as OrbitControls, without crossing a pole. */
+export function orbitCamera(camera: OrthographicCamera, target: Vector3, dx: number, dy: number) {
+  const spherical = new Spherical().setFromVector3(camera.position.clone().sub(target));
+  spherical.theta -= dx * 0.12;
+  spherical.phi = Math.min(Math.PI - 1e-6, Math.max(1e-6, spherical.phi - dy * 0.12));
+  camera.position.copy(target).add(new Vector3().setFromSpherical(spherical));
 }
 
 /**

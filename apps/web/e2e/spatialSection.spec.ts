@@ -64,13 +64,14 @@ const slider = (page: Page): Locator => page.locator("[data-section-slider]");
 const summary = (page: Page) => page.locator("[data-section-summary]");
 const canvasOf = (page: Page) => page.getByLabel("Orthographic gamut scene");
 
-async function ready(page: Page) {
+async function ready(page: Page, oklch = true) {
   await page.goto("/spatial");
   await expect(stage(page)).toHaveAttribute("data-spatial-status", "ready");
   await expect(stage(page)).not.toHaveAttribute("data-spatial-frames", "0");
   await expect(lightness(page)).toHaveText("L 0.680");
   await expect.poll(async () => (await inspect(page)).section.capVisible).toBe(true);
   await settled(page);
+  if (oklch) await chooseCoordinates(page, /^OKLCH/);
 }
 /** No frame is pending: everything the last change required has been drawn. */
 async function settled(page: Page) {
@@ -133,6 +134,7 @@ async function capture(page: Page, name: string, testInfo: { outputPath(name: st
   await page.screenshot({ path, fullPage: true });
 }
 async function setOklch(page: Page, l: number, c: number, h: number) {
+  await chooseCoordinates(page, /^OKLCH/);
   const root = instrument(page);
   for (const [name, value] of [
     ["Lightness numeric value", l],
@@ -178,7 +180,7 @@ test("visual evidence: desktop, narrow, colors, cameras and presentation", async
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1600, height: 1250 });
-  await ready(page);
+  await ready(page, false);
   await capture(page, "desktop-follow-shape", testInfo);
   await page.getByRole("radio", { name: "Color", exact: true }).check();
   await settled(page);
@@ -190,6 +192,7 @@ test("visual evidence: desktop, narrow, colors, cameras and presentation", async
   await settled(page);
   await capture(page, "desktop-section-view-shape", testInfo);
   await page.getByRole("button", { name: "Home", exact: true }).click();
+  await page.getByRole("button", { name: "Flip cut", exact: true }).click();
   await page.getByRole("radio", { name: "Color", exact: true }).check();
   await settled(page);
   // A P3-only color: outside sRGB, inside Display P3 (chosen with core analysis, not by eye).
@@ -609,8 +612,9 @@ test("depth and occlusion: a hidden marker is offered recovery and never drawn o
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "Cut away" }).uncheck();
   await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
-  await page.locator("[data-marker-note]").getByRole("button", { name: "Show selected" }).click();
-  await expect(page.getByRole("checkbox", { name: "Cut away" })).toBeChecked();
+  await page.getByRole("button", { name: "Show selected", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Cut away" })).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Restore surface" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Follow selected color" })).toBeChecked();
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   expect(await authored(page)).toEqual(color);
@@ -642,6 +646,7 @@ test("an unobservable color has no marker and no followed section, and inspectin
   }
   await expect(summary(page)).toContainText("cannot be placed in OKLab");
   await expect(lightness(page)).toHaveText("None");
+  await expect(page.getByRole("button", { name: "View section", exact: true })).toBeDisabled();
   await settled(page);
   const view = await inspect(page);
   expect(view.section.marker).toBeNull();
@@ -1064,6 +1069,6 @@ test("orbiting keeps the section readable: contact sheet at several view directi
     seen.add(view.section.cutSide);
     await capture(page, name, testInfo);
   }
-  // From above and from below the cut takes the viewer's side of the plane.
-  expect(seen.has(1) && seen.has(-1)).toBe(true);
+  // Orbit preserves the explicitly selected removed half-space.
+  expect([...seen]).toEqual([1]);
 });

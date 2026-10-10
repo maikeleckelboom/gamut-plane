@@ -5,16 +5,10 @@
 type Vector = readonly [number, number, number];
 
 /**
- * Which side of the section plane is removed so the section faces the viewer.
- * `1` removes the half-space above the plane (the camera is above it), `-1` below it, `0` none.
- * The scene is X = a, Y = L, Z = b, and the viewer is on the side `toViewer.y` points to.
+ * Explicit removed half-space: `1` above the plane, `-1` below it, `0` none.
+ * Camera orientation does not own this intent. The scene is X = a, Y = L, Z = b.
  */
 export type CutSide = -1 | 0 | 1;
-export function cutSide(toViewerY: number, enabled: boolean): CutSide {
-  if (!enabled) return 0;
-  return toViewerY >= 0 ? 1 : -1;
-}
-
 /** Whether `point` survives the cut. `side` 0 keeps everything. */
 export function isKept(point: Vector, side: CutSide, level: number): boolean {
   return side === 0 || (point[1] - level) * side <= 0;
@@ -82,21 +76,6 @@ export function isPointHidden(
     )
       return true;
   return false;
-}
-
-/**
- * Cosine of the largest angle between the view direction and the section normal for which the
- * section is presented on its own (see `isFaceOn`): 20 degrees.
- */
-export const FACE_ON_COSINE = Math.cos((20 * Math.PI) / 180);
-
-/**
- * Whether the camera looks along the lightness axis closely enough that the section reads as a flat
- * a/b field. The L axis, its labels and the near body would all project onto that field, so the
- * scene hides them there. This is a presentation threshold, not a scientific one.
- */
-export function isFaceOn(toViewerY: number): boolean {
-  return Math.abs(toViewerY) >= FACE_ON_COSINE;
 }
 
 /**

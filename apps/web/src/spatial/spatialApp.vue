@@ -44,7 +44,7 @@ const initial = createColorValue({ space: "oklch", channels: [0.68, 0.15, 252], 
 if (!initial.ok) throw new Error("Invalid initial selected color");
 const selectedColor = shallowRef<ColorValue>(initial.value);
 const instrumentState = ref<GamutPlaneState>({
-  selection: { representationId: "oklch", editorId: "oklch-lc" },
+  selection: { representationId: "oklab", editorId: "oklab-ab" },
   checkedGamuts: ["display-p3-gamut", "srgb-gamut"],
   referenceGamutId: "srgb-gamut",
   visibleGuides: ["display-p3-boundary", "srgb-boundary"],
@@ -81,13 +81,19 @@ const axisText = {
 } as const;
 // Display-preview disclosure. At n = 128 every sampled triangle of the P3 boundary lies outside sRGB
 // and none of the sRGB boundary does, so a clipping overlay would be all or nothing; say it in words.
-const previewNote = computed(() =>
-  mode.value === "shape"
+const previewNote = computed(() => {
+  if (frameInfo.value?.revealed)
+    return "Surfaces are hidden. Outlines retain the gamut shape and inspected section.";
+  if (frameInfo.value?.sectionOnly)
+    return mode.value === "shape"
+      ? "The fill is the focused gamut at the inspected lightness; the lines are current-lightness boundaries."
+      : "Section colors use an sRGB preview; colors outside sRGB are clipped for display. P3 reproduction is not qualified.";
+  return mode.value === "shape"
     ? "Opaque surface; the other gamut is an outline, dashed where the surface hides it."
     : active.value === "srgb"
       ? "This surface lies inside sRGB, so the preview shows its colors without clipping. P3 reproduction is not qualified."
-      : "Nearly all of this surface lies outside sRGB. The preview clips those colors for display, so they are not P3 colors. P3 reproduction is not qualified.",
-);
+      : "Nearly all of this surface lies outside sRGB. The preview clips those colors for display, so they are not P3 colors. P3 reproduction is not qualified.";
+});
 
 // --- Section state: derived from the shared color and one local selection --------------------------
 const observation = computed(() => observeSelected(selectedColor.value));
@@ -113,6 +119,14 @@ const sectionText = computed(() =>
 const selectedText = computed(() => describeSelectedColor(observation.value, membership.value));
 const markerNote = computed(() =>
   describeMarker(frameInfo.value?.markerHidden ?? null, frameInfo.value?.markerInView ?? null),
+);
+const sectionExceptional = computed(
+  () =>
+    observation.value.status !== "ok" ||
+    (outcomes.value !== null &&
+      Object.values(outcomes.value).some(
+        (outcome) => outcome.status !== "ready" || outcome.section.kind !== "region",
+      )),
 );
 const announcement = ref("");
 let announceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -147,16 +161,16 @@ let scene: SpatialScene | null = null;
 const fit = () => scene?.fit();
 const home = () => scene?.home();
 const restore = () => scene?.restore();
-let recovering = false;
+const fitSection = () => scene?.fitSection();
+const flipCut = () => scene?.flipCut();
+const restoreSurface = () => scene?.restoreSurface();
 function viewSection() {
-  // The section is only readable from the plane's far side with the near body cut away.
+  // Explicit alignment establishes the lower cut for subsequent free orbit.
   cut.value = true;
   scene?.viewSection();
 }
 function showSelected() {
-  selection.value = followSection(selection.value);
-  cut.value = true;
-  recovering = true;
+  scene?.showSelected();
 }
 function resize() {
   // Projection uses the drawable CSS box, excluding the stage's decorative border.
@@ -212,12 +226,6 @@ onMounted(() => {
         scale.value = length;
         frames.value = count;
         frameInfo.value = info;
-        if (recovering) {
-          // After "Show selected" has followed and cut, fall back to the section view if the
-          // marker is still hidden or outside the view.
-          recovering = false;
-          if (info.markerHidden || info.markerInView === false) scene?.viewSection();
-        }
       },
     );
     scene?.setVisible(visibility.value === "visible");
@@ -260,7 +268,21 @@ const legend = computed(() => [
 const visibleSectionGamuts = computed(() =>
   SECTION_GAMUTS.filter((space) => space === active.value || compare.value),
 );
-const needsRecovery = computed(() => markerNote.value !== null);
+const relationship = computed(() => {
+  if (observation.value.status !== "ok" || shownLightness.value === null) return null;
+  const delta = observation.value.l - shownLightness.value;
+  return `Selected L ${formatLightness(observation.value.l)} · Section L ${formatLightness(shownLightness.value)} · ΔL ${delta >= 0 ? "+" : "−"}${formatLightness(Math.abs(delta))}`;
+});
+const correspondence = computed(() => {
+  const id = instrumentState.value.selection.representationId;
+  if (id === "oklab")
+    return followActive.value
+      ? "a/b field and section share the selected lightness. View section aligns +a right, +b up."
+      : "a/b field stays at the selected lightness; the spatial section is inspected separately.";
+  if (id === "oklch")
+    return "L/C field at fixed hue: chroma moves radially in a/b; lightness moves vertically in the scene.";
+  return "RGB field coordinates differ from the OKLab section. Both observe the same selected color.";
+});
 </script>
 
 <template>
@@ -270,7 +292,7 @@ const needsRecovery = computed(() => markerNote.value !== null);
         <a href="/" class="spatial-brand">Gamut Plane</a><span class="spatial-divider">/</span
         ><span>Spatial study</span>
       </div>
-      <span class="spatial-experiment">Experiment · Phase 3C.1</span>
+      <span class="spatial-experiment">Experiment · Phase 3C.1-R</span>
     </header>
     <section
       class="spatial-workspace"
@@ -312,6 +334,12 @@ const needsRecovery = computed(() => markerNote.value !== null);
             <div class="spatial-camera">
               <button :disabled="status !== 'ready'" @click="fit">Fit visible</button
               ><button :disabled="status !== 'ready'" @click="home">Home</button>
+              <button
+                :disabled="status !== 'ready' || !marker"
+                @click="frameInfo?.revealed ? restoreSurface() : showSelected()"
+              >
+                {{ frameInfo?.revealed ? "Restore surface" : "Show selected" }}
+              </button>
             </div>
           </div>
           <div
@@ -321,13 +349,21 @@ const needsRecovery = computed(() => markerNote.value !== null);
             :data-spatial-frames="frames"
           >
             <div class="spatial-caption">
-              <strong>{{ names[active] }}</strong
+              <strong>{{
+                frameInfo?.sectionOnly
+                  ? `${names[active]} a/b section · +a right · +b up`
+                  : names[active]
+              }}</strong
               ><span>{{
-                mode === "shape"
-                  ? "Neutral surface · directional light"
-                  : "Unlit surface · sRGB preview"
+                frameInfo?.revealed
+                  ? "Surfaces hidden to show selected"
+                  : frameInfo?.sectionOnly
+                    ? "Fixed comparison scale · orbit to return to volume"
+                    : mode === "shape"
+                      ? "Neutral surface · directional light"
+                      : "Unlit surface · sRGB preview"
               }}</span>
-              <span v-if="compare" class="spatial-legend"
+              <span v-if="compare && !frameInfo?.sectionOnly" class="spatial-legend"
                 ><i aria-hidden="true"></i>{{ names[other] }} outline</span
               >
             </div>
@@ -376,46 +412,6 @@ const needsRecovery = computed(() => markerNote.value !== null);
               >
             </div>
           </div>
-          <ul v-if="shownLightness !== null" class="spatial-keys" aria-label="Section key">
-            <li
-              v-for="item in legend"
-              v-show="visibleSectionGamuts.includes(item.id)"
-              :key="item.id"
-              :data-section-key="item.id"
-            >
-              <i aria-hidden="true" :class="`spatial-key-line spatial-key-${item.id}`"></i
-              >{{ item.label }}
-            </li>
-            <li v-if="marker" data-section-key="selected">
-              <i aria-hidden="true" class="spatial-key-marker"></i>Selected color
-            </li>
-            <li v-if="marker" data-section-key="hidden">
-              <i aria-hidden="true" class="spatial-key-ring"></i>Behind the surface
-            </li>
-            <li v-if="shownLightness !== null" data-section-key="plane">
-              <i aria-hidden="true" class="spatial-key-plane"></i>Section plane
-            </li>
-          </ul>
-          <div id="spatial-summary" class="spatial-summary" data-section-summary>
-            <p>{{ selectedText }}</p>
-            <p>{{ sectionText }}</p>
-            <p v-if="markerNote" class="spatial-marker-note" data-marker-note>
-              {{ markerNote }}
-              <button type="button" class="spatial-inline" @click="showSelected">
-                Show selected
-              </button>
-            </p>
-          </div>
-          <p
-            class="spatial-live sr-only"
-            role="status"
-            aria-live="polite"
-            data-section-announcement
-          >
-            {{ announcement }}
-          </p>
-        </div>
-        <aside class="spatial-instrument-column" aria-label="Color and section">
           <section class="spatial-section" aria-labelledby="spatial-section-title">
             <div class="spatial-section-head">
               <h2 id="spatial-section-title">Lightness section</h2>
@@ -466,28 +462,98 @@ const needsRecovery = computed(() => markerNote.value !== null);
                   : "Inspecting. The selected color keeps its own lightness."
               }}
             </p>
-            <p class="spatial-hint" data-section-view-hint>
-              View section looks along L from below: +a to the right, +b up, as in the a/b editor.
-              Cut away removes the near side so the section faces you.
-            </p>
+
             <div class="spatial-section-actions">
-              <button type="button" :disabled="status !== 'ready'" @click="viewSection">
+              <button
+                type="button"
+                :disabled="status !== 'ready' || shownLightness === null"
+                @click="viewSection"
+              >
                 View section
               </button>
               <label class="spatial-compare">
-                <input v-model="cut" type="checkbox" />
+                <input
+                  v-model="cut"
+                  type="checkbox"
+                  :disabled="frameInfo?.sectionOnly || frameInfo?.revealed"
+                />
                 <span>Cut away</span>
               </label>
-              <button
-                v-if="needsRecovery"
-                type="button"
-                class="spatial-recover"
-                @click="showSelected"
-              >
-                Show selected
+
+              <button type="button" :disabled="status !== 'ready'" @click="fitSection">
+                Fit section
               </button>
+              <button
+                v-if="
+                  cut && frameInfo?.cutSide !== 0 && !frameInfo?.sectionOnly && !frameInfo?.revealed
+                "
+                type="button"
+                :disabled="status !== 'ready'"
+                @click="flipCut"
+              >
+                Flip cut
+              </button>
+              <span
+                class="spatial-hint"
+                v-if="
+                  cut && frameInfo?.cutSide !== 0 && !frameInfo?.sectionOnly && !frameInfo?.revealed
+                "
+                >{{ frameInfo?.cutSide === -1 ? "Lower" : "Upper" }} half removed</span
+              >
             </div>
           </section>
+          <ul v-if="shownLightness !== null" class="spatial-keys" aria-label="Section key">
+            <li
+              v-for="item in legend"
+              v-show="visibleSectionGamuts.includes(item.id)"
+              :key="item.id"
+              :data-section-key="item.id"
+            >
+              <i aria-hidden="true" :class="`spatial-key-line spatial-key-${item.id}`"></i
+              >{{ item.label }}
+            </li>
+            <li v-if="marker" data-section-key="selected">
+              <i aria-hidden="true" class="spatial-key-marker"></i>Selected color
+            </li>
+            <li v-if="frameInfo?.markerHidden" data-section-key="hidden">
+              <i aria-hidden="true" class="spatial-key-ring"></i>Behind the surface
+            </li>
+            <li v-if="shownLightness !== null && !frameInfo?.sectionOnly" data-section-key="plane">
+              <i aria-hidden="true" class="spatial-key-plane"></i>Section plane
+            </li>
+          </ul>
+          <div id="spatial-summary" class="spatial-summary" data-section-summary>
+            <p v-if="sectionExceptional">{{ sectionText }}</p>
+            <p
+              v-if="!followActive && relationship"
+              class="spatial-relationship"
+              data-section-relationship
+            >
+              {{ relationship }}
+            </p>
+            <p v-if="frameInfo?.revealed">Surfaces hidden to show the selected color.</p>
+            <details>
+              <summary>Color and section details</summary>
+              <p>{{ selectedText }}</p>
+              <p>{{ sectionText }}</p>
+            </details>
+            <p v-if="markerNote" class="spatial-marker-note" data-marker-note>
+              {{ markerNote }}
+            </p>
+          </div>
+          <p
+            class="spatial-live sr-only"
+            role="status"
+            aria-live="polite"
+            data-section-announcement
+          >
+            {{ announcement }}
+          </p>
+        </div>
+        <aside class="spatial-instrument-column" aria-label="Color and section">
+          <p class="spatial-hint spatial-correspondence" data-editor-correspondence>
+            {{ correspondence }}
+          </p>
           <GamutPlane v-model="selectedColor" v-model:state="instrumentState" />
         </aside>
       </div>

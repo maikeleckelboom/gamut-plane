@@ -25,6 +25,7 @@ import {
   backingSize,
   fitCamera,
   homeCamera,
+  orbitCamera,
   sectionCamera,
   setCameraAspect,
   SECTION_FOOTPRINT,
@@ -40,9 +41,7 @@ import {
 } from "./sectionLayers";
 import {
   clipSegmentsToRemoved,
-  cutSide,
   drawnSolid,
-  isFaceOn,
   isHiddenByCap,
   isPointHidden,
   type CutSide,
@@ -56,7 +55,7 @@ export interface SpatialState {
   active: SpatialGamut;
   compare: boolean;
   mode: SpatialMode;
-  /** Presentation only: remove the part of the focused body on the viewer's side of the section. */
+  /** Presentation only: remove the explicitly chosen half-space of the focused body. */
   cut: boolean;
 }
 export type SpatialStateInput = Pick<SpatialState, "active" | "compare" | "mode"> &
@@ -87,8 +86,9 @@ export interface SpatialFrameInfo {
   /** The marker projects inside the viewport. Null without a marker. */
   markerInView: boolean | null;
   cutSide: CutSide;
-  /** The view is within 20 degrees of the section normal: the section is shown on its own. */
+  /** Explicit section alignment, released by orbit rather than an angular threshold. */
   sectionOnly: boolean;
+  revealed: boolean;
 }
 export const SPATIAL_SUBDIVISIONS = 64;
 const gamuts = ["srgb", "display-p3"] as const;
@@ -269,6 +269,10 @@ export function createSpatialScene(
     let ghostSegments = 0;
     let currentCut: CutSide = 0;
     let sectionOnly = false;
+    let aligned = false;
+    let revealed = false;
+    let cutIntent: CutSide = 1;
+    const alignedDirection = new Vector3();
     renderer.debug.onShaderError = () => {
       shaderFailed = true;
     };
@@ -352,21 +356,28 @@ export function createSpatialScene(
     /** Cut uniforms and the ghost outline of the removed part. Depends on view, level and policy. */
     function refreshCut() {
       const level = section.lightness;
-      const side: CutSide =
-        level !== null && focusedRegion() ? cutSide(viewDirection.y, state.cut) : 0;
+      const side: CutSide = level !== null && focusedRegion() && state.cut ? cutIntent : 0;
       currentCut = side;
       color.uniforms.clipSide!.value = side;
       color.uniforms.clipLevel!.value = level ?? 0.5;
       if (side === 0) cutPlane.set(new Vector3(0, 1, 0), 10);
       else if (side === 1) cutPlane.set(new Vector3(0, -1, 0), level!);
       else cutPlane.set(new Vector3(0, 1, 0), -level!);
-      // Looking along the lightness axis the near body, the L axis and its labels all project onto
-      // the section. Present the section on its own there: no body, no axes, the whole silhouette.
-      sectionOnly = side !== 0 && isFaceOn(viewDirection.y);
+      // Only an explicit camera command owns the flat composition. Orbit never changes cut intent.
+      sectionOnly = aligned;
       const item = focusedResource();
-      item.surface.visible = !sectionOnly;
+      item.surface.visible = !sectionOnly && !revealed;
+      cap.mesh.visible = focusedRegion() && !revealed;
+      sectionLines.footprint.setEnabled(
+        !sectionOnly && section.lightness !== null && section.outcomes !== null,
+      );
+      resources.forEach((resource) =>
+        resource.silhouette.setEnabled(
+          !sectionOnly && state.compare && resource.space !== state.active,
+        ),
+      );
       axes.setEnabled(!sectionOnly);
-      if (side === 0 || level === null) {
+      if (sectionOnly || (!revealed && side === 0) || level === null) {
         if (ghostSegments !== 0) {
           sectionLines.ghost.commit(0);
           ghostSegments = 0;
@@ -388,11 +399,11 @@ export function createSpatialScene(
         ghostRawKey = viewKey;
         ghostClipKey = "";
       }
-      const clipKey = sectionOnly ? "whole" : `${side}|${level}`;
+      const clipKey = revealed ? "whole" : `${side}|${level}`;
       if (ghostClipKey !== clipKey) {
         ghostClipKey = clipKey;
-        if (sectionOnly) {
-          // The body is not drawn, so its whole silhouette is the extent of the gamut seen end-on.
+        if (revealed) {
+          // Recovery hides surfaces, so retain the whole volume outline as spatial context.
           sectionLines.ghost.buffer.set(item.ghostRaw.subarray(0, item.ghostRawCount * 6));
           ghostSegments = item.ghostRawCount;
         } else
@@ -431,8 +442,9 @@ export function createSpatialScene(
       const toViewer = [viewDirection.x, viewDirection.y, viewDirection.z] as const;
       const level = section.lightness;
       const inside = focusedResource().probe;
-      const solid = drawnSolid(inside, currentCut, level ?? 0);
-      const endOn = isFaceOn(viewDirection.y);
+      const solid =
+        revealed || sectionOnly ? () => false : drawnSolid(inside, currentCut, level ?? 0);
+      const endOn = sectionOnly;
       const labels = labelAnchors.map(({ id, point }) => {
         const p = point.clone().project(camera);
         let x = ((p.x + 1) * width) / 2;
@@ -456,10 +468,10 @@ export function createSpatialScene(
         const shown = axisEnd
           ? !isOccluded(solid, [point.x, point.y, point.z], toViewer)
           : !(endOn && currentCut !== 0);
-        return { id, x, y, far: p.z > center.z, shown };
+        return { id, x, y, far: p.z > center.z, shown: shown && !sectionOnly };
       });
       let plane: SpatialFrameInfo["plane"] = null;
-      if (level !== null && section.outcomes !== null) {
+      if (!sectionOnly && level !== null && section.outcomes !== null) {
         // Tag the plane at its footprint corner farthest to the right so the text extends outward.
         let best = -Infinity;
         for (const [cx, cz] of [
@@ -482,9 +494,17 @@ export function createSpatialScene(
       let markerHidden: boolean | null = null;
       let markerInView: boolean | null = null;
       if (markerPoint) {
-        markerHidden = sectionOnly
-          ? isHiddenByCap(inside, markerPoint, toViewer, currentCut, level ?? 0)
-          : isPointHidden(solid, markerPoint, toViewer);
+        markerHidden = revealed
+          ? false
+          : sectionOnly && focusedRegion()
+            ? isHiddenByCap(
+                inside,
+                markerPoint,
+                toViewer,
+                viewDirection.y >= 0 ? 1 : -1,
+                level ?? 0,
+              )
+            : isPointHidden(solid, markerPoint, toViewer);
         const p = new Vector3(...markerPoint).project(camera);
         markerInView = Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1;
       }
@@ -494,6 +514,7 @@ export function createSpatialScene(
         markerInView,
         cutSide: currentCut,
         sectionOnly,
+        revealed,
       });
     }
     const update = (next: SpatialStateInput) => {
@@ -516,7 +537,12 @@ export function createSpatialScene(
       applyVisibility();
       invalidate();
     };
-    controls.addEventListener("change", invalidate);
+    const onCameraChange = () => {
+      if (aligned && camera.getWorldDirection(new Vector3()).distanceTo(alignedDirection) > 1e-8)
+        aligned = false;
+      invalidate();
+    };
+    controls.addEventListener("change", onCameraChange);
     const onLost = (event: Event) => {
       event.preventDefault();
       lost = true;
@@ -558,11 +584,8 @@ export function createSpatialScene(
           camera.position.add(delta);
           controls.target.add(delta);
         } else {
-          const offset = camera.position.clone().sub(controls.target);
-          offset.applyAxisAngle(new Vector3(0, 1, 0), -dx * 0.12);
-          const right = new Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-          offset.applyAxisAngle(right, dy * 0.12);
-          camera.position.copy(controls.target).add(offset);
+          aligned = false;
+          orbitCamera(camera, controls.target, dx, dy);
         }
         controls.update();
         invalidate();
@@ -573,7 +596,7 @@ export function createSpatialScene(
       if (disposed) return;
       disposed = true;
       cancel();
-      controls.removeEventListener("change", invalidate);
+      controls.removeEventListener("change", onCameraChange);
       canvas.removeEventListener("keydown", keydown);
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);
@@ -583,11 +606,13 @@ export function createSpatialScene(
     }
     function home() {
       if (disposed) return;
+      aligned = false;
+      revealed = false;
       homeCamera(camera, controls.target);
       controls.update();
       invalidate();
     }
-    /** Union of the in-plane extents of the visible sections and the marker, or null. */
+    /** Union of the in-plane extents of the visible sections; the marker is independent. */
     function sectionExtent() {
       let minA = Infinity,
         minB = Infinity,
@@ -602,12 +627,6 @@ export function createSpatialScene(
         minB = Math.min(minB, min[1]);
         maxA = Math.max(maxA, max[0]);
         maxB = Math.max(maxB, max[1]);
-      }
-      if (markerPoint) {
-        minA = Math.min(minA, markerPoint[0]);
-        maxA = Math.max(maxA, markerPoint[0]);
-        minB = Math.min(minB, markerPoint[2]);
-        maxB = Math.max(maxB, markerPoint[2]);
       }
       return Number.isFinite(minA) ? ({ min: [minA, minB], max: [maxA, maxB] } as const) : null;
     }
@@ -640,8 +659,50 @@ export function createSpatialScene(
        */
       viewSection() {
         if (disposed) return;
-        sectionCamera(camera, controls.target, section.lightness ?? 0.5, sectionExtent());
+        revealed = false;
+        cutIntent = -1;
+        sectionCamera(camera, controls.target, section.lightness ?? 0.5, null);
+        camera.getWorldDirection(alignedDirection);
+        aligned = true;
         controls.update();
+        invalidate();
+      },
+      fitSection() {
+        if (disposed) return;
+        const extent = sectionExtent();
+        if (!extent || section.lightness === null) return;
+        const level = section.lightness;
+        const bounds = new Box3(
+          new Vector3(extent.min[0], level, extent.min[1]),
+          new Vector3(extent.max[0], level, extent.max[1]),
+        );
+        // Point sections retain a useful finite view.
+        bounds.expandByScalar(0.005);
+        fitCamera(camera, controls.target, bounds);
+        controls.update();
+        invalidate();
+      },
+      flipCut() {
+        if (disposed) return;
+        cutIntent = cutIntent === 1 ? -1 : 1;
+        invalidate();
+      },
+      showSelected() {
+        if (disposed || !markerPoint) return;
+        home();
+        revealed = true;
+        const bounds = new Box3();
+        resources
+          .filter((item) => item.space === state.active || state.compare)
+          .forEach((item) => bounds.union(item.upload.geometry.boundingBox!));
+        bounds.expandByPoint(new Vector3(...markerPoint));
+        fitCamera(camera, controls.target, bounds);
+        controls.update();
+        invalidate();
+      },
+      restoreSurface() {
+        if (disposed) return;
+        revealed = false;
         invalidate();
       },
       fit() {
@@ -722,6 +783,8 @@ export function createSpatialScene(
             : null,
           section: {
             lightness: section.lightness,
+            sectionOnly,
+            revealed,
             capVisible: cap.mesh.visible,
             cutSide: currentCut,
             segments: {
