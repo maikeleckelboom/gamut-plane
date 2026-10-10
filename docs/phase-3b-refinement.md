@@ -72,7 +72,7 @@ The reference outline is the set of mesh edges whose two chord normals disagree 
 
 1. **Surface, Compare, Presentation.** `Surface: sRGB | Display P3` (native radios), `Show <other> outline` (a checkbox labeled with whichever gamut is not the surface), `Presentation: Shape | Color`. The invalid "no gamut" state no longer exists. Every state the brief lists is reachable: only sRGB (surface sRGB, compare off), only P3, both with either focused, in Shape or Color.
 2. **Orientation.** `+a red`, `−a green`, `+b yellow`, `−b blue`, `L 1 · white`, `L 0 · black` (the OKLab opponent axes in plain words). A label whose anchor is behind the focused body is hidden, using a presentation-only point-in-solid ray march through the core-owned matrices the color shader uses. It is not an authoritative membership check and is documented as such. Labels carry a small halo so they stay legible where they genuinely lie over color.
-3. **Layout.** The stage fits common laptop viewports (it did not at 1280×720). On a stage under 760 px the caption and ruler leave the canvas so they never cover the scene. Focus rings are visible on every control, and each radio group is a single tab stop.
+3. **Layout.** The stage fits common laptop viewports (it did not at 1280×720). On a stage under 760 px the caption and ruler leave the canvas so they never cover the scene. Focus rings are visible on every control, and each radio group is a single tab stop. **[measured]** At browser-zoom equivalents of 200% (720×450 CSS px) and 400% (320×256) the page has no horizontal overflow, and the browser tests check that every control stays inside the viewport at 390 and 320 px.
 4. **Display-preview clipping.** I investigated an indicator. **[measured]** On the cubic n = 128 mesh, every triangle centroid of the Display P3 boundary (all six faces, area-weighted, and also the whole projected area at the Home view) lies outside sRGB, with a 1e-9 tolerance; the sRGB boundary is inside sRGB by definition. An overlay would therefore be all or nothing and would paint every P3 pixel. The right correction is a sentence, not a mark on the color field. sRGB: "This surface lies inside sRGB, so the preview shows its colors without clipping." P3: "Nearly all of this surface lies outside sRGB. The preview clips those colors for display, so they are not P3 colors." Scientific data, exact checks and copyable output are untouched.
 5. **Camera: unchanged.** Home direction, target, extent and zoom bounds are identical, so every before/after pair is a true matched pose. The brief asked me to review composition. I did, and found no defect a camera change would fix; the composition faults were chrome and label placement (above).
 
@@ -498,6 +498,26 @@ A caveat that should travel with the recommendation: the fan triangles are extre
 8. **Open decisions:** a public Vue/React Spatial Explorer API; whether the fan sliver risk needs radial subdivision after a physical-GPU check; whether the linked compact instrument owns selection.
 9. **Physical evidence still owed:** integrated-GPU frame time, thermal behavior, physical P3 output.
 
+## Validation record
+
+Run on the final tree, Windows x64, Node 24.19.0, Playwright Chromium on ANGLE SwiftShader.
+
+| Check                                                                                                 | Result                                                                                       |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm verify:prepush` (format, lint, build, typecheck, all unit tests, production build, build check) | pass; 1,119 unit tests (core 244, ui 201, render 335, react 146, vue 143, web 50; was 1,026) |
+| Browser suite, `pnpm test:e2e` (compact instrument, accessibility, visual baselines, spatial)         | 192 of 192 pass                                                                              |
+| Spatial specs alone (8, including context loss, disposal, idle frames, orbit sweep, labels, fit)      | pass                                                                                         |
+| `pnpm test:production` (lazy chunk, `/spatial` route, headers)                                        | 3 of 3 pass                                                                                  |
+| Packed Vue consumer, packed React/Vite consumer                                                       | pass                                                                                         |
+| Packed Nuxt (development, production, generated), packed Next (development, production, Strict Mode)  | pass; see the note on Next below                                                             |
+| Lazy-loading boundary (`check:build`): eager graph excludes the spatial chunk                         | pass                                                                                         |
+
+Two things the packed gates taught: `scripts/packedConsumer.mts` enumerates the exports of `@gamut-plane/render/internal/spatial` exactly, so the three new internal exports needed an intentional contract update (done, with a runtime check that the installed generator works); and the production and Next configurations use fixed ports (4178 and 4181) that collide with any other local server.
+
+**Not run as committed.** On this machine port 4181 was held by an unrelated project's preview server, so the packed Next gate was run once with the consumer's port temporarily changed to 4191 in `package.json` and `playwright.config.ts`, then restored byte for byte; no committed file differs. The exact-SHA CI run on a clean Linux runner is the confirmation with the committed values.
+
+**Cannot run here:** physical integrated-GPU frame time, thermal behavior, physical Display P3 output, and the Linux visual baselines (the spatial route has none; the compact instrument's Linux baselines are untouched and are exercised by CI).
+
 ## Appendix: new and changed code
 
 | Path                                                                                                                                                                         | Purpose                                                                                                                   |
@@ -509,4 +529,5 @@ A caveat that should travel with the recommendation: the fan triangles are extre
 | `apps/web/src/spatial/spatialScene.ts`, `spatialApp.vue`, `spatial.css`                                                                                                      | comparison model, labels, layout                                                                                          |
 | `packages/render/src/spatial/radialBoundaryMesh.ts`                                                                                                                          | the production radial generator, and `BoundaryMesh.topology`                                                              |
 | `packages/render/experiments/spatial/*`                                                                                                                                      | independent oracle, candidates, distances, silhouette, sections, normals, topology (typechecked, never built or exported) |
+| `scripts/packedConsumer.mts`                                                                                                                                                 | the packed contract for `internal/spatial` admits the radial generator and checks it at runtime                           |
 | `packages/render/scripts/qualifySpatialGeometry.ts`, `exportSpatialCandidates.ts`; `apps/web/scripts/captureSpatialCandidates.ts`; `apps/web/e2e/spatialCandidateHarness.ts` | the reproducible qualification and appearance comparison                                                                  |
