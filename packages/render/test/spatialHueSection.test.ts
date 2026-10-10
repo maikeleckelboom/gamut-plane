@@ -210,6 +210,8 @@ it("retains the canonical sRGB blue edge as an isolated contact ray omitted by c
   const [l, a, b] = converted.value;
   const hue = (Math.atan2(b!, a!) * 180) / Math.PI;
   const s = section("srgb", hue);
+  expect(section("srgb", s.hue).positions).toEqual(s.positions);
+  expect(section("srgb", s.hue).contacts).toEqual(s.contacts);
   expect(s.contacts).toHaveLength(1);
   const arc = s.arcs[s.contacts[0]!]!;
   expect(arc).toMatchObject({ kind: "gamut-surface", bindings: 5, geometry: "line" });

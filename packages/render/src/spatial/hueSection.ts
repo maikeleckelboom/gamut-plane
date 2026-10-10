@@ -13,7 +13,7 @@ import {
   type PolynomialWork,
 } from "./huePolynomial.js";
 
-export const HUE_SECTION_REVISION = "hue-section-projective-v1";
+export const HUE_SECTION_REVISION = "hue-section-projective-v2";
 export interface HueSectionLimits {
   readonly maxEvaluations: number;
   readonly maxVertices: number;
@@ -133,7 +133,12 @@ export function generateHueSection(options: HueSectionOptions): HueSectionResult
         throw new HueFailure("invalid-options", "limits may only reduce hard ceilings");
     if (!(lightnessMonotonicityMargin(options.space) > 1))
       throw new HueFailure("numerical-failure", "positive lightness not established");
-    const normalize = (value: number) => ((value % 360) + 360) % 360;
+    // Preserve already normalized doubles exactly. Adding 360 unconditionally can round
+    // a canonical source-edge hue on a second normalization and lose its source identity.
+    const normalize = (value: number) => {
+      const remainder = value % 360;
+      return remainder < 0 ? remainder + 360 : remainder === 0 ? 0 : remainder;
+    };
     const hue = normalize(options.hue);
     const angle = (hue * Math.PI) / 180,
       cosine = Math.cos(angle),

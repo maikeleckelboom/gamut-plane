@@ -28,9 +28,17 @@ the sampled chord tolerance or a `2e-6` independent inverse-RGB boundary margin 
 separately, not claimed as unambiguous membership evidence.
 
 Results: [machine-readable qualification](phase-3c2b-hue-measurements.json).
-The prior Phase 3C.2A report is retained. Generator geometry/revision is unchanged; polynomial
-evaluation counts gain the explicit derivative-vertex check, and source digests identify the
-implementation. Node timings are CPU observations, not browser or physical-GPU guarantees.
+The prior Phase 3C.2A report is retained. Polynomial evaluation counts gain the explicit
+derivative-vertex check, and source digests identify the implementation. Node timings are CPU
+observations, not browser or physical-GPU guarantees.
+
+Integration exposed a second numerical defect: `((h % 360) + 360) % 360` can perturb an
+already positive normalized double on a second invocation. Canonical blue therefore lost
+its exact source-edge identity when fed back through a positive-valued UI control. Revision
+`hue-section-projective-v2` adds 360 only to negative remainders, preserving already normalized
+values exactly. A regression passes the canonical result hue back into the generator and
+requires identical positions and contact indices. The full qualification is rerun for this
+revision; no near-hue snapping is introduced.
 
 Reproduce after building packages:
 
