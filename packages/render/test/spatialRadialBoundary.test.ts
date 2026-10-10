@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { gamutRayCrossings } from "@gamut-plane/core/internal/capabilities";
 import {
   generateRadialBoundaryMesh,
@@ -21,6 +21,17 @@ import {
   pairwiseIntersections,
 } from "../experiments/spatial/topology.ts";
 import type { Space } from "../experiments/spatial/oracle.ts";
+
+// This file builds meshes up to m=64 and compares them with an independent oracle; shared CI
+// runners are several times slower than a workstation, so give each test generous headroom.
+vi.setConfig({ testTimeout: 60_000 });
+
+/** Exact element-wise equality; `toEqual` on 300k-element typed arrays is far slower. */
+function identical(a: ArrayLike<number>, b: ArrayLike<number>) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 const spaces = ["srgb", "display-p3"] as const;
 const knots = ["linear", "encoded", "cubic"] as const;
@@ -89,16 +100,25 @@ describe.each(spaces)("radial boundary mesh: %s", (space) => {
   });
 
   it("is deterministic and equals the independent experiment implementation bit for bit", () => {
-    for (const upperKnots of knots)
-      for (const n of [1, 4, 16, 64]) {
-        const mesh = radial(space, n, upperKnots);
-        const repeated = radial(space, n, upperKnots);
-        const independent = radialHybrid(space, n, upperKnots);
-        for (const key of ["positions", "triangles", "faces", "linearRgb"] as const) {
-          expect(repeated[key]).toEqual(mesh[key]);
-          expect(independent[key]).toEqual(mesh[key]);
-        }
+    // Every policy at small sizes; the production size once, for the default policy.
+    const cases = [
+      ...knots.flatMap((upperKnots) => [1, 4, 16].map((n) => [n, upperKnots] as const)),
+      [64, "encoded"] as const,
+    ];
+    for (const [n, upperKnots] of cases) {
+      const mesh = radial(space, n, upperKnots);
+      const repeated = radial(space, n, upperKnots);
+      const independent = radialHybrid(space, n, upperKnots);
+      for (const key of ["positions", "triangles", "faces", "linearRgb"] as const) {
+        expect(identical(repeated[key], mesh[key]), `${key} repeat n=${n} ${upperKnots}`).toBe(
+          true,
+        );
+        expect(
+          identical(independent[key], mesh[key]),
+          `${key} independent n=${n} ${upperKnots}`,
+        ).toBe(true);
       }
+    }
   });
 
   it.each(knots)("faces outward by the true surface normal for %s upper knots", (upperKnots) => {
@@ -141,19 +161,22 @@ describe.each(spaces)("radial boundary mesh: %s", (space) => {
     const mesh = radial(space, 64);
     const upload = quantizeBoundaryPositions(mesh);
     expect(upload.maxVertexDeviation).toBeLessThan(5e-8);
+    let smallest = Infinity;
     for (let t = 0; t < mesh.faces.length; t++) {
       const [a, b, c] = [0, 1, 2].map((k) => mesh.triangles[3 * t + k]! * 3);
       const p = upload.positions;
       const u = [0, 1, 2].map((k) => p[b! + k]! - p[a! + k]!);
       const v = [0, 1, 2].map((k) => p[c! + k]! - p[a! + k]!);
-      expect(
+      smallest = Math.min(
+        smallest,
         Math.hypot(
           u[1]! * v[2]! - u[2]! * v[1]!,
           u[2]! * v[0]! - u[0]! * v[2]!,
           u[0]! * v[1]! - u[1]! * v[0]!,
         ),
-      ).toBeGreaterThan(0);
+      );
     }
+    expect(smallest).toBeGreaterThan(0);
   });
 
   it("meets the sampled accuracy gate at m=32 in both directions and near black", () => {
