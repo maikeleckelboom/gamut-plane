@@ -12,6 +12,7 @@ import {
   Vector2,
   Vector3,
   type Scene,
+  type OrthographicCamera,
 } from "three";
 import { spatialColorDefinition } from "@gamut-plane/render/internal/spatial";
 import type { LightnessSection, HueSection } from "@gamut-plane/render/internal/spatial";
@@ -138,7 +139,7 @@ export function createSectionCap() {
   let hueSection: HueSection | null = null;
   return {
     mesh,
-    setLevel(level: number) {
+    setLightness(section: LightnessSection) {
       if (hueSection) {
         geometry.dispose();
         geometry.setAttribute(
@@ -151,8 +152,18 @@ export function createSectionCap() {
         geometry.setIndex([0, 1, 2, 0, 2, 3]);
         hueSection = null;
       }
+      // The shader's RGB discard slack must not turn a microscopic region into a visible patch.
+      // Bound rasterization by the solver's sampled extent; never give a point any area.
+      const min = section.bounds?.min ?? [0, 0];
+      const max = section.bounds?.max ?? [0, 0];
+      const position = geometry.getAttribute("position");
+      position.setXYZ(0, min[0]!, 0, min[1]!);
+      position.setXYZ(1, max[0]!, 0, min[1]!);
+      position.setXYZ(2, max[0]!, 0, max[1]!);
+      position.setXYZ(3, min[0]!, 0, max[1]!);
+      position.needsUpdate = true;
       material.uniforms.hueMode!.value = 0;
-      material.uniforms.level!.value = level;
+      material.uniforms.level!.value = section.lightness;
     },
     setHue(section: HueSection) {
       if (hueSection === section) return;
@@ -195,14 +206,15 @@ export function hueTriangles(section: HueSection): number[] {
 }
 
 // --- Selected-color marker ---------------------------------------------------------------------------
-const MARKER_CORE = 4.5;
-const MARKER_HALO = 2;
+const MARKER_CORE = 4;
+const MARKER_HALO = 2.5;
 /**
  * A constant-screen-size marker at the color's true scene position. It is depth tested like the
  * surfaces, never drawn always on top: where nothing hides it, a light disc with a dark halo; where a
  * surface hides it, only a dim hollow ring, the same "dashed means behind" convention as the outlines.
- * The depth pull toward the viewer is larger than a line's so a marker lying on a section is not cut
- * in two by the plane it sits on.
+ * A marker on a section uses that plane's depth slope across its screen-facing disc. A constant
+ * center depth would let the tilted cap erase half its perimeter. The existing small depth pull
+ * only separates coincident surfaces; it does not bypass occlusion by other surfaces.
  */
 export function createMarkerLayer() {
   const geometry = new BufferGeometry();
@@ -213,6 +225,7 @@ export function createMarkerLayer() {
   geometry.setIndex([0, 1, 2, 0, 2, 3]);
   const resolution = new Vector2(1, 1);
   const center = new Vector3();
+  const depthSlope = new Vector2();
   const vertexShader = `precision highp float;
     uniform mat4 modelViewMatrix;
     uniform mat4 projectionMatrix;
@@ -220,13 +233,16 @@ export function createMarkerLayer() {
     uniform float extent;
     uniform float ratio;
     uniform vec3 center;
+    uniform vec2 depthSlope;
     in vec2 corner;
     out vec2 local;
     void main() {
       vec4 clip = projectionMatrix * modelViewMatrix * vec4(center, 1.0);
       clip.z -= 1.2e-3 * clip.w;
       // Offset in drawing-buffer pixels, then express the offset in CSS pixels for the fragment.
-      clip.xy += corner * extent * ratio / (0.5 * resolution) * clip.w;
+      vec2 offset = corner * extent * ratio / (0.5 * resolution);
+      clip.xy += offset * clip.w;
+      clip.z += dot(depthSlope, offset) * clip.w;
       gl_Position = clip;
       local = corner * extent;
     }`;
@@ -246,6 +262,7 @@ export function createMarkerLayer() {
         ratio: { value: 1 },
         extent: { value: MARKER_CORE + MARKER_HALO + 1 },
         center: { value: center },
+        depthSlope: { value: depthSlope },
       },
     });
     const mesh = new Mesh(geometry, material);
@@ -271,8 +288,10 @@ export function createMarkerLayer() {
     out vec4 outputColor;
     void main() {
       float r = length(local);
-      if (abs(r - ${MARKER_CORE.toFixed(2)}) > 0.9) discard;
-      outputColor = vec4(0.79, 0.84, 0.88, 1.0);
+      if (r < ${(MARKER_CORE - 0.9).toFixed(2)} || r > ${(MARKER_CORE + MARKER_HALO).toFixed(2)}) discard;
+      outputColor = r <= ${(MARKER_CORE + 0.9).toFixed(2)}
+        ? vec4(0.79, 0.84, 0.88, 1.0)
+        : vec4(0.043, 0.055, 0.07, 1.0);
     }`,
     GreaterDepth,
   );
@@ -294,6 +313,16 @@ export function createMarkerLayer() {
     setViewport(backingWidth: number, backingHeight: number, ratio: number) {
       resolution.set(backingWidth, backingHeight);
       for (const item of [front, behind]) item.material.uniforms.ratio!.value = ratio;
+    },
+    /** Only a marker coincident with a drawn cap borrows its depth plane; its center never moves. */
+    setDepthPlane(camera: OrthographicCamera, normal: readonly [number, number, number] | null) {
+      depthSlope.set(0, 0);
+      if (!normal) return;
+      const eye = new Vector3(...normal).transformDirection(camera.matrixWorldInverse);
+      // At numerical edge-on there is no finite depth graph over the screen. Keep center depth.
+      if (Math.abs(eye.z) < 1e-8) return;
+      const p = camera.projectionMatrix.elements;
+      depthSlope.set((-eye.x / eye.z) * (p[10]! / p[0]!), (-eye.y / eye.z) * (p[10]! / p[5]!));
     },
     get position() {
       return enabled ? ([center.x, center.y, center.z] as const) : null;
@@ -363,7 +392,18 @@ export function createSectionLayers(hooks: { scene: Scene; add: (layer: LineLaye
       ),
     ]),
   ) as Record<"srgb" | "display-p3", LineLayer>;
-  return { contours, footprint, ghost, stem, neutral, contacts };
+  // A scientific endpoint glyph, deliberately smaller and darker than the selected-color marker.
+  // A zero-length round-capped line locates a point without inventing section area.
+  const endpoint = hooks.add(
+    createLineLayer({
+      capacity: 1,
+      visible: { color: 0x9aa8b4, width: 3 },
+      hidden: { color: 0x56626d, width: 3 },
+      casing,
+      renderOrder: 4,
+    }),
+  );
+  return { contours, footprint, ghost, stem, neutral, contacts, endpoint };
 }
 
 export function writeHueArcs(

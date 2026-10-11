@@ -3,6 +3,7 @@ import {
   Box3,
   BufferGeometry,
   DirectionalLight,
+  DoubleSide,
   Mesh,
   MeshLambertMaterial,
   NoToneMapping,
@@ -185,11 +186,14 @@ export function createSpatialScene(
     homeCamera(camera, controls.target);
     controls.update();
 
-    const shape = own(new MeshLambertMaterial({ color: 0xa8b0b8 }));
+    // A cut exposes the inside of the kept boundary shell. Render those back faces too, using
+    // their real coordinates (Color) or reversed lighting normals (Shape), never a fabricated cap.
+    const shape = own(new MeshLambertMaterial({ color: 0xa8b0b8, side: DoubleSide }));
     // One clipping plane is always present so the program never changes when the cut toggles.
     const cutPlane = new Plane(new Vector3(0, 1, 0), 10);
     shape.clippingPlanes = [cutPlane];
     const color = own(createColorMaterial());
+    color.side = DoubleSide;
     scene.add(new AmbientLight(0xffffff, 0.85));
     const key = new DirectionalLight(0xffffff, 1.65);
     key.position.set(-1, 2, 3);
@@ -305,6 +309,11 @@ export function createSpatialScene(
       const outcome = section.outcomes?.[state.active];
       return outcome?.status === "ready" && outcome.section.kind === "region";
     };
+    // Clipping eligibility is independent of area fill. Exact endpoint points still own a plane.
+    const focusedSection = () => {
+      const outcome = section.outcomes?.[state.active];
+      return outcome?.status === "ready" && outcome.section.kind !== "empty";
+    };
     /** Outline of the reference mesh for the current view direction; orthographic, so one vector. */
     function refreshSilhouette() {
       const item = referenceResource();
@@ -364,10 +373,9 @@ export function createSpatialScene(
         writeFootprint(sectionLines.footprint, planeLevel);
         uploads.footprint++;
       }
-      if (section.type !== "hue" && level !== null) cap.setLevel(level);
       applyVisibility();
     }
-    /** Enabled flags only: no geometry is written. */
+    /** Refresh presentation without regenerating scientific sections or their contours. */
     function applyVisibility() {
       for (const space of gamuts) {
         sectionLines.contours[space].setEnabled(space === state.active || state.compare);
@@ -380,6 +388,15 @@ export function createSpatialScene(
       if (hueSection) cap.setHue(hueSection);
       writeHueArcs(sectionLines.neutral, hueSection, "neutral");
       sectionLines.neutral.setEnabled(section.type === "hue");
+      const outcome = section.type !== "hue" ? section.outcomes?.[state.active] : null;
+      if (outcome?.status === "ready") cap.setLightness(outcome.section);
+      const point =
+        outcome?.status === "ready" && outcome.section.kind === "point"
+          ? outcome.section.points
+          : null;
+      if (point) sectionLines.endpoint.buffer.set([...point, ...point]);
+      sectionLines.endpoint.commit(point ? 1 : 0);
+      sectionLines.endpoint.setEnabled(true);
       sectionLines.footprint.setEnabled(sectionLevel() !== null && section.outcomes !== null);
       cap.setGamut(state.active);
       cap.setColor(state.mode === "color");
@@ -418,7 +435,7 @@ export function createSpatialScene(
     function refreshCut() {
       const level = sectionLevel();
       const normal = sectionNormal();
-      const side: CutSide = level !== null && focusedRegion() && state.cut ? cutIntent : 0;
+      const side: CutSide = level !== null && focusedSection() && state.cut ? cutIntent : 0;
       currentCut = side;
       color.uniforms.clipSide!.value = side;
       color.uniforms.clipLevel!.value = level ?? 0.5;
@@ -430,6 +447,13 @@ export function createSpatialScene(
       const item = focusedResource();
       item.surface.visible = !sectionOnly && !revealed;
       cap.mesh.visible = focusedRegion() && !revealed;
+      // Hue's existing half-plane relationship includes only numerical observation slack.
+      const onPlane =
+        markerPoint &&
+        (section.type === "hue"
+          ? hueRelationship(markerPoint, section.hue).onHalfPlane
+          : markerPoint[1] === level);
+      marker.setDepthPlane(camera, cap.mesh.visible && onPlane ? normal : null);
       sectionLines.footprint.setEnabled(
         !sectionOnly && level !== null && section.outcomes !== null,
       );
@@ -843,6 +867,7 @@ export function createSpatialScene(
       },
       inspect() {
         const reference = referenceResource();
+        const focusedOutcome = section.outcomes?.[state.active];
         return {
           frames,
           pendingFrame: frame !== null,
@@ -891,6 +916,9 @@ export function createSpatialScene(
             sectionOnly,
             revealed,
             capVisible: cap.mesh.visible,
+            kind: focusedOutcome?.status === "ready" ? focusedOutcome.section.kind : null,
+            endpointSegments: sectionLines.endpoint.segments,
+            surfaceVisible: focusedResource().surface.visible,
             cutSide: currentCut,
             segments: {
               srgb: sectionLines.contours.srgb.segments,

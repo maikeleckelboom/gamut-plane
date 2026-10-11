@@ -1,0 +1,905 @@
+{
+  "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "samples": 4,
+  "viewport": [942, 578],
+  "camera": {
+    "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+    "target": [0, 0.5, 0],
+    "zoom": 1,
+    "projection": [
+      0.8642086062019676, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0, 0, 0,
+      -1.0010005002501252, 1
+    ],
+    "view": [
+      0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+      0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+      0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+    ]
+  },
+  "frames": [
+    {
+      "name": "display-p3-color-neutral-1-00",
+      "l": 0.5,
+      "authored": "0.5,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0, 0.5, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-neutral-1-01",
+      "l": 0.01,
+      "authored": "0.01,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 76,
+        "display-p3": 77
+      },
+      "marker": [0, 0.01, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 24684
+    },
+    {
+      "name": "display-p3-color-neutral-1-02",
+      "l": 0.001,
+      "authored": "0.001,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 3185
+    },
+    {
+      "name": "display-p3-color-neutral-1-03",
+      "l": 0.0001,
+      "authored": "0.0001,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.0001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 1488
+    },
+    {
+      "name": "display-p3-color-neutral-1-04",
+      "l": 0.000001,
+      "authored": "0.000001,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.000001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 467
+    },
+    {
+      "name": "display-p3-color-neutral-1-05",
+      "l": 0,
+      "authored": "0,0,0",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 0, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-neutral-1-06",
+      "l": 0.000001,
+      "authored": "0.000001,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.000001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-neutral-1-07",
+      "l": 0,
+      "authored": "0,0,0",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 0, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-neutral-1-08",
+      "l": 0.5,
+      "authored": "0.5,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0, 0.5, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 24715
+    },
+    {
+      "name": "display-p3-color-neutral-1-09",
+      "l": 0.9999,
+      "authored": "0.9999,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.9999, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 43880
+    },
+    {
+      "name": "display-p3-color-neutral-1-10",
+      "l": 1,
+      "authored": "1,0,0",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 1, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 200
+    },
+    {
+      "name": "display-p3-color-neutral-1-11",
+      "l": 0.9999,
+      "authored": "0.9999,0,0",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.9999, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 200
+    },
+    {
+      "name": "display-p3-color-neutral-1-12",
+      "l": 1,
+      "authored": "1,0,0",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 1, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 200
+    },
+    {
+      "name": "display-p3-color-neutral--1-00",
+      "l": 0.5,
+      "authored": "0.5,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0, 0.5, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-neutral--1-01",
+      "l": 0.01,
+      "authored": "0.01,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 76,
+        "display-p3": 77
+      },
+      "marker": [0, 0.01, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 19188
+    },
+    {
+      "name": "display-p3-color-neutral--1-02",
+      "l": 0.001,
+      "authored": "0.001,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 3028
+    },
+    {
+      "name": "display-p3-color-neutral--1-03",
+      "l": 0.0001,
+      "authored": "0.0001,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.0001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 1406
+    },
+    {
+      "name": "display-p3-color-neutral--1-04",
+      "l": 0.000001,
+      "authored": "0.000001,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.000001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 432
+    },
+    {
+      "name": "display-p3-color-neutral--1-05",
+      "l": 0,
+      "authored": "0,0,0",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 0, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 20
+    },
+    {
+      "name": "display-p3-color-neutral--1-06",
+      "l": 0.000001,
+      "authored": "0.000001,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.000001, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 20
+    },
+    {
+      "name": "display-p3-color-neutral--1-07",
+      "l": 0,
+      "authored": "0,0,0",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 0, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 20
+    },
+    {
+      "name": "display-p3-color-neutral--1-08",
+      "l": 0.5,
+      "authored": "0.5,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0, 0.5, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 19220
+    },
+    {
+      "name": "display-p3-color-neutral--1-09",
+      "l": 0.9999,
+      "authored": "0.9999,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.9999, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 43557
+    },
+    {
+      "name": "display-p3-color-neutral--1-10",
+      "l": 1,
+      "authored": "1,0,0",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 1, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 197
+    },
+    {
+      "name": "display-p3-color-neutral--1-11",
+      "l": 0.9999,
+      "authored": "0.9999,0,0",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0, 0.9999, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 197
+    },
+    {
+      "name": "display-p3-color-neutral--1-12",
+      "l": 1,
+      "authored": "1,0,0",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0, 1, 0],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 197
+    },
+    {
+      "name": "display-p3-color-chromatic-1-00",
+      "l": 0.5,
+      "authored": "0.5,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0.0033, 0.5, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-chromatic-1-01",
+      "l": 0.01,
+      "authored": "0.01,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 76,
+        "display-p3": 77
+      },
+      "marker": [0.0033, 0.01, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 24692
+    },
+    {
+      "name": "display-p3-color-chromatic-1-02",
+      "l": 0.001,
+      "authored": "0.001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 3205
+    },
+    {
+      "name": "display-p3-color-chromatic-1-03",
+      "l": 0.0001,
+      "authored": "0.0001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.0001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 1487
+    },
+    {
+      "name": "display-p3-color-chromatic-1-04",
+      "l": 0.000001,
+      "authored": "0.000001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.000001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 467
+    },
+    {
+      "name": "display-p3-color-chromatic-1-05",
+      "l": 0,
+      "authored": "0,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 0, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic-1-06",
+      "l": 0.000001,
+      "authored": "0.000001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.000001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic-1-07",
+      "l": 0,
+      "authored": "0,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 0, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic-1-08",
+      "l": 0.5,
+      "authored": "0.5,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0.0033, 0.5, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 24686
+    },
+    {
+      "name": "display-p3-color-chromatic-1-09",
+      "l": 0.9999,
+      "authored": "0.9999,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.9999, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 43845
+    },
+    {
+      "name": "display-p3-color-chromatic-1-10",
+      "l": 1,
+      "authored": "1,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 1, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 202
+    },
+    {
+      "name": "display-p3-color-chromatic-1-11",
+      "l": 0.9999,
+      "authored": "0.9999,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": 1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.9999, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 202
+    },
+    {
+      "name": "display-p3-color-chromatic-1-12",
+      "l": 1,
+      "authored": "1,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": 1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 1, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 202
+    },
+    {
+      "name": "display-p3-color-chromatic--1-00",
+      "l": 0.5,
+      "authored": "0.5,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0.0033, 0.5, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 0
+    },
+    {
+      "name": "display-p3-color-chromatic--1-01",
+      "l": 0.01,
+      "authored": "0.01,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 76,
+        "display-p3": 77
+      },
+      "marker": [0.0033, 0.01, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 19225
+    },
+    {
+      "name": "display-p3-color-chromatic--1-02",
+      "l": 0.001,
+      "authored": "0.001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 3042
+    },
+    {
+      "name": "display-p3-color-chromatic--1-03",
+      "l": 0.0001,
+      "authored": "0.0001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.0001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 1404
+    },
+    {
+      "name": "display-p3-color-chromatic--1-04",
+      "l": 0.000001,
+      "authored": "0.000001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.000001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 431
+    },
+    {
+      "name": "display-p3-color-chromatic--1-05",
+      "l": 0,
+      "authored": "0,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 0, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic--1-06",
+      "l": 0.000001,
+      "authored": "0.000001,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.000001, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic--1-07",
+      "l": 0,
+      "authored": "0,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 0, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 5
+    },
+    {
+      "name": "display-p3-color-chromatic--1-08",
+      "l": 0.5,
+      "authored": "0.5,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 234,
+        "display-p3": 242
+      },
+      "marker": [0.0033, 0.5, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 19217
+    },
+    {
+      "name": "display-p3-color-chromatic--1-09",
+      "l": 0.9999,
+      "authored": "0.9999,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.9999, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 43551
+    },
+    {
+      "name": "display-p3-color-chromatic--1-10",
+      "l": 1,
+      "authored": "1,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 1, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 199
+    },
+    {
+      "name": "display-p3-color-chromatic--1-11",
+      "l": 0.9999,
+      "authored": "0.9999,0.0033,0.0458",
+      "kind": "region",
+      "cutSide": -1,
+      "capVisible": true,
+      "endpointSegments": 0,
+      "segments": {
+        "srgb": 75,
+        "display-p3": 75
+      },
+      "marker": [0.0033, 0.9999, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 199
+    },
+    {
+      "name": "display-p3-color-chromatic--1-12",
+      "l": 1,
+      "authored": "1,0.0033,0.0458",
+      "kind": "point",
+      "cutSide": -1,
+      "capVisible": false,
+      "endpointSegments": 1,
+      "segments": {
+        "srgb": 0,
+        "display-p3": 0
+      },
+      "marker": [0.0033, 1, 0.0458],
+      "cameraUnchanged": true,
+      "fillPixels": 0,
+      "changedPixels": 199
+    }
+  ]
+}

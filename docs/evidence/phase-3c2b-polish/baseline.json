@@ -1,0 +1,617 @@
+[
+  {
+    "name": "before-marker-oblique",
+    "view": {
+      "frames": 2,
+      "pendingFrame": false,
+      "disposed": false,
+      "lost": false,
+      "width": 868,
+      "height": 578,
+      "backing": {
+        "width": 868,
+        "height": 578,
+        "ratio": 1
+      },
+      "state": {
+        "active": "srgb",
+        "compare": true,
+        "mode": "shape",
+        "cut": true
+      },
+      "camera": {
+        "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+        "target": [0, 0.5, 0],
+        "zoom": 1,
+        "projection": [
+          0.9378853767767898, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0,
+          0, 0, -1.0010005002501252, 1
+        ],
+        "view": [
+          0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+          0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+          0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+        ]
+      },
+      "initializationMs": 60.599999997764826,
+      "renderCpuMs": 14.5,
+      "drawCalls": 16,
+      "triangles": 29060,
+      "geometries": 9,
+      "programs": 5,
+      "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "samples": 4,
+      "gpuTimerAvailable": false,
+      "framebufferBytesEstimate": 18061344,
+      "drawingBufferColorSpace": "srgb",
+      "reference": {
+        "space": "display-p3",
+        "silhouetteSegments": 396,
+        "silhouetteTruncated": false
+      },
+      "section": {
+        "type": "lightness",
+        "hue": null,
+        "normal": [0, 1, 0],
+        "contacts": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "neutralSegments": 0,
+        "lightness": 0.68,
+        "sectionOnly": false,
+        "revealed": false,
+        "capVisible": true,
+        "cutSide": 1,
+        "segments": {
+          "srgb": 139,
+          "display-p3": 161
+        },
+        "ghostSegments": 340,
+        "footprintSegments": 4,
+        "capacity": 4112,
+        "uploads": {
+          "contours": 2,
+          "footprint": 1,
+          "marker": 1
+        },
+        "marker": [-0.04635254915624213, 0.68, -0.142658477444273]
+      },
+      "resources": [
+        {
+          "space": "srgb",
+          "generationMs": 9.600000001490116,
+          "uploadMs": 14.599999997764826,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        },
+        {
+          "space": "display-p3",
+          "generationMs": 4.100000001490116,
+          "uploadMs": 11,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        }
+      ]
+    },
+    "markerPixels": [
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [166, 171, 177, 255],
+      [217, 223, 229, 255],
+      [217, 223, 229, 255],
+      [217, 223, 229, 255],
+      [201, 214, 224, 255],
+      [217, 223, 229, 255],
+      [154, 164, 173, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255]
+    ]
+  },
+  {
+    "name": "before-near-zero",
+    "view": {
+      "frames": 3,
+      "pendingFrame": false,
+      "disposed": false,
+      "lost": false,
+      "width": 868,
+      "height": 578,
+      "backing": {
+        "width": 868,
+        "height": 578,
+        "ratio": 1
+      },
+      "state": {
+        "active": "srgb",
+        "compare": true,
+        "mode": "shape",
+        "cut": true
+      },
+      "camera": {
+        "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+        "target": [0, 0.5, 0],
+        "zoom": 1,
+        "projection": [
+          0.9378853767767898, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0,
+          0, 0, -1.0010005002501252, 1
+        ],
+        "view": [
+          0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+          0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+          0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+        ]
+      },
+      "initializationMs": 60.599999997764826,
+      "renderCpuMs": 1.1000000014901161,
+      "drawCalls": 16,
+      "triangles": 28184,
+      "geometries": 9,
+      "programs": 5,
+      "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "samples": 4,
+      "gpuTimerAvailable": false,
+      "framebufferBytesEstimate": 18061344,
+      "drawingBufferColorSpace": "srgb",
+      "reference": {
+        "space": "display-p3",
+        "silhouetteSegments": 396,
+        "silhouetteTruncated": false
+      },
+      "section": {
+        "type": "lightness",
+        "hue": null,
+        "normal": [0, 1, 0],
+        "contacts": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "neutralSegments": 0,
+        "lightness": 0.001,
+        "sectionOnly": false,
+        "revealed": false,
+        "capVisible": true,
+        "cutSide": 1,
+        "segments": {
+          "srgb": 75,
+          "display-p3": 75
+        },
+        "ghostSegments": 352,
+        "footprintSegments": 4,
+        "capacity": 4112,
+        "uploads": {
+          "contours": 6,
+          "footprint": 3,
+          "marker": 2
+        },
+        "marker": [-0.04635254915624213, 0.001, -0.142658477444273]
+      },
+      "resources": [
+        {
+          "space": "srgb",
+          "generationMs": 9.600000001490116,
+          "uploadMs": 14.599999997764826,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        },
+        {
+          "space": "display-p3",
+          "generationMs": 4.100000001490116,
+          "uploadMs": 11,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        }
+      ]
+    },
+    "markerPixels": [
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255]
+    ]
+  },
+  {
+    "name": "before-zero",
+    "view": {
+      "frames": 4,
+      "pendingFrame": false,
+      "disposed": false,
+      "lost": false,
+      "width": 868,
+      "height": 578,
+      "backing": {
+        "width": 868,
+        "height": 578,
+        "ratio": 1
+      },
+      "state": {
+        "active": "srgb",
+        "compare": true,
+        "mode": "shape",
+        "cut": true
+      },
+      "camera": {
+        "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+        "target": [0, 0.5, 0],
+        "zoom": 1,
+        "projection": [
+          0.9378853767767898, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0,
+          0, 0, -1.0010005002501252, 1
+        ],
+        "view": [
+          0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+          0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+          0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+        ]
+      },
+      "initializationMs": 60.599999997764826,
+      "renderCpuMs": 0.5,
+      "drawCalls": 8,
+      "triangles": 26578,
+      "geometries": 9,
+      "programs": 5,
+      "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "samples": 4,
+      "gpuTimerAvailable": false,
+      "framebufferBytesEstimate": 18061344,
+      "drawingBufferColorSpace": "srgb",
+      "reference": {
+        "space": "display-p3",
+        "silhouetteSegments": 396,
+        "silhouetteTruncated": false
+      },
+      "section": {
+        "type": "lightness",
+        "hue": null,
+        "normal": [0, 1, 0],
+        "contacts": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "neutralSegments": 0,
+        "lightness": 0,
+        "sectionOnly": false,
+        "revealed": false,
+        "capVisible": false,
+        "cutSide": 0,
+        "segments": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "ghostSegments": 0,
+        "footprintSegments": 4,
+        "capacity": 4112,
+        "uploads": {
+          "contours": 10,
+          "footprint": 5,
+          "marker": 3
+        },
+        "marker": [-0.04635254915624213, 0, -0.142658477444273]
+      },
+      "resources": [
+        {
+          "space": "srgb",
+          "generationMs": 9.600000001490116,
+          "uploadMs": 14.599999997764826,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        },
+        {
+          "space": "display-p3",
+          "generationMs": 4.100000001490116,
+          "uploadMs": 11,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        }
+      ]
+    },
+    "markerPixels": [
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255]
+    ]
+  },
+  {
+    "name": "before-near-one",
+    "view": {
+      "frames": 5,
+      "pendingFrame": false,
+      "disposed": false,
+      "lost": false,
+      "width": 868,
+      "height": 578,
+      "backing": {
+        "width": 868,
+        "height": 578,
+        "ratio": 1
+      },
+      "state": {
+        "active": "srgb",
+        "compare": true,
+        "mode": "shape",
+        "cut": true
+      },
+      "camera": {
+        "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+        "target": [0, 0.5, 0],
+        "zoom": 1,
+        "projection": [
+          0.9378853767767898, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0,
+          0, 0, -1.0010005002501252, 1
+        ],
+        "view": [
+          0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+          0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+          0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+        ]
+      },
+      "initializationMs": 60.599999997764826,
+      "renderCpuMs": 0.6999999992549419,
+      "drawCalls": 16,
+      "triangles": 27484,
+      "geometries": 9,
+      "programs": 5,
+      "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "samples": 4,
+      "gpuTimerAvailable": false,
+      "framebufferBytesEstimate": 18061344,
+      "drawingBufferColorSpace": "srgb",
+      "reference": {
+        "space": "display-p3",
+        "silhouetteSegments": 396,
+        "silhouetteTruncated": false
+      },
+      "section": {
+        "type": "lightness",
+        "hue": null,
+        "normal": [0, 1, 0],
+        "contacts": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "neutralSegments": 0,
+        "lightness": 0.9999,
+        "sectionOnly": false,
+        "revealed": false,
+        "capVisible": true,
+        "cutSide": 1,
+        "segments": {
+          "srgb": 75,
+          "display-p3": 75
+        },
+        "ghostSegments": 2,
+        "footprintSegments": 4,
+        "capacity": 4112,
+        "uploads": {
+          "contours": 14,
+          "footprint": 7,
+          "marker": 4
+        },
+        "marker": [-0.04635254915624213, 0.9999, -0.142658477444273]
+      },
+      "resources": [
+        {
+          "space": "srgb",
+          "generationMs": 9.600000001490116,
+          "uploadMs": 14.599999997764826,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        },
+        {
+          "space": "display-p3",
+          "generationMs": 4.100000001490116,
+          "uploadMs": 11,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        }
+      ]
+    },
+    "markerPixels": [
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [232, 234, 238, 255],
+      [12, 14, 19, 255],
+      [10, 13, 17, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255]
+    ]
+  },
+  {
+    "name": "before-one",
+    "view": {
+      "frames": 6,
+      "pendingFrame": false,
+      "disposed": false,
+      "lost": false,
+      "width": 868,
+      "height": 578,
+      "backing": {
+        "width": 868,
+        "height": 578,
+        "ratio": 1
+      },
+      "state": {
+        "active": "srgb",
+        "compare": true,
+        "mode": "shape",
+        "cut": true
+      },
+      "camera": {
+        "position": [1.7786096441187882, 1.5539909002185415, 2.173856231700741],
+        "target": [0, 0.5, 0],
+        "zoom": 1,
+        "projection": [
+          0.9378853767767898, 0, 0, 0, 0, 1.4084507042253522, 0, 0, 0, 0, -0.10005002501250626, 0,
+          0, 0, -1.0010005002501252, 1
+        ],
+        "view": [
+          0.7739572992033209, -0.22247562286855088, 0.5928698813729295, 0, 2.7755575615628914e-17,
+          0.9362515795718174, 0.3513303000728472, 0, -0.6332377902572627, -0.2719146501726732,
+          0.7246187439002469, 0, 0, -0.46812578978590835, -3.1756651500364237, 1
+        ]
+      },
+      "initializationMs": 60.599999997764826,
+      "renderCpuMs": 0.4000000022351742,
+      "drawCalls": 8,
+      "triangles": 26578,
+      "geometries": 9,
+      "programs": 5,
+      "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "samples": 4,
+      "gpuTimerAvailable": false,
+      "framebufferBytesEstimate": 18061344,
+      "drawingBufferColorSpace": "srgb",
+      "reference": {
+        "space": "display-p3",
+        "silhouetteSegments": 396,
+        "silhouetteTruncated": false
+      },
+      "section": {
+        "type": "lightness",
+        "hue": null,
+        "normal": [0, 1, 0],
+        "contacts": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "neutralSegments": 0,
+        "lightness": 1,
+        "sectionOnly": false,
+        "revealed": false,
+        "capVisible": false,
+        "cutSide": 0,
+        "segments": {
+          "srgb": 0,
+          "display-p3": 0
+        },
+        "ghostSegments": 0,
+        "footprintSegments": 4,
+        "capacity": 4112,
+        "uploads": {
+          "contours": 18,
+          "footprint": 9,
+          "marker": 5
+        },
+        "marker": [-0.04635254915624213, 1, -0.142658477444273]
+      },
+      "resources": [
+        {
+          "space": "srgb",
+          "generationMs": 9.600000001490116,
+          "uploadMs": 14.599999997764826,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        },
+        {
+          "space": "display-p3",
+          "generationMs": 4.100000001490116,
+          "uploadMs": 11,
+          "scientificBytes": 924136,
+          "gpuBufferBytes": 622224,
+          "lineBufferBytes": 393216,
+          "mappingBytes": 67230,
+          "logicalVertices": 12482,
+          "uploadVertices": 13446
+        }
+      ]
+    },
+    "markerPixels": [
+      [245, 247, 250, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255],
+      [12, 14, 20, 255],
+      [12, 14, 19, 255],
+      [10, 13, 17, 255],
+      [11, 14, 18, 255],
+      [11, 14, 18, 255]
+    ]
+  }
+]
