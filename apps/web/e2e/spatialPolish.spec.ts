@@ -427,3 +427,47 @@ test("microscopic regions, point, empty, pending and unavailable sections stay d
     window.spatialHarness.releaseAudit();
   });
 });
+
+test("a scene redraw preserves an uncommitted Hue draft and rejects an empty commit", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.getByRole("radio", { name: "Hue section", exact: true }).check();
+  await expect.poll(async () => (await facts(page)).section.type).toBe("hue");
+  await settle(page);
+  await page.getByRole("radio", { name: "Inspect hue", exact: true }).check();
+  const input = page.getByRole("spinbutton", { name: "Inspected hue in degrees" });
+  await input.fill("264.1");
+  await input.press("Enter");
+  await expect.poll(async () => (await facts(page)).section.hue).toBe(264.1);
+  await settle(page);
+  const original = await page
+    .locator("[data-authored-channels]")
+    .getAttribute("data-authored-channels");
+  const before = await facts(page);
+  await input.fill("30");
+  // Drive the real renderer's next frame without blurring (and thus committing) the input.
+  await canvas(page).evaluate((e) =>
+    e.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true })),
+  );
+  await expect.poll(async () => (await facts(page)).frames).toBeGreaterThan(before.frames);
+  await settle(page);
+  await expect(input).toHaveValue("30");
+  expect((await facts(page)).section.hue).toBe(264.1);
+  await input.press("Enter");
+  await expect.poll(async () => (await facts(page)).section.hue).toBe(30);
+  await input.fill("");
+  await input.press("Enter");
+  await settle(page);
+  await expect(input).toHaveValue("30");
+  expect((await facts(page)).section.hue).toBe(30);
+  await input.fill("390");
+  await input.blur();
+  await settle(page);
+  await expect(input).toHaveValue("30");
+  expect((await facts(page)).section.hue).toBe(30);
+  expect((await facts(page)).section.cutSide).toBe(before.section.cutSide);
+  expect(
+    await page.locator("[data-authored-channels]").getAttribute("data-authored-channels"),
+  ).toBe(original);
+});

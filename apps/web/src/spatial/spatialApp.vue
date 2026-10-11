@@ -124,6 +124,11 @@ watch(
   { immediate: true },
 );
 const hue = computed(() => viewedHue(hueSelection.value, selectedHue.value));
+// Scene-frame updates must not replace uncommitted text with the accepted viewing angle.
+const hueDraft = ref<number | string>(hue.value);
+watch(hue, (value) => {
+  hueDraft.value = value;
+});
 const hueOutcomes = shallowRef<HueOutcomes | null>(null);
 const hueStore = createHueStore();
 const pending = ref(false);
@@ -236,8 +241,9 @@ function scrub(event: Event) {
   if (sectionType.value === "hue") {
     hueSelection.value = inspectHue(
       hueSelection.value,
-      Number((event.target as HTMLInputElement).value),
+      (event.target as HTMLInputElement).valueAsNumber,
     );
+    hueDraft.value = hue.value;
     return;
   }
   selection.value = scrubSection(selection.value, Number((event.target as HTMLInputElement).value));
@@ -591,7 +597,7 @@ const correspondence = computed(() => {
                 ><input
                   type="number"
                   step="any"
-                  :value="hue"
+                  v-model="hueDraft"
                   aria-label="Inspected hue in degrees"
                   @change="scrub"
                   @keydown.enter="scrub"

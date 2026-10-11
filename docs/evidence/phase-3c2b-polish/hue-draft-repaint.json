@@ -1,0 +1,22 @@
+{
+  "method": "With accepted inspection H=264.1, fill 30 without blur, dispatch ArrowUp to the real scene canvas, wait for its demanded frame, then press Enter.",
+  "beforeFix": {
+    "draftBeforeFrame": "30",
+    "draftAfterFrame": "264.1",
+    "acceptedAfterEnter": 264.1
+  },
+  "afterFix": { "draftBeforeFrame": "30", "draftAfterFrame": "30", "acceptedAfterEnter": 30 },
+  "focusedRepeatEvidence": {
+    "existingHueFillTest": 10,
+    "draftPreservationRegression": 10,
+    "failures": 0
+  },
+  "initialCi": {
+    "url": "https://github.com/maikeleckelboom/gamut-plane/actions/runs/38183674207",
+    "headSha": "7fb2c55e311954c10a2f990337ff8436154adcc8",
+    "browserPassed": 234,
+    "browserFailed": 1,
+    "expectedInspectionHue": 30,
+    "observedInspectionHue": 264.1
+  }
+}
