@@ -324,8 +324,12 @@ for (const owner of ["plane", "range"] as const)
       owner === "plane" ? plane(root) : root.getByRole("slider", { name: "Hue", exact: true });
     const box = (await control.boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const initial = await events(page);
     await page.mouse.down();
     await expect(control).toBeFocused();
+    // Primary down legitimately queues a color preview; contextmenu must be compared with that
+    // active-gesture state, rather than the source from before its first animation-frame update.
+    await expect.poll(async () => (await events(page)).updates).toBeGreaterThan(initial.updates);
     const before = await events(page);
     if (owner === "plane") {
       await page.mouse.down({ button: "right" });

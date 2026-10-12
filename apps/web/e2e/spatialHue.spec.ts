@@ -201,6 +201,8 @@ test("cyclic inspection, rapid accepted hue edits, camera and presentation do no
   await expect(input).toHaveValue("0");
   await input.press("ArrowDown");
   await expect(input).toHaveValue("359");
+  // The numeric value updates before the prior arrow's scheduled section computation.
+  await settle(page);
   const before = await metrics(page);
   await page.locator("[data-section-slider]").evaluate((el) => {
     for (const h of [20, 40, 120, 210, 300]) {
