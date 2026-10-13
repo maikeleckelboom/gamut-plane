@@ -24,6 +24,7 @@ import { createBodyProbe, isOccluded } from "./occlusion";
 import { createSilhouetteTopology, extractSilhouette, type SilhouetteTopology } from "./silhouette";
 import {
   backingSize,
+  createHueTracking,
   fitCamera,
   homeCamera,
   hueSectionCamera,
@@ -185,6 +186,7 @@ export function createSpatialScene(
     controls.zoomToCursor = true;
     homeCamera(camera, controls.target);
     controls.update();
+    const trackHue = createHueTracking(camera, controls.target);
 
     // A cut exposes the inside of the kept boundary shell. Render those back faces too, using
     // their real coordinates (Color) or reversed lighting normals (Shape), never a fabricated cap.
@@ -708,6 +710,10 @@ export function createSpatialScene(
       aligned = false;
       revealed = false;
       homeCamera(camera, controls.target);
+      if (section.type === "hue") {
+        const rotation = (-section.hue * Math.PI) / 180;
+        camera.position.applyAxisAngle(new Vector3(0, 1, 0), rotation);
+      }
       controls.update();
       invalidate();
     }
@@ -737,12 +743,10 @@ export function createSpatialScene(
       /** Draw this section. Only a changed result writes line geometry. */
       setSection(next: SpatialSection) {
         if (disposed) return;
-        // Camera stays put. A changed hue releases flat composition, making its rotation visible.
-        if (
-          next.type !== section.type ||
-          (next.type === "hue" && section.type === "hue" && next.hue !== section.hue)
-        )
-          aligned = false;
+        if (next.type !== section.type) aligned = false;
+        const rotation = trackHue(next.type === "hue" ? next.hue : null);
+        if (aligned) alignedDirection.applyAxisAngle(new Vector3(0, 1, 0), rotation);
+        controls.update();
         section = next;
         applySection();
         ghostClipKey = "";

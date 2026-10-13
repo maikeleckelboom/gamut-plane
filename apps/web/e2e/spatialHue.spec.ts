@@ -1,3 +1,4 @@
+import { spatialAction, inspectSection } from "./spatialControls";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -42,6 +43,7 @@ async function hueMode(p: Page) {
   await settle(p);
 }
 async function inspectHue(p: Page, h: number) {
+  await inspectSection(p);
   const input = p.getByRole("spinbutton", { name: "Inspected hue in degrees" });
   await input.fill(String(h));
   await input.press("Enter");
@@ -52,7 +54,7 @@ async function inspectHue(p: Page, h: number) {
   await settle(p);
 }
 async function action(p: Page, name: string) {
-  await p.getByRole("button", { name, exact: true }).click();
+  await spatialAction(p, name);
   await settle(p);
 }
 async function coordinates(p: Page, name: RegExp) {
@@ -93,6 +95,7 @@ test("linked hue journey preserves authorship, both inspections, camera ownershi
       authored: await authored(page),
     });
   }
+  await inspectSection(page);
   await page.locator("[data-section-slider]").fill("0.3");
   await frame("00-horizontal");
   const original = await authored(page),
@@ -116,9 +119,10 @@ test("linked hue journey preserves authorship, both inspections, camera ownershi
   expect((await facts(page)).section.sectionOnly).toBe(true);
   const aligned = (await facts(page)).camera;
   await edit(page, "Hue", 80);
-  await frame("05-rotated-camera-stays");
-  expect((await facts(page)).camera).toEqual(aligned);
-  expect((await facts(page)).section.sectionOnly).toBe(false);
+  await frame("05-camera-follows-hue");
+  expect((await facts(page)).camera).not.toEqual(aligned);
+  expect((await facts(page)).camera.zoom).toBe(aligned.zoom);
+  expect((await facts(page)).section.sectionOnly).toBe(true);
   const color = await authored(page);
   await inspectHue(page, 260);
   await frame("06-opposite");
@@ -134,7 +138,7 @@ test("linked hue journey preserves authorship, both inspections, camera ownershi
   await frame("08-lightness-restored");
   await hueMode(page);
   expect((await facts(page)).section.hue).toBe(260);
-  await page.getByRole("radio", { name: "Follow selected color" }).check();
+  await page.getByRole("combobox", { name: "Section value source" }).selectOption("follow");
   await expect.poll(async () => (await facts(page)).section.hue).toBe(80);
   await frame("09-follow-restored");
   await edit(page, "Chroma", 0);
@@ -196,6 +200,7 @@ test("cyclic inspection, rapid accepted hue edits, camera and presentation do no
   await ready(page);
   await hueMode(page);
   await inspectHue(page, 359);
+  await inspectSection(page);
   const input = page.getByRole("spinbutton", { name: "Inspected hue in degrees" });
   await input.press("ArrowUp");
   await expect(input).toHaveValue("0");
@@ -253,7 +258,7 @@ test("cyclic inspection, rapid accepted hue edits, camera and presentation do no
   expect((await facts(page)).section.hue).toBe(300);
   expect((await facts(page)).section.marker).not.toBeNull();
   expect(await authored(page)).toBe(color);
-  await expect(page.locator("[data-section-summary]")).toContainText(
+  await expect(page.locator(".spatial-detail-content")).toContainText(
     "outside sRGB, outside Display P3",
   );
 });

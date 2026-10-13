@@ -1,128 +1,68 @@
 .spatial-app {
-  max-width: 1920px;
-  margin: 0 auto;
-  padding: 20px 44px 16px;
-  color: #e4e8ec;
-  font-size: 14px;
-}
-/* The study's own chrome. The compact instrument keeps its own styles: nothing below reaches it. */
-.spatial-header button,
-.spatial-header a,
-.spatial-scene-column button,
-.spatial-scene-column a,
-.spatial-scene-column input,
-.spatial-section button,
-.spatial-section input,
-.spatial-notes a {
-  touch-action: manipulation;
-}
-.spatial-scene-column button,
-.spatial-section button {
-  border: 1px solid transparent;
-  background: transparent;
-  color: inherit;
-  border-radius: 5px;
-  padding: 9px 13px;
-  cursor: pointer;
-  font: inherit;
-}
-.spatial-scene-column button:hover,
-.spatial-section button:hover {
-  background: #303943;
-}
-.spatial-scene-column button:disabled,
-.spatial-section button:disabled {
-  cursor: default;
-}
-.spatial-header a,
-.spatial-scene-column a,
-.spatial-notes a {
-  color: inherit;
-  text-underline-offset: 4px;
-}
-.spatial-header :focus-visible,
-.spatial-scene-column :focus-visible,
-.spatial-section :focus-visible,
-.spatial-notes :focus-visible {
-  outline: 2px solid #b0d1e6;
-  outline-offset: 4px;
-}
-.spatial-header,
-.spatial-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  color: #a3adb8;
-}
-.spatial-header {
-  padding-bottom: 16px;
-  border-bottom: 1px solid #343b44;
-}
-.spatial-brand {
-  font-weight: 600;
-  text-decoration: none;
-  color: #e4e8ec !important;
-}
-.spatial-divider {
-  margin: 0 16px;
-  color: #697581;
-}
-.spatial-experiment {
-  font-size: 12px;
-}
-.spatial-intro {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 20px 0 16px;
-}
-.spatial-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.17em;
-  color: #a3adb8;
-  margin: 0 0 10px;
-}
-.spatial-intro h1 {
-  font-size: clamp(24px, 2.2vw, 33px);
-  font-weight: 450;
-  line-height: 1.2;
-  letter-spacing: -0.035em;
-  margin: 0;
-}
-.spatial-intro > p {
-  color: #a3adb8;
-  line-height: 1.6;
-  margin: 0;
+  max-inline-size: 1920px;
+  margin-inline: auto;
+  padding: 20px 44px 32px;
+  color: var(--foreground);
   font-size: 13px;
 }
-.spatial-toolbar {
+.spatial-header {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  gap: 20px;
+  padding-block-end: 20px;
+  border-block-end: 1px solid var(--hairline);
+  color: var(--quiet);
+}
+.spatial-brand {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: none;
+}
+.spatial-header h1 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 400;
+}
+.spatial-header > span {
+  margin-inline-start: auto;
+  font-size: 11px;
+}
+.spatial-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: start;
+  padding-block-start: 20px;
+}
+.spatial-scene-column,
+.spatial-instrument-column {
+  min-inline-size: 0;
+}
+.spatial-instrument-column {
+  --gamut-plane-padding: 0px;
+  --gamut-plane-border: transparent;
+  --gamut-plane-radius: 0px;
+  --gamut-plane-surface: transparent;
+  padding-block-start: 8px;
+}
+.spatial-toolbar,
+.spatial-section-strip {
+  display: flex;
   flex-wrap: wrap;
-  gap: 16px 28px;
-  border: 1px solid #343b44;
-  border-bottom: 0;
-  padding: 14px 18px;
-  background: #20252b;
+  align-items: center;
+  gap: 8px 16px;
+}
+.spatial-toolbar {
+  padding: 0 0 12px;
 }
 .spatial-group {
   display: flex;
-  align-items: center;
-  gap: 4px;
   border: 0;
   padding: 0;
   margin: 0;
-  min-width: 0;
+  min-inline-size: 0;
+  gap: 2px;
 }
-.spatial-toolbar legend {
-  float: left;
-  margin-right: 14px;
-  color: #a3adb8;
-  font-size: 12px;
-  padding: 0;
-}
-/* Native radios, presented as a segmented control; the input keeps keyboard and AT semantics. */
 .spatial-choice {
   position: relative;
   display: inline-flex;
@@ -134,87 +74,142 @@
   margin: 0;
   cursor: pointer;
 }
-.spatial-choice span {
+.spatial-choice span,
+.spatial-scene-column button,
+.spatial-disclosure > summary {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 36px;
+  padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 5px;
-  padding: 9px 13px;
+  border-radius: 4px;
+}
+.spatial-choice span {
   pointer-events: none;
 }
-.spatial-choice:hover span {
-  background: #303943;
-}
 .spatial-choice input:checked + span {
-  background: #3b4651;
-  border-color: #536473;
+  background: var(--surface-3);
+  border-color: var(--hairline);
+}
+.spatial-choice:hover span,
+.spatial-scene-column button:hover,
+.spatial-disclosure > summary:hover {
+  background: var(--surface-3);
 }
 .spatial-choice input:focus-visible + span,
-.spatial-compare input:focus-visible {
-  outline: 2px solid #b0d1e6;
-  outline-offset: 4px;
+.spatial-app :focus-visible {
+  outline: 2px solid var(--user-accent);
+  outline-offset: 3px;
+}
+.spatial-scene-column button {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+.spatial-app a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+.spatial-view-options {
+  margin-inline-start: auto;
+}
+.spatial-disclosure {
+  position: relative;
+}
+.spatial-disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+  gap: 8px;
+}
+.spatial-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.spatial-disclosure > summary::after {
+  content: "⌄";
+  color: var(--quiet);
+}
+.spatial-disclosure[open] > summary {
+  background: var(--surface-3);
+}
+.spatial-options {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + 4px);
+  z-index: 5;
+  inline-size: max-content;
+  max-inline-size: min(280px, 80vw);
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px #0004;
+}
+.spatial-options output {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--quiet);
+}
+.spatial-options .spatial-compare {
+  padding: 10px;
 }
 .spatial-compare {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   cursor: pointer;
+  min-block-size: 36px;
 }
 .spatial-compare input {
   accent-color: #bdd8e6;
-  width: 15px;
-  height: 15px;
+  inline-size: 16px;
+  block-size: 16px;
   margin: 0;
-  cursor: pointer;
 }
-.spatial-camera {
-  display: flex;
-  gap: 3px;
-  margin-left: auto;
+.spatial-cut {
+  padding-inline: 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
 }
-.spatial-camera button {
-  color: #c0c9d1;
+.spatial-cut-active {
+  background: var(--surface-3);
+  border-color: var(--hairline);
 }
 .spatial-stage {
-  position: relative;
-  /* The whole stage fits common laptop viewports; the page scrolls only for the notes below it. */
-  height: clamp(430px, calc(100dvh - 330px), 1000px);
-  min-width: 0;
-  border: 1px solid #343b44;
-  background: #191d22;
   overflow: hidden;
-}
-.spatial-stage canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  outline-offset: -5px;
+  position: relative;
+  block-size: clamp(440px, calc(100dvh - 245px), 980px);
+  background: #191d22;
 }
 .spatial-viewport {
   position: absolute;
   inset: 0;
 }
+.spatial-stage canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  touch-action: none;
+  outline-offset: -5px;
+}
 .spatial-caption {
   position: absolute;
   z-index: 1;
-  left: 24px;
-  top: 22px;
-  display: grid;
-  gap: 7px;
+  inset: 18px auto auto 18px;
+  display: flex;
+  gap: 16px;
+  color: #b0bbc5;
+  font-size: 11px;
   pointer-events: none;
 }
-.spatial-caption strong {
-  font-size: 14px;
-  font-weight: 500;
-}
-.spatial-caption span {
-  font-size: 12px;
-  color: #a3adb8;
-}
-.spatial-axis {
+.spatial-axis,
+.spatial-plane-tag {
   position: absolute;
   color: #b0bbc5;
-  font-size: 12px;
-  font-family: var(--cv-font-mono);
+  font: 11px var(--cv-font-mono);
   white-space: nowrap;
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -225,65 +220,135 @@
 .spatial-axis-far {
   opacity: 0.78;
 }
-.spatial-legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.spatial-legend i {
-  width: 18px;
-  height: 0;
-  border-top: 2px solid #a9cadc;
+.spatial-plane-tag {
+  transform: translate(10px, -50%);
+  color: #cfe6dd;
 }
 .spatial-scale {
   position: absolute;
-  z-index: 1;
-  bottom: 22px;
-  left: 24px;
+  inset: auto auto 18px 18px;
   color: #b0bbc5;
-  font-size: 11px;
+  font-size: 10px;
   pointer-events: none;
 }
 .spatial-scale > span:first-child {
   display: block;
-  height: 5px;
+  block-size: 5px;
   border: 1px solid #93a1ae;
-  border-top: 0;
-  margin-bottom: 8px;
+  border-block-start: 0;
+  margin-block-end: 6px;
 }
-.spatial-scale-note {
-  display: inline-block;
-  margin-left: 14px;
-  color: #8c99a5;
+.spatial-section {
+  padding: 12px 0;
+  border-block-end: 1px solid var(--hairline);
 }
-.spatial-notes {
+.spatial-section-strip {
+  gap: 8px;
+}
+.spatial-section-strip > .spatial-disclosure {
+  margin-inline-start: auto;
+}
+.spatial-section select,
+.spatial-hue-input input {
+  color: inherit;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 8px;
+  font: inherit;
+  min-block-size: 36px;
+}
+.spatial-section select {
+  max-inline-size: 100%;
+}
+.spatial-section-value {
+  font-variant-numeric: tabular-nums;
+  min-inline-size: 9ch;
+  text-align: center;
+}
+.spatial-hue-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.spatial-hue-input input {
+  inline-size: 9ch;
+  font-variant-numeric: tabular-nums;
+}
+.spatial-slider {
+  display: block;
+  padding: 10px 4px 0;
+}
+.spatial-slider input {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 28px;
+  margin: 0;
+  accent-color: #bdd8e6;
+}
+.spatial-reading {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 28px;
+  gap: 8px 16px;
+  padding-block-start: 12px;
+  color: var(--quiet);
+  font-size: 11px;
+}
+.spatial-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.spatial-keys li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.spatial-key-line {
+  inline-size: 18px;
+  border-block-start: 2px solid #6ee7c8;
+}
+.spatial-key-display-p3 {
+  border-block-start: 2px dashed #f7b955;
+}
+.spatial-key-marker {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background: #f5f7fa;
+  box-shadow: 0 0 0 1px #687782;
+}
+.spatial-details {
+  margin-inline-start: auto;
+}
+.spatial-details[open] {
+  flex-basis: 100%;
+}
+.spatial-details[open] summary {
+  text-align: end;
+}
+.spatial-details summary {
+  cursor: pointer;
+  padding-block: 6px;
+}
+.spatial-detail-content {
+  flex-basis: 100%;
+  max-inline-size: 75ch;
   line-height: 1.7;
   font-size: 12px;
-  color: #b3bdc7;
-  padding: 12px 0 16px;
 }
-.spatial-notes p {
-  margin: 0;
+.spatial-summary {
+  color: var(--quiet);
+  font-size: 12px;
+  line-height: 1.6;
 }
-.spatial-notes p span {
-  color: #8f9ca8;
-  font-size: 11px;
-}
-.spatial-preview {
-  max-width: 420px;
-}
-.spatial-preview strong {
-  font-weight: 500;
-  color: #d0d8df;
-}
-.spatial-footer {
-  border-top: 1px solid #343b44;
-  padding-top: 18px;
-  font-size: 11px;
-  line-height: 1.5;
+.spatial-summary p {
+  margin: 8px 0 0;
 }
 .spatial-message {
   position: absolute;
@@ -298,338 +363,70 @@
   background: #191d22;
 }
 .spatial-message p {
-  max-width: 440px;
+  max-inline-size: 440px;
   line-height: 1.7;
   color: #b3bdc7;
 }
-.spatial-empty {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  text-align: center;
-  color: #b3bdc7;
-  pointer-events: none;
-}
-/* On a narrow stage the caption and ruler leave the canvas so they never cover the scene. */
-@media (max-width: 760px) {
-  .spatial-stage {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-  }
-  .spatial-viewport {
-    position: relative;
-    inset: auto;
-    height: clamp(360px, 62vh, 480px);
-  }
-  .spatial-caption,
-  .spatial-scale {
-    position: static;
-    padding: 14px 16px 0;
-  }
-  .spatial-scale {
-    padding: 0 16px 14px;
-  }
-}
-@media (max-width: 850px) {
+@media (max-width: 1099px) {
   .spatial-app {
-    padding: 20px;
+    padding-inline: 20px;
   }
-  .spatial-intro > p {
+  .spatial-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  .spatial-instrument-column {
+    max-inline-size: 480px;
+    inline-size: 100%;
+  }
+  .spatial-stage {
+    block-size: clamp(400px, 65dvh, 740px);
+  }
+}
+@media (max-width: 520px) {
+  .spatial-app {
+    padding-inline: 12px;
+    padding-block-start: 16px;
+  }
+  .spatial-header {
+    gap: 12px;
+  }
+  .spatial-header > span {
     display: none;
   }
   .spatial-toolbar {
-    gap: 12px;
-    padding: 12px;
+    gap: 8px;
   }
-  .spatial-toolbar legend {
-    margin-right: 10px;
-  }
-  .spatial-camera {
-    margin-left: auto;
-  }
-  .spatial-notes,
-  .spatial-footer {
-    flex-direction: column;
-    gap: 12px;
-  }
-}
-@media (max-width: 430px) {
-  .spatial-app {
-    padding: 16px 12px;
-  }
-  .spatial-intro {
-    flex-direction: column;
-    align-items: start;
-    gap: 12px;
-  }
-  .spatial-viewport {
-    height: auto;
-    aspect-ratio: 1;
-  }
-  .spatial-header {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .spatial-choice span {
-    padding: 8px 10px;
-  }
-  .spatial-toolbar legend {
-    font-size: 11px;
-  }
-  .spatial-camera button {
-    padding: 8px;
-  }
-  .spatial-modes legend {
-    display: none;
-  }
-  .spatial-caption,
-  .spatial-scale {
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-}
-
-/* --- Phase 3C.1: scene, section controls and the compact instrument ------------------------------ */
-.spatial-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-}
-.spatial-scene-column,
-.spatial-instrument-column {
-  min-width: 0;
-}
-.spatial-instrument-column {
-  display: grid;
-  gap: 20px;
-  max-width: 480px;
-  width: 100%;
-}
-@media (min-width: 1100px) {
-  .spatial-columns {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-    gap: 28px;
-  }
-}
-
-/* The host keeps color editing beside its result without altering instrument anatomy. */
-.spatial-correspondence {
-  min-block-size: 3lh;
-}
-.spatial-instrument-column {
-  gap: 10px;
-}
-.spatial-section {
-  margin-top: 10px;
-}
-.spatial-summary summary {
-  cursor: pointer;
-  color: #bdd8e6;
-}
-.spatial-relationship {
-  font-variant-numeric: tabular-nums;
-  color: #e4e8ec;
-}
-@media (min-width: 1100px) and (min-height: 760px) {
-  .spatial-scene-column:not(:has(details[open])) {
-    position: sticky;
-    top: 16px;
+  .spatial-choice span,
+  .spatial-disclosure > summary {
+    padding-inline: 8px;
   }
   .spatial-stage {
-    height: clamp(280px, calc(100dvh - 420px), 680px);
+    block-size: 420px;
   }
-  .spatial-section {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 18px;
+  .spatial-section-strip {
+    gap: 8px 4px;
   }
-  .spatial-section-head,
-  .spatial-section-actions {
-    grid-column: 1 / -1;
+  .spatial-section-strip > .spatial-group {
+    flex: 1 1 auto;
   }
-}
-.spatial-section {
-  border: 1px solid #343b44;
-  background: #20252b;
-  padding: 14px 16px 16px;
-  display: grid;
-  gap: 12px;
-}
-.spatial-section-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.spatial-section-head > fieldset {
-  flex-wrap: wrap;
-}
-.spatial-hue-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: #b3bdc7;
-}
-.spatial-hue-input input {
-  min-width: 0;
-  width: 10ch;
-  color: #e4e8ec;
-  background: #191d22;
-  border: 1px solid #536473;
-  border-radius: 3px;
-  padding: 6px;
-  font: inherit;
-}
-.spatial-key-neutral {
-  width: 24px;
-  border-top: 2px dotted #9aa8b4;
-}
-.spatial-section h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-.spatial-section-value {
-  font-family: var(--cv-font-mono);
-  font-size: 13px;
-  color: #cfe6dd;
-}
-.spatial-section-mode {
-  flex-wrap: wrap;
-}
-.spatial-slider {
-  display: grid;
-  gap: 6px;
-}
-.spatial-slider-label {
-  font-size: 12px;
-  color: #a3adb8;
-}
-.spatial-slider input[type="range"] {
-  width: 100%;
-  margin: 0;
-  min-height: 24px;
-  accent-color: #bdd8e6;
-}
-.spatial-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #a3adb8;
-}
-.spatial-section-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 18px;
-}
-.spatial-section-actions button {
-  border-color: #536473;
-  background: #2a313a;
-}
-
-.spatial-summary {
-  display: grid;
-  gap: 4px;
-  margin-top: 10px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: #b3bdc7;
-}
-.spatial-summary p {
-  margin: 0;
-}
-.spatial-marker-note {
-  color: #e4e8ec;
-}
-
-.spatial-keys {
-  list-style: none;
-  margin: 3px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-.spatial-keys li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #a3adb8;
-}
-/* Key swatches repeat the drawn identity: weight and dash as well as color. */
-.spatial-key-line {
-  display: block;
-  width: 22px;
-  height: 0;
-  border-top: 3px solid #6ee7c8;
-}
-.spatial-key-display-p3 {
-  border-top: 3px dashed #f7b955;
-}
-.spatial-key-marker {
-  display: block;
-  width: 10px;
-  height: 10px;
-  margin: 0 6px;
-  border-radius: 50%;
-  background: #f5f7fa;
-  box-shadow: 0 0 0 2px #0b0e12;
-}
-.spatial-plane-tag {
-  position: absolute;
-  transform: translate(10px, -50%);
-  color: #cfe6dd;
-  font-size: 12px;
-  font-family: var(--cv-font-mono);
-  white-space: nowrap;
-  pointer-events: none;
-  text-shadow:
-    0 0 3px #191d22,
-    0 0 3px #191d22;
-}
-.spatial-live {
-  margin: 0;
-}
-@media (max-width: 760px) {
-  .spatial-keys {
-    grid-template-columns: repeat(auto-fit, minmax(130px, max-content));
-    gap: 4px 16px;
+  .spatial-section select {
+    flex: 0 1 auto;
+  }
+  .spatial-section-value {
+    text-align: start;
+  }
+  .spatial-options {
+    max-inline-size: 250px;
   }
 }
-@media (max-width: 850px) {
-  .spatial-intro > p {
-    display: block;
-    font-size: 12px;
+@media (pointer: coarse) {
+  .spatial-choice span,
+  .spatial-scene-column button,
+  .spatial-disclosure > summary,
+  .spatial-section select,
+  .spatial-hue-input input,
+  .spatial-compare {
+    min-block-size: 44px;
   }
-}
-/* The key sits under the stage so it never covers the scene, including the section view. */
-.spatial-scene-column .spatial-keys {
-  grid-template-columns: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 22px;
-  margin: 10px 0 0;
-}
-.spatial-key-ring {
-  display: block;
-  width: 10px;
-  height: 10px;
-  margin: 0 6px;
-  border-radius: 50%;
-  border: 1.5px solid #c9d6e0;
-}
-.spatial-key-plane {
-  display: block;
-  width: 22px;
-  height: 0;
-  border-top: 1.5px solid #7e8b97;
-}
-/* Outlines can pass behind the caption in some views; keep its text legible. */
-.spatial-caption {
-  text-shadow:
-    0 0 3px #191d22,
-    0 0 3px #191d22;
 }

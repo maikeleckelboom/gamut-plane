@@ -1,3 +1,4 @@
+import { spatialAction, inspectSection } from "./spatialControls";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -185,20 +186,22 @@ test("visual evidence: desktop, narrow, colors, cameras and presentation", async
   await page.getByRole("radio", { name: "Color", exact: true }).check();
   await settled(page);
   await capture(page, "desktop-follow-color", testInfo);
-  await page.getByRole("button", { name: "View section" }).click();
+  await spatialAction(page, "View section");
   await settled(page);
   await capture(page, "desktop-section-view-color", testInfo);
   await page.getByRole("radio", { name: "Shape", exact: true }).check();
   await settled(page);
   await capture(page, "desktop-section-view-shape", testInfo);
-  await page.getByRole("button", { name: "Home", exact: true }).click();
-  await page.getByRole("button", { name: "Flip cut", exact: true }).click();
+  await spatialAction(page, "Home");
+  await spatialAction(page, "Flip cut");
   await page.getByRole("radio", { name: "Color", exact: true }).check();
   await settled(page);
   // A P3-only color: outside sRGB, inside Display P3 (chosen with core analysis, not by eye).
   const chroma = p3OnlyChroma(0.62, 145);
   await setOklch(page, 0.62, chroma, 145);
-  await expect(summary(page)).toContainText("outside sRGB, inside Display P3");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "outside sRGB, inside Display P3",
+  );
   await settled(page);
   await capture(page, "desktop-p3-only-color", testInfo);
   await page.getByRole("radio", { name: "Display P3", exact: true }).first().check();
@@ -206,19 +209,22 @@ test("visual evidence: desktop, narrow, colors, cameras and presentation", async
   await capture(page, "desktop-p3-surface", testInfo);
   await page.getByRole("radio", { name: "sRGB", exact: true }).first().check();
   await setOklch(page, 0.62, 0.45, 145);
-  await expect(summary(page)).toContainText("outside sRGB, outside Display P3");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "outside sRGB, outside Display P3",
+  );
   await settled(page);
   await capture(page, "desktop-outside-both", testInfo);
   await setOklch(page, 0.68, 0.15, 252);
-  await page.getByRole("radio", { name: "Inspect lightness" }).check();
+  await inspectSection(page);
   await slider(page).fill("0.3");
   await settled(page);
   await capture(page, "desktop-inspect-0.3", testInfo);
+  await inspectSection(page);
   await slider(page).fill("0.9");
   await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
   await settled(page);
   await capture(page, "desktop-marker-hidden", testInfo);
-  await page.getByRole("button", { name: "Show selected" }).first().click();
+  await spatialAction(page, "Show selected");
   await settled(page);
   await capture(page, "desktop-show-selected", testInfo);
   await page.setViewportSize({ width: 390, height: 900 });
@@ -311,7 +317,7 @@ test("inspecting another lightness never authors the color, and Follow restores 
   const color = await authored(page);
   const values = await instrumentValues(page);
   const markerBefore = (await inspect(page)).section.marker;
-  await page.getByRole("radio", { name: "Inspect lightness" }).check();
+  await inspectSection(page);
   await slider(page).fill("0.3");
   await expect(lightness(page)).toHaveText("L 0.300");
   await settled(page);
@@ -321,7 +327,9 @@ test("inspecting another lightness never authors the color, and Follow restores 
   expect(view.section.marker).toEqual(markerBefore);
   expect(await authored(page)).toEqual(color);
   expect(await instrumentValues(page)).toEqual(values);
-  await expect(summary(page)).toContainText("Section at L 0.300 is inspected separately");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "Section at L 0.300 is inspected separately",
+  );
   // The accepted color keeps editing; the inspected section stays put.
   await instrument(page).getByRole("spinbutton", { name: "Chroma numeric value" }).fill("0.05");
   await instrument(page).getByRole("spinbutton", { name: "Chroma numeric value" }).press("Enter");
@@ -333,14 +341,15 @@ test("inspecting another lightness never authors the color, and Follow restores 
   view = await inspect(page);
   expect(view.section.lightness).toBe(0.3);
   expect(view.section.marker![1]).toBe(0.55);
-  await page.getByRole("radio", { name: "Follow selected color" }).check();
+  await page.getByRole("combobox", { name: "Section value source" }).selectOption("follow");
   await expect(lightness(page)).toHaveText("L 0.550");
   await settled(page);
   expect((await inspect(page)).section.lightness).toBe(0.55);
-  // Scrubbing alone, from follow mode, also inspects without authoring.
+  // Explicit inspection exposes the slider without authoring.
   const edited = await authored(page);
+  await inspectSection(page);
   await slider(page).fill("0.8");
-  await expect(page.getByRole("radio", { name: "Inspect lightness" })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue("inspect");
   await expect(lightness(page)).toHaveText("L 0.800");
   expect(await authored(page)).toEqual(edited);
 });
@@ -373,7 +382,7 @@ test("camera, visibility and presentation actions preserve the authored color an
   const initial = await inspect(page);
   const metricsBefore = await metrics(page);
   const click = async (name: string) => {
-    await page.getByRole("button", { name, exact: true }).click();
+    await spatialAction(page, name);
     await settled(page);
   };
   await click("View section");
@@ -381,6 +390,7 @@ test("camera, visibility and presentation actions preserve the authored color an
   await click("Home");
   await page.getByRole("radio", { name: "Display P3", exact: true }).first().check();
   await page.getByRole("radio", { name: "Color", exact: true }).check();
+  await page.locator(".spatial-view-options > summary").click();
   await page.getByRole("checkbox", { name: /outline/ }).uncheck();
   await page.getByRole("checkbox", { name: "Cut away" }).uncheck();
   await page.getByRole("checkbox", { name: "Cut away" }).check();
@@ -408,7 +418,7 @@ test("the section view reads a to the right and b up, and its pixels are the OKL
 }, testInfo) => {
   await ready(page);
   await page.getByRole("radio", { name: "Color", exact: true }).check();
-  await page.getByRole("button", { name: "View section" }).click();
+  await spatialAction(page, "View section");
   await settled(page);
   const view = await inspect(page);
   const level = view.section.lightness!;
@@ -477,7 +487,7 @@ test("section contours are drawn at the exact vertices, with sRGB and Display P3
   page,
 }) => {
   await ready(page);
-  await page.getByRole("button", { name: "View section" }).click();
+  await spatialAction(page, "View section");
   await settled(page);
   const view = await inspect(page);
   const level = view.section.lightness!;
@@ -519,7 +529,7 @@ test("the section fill ends at its contour: the cap's edge is hidden under the l
 }, testInfo) => {
   await ready(page);
   await page.getByRole("radio", { name: "Color", exact: true }).check();
-  await page.getByRole("button", { name: "View section" }).click();
+  await spatialAction(page, "View section");
   await settled(page);
   const view = await inspect(page);
   const level = view.section.lightness!;
@@ -602,26 +612,28 @@ test("depth and occlusion: a hidden marker is offered recovery and never drawn o
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   const color = await authored(page);
   // Plane above the color: the color is inside the kept lower body, behind the section fill.
-  await page.getByRole("radio", { name: "Inspect lightness" }).check();
+  await inspectSection(page);
   await slider(page).fill("0.9");
   await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
   await settled(page);
   expect((await inspect(page)).section.marker![1]).toBe(0.68);
   // With the cut off the whole body is drawn and the color, inside it, is hidden again.
-  await page.getByRole("radio", { name: "Follow selected color" }).check();
+  await page.getByRole("combobox", { name: "Section value source" }).selectOption("follow");
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "Cut away" }).uncheck();
   await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
-  await page.getByRole("button", { name: "Show selected", exact: true }).click();
+  await spatialAction(page, "Show selected");
   await expect(page.getByRole("checkbox", { name: "Cut away" })).not.toBeChecked();
   await expect(page.getByRole("button", { name: "Restore surface" })).toBeVisible();
-  await expect(page.getByRole("radio", { name: "Follow selected color" })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue("follow");
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   expect(await authored(page)).toEqual(color);
   await settled(page);
   // A color outside both gamuts floats outside the body: visible, not hidden, not clamped.
   await setOklch(page, 0.62, 0.45, 145);
-  await expect(summary(page)).toContainText("outside sRGB, outside Display P3");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "outside sRGB, outside Display P3",
+  );
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
   const view = await inspect(page);
   const point = oklabOf(0.62, 0.45, 145);
@@ -646,6 +658,7 @@ test("an unobservable color has no marker and no followed section, and inspectin
   }
   await expect(summary(page)).toContainText("cannot be placed in OKLab");
   await expect(lightness(page)).toHaveText("None");
+  await page.locator(".spatial-section .spatial-disclosure > summary").click();
   await expect(page.getByRole("button", { name: "View section", exact: true })).toBeDisabled();
   await settled(page);
   const view = await inspect(page);
@@ -653,6 +666,7 @@ test("an unobservable color has no marker and no followed section, and inspectin
   expect(view.section.capVisible).toBe(false);
   expect(view.section.cutSide).toBe(0);
   // Inspecting a lightness is independent of the unavailable observation.
+  await inspectSection(page);
   await slider(page).fill("0.4");
   await expect(lightness(page)).toHaveText("L 0.400");
   await settled(page);
@@ -680,8 +694,10 @@ test("an extended color keeps its true, unclamped position and can be brought in
   const [a, l, b] = view.section.marker!;
   expect(Number.isFinite(a) && Number.isFinite(l) && Number.isFinite(b)).toBe(true);
   expect(Math.hypot(a, b)).toBeGreaterThan(0.4); // far outside either gamut, not pulled onto one
-  await expect(summary(page)).toContainText("outside sRGB, outside Display P3");
-  await page.getByRole("button", { name: "Fit visible" }).click();
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "outside sRGB, outside Display P3",
+  );
+  await spatialAction(page, "Fit visible");
   await settled(page);
   const spot = toPixel(await inspect(page), [a, l, b]);
   expect(Math.abs(spot.ndc.x)).toBeLessThanOrEqual(1);
@@ -693,7 +709,7 @@ test("view changes are immediate and honor reduced motion", async ({ page }) => 
     await page.emulateMedia({ reducedMotion });
     await ready(page);
     const before = await inspect(page);
-    await page.getByRole("button", { name: "View section" }).click();
+    await spatialAction(page, "View section");
     // One frame later the camera is already at the section pose: nothing animates toward it.
     await expect.poll(async () => (await inspect(page)).camera.position[1]).toBeLessThan(0);
     const now = await inspect(page);
@@ -702,7 +718,7 @@ test("view changes are immediate and honor reduced motion", async ({ page }) => 
     const frames = (await inspect(page)).frames;
     await page.waitForTimeout(150);
     expect((await inspect(page)).frames).toBe(frames);
-    await page.getByRole("button", { name: "Home", exact: true }).click();
+    await spatialAction(page, "Home");
     await expect
       .poll(async () => (await inspect(page)).camera.target)
       .toEqual(before.camera.target);
@@ -719,8 +735,10 @@ test("keyboard: every section action is reachable and the scrub is announced onc
   const announcement = page.locator("[data-section-announcement]");
   await expect(announcement).toContainText("Section at lightness 0.680", { timeout: 4000 });
   const color = await authored(page);
-  await page.getByRole("radio", { name: "Follow selected color" }).focus();
-  await page.keyboard.press("Tab"); // the radio group is one tab stop
+  await page.getByRole("combobox", { name: "Section value source" }).focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await slider(page).focus();
   await expect(slider(page)).toBeFocused();
   const seen = new Set<string>();
   const poll = setInterval(
@@ -728,12 +746,14 @@ test("keyboard: every section action is reachable and the scrub is announced onc
     20,
   );
   for (let step = 0; step < 12; step++) await page.keyboard.press("ArrowLeft");
-  await expect(page.getByRole("radio", { name: "Inspect lightness" })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue("inspect");
   await expect(lightness(page)).toHaveText("L 0.668");
   await expect(announcement).toContainText("lightness 0.668", { timeout: 4000 });
   clearInterval(poll);
   // Twelve changes, one settled announcement beyond the first.
   expect([...seen].filter((text) => text.includes("0.66")).length).toBeLessThanOrEqual(1);
+  await page.locator(".spatial-section .spatial-disclosure > summary").focus();
+  await page.keyboard.press("Enter");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "View section" })).toBeFocused();
   await page.keyboard.press("Enter");
@@ -741,7 +761,7 @@ test("keyboard: every section action is reachable and the scrub is announced onc
   expect((await inspect(page)).section.cutSide).toBe(-1);
   expect(await authored(page)).toEqual(color);
   // Slider semantics for assistive technology.
-  await expect(slider(page)).toHaveAttribute("aria-valuetext", /L 0\.668, inspected separately/);
+  await expect(slider(page)).toHaveAttribute("aria-valuetext", /L 0\.668/);
   await slider(page).press("Home");
   await expect(summary(page)).toContainText("only the neutral point");
 });
@@ -750,6 +770,7 @@ test("layout at 390 and 320 px, at enlarged text and at 200 and 400 percent zoom
   page,
 }, testInfo) => {
   await ready(page);
+  await inspectSection(page);
   for (const [width, height] of [
     [390, 850],
     [320, 700],
@@ -763,12 +784,11 @@ test("layout at 390 and 320 px, at enlarged text and at 200 and 400 percent zoom
       `${width}x${height} overflows horizontally`,
     ).toBe(true);
     for (const control of [
-      page.getByRole("radio", { name: "Follow selected color" }),
-      page.getByRole("radio", { name: "Inspect lightness" }),
+      page.getByRole("combobox", { name: "Section value source" }),
       slider(page),
-      page.getByRole("button", { name: "View section" }),
+      page.locator(".spatial-section .spatial-disclosure > summary"),
       page.getByRole("checkbox", { name: "Cut away" }),
-      page.getByRole("button", { name: "Home", exact: true }),
+      page.locator(".spatial-view-options > summary"),
     ]) {
       await control.scrollIntoViewIfNeeded();
       const box = (await control.boundingBox())!;
@@ -788,7 +808,7 @@ test("layout at 390 and 320 px, at enlarged text and at 200 and 400 percent zoom
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  await page.getByRole("button", { name: "View section" }).focus();
+  await page.locator(".spatial-section .spatial-disclosure > summary").focus();
   await capture(page, "enlarged-text-focus", testInfo);
 });
 
@@ -797,8 +817,9 @@ test("axe finds no violations with the instrument, controls and a live section",
 }) => {
   await ready(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await inspectSection(page);
   await slider(page).fill("0.4");
-  await page.getByRole("button", { name: "View section" }).click();
+  await spatialAction(page, "View section");
   await settled(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
@@ -807,6 +828,8 @@ test("a rapid edit burst builds at most one section per frame and settles on the
   page,
 }, testInfo) => {
   await ready(page);
+  await inspectSection(page);
+  await settled(page);
   const before = await metrics(page);
   const frames = (await inspect(page)).frames;
   // 150 slider events in one task: far faster than the display could ever draw them.
@@ -984,16 +1007,24 @@ test("without WebGL2 the instrument and the section facts remain usable", async 
   await page.goto("/spatial");
   await expect(page.getByText("3D rendering is unavailable", { exact: true })).toBeVisible();
   await expect(lightness(page)).toHaveText("L 0.680");
-  await expect(summary(page)).toContainText("Section at L 0.680 follows the selected color");
-  await expect(summary(page)).toContainText("sRGB section: a");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "Section at L 0.680 follows the selected color",
+  );
+  await expect(page.locator(".spatial-detail-content")).toContainText("sRGB section: a");
   const root = instrument(page);
   const input = root.getByRole("spinbutton", { name: "Lightness numeric value" });
   await input.fill("0.4");
   await input.press("Enter");
   await expect(lightness(page)).toHaveText("L 0.400");
-  await expect(summary(page)).toContainText("Section at L 0.400 follows the selected color");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "Section at L 0.400 follows the selected color",
+  );
+  await inspectSection(page);
   await slider(page).fill("0.9");
-  await expect(summary(page)).toContainText("Section at L 0.900 is inspected separately");
+  await expect(page.locator(".spatial-detail-content")).toContainText(
+    "Section at L 0.900 is inspected separately",
+  );
+  await page.locator(".spatial-section .spatial-disclosure > summary").click();
   await expect(page.getByRole("button", { name: "View section" })).toBeDisabled();
 });
 
@@ -1003,7 +1034,7 @@ test.describe("high DPI", () => {
     page,
   }) => {
     await ready(page);
-    await page.getByRole("button", { name: "View section" }).click();
+    await spatialAction(page, "View section");
     await settled(page);
     const view = await inspect(page);
     const png = await canvasOf(page).screenshot();

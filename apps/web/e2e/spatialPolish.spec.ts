@@ -1,3 +1,4 @@
+import { spatialAction, inspectSection } from "./spatialControls";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createColorValue, analyzeGamut } from "@gamut-plane/core";
@@ -111,8 +112,7 @@ for (const gamut of ["srgb", "display-p3"] as const) {
         [0.0033, 0.0458],
       ] as const) {
         for (const side of [1, -1]) {
-          if (side === -1)
-            await page.getByRole("button", { name: "Flip cut", exact: true }).click();
+          if (side === -1) await spatialAction(page, "Flip cut");
           let previous: Buffer | undefined;
           // Traverse both ends repeatedly. The accepted values are checked before screenshots.
           const values = [
@@ -129,9 +129,9 @@ for (const gamut of ["srgb", "display-p3"] as const) {
             expect(v.section.endpointSegments).toBe(endpoint ? 1 : 0);
             if (endpoint) expect(v.section.segments[gamut]).toBe(0);
             else expect(v.section.segments[gamut]).toBeGreaterThan(0);
-            await expect(
-              page.getByRole("radio", { name: "Follow selected color", exact: true }),
-            ).toBeChecked();
+            await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue(
+              "follow",
+            );
             const authored = await page
               .locator("[data-authored-channels]")
               .getAttribute("data-authored-channels");
@@ -142,7 +142,7 @@ for (const gamut of ["srgb", "display-p3"] as const) {
               const result = analyzeGamut(value.value, `${space}-gamut`);
               if (!result.ok) throw new Error("fixture");
               const label = space === "srgb" ? "sRGB" : "Display P3";
-              await expect(page.locator("[data-section-summary]")).toContainText(
+              await expect(page.locator(".spatial-detail-content")).toContainText(
                 `${result.value.status === "outside" ? "outside" : "inside"} ${label}`,
               );
             }
@@ -162,7 +162,7 @@ for (const gamut of ["srgb", "display-p3"] as const) {
           }
         }
         // Restore the chosen upper cut for the next authored fixture.
-        await page.getByRole("button", { name: "Flip cut", exact: true }).click();
+        await spatialAction(page, "Flip cut");
       }
       // Explicit uncut view may show the whole volume, including at an endpoint.
       await page.getByRole("checkbox", { name: "Cut away", exact: true }).uncheck();
@@ -240,7 +240,7 @@ for (const dpr of [1, 2]) {
       await front("near-contour");
       for (const type of ["Lightness section", "Hue section"]) {
         await page.getByRole("radio", { name: type, exact: true }).check();
-        await page.getByRole("button", { name: "View section", exact: true }).click();
+        await spatialAction(page, "View section");
         for (const mode of ["Shape", "Color"]) {
           await page.getByRole("radio", { name: mode, exact: true }).check();
           await color(page, 0.6, 0.08, 0.05);
@@ -255,8 +255,9 @@ for (const dpr of [1, 2]) {
         await front(`${type}-oblique`);
       }
       await page.getByRole("radio", { name: "Lightness section", exact: true }).check();
-      await page.getByRole("button", { name: "Home", exact: true }).click();
+      await spatialAction(page, "Home");
       await color(page, 0.68, 0.04, -0.08);
+      await inspectSection(page);
       await page.locator("[data-section-slider]").fill("0.9");
       await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
       await settle(page);
@@ -287,13 +288,15 @@ for (const dpr of [1, 2]) {
       );
       expect(ring.every((c, k) => Math.abs(c - [201, 214, 224][k]!) < 20)).toBe(true);
       await capture(page, `hidden-dpr${dpr}`, png);
-      await page.getByRole("button", { name: "Show selected", exact: true }).click();
+      await spatialAction(page, "Show selected");
       await front("recovered");
       expect((await facts(page)).section.marker).toEqual(hidden.section.marker);
       expect((await facts(page)).section.lightness).toBe(0.9);
-      await expect(page.getByRole("radio", { name: "Inspect lightness" })).toBeChecked();
-      await page.getByRole("button", { name: "Restore surface", exact: true }).click();
-      await page.getByRole("radio", { name: "Follow selected color", exact: true }).check();
+      await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue(
+        "inspect",
+      );
+      await spatialAction(page, "Restore surface");
+      await page.getByRole("combobox", { name: "Section value source" }).selectOption("follow");
       await color(page, 0.62, -0.3, 0.2);
       await front("outside-focused-gamut");
       await writeFile(info.outputPath("marker-pixels.json"), JSON.stringify(records, null, 2));
@@ -317,12 +320,13 @@ test("the cut boundary shell has color on exposed back faces, with a distinct oc
   await expect.poll(async () => (await facts(page)).section.type).toBe("hue");
   await settle(page);
   const initialCamera = (await facts(page)).camera;
-  await page.getByRole("radio", { name: "Inspect hue", exact: true }).check();
+  await page.getByRole("combobox", { name: "Section value source" }).selectOption("inspect");
   const hue = page.getByRole("spinbutton", { name: "Inspected hue in degrees" });
   await hue.fill("312.4");
   await hue.press("Enter");
   await expect.poll(async () => (await facts(page)).section.hue).toBe(312.4);
   await page.getByRole("radio", { name: "Color", exact: true }).check();
+  await page.locator(".spatial-view-options > summary").click();
   await page.getByRole("checkbox", { name: "Show Display P3 outline" }).uncheck();
   await settle(page);
   const v = await facts(page),
@@ -346,13 +350,22 @@ test("the cut boundary shell has color on exposed back faces, with a distinct oc
   expect(Math.max(...rgb) - Math.min(...rgb)).toBeGreaterThan(80);
   expect(Math.max(...rgb)).toBeGreaterThan(150);
   await capture(page, "after-backface", png);
-  expect(v.camera).toEqual(initialCamera);
+  const rotation = (-(312.4 - 212.2) * Math.PI) / 180;
+  const [x, y, z] = initialCamera.position;
+  const expectedPosition = [
+    x! * Math.cos(rotation) + z! * Math.sin(rotation),
+    y!,
+    -x! * Math.sin(rotation) + z! * Math.cos(rotation),
+  ];
+  v.camera.position.forEach((value, i) => expect(value).toBeCloseTo(expectedPosition[i]!, 10));
+  expect(v.camera.zoom).toBe(initialCamera.zoom);
+  expect(v.camera.target).toEqual(initialCamera.target);
   const marker = v.section.marker;
-  await page.getByRole("button", { name: "Show selected", exact: true }).click();
+  await spatialAction(page, "Show selected");
   await settle(page);
   expect((await facts(page)).section.hue).toBe(312.4);
   expect((await facts(page)).section.marker).toEqual(marker);
-  await page.getByRole("button", { name: "Restore surface", exact: true }).click();
+  await spatialAction(page, "Restore surface");
   await settle(page);
   expect((await facts(page)).section.hue).toBe(312.4);
 });
@@ -435,7 +448,7 @@ test("a scene redraw preserves an uncommitted Hue draft and rejects an empty com
   await page.getByRole("radio", { name: "Hue section", exact: true }).check();
   await expect.poll(async () => (await facts(page)).section.type).toBe("hue");
   await settle(page);
-  await page.getByRole("radio", { name: "Inspect hue", exact: true }).check();
+  await page.getByRole("combobox", { name: "Section value source" }).selectOption("inspect");
   const input = page.getByRole("spinbutton", { name: "Inspected hue in degrees" });
   await input.fill("264.1");
   await input.press("Enter");

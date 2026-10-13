@@ -1,3 +1,4 @@
+import { spatialAction } from "./spatialControls";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { writeFile, mkdir } from "node:fs/promises";
@@ -33,7 +34,7 @@ test("spatial visual evidence at desktop and phone sizes", async ({ page }, test
   await page.getByRole("radio", { name: "Display P3", exact: true }).check();
   await capture("desktop-p3");
   await page.setViewportSize({ width: 390, height: 850 });
-  await page.getByRole("button", { name: "Fit visible" }).click();
+  await spatialAction(page, "Fit visible");
   await capture("phone-p3");
 });
 test("spatial surface, controls, responsive layout and no idle animation", async ({ page }) => {
@@ -55,27 +56,29 @@ test("spatial surface, controls, responsive layout and no idle animation", async
   await page.getByRole("radio", { name: "Color", exact: true }).check();
   await expect(stage).not.toHaveAttribute("data-spatial-frames", initialFrame!);
   expect((await canvas.screenshot()).equals(shape)).toBe(false);
-  await expect(page.getByText("without clipping", { exact: false })).toBeVisible();
+  await expect(page.locator(".spatial-caption")).toContainText("sRGB preview");
+  await page.locator(".spatial-view-options > summary").click();
   // One surface at a time: focus and comparison are separate, never an invalid empty state.
   await expect(page.getByRole("checkbox", { name: "Show Display P3 outline" })).toBeChecked();
   await page.getByRole("radio", { name: "Display P3", exact: true }).check();
-  await expect(page.locator(".spatial-caption strong")).toHaveText("Display P3");
-  await expect(page.locator(".spatial-legend")).toHaveText("sRGB outline");
-  await expect(page.getByText("clips those colors for display", { exact: false })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Display P3", exact: true })).toBeChecked();
+  await page.locator(".spatial-view-options > summary").click();
+  await expect(page.getByRole("checkbox", { name: "Show sRGB outline" })).toBeVisible();
+  await expect(page.getByText("Display P3 colors are clipped to this sRGB preview.")).toBeVisible();
   await page.getByRole("checkbox", { name: "Show sRGB outline" }).uncheck();
-  await expect(page.locator(".spatial-legend")).toHaveCount(0);
+  await expect(page.locator('[data-section-key="srgb"]')).toBeHidden();
   await page.getByRole("checkbox", { name: "Show sRGB outline" }).check();
   // Native radio semantics: arrow keys move the selection inside the group.
   await page.getByRole("radio", { name: "Display P3", exact: true }).focus();
   await page.keyboard.press("ArrowLeft");
   await expect(page.getByRole("radio", { name: "sRGB", exact: true })).toBeChecked();
-  await expect(page.locator(".spatial-caption strong")).toHaveText("sRGB");
+  await expect(page.locator('[data-section-key="srgb"]')).toBeVisible();
   await canvas.focus();
   await canvas.press("ArrowLeft");
   await canvas.press("Shift+ArrowUp");
   await canvas.press("+");
-  await page.getByRole("button", { name: "Fit visible" }).click();
-  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await spatialAction(page, "Fit visible");
+  await spatialAction(page, "Home");
   const bounds = (await canvas.boundingBox())!;
   const beforeDrag = await canvas.screenshot();
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
@@ -92,6 +95,8 @@ test("spatial surface, controls, responsive layout and no idle animation", async
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    if (!(await page.getByRole("button", { name: "Home", exact: true }).isVisible()))
+      await page.locator(".spatial-view-options > summary").click();
     await expect(page.getByRole("button", { name: "Home", exact: true })).toBeInViewport();
     // Every control stays reachable inside the viewport when the toolbar wraps.
     for (const control of [
@@ -346,7 +351,7 @@ test("axis labels name the opponent axes and never label through the focused bod
   await expect.poll(texts).not.toContain("−a green");
   expect(await texts()).toContain("L 1 · white");
   expect(await texts()).toContain("L 0 · black");
-  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await spatialAction(page, "Home");
   await expect.poll(async () => (await texts()).length).toBe(6);
 });
 
