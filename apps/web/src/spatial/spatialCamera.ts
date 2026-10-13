@@ -5,6 +5,40 @@ export const HOME_TARGET = [0, 0.5, 0] as const;
 export const HOME_HEIGHT = 1.42;
 export const MAX_BACKING_PIXELS = 3_000_000;
 
+/**
+ * Transport the existing camera frame with a hue section. World is [a,L,b], while Three's
+ * Y-up azimuth is atan2(x,z): increasing OKLCH hue therefore DECREASES camera azimuth.
+ * Rotate target too: section-relative framing and screen-space pan stay attached to the
+ * section instead of drifting as its radial center moves. L, distance, pitch and zoom stay put.
+ * OrbitControls remains the pose authority; every manual/programmatic edit becomes the new
+ * relative offset implicitly. No stored competing pose, animation, or per-frame correction.
+ */
+export function createHueTracking(camera: OrthographicCamera, target: Vector3) {
+  let previous: number | null = null;
+  const axis = new Vector3(0, 1, 0);
+  return (hue: number | null): number => {
+    if (hue === null) {
+      previous = null;
+      return 0;
+    }
+    if (!Number.isFinite(hue)) return 0;
+    const remainder = hue % 360;
+    const normalized = remainder < 0 ? remainder + 360 : remainder;
+    // Enter/re-enter by binding the existing view; changing modes never moves the camera.
+    let delta = previous === null ? 0 : normalized - previous;
+    if (delta >= 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    previous = normalized;
+    if (delta === 0) return 0;
+    const rotation = (-delta * Math.PI) / 180;
+    camera.position.applyAxisAngle(axis, rotation);
+    target.applyAxisAngle(axis, rotation);
+    camera.lookAt(target);
+    camera.updateMatrixWorld(true);
+    return rotation;
+  };
+}
+
 /** Keep the scientific ruler readable across the full zoom range without clipping its length. */
 export function screenRuler(tenthUnitPixels: number) {
   const unit = 10 ** Math.floor(Math.log10(7 / tenthUnitPixels));

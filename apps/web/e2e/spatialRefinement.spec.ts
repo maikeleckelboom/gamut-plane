@@ -1,3 +1,4 @@
+import { spatialAction, inspectSection } from "./spatialControls";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { SpatialScene } from "../src/spatial/spatialScene";
@@ -27,7 +28,7 @@ async function ready(page: Page) {
   await settle(page);
 }
 async function action(page: Page, name: string) {
-  await page.getByRole("button", { name, exact: true }).click();
+  await spatialAction(page, name);
   await settle(page);
 }
 
@@ -42,6 +43,7 @@ test("aligned comparison has a stable scale; fitting, orbit, and recovery preser
   expect(aligned.section.sectionOnly).toBe(true);
   expect(aligned.section.ghostSegments).toBe(0);
   for (const level of ["0.136", "0.9", "0.4"]) {
+    await inspectSection(page);
     await page.locator("[data-section-slider]").fill(level);
     await settle(page);
     expect((await facts(page)).camera).toEqual(aligned.camera);
@@ -64,13 +66,14 @@ test("recovery hides surfaces explicitly and keeps inspected lightness, color, a
   page,
 }) => {
   await ready(page);
+  await inspectSection(page);
   await page.locator("[data-section-slider]").fill("0.9");
   await expect(page.locator("[data-marker-note]")).toContainText("behind the surface");
   const before = await facts(page);
   const authored = await color(page);
   const count = await computes(page);
   await action(page, "Show selected");
-  await expect(page.getByRole("radio", { name: "Inspect lightness" })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue("inspect");
   await expect(page.getByRole("button", { name: "Restore surface" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Restore surface" })).toBeFocused();
   await expect(page.locator("[data-marker-note]")).toHaveCount(0);
@@ -147,10 +150,12 @@ test("recorded editing and inspection journey with mouse orbit, interruption, an
     await input.press("Enter");
     await capture(`edit-${name!.toLowerCase()}`);
   }
+  await inspectSection(page);
   await page.locator("[data-section-slider]").fill("0.5");
   await capture("move-section");
   await action(page, "View section");
   await capture("aligned");
+  await inspectSection(page);
   await page.locator("[data-section-slider]").fill("0.136");
   await capture("independent");
   const authored = await color(page);
@@ -164,7 +169,7 @@ test("recorded editing and inspection journey with mouse orbit, interruption, an
   await page.mouse.down();
   const hemispheres = new Set<number>();
   for (let step = 1; step <= 16; step++) {
-    await page.mouse.move(x + step * 3, y + step * 10);
+    await page.mouse.move(x + step * 3, y + (step * box.height) / 48);
     await capture("orbit");
     const view = await facts(page);
     hemispheres.add(Math.sign(view.camera.position[1]! - view.camera.target[1]!));
@@ -173,7 +178,7 @@ test("recorded editing and inspection journey with mouse orbit, interruption, an
   expect([...hemispheres].sort()).toEqual([-1, 1]);
   // Reverse without releasing the pointer, then interrupt with release.
   for (let step = 15; step >= 8; step--) {
-    await page.mouse.move(x + step * 3, y + step * 10);
+    await page.mouse.move(x + step * 3, y + (step * box.height) / 48);
     await capture("reverse");
   }
   await page.mouse.up();
@@ -185,7 +190,7 @@ test("recorded editing and inspection journey with mouse orbit, interruption, an
   await capture("recovered");
   expect(await color(page)).toBe(authored);
   expect(await computes(page)).toBe(count);
-  await expect(page.getByRole("radio", { name: "Inspect lightness" })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "Section value source" })).toHaveValue("inspect");
   expect((await facts(page)).section.lightness).toBe(0.136);
   if (evidence) {
     await writeFile(`${evidence}/frames.json`, JSON.stringify(records, null, 2));
